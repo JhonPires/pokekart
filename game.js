@@ -319,7 +319,7 @@ const KART_DATABASE = [
     name: 'Jolteon Kart',
     image: './img/jolteon2.png',
     // getBase64: () => window.KART_JOLTEON_BASE64 || window.KART_MODEL_BASE64 || null,
-    modelUrl: './models/jolteon.glb',
+    modelUrl: 'https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/jolteon.glb',
     template: null
   },
   {
