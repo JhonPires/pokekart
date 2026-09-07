@@ -319,7 +319,7 @@ const KART_DATABASE = [
     name: 'Jolteon Kart',
     image: './img/jolteon2.png',
     // getBase64: () => window.KART_JOLTEON_BASE64 || window.KART_MODEL_BASE64 || null,
-    modelUrl: 'https://jhonpires.github.io/pokekart/models/jolteon.glb',
+    modelUrl: './models/jolteon.glb',
     template: null
   },
   {
@@ -327,7 +327,7 @@ const KART_DATABASE = [
     name: 'Zoroark Kart',
     image: './img/zoroark2.png',
     // getBase64: () => window.KART_ZOROARK_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/zoroark.glb',
+    modelUrl: './models/zoroark.glb',
     template: null
   },
   {
@@ -335,7 +335,7 @@ const KART_DATABASE = [
     name: 'Togetic Kart',
     image: './img/togetic2.png',
     // getBase64: () => window.KART_TOGETIC_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/togetic.glb',
+    modelUrl: './models/togetic.glb',
     template: null
   },
   {
@@ -343,7 +343,7 @@ const KART_DATABASE = [
     name: 'Charizard Kart',
     image: './img/charizard2.png',
     // getBase64: () => window.KART_CHARIZARD_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/charizard.glb',
+    modelUrl: './models/charizard.glb',
     template: null
   },
   {
@@ -351,7 +351,7 @@ const KART_DATABASE = [
     name: 'Flygon Kart',
     image: './img/flygon2.png',
     // getBase64: () => window.KART_FLYGON_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/flygon.glb',
+    modelUrl: './models/flygon.glb',
     template: null
   },
   {
@@ -359,7 +359,7 @@ const KART_DATABASE = [
     name: 'Gengar Kart',
     image: './img/gengar2.png',
     // getBase64: () => window.KART_GENGAR_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/gengar.glb',
+    modelUrl: './models/gengar.glb',
     template: null
   },
   {
@@ -367,7 +367,7 @@ const KART_DATABASE = [
     name: 'Oshawott Kart',
     image: './img/oshawott2.png',
     // getBase64: () => window.KART_OSHAWOTT_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/oshawott.glb',
+    modelUrl: './models/oshawott.glb',
     template: null
   },
   {
@@ -375,7 +375,7 @@ const KART_DATABASE = [
     name: 'Snorlax Kart',
     image: './img/snorlax2.png',
     // getBase64: () => window.KART_SNORLAX_BASE64 || null,
-    modelUrl: 'https://cdn.jsdelivr.net/gh/JhonPires/pokekart@v1.0/snorlax.glb',
+    modelUrl: './models/snorlax.glb',
     template: null
   }
 ];
