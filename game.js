@@ -312,6 +312,18 @@ const gltfLoader = new THREE.GLTFLoader();
 const KART_MODEL_SCALE = 2.2;
 const KART_MODEL_YAW_OFFSET = 0;
 
+function getKartUrl(filename) {
+  const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+
+  if (isLocal) {
+    // Caminho para o Live Server ler da sua pasta local
+    return `./models/${filename}`;
+  } else {
+    // Endpoint do GitHub que resolve o ponteiro do Git LFS e entrega o .glb real
+    return `https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/${filename}`;
+  }
+}
+
 // Banco de Dados de Karts com verificação blindada das variáveis no window
 const KART_DATABASE = [
   {
@@ -319,7 +331,7 @@ const KART_DATABASE = [
     name: 'Jolteon Kart',
     image: './img/jolteon2.png',
     // getBase64: () => window.KART_JOLTEON_BASE64 || window.KART_MODEL_BASE64 || null,
-    modelUrl: 'https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/jolteon.glb',
+    modelUrl: getKartUrl('jolteon.glb'),
     template: null
   },
   {
@@ -327,7 +339,7 @@ const KART_DATABASE = [
     name: 'Zoroark Kart',
     image: './img/zoroark2.png',
     // getBase64: () => window.KART_ZOROARK_BASE64 || null,
-    modelUrl: './models/zoroark.glb',
+    modelUrl: getKartUrl('zoroark.glb'),
     template: null
   },
   {
@@ -335,7 +347,7 @@ const KART_DATABASE = [
     name: 'Togetic Kart',
     image: './img/togetic2.png',
     // getBase64: () => window.KART_TOGETIC_BASE64 || null,
-    modelUrl: './models/togetic.glb',
+    modelUrl: getKartUrl('togetic.glb'),
     template: null
   },
   {
@@ -343,7 +355,7 @@ const KART_DATABASE = [
     name: 'Charizard Kart',
     image: './img/charizard2.png',
     // getBase64: () => window.KART_CHARIZARD_BASE64 || null,
-    modelUrl: './models/charizard.glb',
+    modelUrl: getKartUrl('charizard.glb'),
     template: null
   },
   {
@@ -351,7 +363,7 @@ const KART_DATABASE = [
     name: 'Flygon Kart',
     image: './img/flygon2.png',
     // getBase64: () => window.KART_FLYGON_BASE64 || null,
-    modelUrl: './models/flygon.glb',
+    modelUrl: getKartUrl('flygon.glb'),
     template: null
   },
   {
@@ -359,7 +371,7 @@ const KART_DATABASE = [
     name: 'Gengar Kart',
     image: './img/gengar2.png',
     // getBase64: () => window.KART_GENGAR_BASE64 || null,
-    modelUrl: './models/gengar.glb',
+    modelUrl: getKartUrl('gengar.glb'),
     template: null
   },
   {
@@ -367,7 +379,7 @@ const KART_DATABASE = [
     name: 'Oshawott Kart',
     image: './img/oshawott2.png',
     // getBase64: () => window.KART_OSHAWOTT_BASE64 || null,
-    modelUrl: './models/oshawott.glb',
+    modelUrl: getKartUrl('oshawott.glb'),
     template: null
   },
   {
@@ -375,7 +387,7 @@ const KART_DATABASE = [
     name: 'Snorlax Kart',
     image: './img/snorlax2.png',
     // getBase64: () => window.KART_SNORLAX_BASE64 || null,
-    modelUrl: './models/snorlax.glb',
+    modelUrl: getKartUrl('snorlax.glb'),
     template: null
   }
 ];
