@@ -149,11 +149,22 @@
       { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') }
     ];
 
-    let selectedIndex = 0;
+    // LEITURA DO SESSION STORAGE (Restaura o índice e o Nick)
+    const savedKartId = sessionStorage.getItem('pkart_selected_kart');
+    let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
+    if (selectedIndex === -1) selectedIndex = 1; // Padrão Zoroark se não houver salvo
+
     let previewScene, previewCamera, previewRenderer, currentModel;
 
     function initPreview() {
       const container = document.getElementById('previewContainer');
+
+      // Restaura o Nickname salvo anteriormente na sessão
+      const savedNick = sessionStorage.getItem('pkart_nickname');
+      if (savedNick) {
+        document.getElementById('playerNickname').value = savedNick;
+      }
+
       previewScene = new THREE.Scene();
       previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
       previewCamera.position.set(0, 1.2, 3.8);
@@ -182,6 +193,9 @@
       const item = KART_DATABASE[selectedIndex];
       document.getElementById('kartName').innerText = item.name;
 
+      // Salva a escolha atual na sessão
+      sessionStorage.setItem('pkart_selected_kart', item.id);
+
       if (currentModel) previewScene.remove(currentModel);
 
       gltfLoader.load(item.modelUrl, (gltf) => {
@@ -190,6 +204,11 @@
         previewScene.add(currentModel);
       });
     }
+
+    // Escuta alterações no Nickname para salvar na sessão instantaneamente
+    document.getElementById('playerNickname').addEventListener('input', (e) => {
+      sessionStorage.setItem('pkart_nickname', e.target.value.trim().toUpperCase());
+    });
 
     document.getElementById('btnPrevKart').onclick = () => {
       selectedIndex = (selectedIndex - 1 + KART_DATABASE.length) % KART_DATABASE.length;
@@ -207,7 +226,9 @@
     const guestConnections = [];
 
     function getNickname() {
-      return document.getElementById('playerNickname').value.trim() || 'JOGADOR';
+      const nick = document.getElementById('playerNickname').value.trim().toUpperCase() || 'JOGADOR';
+      sessionStorage.setItem('pkart_nickname', nick);
+      return nick;
     }
 
     document.getElementById('btnHost').onclick = () => {

@@ -416,12 +416,21 @@ window.addEventListener('keydown', (event) => {
 
 let raceStarted = false;
 
+// ------------------------------------------------------------
+// CONTAGEM REGRESSIVA (CORRIGIDA - SEM DUPLICAÇÃO)
+// ------------------------------------------------------------
+let countdownInProgress = false; // Trava para impedir múltiplos temporizadores
+
 function startCountdown() {
+  if (countdownInProgress || raceStarted) return; // Evita que a contagem rode duas vezes
+  countdownInProgress = true;
+
   const overlay = document.getElementById('countdownOverlay');
   if (!overlay) return;
 
   let count = 3;
   overlay.style.display = 'flex';
+  overlay.style.color = '#FFD54F';
   overlay.innerText = count;
 
   const timer = setInterval(() => {
@@ -431,10 +440,11 @@ function startCountdown() {
     } else if (count === 0) {
       overlay.innerText = 'GO!';
       overlay.style.color = '#4CAF50';
-      raceStarted = true;
+      raceStarted = true; // Libera os karts para acelerar
     } else {
       clearInterval(timer);
       overlay.style.display = 'none';
+      countdownInProgress = false;
     }
   }, 1000);
 }
@@ -585,7 +595,7 @@ function showFinishOverlay(place) {
 }
 
 // ------------------------------------------------------------
-// SISTEMA DE POKÉBOLAS (ITEM BOXES) E ARMADILHAS NA PISTA [TECLA X]
+// POKÉBOLAS E ARMADILHAS SINCRONIZADAS VIA REDE
 // ------------------------------------------------------------
 const SKILLS = {
   TURBO: { id: 'TURBO', name: 'Aceleração de Fogo', icon: '🔥' },
@@ -599,14 +609,13 @@ let isShieldActive = false;
 let isControlInverted = false;
 let controlInvertTimer = 0;
 
-// TEXTURA DA POKÉBOLA
 function createPokeballTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#f0f0f0'; ctx.fillRect(0, 0, 128, 128);
   ctx.fillStyle = '#e53935'; ctx.fillRect(0, 0, 128, 64);
-  ctx.fillStyle = '#212121'; ctx.fillRect(0, 56, 128, 12);
+  ctx.fillStyle = '#212121'; ctx.fillRect(0, 58, 128, 12);
   ctx.beginPath(); ctx.arc(64, 64, 20, 0, Math.PI * 2); ctx.fillStyle = '#212121'; ctx.fill();
   ctx.beginPath(); ctx.arc(64, 64, 12, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
   return new THREE.CanvasTexture(canvas);
@@ -618,16 +627,14 @@ const pokeballMat = new THREE.MeshStandardMaterial({
   metalness: 0.1
 });
 
-// MATERIAIS DAS ARMADILHAS NA PISTA
 const iceTrapMat = new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.8, roughness: 0.1 });
 const lodoTrapMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, transparent: true, opacity: 0.85, roughness: 0.9 });
 
-// CAIXAS DE ITEM (POKÉBOLAS REDONDAS E MENORES)
 const itemBoxes = [];
 function spawnItemBoxes() {
-  // Alterado para Esfera de raio 0.45 (Menor e redonda)
   const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
   const samplePoints = [0.15, 0.4, 0.65, 0.88];
+  let boxId = 0;
 
   samplePoints.forEach(t => {
     const point = trackCurve.getPointAt(t);
@@ -638,11 +645,12 @@ function spawnItemBoxes() {
       const mesh = new THREE.Mesh(sphereGeo, pokeballMat);
       const pos = point.clone().addScaledVector(normal, offset);
       mesh.position.set(pos.x, 0.6, pos.z);
-      mesh.rotation.z = Math.PI / 6; // Inclinação charmosa da Pokébola
+      mesh.rotation.z = Math.PI / 6;
       mesh.castShadow = true;
       scene.add(mesh);
 
       itemBoxes.push({
+        id: boxId++,
         mesh,
         baseY: 0.6,
         active: true,
@@ -652,6 +660,15 @@ function spawnItemBoxes() {
   });
 }
 spawnItemBoxes();
+
+function disableItemBox(boxId) {
+  const box = itemBoxes.find(b => b.id === boxId);
+  if (box) {
+    box.active = false;
+    box.mesh.visible = false;
+    box.respawnTimer = 7.0;
+  }
+}
 
 function updateItemBoxes(dt) {
   itemBoxes.forEach(box => {
@@ -664,14 +681,12 @@ function updateItemBoxes(dt) {
       return;
     }
 
-    // Rotação leve flutuante
     box.mesh.rotation.y += dt * 1.8;
     box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.004) * 0.12;
 
     if (kart && box.mesh.position.distanceTo(kart.position) < 1.4) {
-      box.active = false;
-      box.mesh.visible = false;
-      box.respawnTimer = 7.0;
+      disableItemBox(box.id);
+      sendNetworkEvent({ t: 'take_box', boxId: box.id });
 
       if (!currentItem) {
         getItemFromBox();
@@ -689,40 +704,64 @@ function getItemFromBox() {
   if (iconEl) iconEl.innerText = currentItem.icon;
 }
 
-// ARMADILHAS DEPOSITADAS NA PISTA (GELO E LODO)
 const placedTraps = [];
+let trapNextId = 0;
+
+function createTrapMesh(trapData) {
+  const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
+  const mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
+  const mesh = new THREE.Mesh(geo, mat);
+
+  mesh.position.set(trapData.x, 0.03, trapData.z);
+  scene.add(mesh);
+
+  placedTraps.push({
+    id: trapData.id,
+    mesh,
+    type: trapData.type,
+    active: true
+  });
+}
 
 function dropTrapOnTrack(type) {
   if (!kart) return;
 
-  // Lança a armadilha ligeiramente atrás do kart
   const backVector = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
   const trapPos = kart.position.clone().add(backVector);
 
-  const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
-  const mat = type === 'ICE' ? iceTrapMat : lodoTrapMat;
-  const mesh = new THREE.Mesh(geo, mat);
+  const trapData = {
+    id: playerSlotParam + '-' + (trapNextId++),
+    x: trapPos.x,
+    z: trapPos.z,
+    type: type
+  };
 
-  mesh.position.set(trapPos.x, 0.03, trapPos.z);
-  scene.add(mesh);
+  createTrapMesh(trapData);
+  sendNetworkEvent({ t: 'spawn_trap', trap: trapData });
+}
 
-  placedTraps.push({ mesh, type, active: true });
+function removeTrapMesh(trapId) {
+  const index = placedTraps.findIndex(t => t.id === trapId);
+  if (index !== -1) {
+    scene.remove(placedTraps[index].mesh);
+    placedTraps.splice(index, 1);
+  }
 }
 
 function updateTraps(dt) {
-  placedTraps.forEach((trap, index) => {
+  placedTraps.forEach((trap) => {
     if (!trap.active) return;
 
-    // Checa colisão do Kart Local com a armadilha na pista
     if (kart && trap.mesh.position.distanceTo(kart.position) < 1.8) {
       trap.active = false;
-      scene.remove(trap.mesh);
+      removeTrapMesh(trap.id);
+      sendNetworkEvent({ t: 'destroy_trap', trapId: trap.id });
 
       if (!isShieldActive) {
         if (trap.type === 'ICE') {
-          physics.speed *= 0.25; // Perde 75% da velocidade
+          physics.speed *= 0.25;
         } else if (trap.type === 'LODO') {
-          isControlInverted = true; // Inverte direção
+          isControlInverted = true;
           controlInvertTimer = 3.0;
         }
       }
@@ -730,7 +769,6 @@ function updateTraps(dt) {
   });
 }
 
-// USO DO ITEM NA TECLA X
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyX' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
@@ -752,17 +790,17 @@ function useEquippedSkill(skill) {
       break;
 
     case 'ICE':
-      dropTrapOnTrack('ICE'); // Lança placa de gelo na pista atrás
+      dropTrapOnTrack('ICE');
       break;
 
     case 'LODO':
-      dropTrapOnTrack('LODO'); // Lança poça de lodo na pista atrás
+      dropTrapOnTrack('LODO');
       break;
   }
 }
 
 // ------------------------------------------------------------
-// MULTIPLAYER SINCRO (PEERJS)
+// MULTIPLAYER E TRANSMISSÃO DE EVENTOS
 // ------------------------------------------------------------
 const remoteKarts = new Map();
 let racePeer = null;
@@ -772,6 +810,37 @@ let isHost = (playerSlotParam === 0 && Boolean(roomCodeParam));
 
 function friendLabel(peerId) {
   return 'AMIGO ' + peerId.slice(-4).toUpperCase();
+}
+
+function sendNetworkEvent(payload) {
+  if (isHost) {
+    broadcastEvent(payload);
+  } else if (hostConn && hostConn.open) {
+    hostConn.send(payload);
+  }
+}
+
+function broadcastEvent(payload) {
+  for (const conn of activeGuestConns.values()) {
+    if (conn.open) {
+      conn.send(payload);
+    }
+  }
+}
+
+function handleNetworkMessage(data) {
+  if (data.t === 'take_box') {
+    disableItemBox(data.boxId);
+    if (isHost) broadcastEvent(data);
+  } else if (data.t === 'spawn_trap') {
+    if (!placedTraps.some(t => t.id === data.trap.id)) {
+      createTrapMesh(data.trap);
+    }
+    if (isHost) broadcastEvent(data);
+  } else if (data.t === 'destroy_trap') {
+    removeTrapMesh(data.trapId);
+    if (isHost) broadcastEvent(data);
+  }
 }
 
 function handleRemoteKartState(peerId, data) {
@@ -845,6 +914,8 @@ function initRaceMultiplayer() {
       conn.on('data', (data) => {
         if (data.t === 'state') {
           handleRemoteKartState(conn.peer, data);
+        } else {
+          handleNetworkMessage(data);
         }
       });
 
@@ -889,14 +960,14 @@ function initRaceMultiplayer() {
             setTimeout(() => {
               startCountdown();
             }, 1000);
-          }
-
-          if (data.t === 'snapshot' && data.karts) {
+          } else if (data.t === 'snapshot' && data.karts) {
             for (const [peerId, state] of Object.entries(data.karts)) {
               if (peerId !== racePeer.id) {
                 handleRemoteKartState(peerId, state);
               }
             }
+          } else {
+            handleNetworkMessage(data);
           }
         });
 
@@ -978,7 +1049,7 @@ function updateRemoteKarts(dt) {
 initRaceMultiplayer();
 
 // ------------------------------------------------------------
-// CLASSIFICAÇÃO DA HUD (RESTAURADA E COMPATÍVEL)
+// CLASSIFICAÇÃO DA HUD
 // ------------------------------------------------------------
 function updateStandings() {
   const standingsEl = document.getElementById('standingsList');
