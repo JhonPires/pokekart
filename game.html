@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon Kart - Corrida</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #000;
+            user-select: none;
+        }
+
+        #raceScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hudBox {
+            position: absolute;
+            background: rgba(15, 23, 42, 0.75);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 213, 79, 0.4);
+            font-weight: bold;
+        }
+
+        #hudTopLeft {
+            top: 20px;
+            left: 20px;
+        }
+
+        #hudTopRight {
+            top: 20px;
+            right: 20px;
+            text-align: right;
+        }
+
+        #hudBottomRight {
+            bottom: 20px;
+            right: 20px;
+            text-align: center;
+        }
+
+        #speedBarBg {
+            width: 140px;
+            height: 12px;
+            background: #334155;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        #speedfill {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.05s;
+        }
+
+        #pauseMenu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            pointer-events: auto;
+        }
+
+        .lobbyBtn {
+            background: #FFD54F;
+            color: #0f172a;
+            border: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="raceScreen">
+        <div id="hudTopLeft" class="hudBox">
+            <div>Volta: <span id="hud-current-lap">1</span> / <span id="hud-total-laps">3</span></div>
+        </div>
+
+        <div id="hudTopRight" class="hudBox">
+            <div
+                style="color: #FFD54F; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,213,79,0.3); padding-bottom: 4px;">
+                CLASSIFICAÇÃO</div>
+            <div id="standingsList" style="font-size: 14px; line-height: 1.4;">
+                <!-- Será preenchido dinamicamente via JS -->
+            </div>
+        </div>
+
+        <div id="hudBottomRight" class="hudBox">
+            <div><span id="hud-speed" style="font-size: 24px;">0</span> <small>KM/H</small></div>
+            <div id="speedBarBg">
+                <div id="speedfill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTADOR DE LARGADA -->
+    <div id="countdownOverlay" style="
+position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+display: flex; align-items: center; justify-content: center;
+font-size: 120px; font-weight: 900; color: #FFD54F;
+text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,213,79,0.6);
+pointer-events: none; z-index: 200; font-family: sans-serif;
+">3</div>
+
+    <div id="pauseMenu">
+        <h2>PAUSADO</h2>
+        <button id="btnReturnLobby" class="lobbyBtn" style="margin-top: 15px;">Voltar ao Lobby</button>
+    </div>
+
+    <!-- DEPENDÊNCIAS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <!-- LÓGICA DO JOGO -->
+    <script src="game.js"></script>
+</body>
+
+</html>

@@ -1,11 +1,11 @@
 // ------------------------------------------------------------
-// SETUP BÁSICO
+// SETUP BÁSICO DA CORRIDA
 // ------------------------------------------------------------
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87CEEB);
 scene.fog = new THREE.Fog(0x87CEEB, 60, 260);
 
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
+const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -17,7 +17,7 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Luz
+// Luz Principal
 const sun = new THREE.DirectionalLight(0xffffff, 1.1);
 sun.position.set(40, 60, 20);
 sun.castShadow = true;
@@ -28,21 +28,37 @@ scene.add(sun);
 scene.add(new THREE.AmbientLight(0xffffff, 0.55));
 
 // ------------------------------------------------------------
-// PISTA - LOOP OVAL
+// DATABASE E URLS
+// ------------------------------------------------------------
+function getKartUrl(filename) {
+  const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+  return isLocal ? `./models/${filename}` : `https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/${filename}`;
+}
+
+const KART_DATABASE = [
+  { id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), template: null },
+  { id: 'zoroark', name: 'Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), template: null },
+  { id: 'togetic', name: 'Togetic Kart', modelUrl: getKartUrl('togetic.glb'), template: null },
+  { id: 'charizard', name: 'Charizard Kart', modelUrl: getKartUrl('charizard.glb'), template: null },
+  { id: 'flygon', name: 'Flygon Kart', modelUrl: getKartUrl('flygon.glb'), template: null },
+  { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb'), template: null },
+  { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), template: null },
+  { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), template: null }
+];
+
+const urlParams = new URLSearchParams(window.location.search);
+const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
+const selectedKartId = urlParams.get('kart') || 'zoroark';
+const roomCodeParam = urlParams.get('room');
+const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
+
+let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
+if (selectedKartIndex === -1) selectedKartIndex = 0;
+
+// ------------------------------------------------------------
+// PISTA E OBSTÁCULOS
 // ------------------------------------------------------------
 const TRACK_PRESETS = {
-  oval: [
-    new THREE.Vector3(0, 0, -70),
-    new THREE.Vector3(50, 0, -65),
-    new THREE.Vector3(80, 0, -20),
-    new THREE.Vector3(75, 0, 25),
-    new THREE.Vector3(40, 0, 55),
-    new THREE.Vector3(0, 0, 75),
-    new THREE.Vector3(-45, 0, 60),
-    new THREE.Vector3(-75, 0, 20),
-    new THREE.Vector3(-80, 0, -25),
-    new THREE.Vector3(-45, 0, -65)
-  ],
   circuitoE: [
     new THREE.Vector3(0, 0, -100),
     new THREE.Vector3(60, 0, -100),
@@ -54,37 +70,14 @@ const TRACK_PRESETS = {
     new THREE.Vector3(-70, 0, 30),
     new THREE.Vector3(-30, 0, -30),
     new THREE.Vector3(-60, 0, -100)
-  ],
-  crash1: [
-    new THREE.Vector3(25, 0, 35),
-    new THREE.Vector3(45, 0, 15),
-    new THREE.Vector3(50, 0, -35),
-    new THREE.Vector3(45, 0, -50),
-    new THREE.Vector3(10, 0, -50),
-    new THREE.Vector3(-10, 0, -45),
-    new THREE.Vector3(-45, 0, -50),
-    new THREE.Vector3(-55, 0, -35),
-    new THREE.Vector3(-55, 0, 0),
-    new THREE.Vector3(-50, 0, 15),
-    new THREE.Vector3(-30, 0, 10),
-    new THREE.Vector3(-20, 0, -25),
-    new THREE.Vector3(-15, 0, -35),
-    new THREE.Vector3(-10, 0, -10),
-    new THREE.Vector3(-5, 0, -35),
-    new THREE.Vector3(0, 0, -25),
-    new THREE.Vector3(-5, 0, 25),
-    new THREE.Vector3(-20, 0, 50),
-    new THREE.Vector3(-10, 0, 65),
-    new THREE.Vector3(10, 0, 55)
   ]
 };
 
-function getTrackCurve(presetName = 'oval') {
-  const points = TRACK_PRESETS[presetName] || TRACK_PRESETS.oval;
-  return new THREE.CatmullRomCurve3(points, true, 'centripetal', 0.5);
+function getTrackCurve() {
+  return new THREE.CatmullRomCurve3(TRACK_PRESETS.circuitoE, true, 'centripetal', 0.5);
 }
 
-const trackCurve = getTrackCurve('circuitoE');
+const trackCurve = getTrackCurve();
 const trackWidth = 10;
 
 const TRACK_SAMPLE_COUNT = 360;
@@ -120,21 +113,17 @@ function buildTrackMesh() {
     const pNext = points[(i + 1) % segments];
 
     const dir = new THREE.Vector3().subVectors(pNext, pPrev);
-    dir.y = 0;
-    dir.normalize();
+    dir.y = 0; dir.normalize();
 
     let side = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
 
     if (i > 0) {
       const prevSide = sideVectors[i - 1];
-      if (side.dot(prevSide) < 0) {
-        side.negate();
-      }
+      if (side.dot(prevSide) < 0) side.negate();
     }
     sideVectors.push(side);
 
     const current = points[i % segments];
-
     const left = current.clone().addScaledVector(side, trackWidth / 2);
     const right = current.clone().addScaledVector(side, -trackWidth / 2);
 
@@ -147,13 +136,9 @@ function buildTrackMesh() {
   }
 
   for (let i = 0; i < segments; i++) {
-    const a = i * 2;
-    const b = i * 2 + 1;
-    const c = (i + 1) * 2;
-    const d = (i + 1) * 2 + 1;
-
-    indices.push(a, b, c);
-    indices.push(b, d, c);
+    const a = i * 2; const b = i * 2 + 1;
+    const c = (i + 1) * 2; const d = (i + 1) * 2 + 1;
+    indices.push(a, b, c); indices.push(b, d, c);
   }
 
   const geo = new THREE.BufferGeometry();
@@ -170,21 +155,17 @@ trackTexCanvas.width = 64; trackTexCanvas.height = 256;
 const tctx = trackTexCanvas.getContext('2d');
 tctx.fillStyle = '#4a4a52'; tctx.fillRect(0, 0, 64, 256);
 tctx.strokeStyle = 'rgba(255,255,255,0.55)';
-tctx.lineWidth = 2;
-tctx.setLineDash([14, 14]);
+tctx.lineWidth = 2; tctx.setLineDash([14, 14]);
 tctx.beginPath(); tctx.moveTo(32, 0); tctx.lineTo(32, 256); tctx.stroke();
 tctx.strokeStyle = 'rgba(255,255,255,0.9)'; tctx.setLineDash([]);
 tctx.lineWidth = 1;
 tctx.beginPath();
-tctx.moveTo(2, 0);
-tctx.lineTo(2, 256);
-tctx.moveTo(62, 0);
-tctx.lineTo(62, 256);
+tctx.moveTo(2, 0); tctx.lineTo(2, 256);
+tctx.moveTo(62, 0); tctx.lineTo(62, 256);
 tctx.stroke();
 
 const trackTexture = new THREE.CanvasTexture(trackTexCanvas);
-trackTexture.wrapS = THREE.RepeatWrapping;
-trackTexture.wrapT = THREE.RepeatWrapping;
+trackTexture.wrapS = THREE.RepeatWrapping; trackTexture.wrapT = THREE.RepeatWrapping;
 trackTexture.repeat.set(1, 10);
 trackTexture.needsUpdate = true;
 
@@ -211,8 +192,7 @@ function createStripedTireTexture() {
   ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, 128, 128);
   ctx.fillStyle = '#ff5722'; ctx.fillRect(0, 20, 128, 25); ctx.fillRect(0, 75, 128, 25);
   const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
+  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
   return texture;
 }
 
@@ -221,7 +201,6 @@ const stripedTireMat = new THREE.MeshStandardMaterial({ map: createStripedTireTe
 
 function addTires() {
   const tireGeo = new THREE.TorusGeometry(0.5, 0.25, 12, 24);
-
   for (let i = 0; i < 120; i++) {
     const t = i / 120;
     const point = trackCurve.getPointAt(t);
@@ -258,168 +237,60 @@ function addStartFinishLine() {
   const c = document.createElement('canvas');
   c.width = 256; c.height = 64;
   const cctx = c.getContext('2d');
-
-  const cols = 16;
-  const rows = 4;
-  const sqW = 256 / cols;
-  const sqH = 64 / rows;
-
-  for (let y = 0; y < rows; y++) {
-    for (let x = 0; x < cols; x++) {
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 16; x++) {
       cctx.fillStyle = ((x + y) % 2 === 0) ? '#ffffff' : '#111111';
-      cctx.fillRect(x * sqW, y * sqH, sqW, sqH);
+      cctx.fillRect(x * 16, y * 16, 16, 16);
     }
   }
 
-  const checkerTex = new THREE.CanvasTexture(c);
-
   const stripe = new THREE.Mesh(
     new THREE.PlaneGeometry(trackWidth, 3.2),
-    new THREE.MeshStandardMaterial({ map: checkerTex, roughness: 0.6 })
+    new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.6 })
   );
   stripe.rotation.x = -Math.PI / 2;
   stripe.rotation.z = heading;
   stripe.position.set(point.x, 0.04, point.z);
   stripe.receiveShadow = true;
   scene.add(stripe);
-
-  const signCanvas = document.createElement('canvas');
-  signCanvas.width = 512; signCanvas.height = 96;
-  const sctx = signCanvas.getContext('2d');
-  sctx.fillStyle = 'rgba(20,20,20,0.85)';
-  sctx.fillRect(0, 0, 512, 96);
-  sctx.fillStyle = '#FFD54F';
-  sctx.font = 'bold 42px sans-serif';
-  sctx.textAlign = 'center';
-  sctx.textBaseline = 'middle';
-  sctx.fillText('LARGADA / CHEGADA', 256, 48);
-
-  const signTex = new THREE.CanvasTexture(signCanvas);
-  const sign = new THREE.Mesh(
-    new THREE.PlaneGeometry(6, 0.8),
-    new THREE.MeshBasicMaterial({ map: signTex, transparent: true, side: THREE.DoubleSide })
-  );
-  sign.position.set(point.x, 2.3, point.z);
-  sign.rotation.y = -heading;
-  scene.add(sign);
 }
 addStartFinishLine();
 
 // ------------------------------------------------------------
-// SISTEMA DE SELEÇÃO E CARREGAMENTO DE MULTI-KARTS
+// GRID DE LARGADA
+// ------------------------------------------------------------
+function getGridPosition(gridIndex) {
+  const START_LINE_T = 0.98;
+  const basePoint = trackCurve.getPointAt(START_LINE_T);
+  const tangent = trackCurve.getTangentAt(START_LINE_T).normalize();
+  const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+  const row = Math.floor(gridIndex / 2);
+  const col = gridIndex % 2;
+
+  const lateralOffset = (col === 0 ? -1 : 1) * 2.2;
+  const rowOffset = -row * 4.5;
+
+  const pos = basePoint.clone()
+    .addScaledVector(normal, lateralOffset)
+    .addScaledVector(tangent, rowOffset);
+
+  const heading = Math.atan2(tangent.x, tangent.z);
+
+  return { pos, heading };
+}
+
+// ------------------------------------------------------------
+// CARREGAMENTO 3D E FÍSICA DO KART
 // ------------------------------------------------------------
 const gltfLoader = new THREE.GLTFLoader();
 const KART_MODEL_SCALE = 2.2;
-const KART_MODEL_YAW_OFFSET = 0;
-
-function getKartUrl(filename) {
-  const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-
-  if (isLocal) {
-    // Caminho para o Live Server ler da sua pasta local
-    return `./models/${filename}`;
-  } else {
-    // Endpoint do GitHub que resolve o ponteiro do Git LFS e entrega o .glb real
-    return `https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/${filename}`;
-  }
-}
-
-// Banco de Dados de Karts com verificação blindada das variáveis no window
-const KART_DATABASE = [
-  {
-    id: 'jolteon',
-    name: 'Jolteon Kart',
-    image: './img/jolteon2.png',
-    // getBase64: () => window.KART_JOLTEON_BASE64 || window.KART_MODEL_BASE64 || null,
-    modelUrl: getKartUrl('jolteon.glb'),
-    template: null
-  },
-  {
-    id: 'zoroark',
-    name: 'Zoroark Kart',
-    image: './img/zoroark2.png',
-    // getBase64: () => window.KART_ZOROARK_BASE64 || null,
-    modelUrl: getKartUrl('zoroark.glb'),
-    template: null
-  },
-  {
-    id: 'togetic',
-    name: 'Togetic Kart',
-    image: './img/togetic2.png',
-    // getBase64: () => window.KART_TOGETIC_BASE64 || null,
-    modelUrl: getKartUrl('togetic.glb'),
-    template: null
-  },
-  {
-    id: 'charizard',
-    name: 'Charizard Kart',
-    image: './img/charizard2.png',
-    // getBase64: () => window.KART_CHARIZARD_BASE64 || null,
-    modelUrl: getKartUrl('charizard.glb'),
-    template: null
-  },
-  {
-    id: 'flygon',
-    name: 'Flygon Kart',
-    image: './img/flygon2.png',
-    // getBase64: () => window.KART_FLYGON_BASE64 || null,
-    modelUrl: getKartUrl('flygon.glb'),
-    template: null
-  },
-  {
-    id: 'gengar',
-    name: 'Gengar Kart',
-    image: './img/gengar2.png',
-    // getBase64: () => window.KART_GENGAR_BASE64 || null,
-    modelUrl: getKartUrl('gengar.glb'),
-    template: null
-  },
-  {
-    id: 'oshawott',
-    name: 'Oshawott Kart',
-    image: './img/oshawott2.png',
-    // getBase64: () => window.KART_OSHAWOTT_BASE64 || null,
-    modelUrl: getKartUrl('oshawott.glb'),
-    template: null
-  },
-  {
-    id: 'snorlax',
-    name: 'Snorlax Kart',
-    image: './img/snorlax2.png',
-    // getBase64: () => window.KART_SNORLAX_BASE64 || null,
-    modelUrl: getKartUrl('snorlax.glb'),
-    template: null
-  }
-];
-
-let selectedKartIndex = 0;
-
-function base64ToArrayBuffer(base64) {
-  if (!base64 || typeof base64 !== 'string') return null;
-  const cleanBase64 = base64.replace(/^data:.*?;base64,/, '').trim();
-  const binaryString = window.atob(cleanBase64);
-  const len = binaryString.length;
-  const bytes = new Uint8Array(len);
-  for (let i = 0; i < len; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
 
 function loadKartTemplate(kartEntry, callback) {
-  // Se o modelo já foi carregado anteriormente, reaproveita da memória
   if (kartEntry.template) {
     if (callback) callback(kartEntry.template);
     return;
   }
-
-  if (!kartEntry.modelUrl) {
-    console.warn(`[GLB] URL para "${kartEntry.name}" não encontrada.`);
-    if (callback) callback(null);
-    return;
-  }
-
-  // Carrega o arquivo binário .glb sob demanda
   gltfLoader.load(
     kartEntry.modelUrl,
     (gltf) => {
@@ -428,7 +299,7 @@ function loadKartTemplate(kartEntry, callback) {
     },
     undefined,
     (err) => {
-      console.error(`[GLB] Erro ao carregar arquivo de ${kartEntry.name}:`, err);
+      console.error(`[GLB] Erro ao carregar ${kartEntry.name}:`, err);
       if (callback) callback(null);
     }
   );
@@ -439,16 +310,9 @@ function applyModelToGroup(group, templateScene, chassisColor) {
   if (templateScene) {
     const instance = templateScene.clone(true);
     instance.scale.setScalar(KART_MODEL_SCALE);
-    instance.rotation.y = KART_MODEL_YAW_OFFSET;
-    instance.traverse((obj) => {
-      if (obj.isMesh) {
-        obj.castShadow = true;
-        obj.receiveShadow = true;
-      }
-    });
+    instance.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; } });
     group.add(instance);
   } else {
-    // Exibe a caixa caso o Base64 esteja ausente ou falhar
     const fallback = new THREE.Mesh(
       new THREE.BoxGeometry(1.4, 0.9, 2.2),
       new THREE.MeshStandardMaterial({ color: chassisColor })
@@ -464,9 +328,6 @@ function createKart(chassisColor) {
   return { group, wheels: [] };
 }
 
-// ------------------------------------------------------------
-// INICIALIZAÇÃO DO KART LOCAL
-// ------------------------------------------------------------
 let localKartObj, kart, wheels;
 
 const physics = {
@@ -486,6 +347,22 @@ const physics = {
   turboTimer: 0,
 };
 
+// CONTROLE DE ASSETS PRONTOS
+let localKartLoaded = false;
+let countdownStarted = false;
+
+function checkAndStartCountdown() {
+  // Só inicia a contagem uma única vez e quando o kart local já estiver pronto na pista
+  if (localKartLoaded && !countdownStarted) {
+    countdownStarted = true;
+
+    // Aguarda 1.5 segundos extras após o carregamento para estabilizar a cena
+    setTimeout(() => {
+      startCountdown();
+    }, 1500);
+  }
+}
+
 function setLocalKartModel(kartEntry) {
   loadKartTemplate(kartEntry, (template) => {
     if (!kart) {
@@ -495,60 +372,21 @@ function setLocalKartModel(kartEntry) {
     }
     applyModelToGroup(kart, template, 0xE53935);
 
-    const START_LINE_T = 0.98;
-    const startPoint = trackCurve.getPointAt(START_LINE_T);
-    const startTangent = trackCurve.getTangentAt(START_LINE_T);
-    kart.position.copy(startPoint);
-    kart.rotation.y = Math.atan2(startTangent.x, startTangent.z);
-    physics.heading = kart.rotation.y;
+    const grid = getGridPosition(playerSlotParam);
+    kart.position.copy(grid.pos);
+    kart.rotation.y = grid.heading;
+    physics.heading = grid.heading;
+
+    // Marca como carregado e dispara o fluxo da largada
+    localKartLoaded = true;
+    checkAndStartCountdown();
   });
 }
 
-// Seletor no Lobby
-const btnPrevKart = document.getElementById('btnPrevKart');
-const btnNextKart = document.getElementById('btnNextKart');
-const kartPreviewImg = document.getElementById('kartPreview');
-const kartNameTxt = document.getElementById('kartName');
-
-function updateKartSelectorUI() {
-  const current = KART_DATABASE[selectedKartIndex];
-  if (kartPreviewImg) kartPreviewImg.src = current.image;
-  if (kartNameTxt) kartNameTxt.innerText = current.name;
-  setLocalKartModel(current);
-}
-
-if (btnPrevKart) {
-  btnPrevKart.onclick = () => {
-    selectedKartIndex = (selectedKartIndex - 1 + KART_DATABASE.length) % KART_DATABASE.length;
-    updateKartSelectorUI();
-  };
-}
-
-if (btnNextKart) {
-  btnNextKart.onclick = () => {
-    selectedKartIndex = (selectedKartIndex + 1) % KART_DATABASE.length;
-    updateKartSelectorUI();
-  };
-}
-
-updateKartSelectorUI();
-
-// Controles do teclado
-const keys = {};
-window.addEventListener('keydown', e => keys[e.code] = true);
-window.addEventListener('keyup', e => keys[e.code] = false);
-
-const TOTAL_LAPS = 3;
-const speedfill = document.getElementById('speedfill');
-const turboLabel = document.getElementById('turboLabel');
-const lapcountEl = document.getElementById('lapcount');
-const standingsListEl = document.getElementById('standingsList');
-if (document.getElementById('totallaps')) {
-  document.getElementById('totallaps').textContent = TOTAL_LAPS;
-}
+setLocalKartModel(KART_DATABASE[selectedKartIndex]);
 
 // ------------------------------------------------------------
-// MENU DE PAUSA (ESC)
+// CONTROLES E CÂMERA
 // ------------------------------------------------------------
 let isPaused = false;
 const pauseMenuEl = document.getElementById('pauseMenu');
@@ -556,34 +394,63 @@ const btnReturnLobbyEl = document.getElementById('btnReturnLobby');
 
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
-    if (lobbyEl && lobbyEl.style.display === 'none') {
-      isPaused = !isPaused;
-      if (pauseMenuEl) pauseMenuEl.style.display = isPaused ? 'flex' : 'none';
-    }
+    isPaused = !isPaused;
+    if (pauseMenuEl) pauseMenuEl.style.display = isPaused ? 'flex' : 'none';
   }
 });
 
 if (btnReturnLobbyEl) {
   btnReturnLobbyEl.onclick = () => {
-    isPaused = false;
-    if (pauseMenuEl) pauseMenuEl.style.display = 'none';
-
-    if (kart) {
-      const START_LINE_T = 0.98;
-      const startPoint = trackCurve.getPointAt(START_LINE_T);
-      const startTangent = trackCurve.getTangentAt(START_LINE_T);
-      kart.position.copy(startPoint);
-      kart.rotation.y = Math.atan2(startTangent.x, startTangent.z);
-      physics.heading = kart.rotation.y;
-      physics.speed = 0;
-    }
-
-    if (lobbyEl) lobbyEl.style.display = 'flex';
+    window.location.href = 'index.html';
   };
 }
 
+const keys = {};
+window.addEventListener('keydown', e => keys[e.code] = true);
+window.addEventListener('keyup', e => keys[e.code] = false);
+
+const ZOOM_LEVELS = [20, 25];
+let currentZoomIndex = 0;
+window.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() === 'c') {
+    currentZoomIndex = (currentZoomIndex + 1) % ZOOM_LEVELS.length;
+    camera.fov = ZOOM_LEVELS[currentZoomIndex];
+    camera.updateProjectionMatrix();
+  }
+});
+
+// VARIÁVEL DE CONTROLE DA CORRIDA
+let raceStarted = false; // Bloqueia o movimento durante a contagem
+
+// ------------------------------------------------------------
+// SISTEMA DE CONTAGEM REGRESSIVA (START RACE)
+// ------------------------------------------------------------
+function startCountdown() {
+  const overlay = document.getElementById('countdownOverlay');
+  if (!overlay) return;
+
+  let count = 3;
+  overlay.style.display = 'flex';
+  overlay.innerText = count;
+
+  const timer = setInterval(() => {
+    count--;
+    if (count > 0) {
+      overlay.innerText = count;
+    } else if (count === 0) {
+      overlay.innerText = 'GO!';
+      overlay.style.color = '#4CAF50'; // Fica verde no "GO!"
+      raceStarted = true; // Libera os karts para acelerar
+    } else {
+      clearInterval(timer);
+      overlay.style.display = 'none'; // Esconde a overlay
+    }
+  }, 1000);
+}
+
 function updatePhysics(dt) {
-  if (!kart || isPaused) return;
+  // Impede aceleração e controle até a contagem terminar
+  if (!kart || isPaused || !raceStarted) return;
 
   const raceOver = raceTrackers.get('local')?.finished;
   const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp']);
@@ -592,11 +459,9 @@ function updatePhysics(dt) {
   const right = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
   const driftKey = !raceOver && keys['Space'];
 
-  if (forward) {
-    physics.speed += physics.accel * dt;
-  } else if (backward) {
-    physics.speed -= physics.brakeDecel * dt;
-  } else {
+  if (forward) physics.speed += physics.accel * dt;
+  else if (backward) physics.speed -= physics.brakeDecel * dt;
+  else {
     if (physics.speed > 0) physics.speed = Math.max(0, physics.speed - physics.friction * dt);
     else if (physics.speed < 0) physics.speed = Math.min(0, physics.speed + physics.friction * dt);
   }
@@ -623,14 +488,8 @@ function updatePhysics(dt) {
     physics.heading += physics.driftDirection * physics.turnSpeed * 0.6 * movingFactor * dt;
     physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2);
   } else {
-    if (physics.isDrifting) {
-      if (physics.driftCharge > 1.6) {
-        physics.turboTimer = 1.1;
-        flashTurbo();
-      } else if (physics.driftCharge > 0.8) {
-        physics.turboTimer = 0.55;
-        flashTurbo();
-      }
+    if (physics.isDrifting && physics.driftCharge > 0.8) {
+      physics.turboTimer = 0.8;
     }
     physics.isDrifting = false;
     physics.driftCharge = 0;
@@ -646,31 +505,7 @@ function updatePhysics(dt) {
   kart.rotation.y = physics.heading;
 
   enforceTrackBoundary();
-
-  const targetTilt = physics.isDrifting ? physics.driftDirection * 0.18 : 0;
-  kart.rotation.z += (targetTilt - kart.rotation.z) * Math.min(1, dt * 6);
-
-  wheels.forEach(w => w.rotation.x -= physics.speed * dt * 2);
-
-  if (speedfill) {
-    const pct = THREE.MathUtils.clamp((physics.speed / (physics.maxSpeed * 1.4)) * 100, 0, 100);
-    speedfill.style.width = pct + '%';
-  }
 }
-
-let turboFlashTimer = 0;
-function flashTurbo() {
-  if (turboLabel) {
-    turboLabel.style.opacity = '1';
-    turboFlashTimer = 0.8;
-  }
-}
-
-// ------------------------------------------------------------
-// COLISÃO COM A BORDA
-// ------------------------------------------------------------
-const BOUNDARY_MARGIN = 0.6;
-const boundaryLimit = trackWidth / 2 + BOUNDARY_MARGIN;
 
 function enforceTrackBoundary() {
   if (!kart) return;
@@ -678,34 +513,55 @@ function enforceTrackBoundary() {
   const offset = new THREE.Vector3().subVectors(kart.position, sample.point);
   const lateral = offset.dot(sample.normal);
 
-  if (Math.abs(lateral) > boundaryLimit) {
+  if (Math.abs(lateral) > (trackWidth / 2 + 0.6)) {
     const sign = Math.sign(lateral);
     const along = offset.clone().addScaledVector(sample.normal, -lateral);
-    kart.position.copy(sample.point.clone().add(along).addScaledVector(sample.normal, sign * boundaryLimit));
+    kart.position.copy(sample.point.clone().add(along).addScaledVector(sample.normal, sign * (trackWidth / 2 + 0.6)));
     physics.speed *= 0.55;
   }
 }
 
+const camOffset = new THREE.Vector3(0, 3.5, -8);
+function updateCamera(dt) {
+  if (!kart) return;
+  const desired = kart.position.clone().add(camOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading));
+  desired.y = kart.position.y + 5;
+  camera.position.lerp(desired, Math.min(1, dt * 4));
+  camera.lookAt(kart.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+}
+
 // ------------------------------------------------------------
-// PROGRESSO DE CORRIDA (Com validação de checkpoint)
+// SISTEMA DE CORRIDA E CHECKPOINTS
 // ------------------------------------------------------------
+const TOTAL_LAPS = 3;
 const raceTrackers = new Map();
+const START_LINE_T = 0.98; // Ponto exato da linha de chegada na curva
+
+function getAdjustedLapProgress(position) {
+  const rawT = nearestTrackSample(position).sample.t;
+  // Desloca o t para que a linha de chegada seja 0.0 e o fim da volta seja 1.0
+  let lapT = rawT - START_LINE_T;
+  if (lapT < 0) lapT += 1.0;
+  return { rawT, lapT };
+}
 
 function updateRaceTracker(key, position) {
   let tr = raceTrackers.get(key);
   if (!tr) {
-    tr = { lapCount: 1, lastT: 0, progress: 0, finished: false, finishTime: null, passedMidpoint: false };
+    tr = { lapCount: 1, lastRawT: 0, progress: 0, finished: false, finishTime: null, passedMidpoint: false };
     raceTrackers.set(key, tr);
   }
   if (tr.finished) return tr;
 
-  const t = nearestTrackSample(position).sample.t;
+  const { rawT, lapT } = getAdjustedLapProgress(position);
 
-  if (t > 0.4 && t < 0.6) {
+  // Checkpoint no meio da pista
+  if (rawT > 0.4 && rawT < 0.6) {
     tr.passedMidpoint = true;
   }
 
-  if (tr.lastT > 0.85 && t < 0.15) {
+  // Avança de volta somente se cruzou a linha vindo da direção correta
+  if (tr.lastRawT > 0.85 && rawT < 0.15) {
     if (tr.passedMidpoint) {
       if (tr.lapCount >= TOTAL_LAPS) {
         tr.finished = true;
@@ -717,357 +573,311 @@ function updateRaceTracker(key, position) {
     }
   }
 
-  tr.lastT = t;
-  tr.progress = tr.finished ? TOTAL_LAPS : (tr.lapCount - 1) + t;
+  tr.lastRawT = rawT;
+  // O progresso total agora é: (Voltas Completadas) + (Progresso da Volta Atual de 0 a 1)
+  tr.progress = tr.finished ? TOTAL_LAPS : (tr.lapCount - 1) + lapT;
   return tr;
 }
 
-function updateStandingsHUD() {
-  const rows = [{ key: 'local', label: 'Você', tr: raceTrackers.get('local') }];
-  for (const pid of remoteKarts.keys()) {
-    rows.push({ key: pid, label: friendLabel(pid), tr: raceTrackers.get(pid) });
-  }
-  rows.forEach(r => { if (!r.tr) r.tr = { progress: 0, finished: false, finishTime: Infinity }; });
-
-  rows.sort((a, b) => {
-    if (a.tr.finished && b.tr.finished) return a.tr.finishTime - b.tr.finishTime;
-    if (a.tr.finished) return -1;
-    if (b.tr.finished) return 1;
-    return b.tr.progress - a.tr.progress;
-  });
-
-  if (standingsListEl) {
-    standingsListEl.innerHTML = rows
-      .map((r, i) => `${i + 1}º ${r.label}${r.tr.finished ? ' 🏁' : ''}`)
-      .join('<br>');
-  }
-
-  return rows;
-}
-
 let localFinishNotified = false;
-function showFinishOverlay(place, totalRacers) {
+function showFinishOverlay(place) {
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 300; color: #fff;
+  `;
   overlay.innerHTML = `
-    <h1 style="margin:0;">🏁 Corrida Finalizada!</h1>
-    <div style="font-size:20px;">Você terminou em ${place}º lugar${totalRacers > 1 ? ' de ' + totalRacers : ''}!</div>
-    <button id="btnRestart" class="lobbyBtn">Jogar novamente</button>
+    <h1 style="margin:0; color:#FFD54F; font-size:40px;">🏁 Corrida Finalizada!</h1>
+    <div style="font-size:24px; margin: 15px 0;">Você terminou em ${place}º lugar!</div>
+    <button id="btnRestart" class="lobbyBtn" style="background:#FFD54F; color:#0f172a; border:none; padding:12px 24px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer;">Jogar Novamente</button>
   `;
   document.body.appendChild(overlay);
-  document.getElementById('btnRestart').onclick = () => location.reload();
-}
-
-let hudTimer = 0;
-
-// ------------------------------------------------------------
-// SISTEMA DE ÁUDIO
-// ------------------------------------------------------------
-const sounds = {
-  engine: new Audio('https://assets.mixkit.co/active_storage/sfx/2808/2808-preview.mp3'),
-  brake: new Audio('https://assets.mixkit.co/active_storage/sfx/2809/2809-preview.mp3'),
-  hit: new Audio('https://assets.mixkit.co/active_storage/sfx/2810/2810-preview.mp3')
-};
-
-sounds.engine.loop = true;
-sounds.engine.volume = 0.3;
-sounds.brake.loop = true;
-sounds.brake.volume = 0.4;
-sounds.hit.volume = 0.6;
-
-let audioInitialized = false;
-window.addEventListener('click', () => {
-  if (!audioInitialized) {
-    sounds.engine.play().catch(() => { });
-    sounds.engine.pause();
-    audioInitialized = true;
-  }
-}, { once: true });
-
-function updateAudio(physics, keys) {
-  if (!audioInitialized || !kart || isPaused) {
-    if (sounds.engine && !sounds.engine.paused) sounds.engine.pause();
-    return;
-  }
-
-  const currentSpeed = Math.abs(physics.speed || 0);
-  const isAccelerating = keys['ArrowUp'] || keys['w'] || keys['W'];
-  const isBraking = keys['ArrowDown'] || keys['s'] || keys['S'];
-
-  if (currentSpeed > 0.1 || isAccelerating) {
-    if (sounds.engine.paused) sounds.engine.play().catch(() => { });
-    sounds.engine.playbackRate = Math.min(2.0, Math.max(0.8, 0.8 + (currentSpeed / 50)));
-  } else {
-    sounds.engine.pause();
-  }
-
-  if (isBraking && currentSpeed > 2.0) {
-    if (sounds.brake.paused) sounds.brake.play().catch(() => { });
-  } else {
-    sounds.brake.pause();
-  }
+  document.getElementById('btnRestart').onclick = () => window.location.href = 'index.html';
 }
 
 // ------------------------------------------------------------
-// ZOOM DA CÂMERA
-// ------------------------------------------------------------
-const ZOOM_LEVELS = [20, 25];
-let currentZoomIndex = 1;
-
-window.addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() === 'c') {
-    currentZoomIndex = (currentZoomIndex + 1) % ZOOM_LEVELS.length;
-    camera.fov = ZOOM_LEVELS[currentZoomIndex];
-    camera.updateProjectionMatrix();
-  }
-});
-
-const camOffset = new THREE.Vector3(0, 5, -9);
-
-function updateCamera(dt) {
-  if (!kart) return;
-
-  const desired = kart.position.clone().add(
-    camOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading)
-  );
-  desired.y = kart.position.y + 5;
-  camera.position.lerp(desired, Math.min(1, dt * 4));
-
-  const lookAt = kart.position.clone();
-  lookAt.y += 1.2;
-  camera.lookAt(lookAt);
-
-  if (camera.fov !== ZOOM_LEVELS[currentZoomIndex]) {
-    camera.fov = ZOOM_LEVELS[currentZoomIndex];
-    camera.updateProjectionMatrix();
-  }
-}
-
-// ------------------------------------------------------------
-// MULTIPLAYER (PeerJS)
+// MULTIPLAYER SINCRO (PEERJS)
 // ------------------------------------------------------------
 const remoteKarts = new Map();
-const REMOTE_COLORS = [0x1E88E5, 0x43A047, 0x8E24AA, 0xFB8C00, 0x00ACC1, 0xD81B60];
+let racePeer = null;
+let hostConn = null;
+const activeGuestConns = new Map();
+let isHost = (playerSlotParam === 0 && Boolean(roomCodeParam));
 
-function remoteColorFromId(id) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  return REMOTE_COLORS[hash % REMOTE_COLORS.length];
+function friendLabel(peerId) {
+  return 'AMIGO ' + peerId.slice(-4).toUpperCase();
 }
 
-function getOrCreateRemoteKart(peerId) {
-  if (remoteKarts.has(peerId)) return remoteKarts.get(peerId);
-  const obj = createKart(remoteColorFromId(peerId));
-  const entry = { obj, target: { pos: obj.group.position.clone(), ry: 0, rz: 0, speed: 0 } };
-  remoteKarts.set(peerId, entry);
-  updateConnStatus();
-  return entry;
+function handleRemoteKartState(peerId, data) {
+  let entry = remoteKarts.get(peerId);
+
+  if (!entry) {
+    const remoteKartData = KART_DATABASE.find(k => k.id === data.kartId) || KART_DATABASE[0];
+    const obj = createKart(0x1E88E5);
+
+    loadKartTemplate(remoteKartData, (template) => {
+      applyModelToGroup(obj.group, template, 0x1E88E5);
+    });
+
+    entry = {
+      obj,
+      nickname: data.nick || friendLabel(peerId),
+      kartId: data.kartId,
+      target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+      progress: 0,
+      lapCount: 1,
+      finished: false
+    };
+    remoteKarts.set(peerId, entry);
+  }
+
+  if (data.kartId && entry.kartId !== data.kartId) {
+    entry.kartId = data.kartId;
+    const remoteKartData = KART_DATABASE.find(k => k.id === data.kartId);
+    if (remoteKartData) {
+      loadKartTemplate(remoteKartData, (template) => {
+        applyModelToGroup(entry.obj.group, template, 0x1E88E5);
+      });
+    }
+  }
+
+  entry.target.pos.set(data.x, data.y, data.z);
+  entry.target.ry = data.ry;
+  entry.target.speed = data.speed;
+  entry.progress = typeof data.progress === 'number' ? data.progress : 0;
+  entry.lapCount = data.lapCount || 1;
+  entry.finished = Boolean(data.finished);
 }
 
 function removeRemoteKart(peerId) {
   const entry = remoteKarts.get(peerId);
-  if (!entry) return;
-  scene.remove(entry.obj.group);
-  remoteKarts.delete(peerId);
-  updateConnStatus();
+  if (entry) {
+    scene.remove(entry.obj.group);
+    remoteKarts.delete(peerId);
+  }
+  activeGuestConns.delete(peerId);
 }
 
-function shortestAngleDiff(a, b) {
-  let d = (b - a) % (Math.PI * 2);
-  if (d > Math.PI) d -= Math.PI * 2;
-  if (d < -Math.PI) d += Math.PI * 2;
-  return d;
-}
+function initRaceMultiplayer() {
+  if (!roomCodeParam) return;
 
-function randomRoomCode(len = 5) {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
+  const roomClean = roomCodeParam.trim().toLowerCase();
+  const racePeerId = `pkart-race-${roomClean}`;
 
-let peer = null;
-let isHost = false;
-let hostConnection = null;
-const guestConnections = new Map();
-
-const lobbyEl = document.getElementById('lobby');
-const lobbyStatusEl = document.getElementById('lobbyStatus');
-const roomCodeEl = document.getElementById('roomCodeDisplay');
-const connStatusEl = document.getElementById('connStatus');
-const playerListEl = document.getElementById('playerList');
-const btnStartRaceEl = document.getElementById('btnStartRace');
-
-function friendLabel(peerId) {
-  return 'Amigo ' + peerId.replace('pkart-', '').slice(-4).toUpperCase();
-}
-
-function renderPlayerList(players) {
-  if (!playerListEl) return;
-  playerListEl.innerHTML = players
-    .map(p => `• ${p.label}${p.id === peer.id ? ' (você)' : ''}`)
-    .join('<br>');
-}
-
-function broadcastRoster() {
-  const players = [{ id: peer.id, label: 'Host' }];
-  for (const pid of guestConnections.keys()) players.push({ id: pid, label: friendLabel(pid) });
-  renderPlayerList(players);
-  const payload = { t: 'roster', players };
-  for (const conn of guestConnections.values()) if (conn.open) conn.send(payload);
-}
-
-function updateConnStatus() {
-  if (!connStatusEl) return;
-  if (!peer) { connStatusEl.textContent = ''; return; }
   if (isHost) {
-    connStatusEl.textContent = `Hospedando sala • ${remoteKarts.size} amigo(s) conectado(s)`;
-  } else if (hostConnection) {
-    connStatusEl.textContent = hostConnection.open ? 'Conectado à sala' : 'Conectando...';
-  }
-}
+    racePeer = new Peer(racePeerId);
 
-function handleGuestData(peerId, data) {
-  if (data.t !== 'state') return;
-  const entry = getOrCreateRemoteKart(peerId);
-  entry.target.pos.set(data.x, data.y, data.z);
-  entry.target.ry = data.ry;
-  entry.target.rz = data.rz;
-  entry.target.speed = data.speed;
-}
+    racePeer.on('connection', (conn) => {
+      conn.on('open', () => {
+        activeGuestConns.set(conn.peer, conn);
 
-function handleHostData(data) {
-  if (data.t === 'roster') { renderPlayerList(data.players); return; }
-  if (data.t === 'start') { if (lobbyEl) lobbyEl.style.display = 'none'; return; }
-  if (data.t !== 'snapshot') return;
-  for (const [peerId, s] of Object.entries(data.karts)) {
-    if (peerId === peer.id) continue;
-    const entry = getOrCreateRemoteKart(peerId);
-    entry.target.pos.set(s.x, s.y, s.z);
-    entry.target.ry = s.ry;
-    entry.target.rz = s.rz;
-    entry.target.speed = s.speed;
-  }
-}
+        // Dá um tempo de 2.5 segundos para o cliente carregar seus assets antes de mandar contar
+        setTimeout(() => {
+          conn.send({ t: 'start_countdown' });
+        }, 2500);
+      });
 
-function startHosting() {
-  if (lobbyStatusEl) lobbyStatusEl.textContent = 'Criando sala...';
-  const code = randomRoomCode();
-  peer = new Peer('pkart-' + code.toLowerCase());
-  peer.on('open', () => {
-    isHost = true;
-    if (roomCodeEl) {
-      roomCodeEl.style.display = 'block';
-      roomCodeEl.textContent = code;
-    }
-    if (btnStartRaceEl) btnStartRaceEl.style.display = 'inline-block';
-    if (lobbyStatusEl) lobbyStatusEl.textContent = 'Sala criada! Mande esse código pros seus amigos.';
-    broadcastRoster();
-    updateConnStatus();
-  });
-  peer.on('connection', (conn) => {
-    guestConnections.set(conn.peer, conn);
-    conn.on('data', (data) => handleGuestData(conn.peer, data));
-    conn.on('close', () => { guestConnections.delete(conn.peer); removeRemoteKart(conn.peer); broadcastRoster(); updateConnStatus(); });
-    conn.on('open', () => broadcastRoster());
-    updateConnStatus();
-  });
-  peer.on('error', (err) => {
-    if (err.type === 'unavailable-id') {
-      if (lobbyStatusEl) lobbyStatusEl.textContent = 'Código já em uso, tentando outro...';
-      startHosting();
-    } else {
-      if (lobbyStatusEl) lobbyStatusEl.textContent = 'Erro ao criar sala: ' + err.type;
-      console.error('[PeerJS]', err);
-    }
-  });
-}
+      conn.on('data', (data) => {
+        if (data.t === 'state') {
+          handleRemoteKartState(conn.peer, data);
+        }
+      });
 
-function joinRoom(code) {
-  if (lobbyStatusEl) lobbyStatusEl.textContent = 'Conectando...';
-  peer = new Peer();
-  peer.on('open', () => {
-    hostConnection = peer.connect('pkart-' + code.trim().toLowerCase());
-    hostConnection.on('open', () => {
-      if (lobbyStatusEl) lobbyStatusEl.textContent = 'Conectado! Aguardando o host iniciar a corrida...';
-      updateConnStatus();
+      conn.on('close', () => removeRemoteKart(conn.peer));
+      conn.on('error', () => removeRemoteKart(conn.peer));
     });
-    hostConnection.on('data', handleHostData);
-    hostConnection.on('close', () => { if (lobbyStatusEl) lobbyStatusEl.textContent = 'Conexão com a sala perdida.'; });
-  });
-  peer.on('error', (err) => {
-    if (lobbyStatusEl) lobbyStatusEl.textContent = 'Não achei essa sala (código errado ou sala fechada).';
-    console.error('[PeerJS]', err);
-  });
-}
 
-if (document.getElementById('btnHost')) document.getElementById('btnHost').onclick = startHosting;
-if (document.getElementById('btnJoin')) document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
-if (document.getElementById('btnConnect')) document.getElementById('btnConnect').onclick = () => {
-  const code = document.getElementById('joinCode').value.trim();
-  if (code) joinRoom(code);
-};
-if (document.getElementById('btnPlaySolo')) document.getElementById('btnPlaySolo').onclick = () => { if (lobbyEl) lobbyEl.style.display = 'none'; };
-if (btnStartRaceEl) btnStartRaceEl.onclick = () => {
-  const payload = { t: 'start' };
-  for (const conn of guestConnections.values()) if (conn.open) conn.send(payload);
-  if (lobbyEl) lobbyEl.style.display = 'none';
-};
+
+  } else {
+    racePeer = new Peer();
+
+    racePeer.on('open', () => {
+      let attempts = 0;
+
+      function connectToHost() {
+        attempts++;
+        hostConn = racePeer.connect(racePeerId, { reliable: true });
+
+        hostConn.on('open', () => {
+          setInterval(() => {
+            if (kart && hostConn && hostConn.open) {
+              const myTracker = raceTrackers.get('local');
+              hostConn.send({
+                t: 'state',
+                x: kart.position.x,
+                y: kart.position.y,
+                z: kart.position.z,
+                ry: physics.heading,
+                speed: physics.speed,
+                nick: playerNickname,
+                kartId: selectedKartId,
+                slot: playerSlotParam,
+                progress: myTracker ? myTracker.progress : 0,
+                lapCount: myTracker ? myTracker.lapCount : 1,
+                finished: myTracker ? myTracker.finished : false
+              });
+            }
+          }, 1000 / 20);
+        });
+
+        hostConn.on('data', (data) => {
+          // Cliente recebe a ordem do Host e inicia a contagem simultaneamente
+          if (data.t === 'start_countdown') {
+            setTimeout(() => {
+              startCountdown();
+            }, 1000); // Delay de tolerância para renders mais lentos
+          }
+
+          if (data.t === 'snapshot' && data.karts) {
+            for (const [peerId, state] of Object.entries(data.karts)) {
+              if (peerId !== racePeer.id) {
+                handleRemoteKartState(peerId, state);
+              }
+            }
+          }
+        });
+
+        hostConn.on('close', () => {
+          if (attempts < 8) setTimeout(connectToHost, 800);
+        });
+
+        hostConn.on('error', () => {
+          if (attempts < 8) setTimeout(connectToHost, 800);
+        });
+      }
+
+      setTimeout(connectToHost, 300);
+    });
+  }
+
+  // Se for partida solo (sem sala), inicia a contagem imediatamente
+  if (!roomCodeParam) {
+    setTimeout(startCountdown, 500);
+  }
+}
 
 let netTimer = 0;
-const NET_INTERVAL = 1 / 12;
 function networkTick(dt) {
-  if (!peer || !peer.id || !kart || isPaused) return;
+  if (!isHost || !racePeer) return;
+
   netTimer += dt;
-  if (netTimer < NET_INTERVAL) return;
+  if (netTimer < 1 / 20) return;
   netTimer = 0;
 
-  const myState = { x: kart.position.x, y: kart.position.y, z: kart.position.z, ry: physics.heading, rz: kart.rotation.z, speed: physics.speed };
+  const myTracker = raceTrackers.get('local');
+  const snapshot = {
+    [racePeer.id]: {
+      x: kart ? kart.position.x : 0,
+      y: kart ? kart.position.y : 0,
+      z: kart ? kart.position.z : 0,
+      ry: physics.heading,
+      speed: physics.speed,
+      nick: playerNickname,
+      kartId: selectedKartId,
+      slot: playerSlotParam,
+      progress: myTracker ? myTracker.progress : 0,
+      lapCount: myTracker ? myTracker.lapCount : 1,
+      finished: myTracker ? myTracker.finished : false
+    }
+  };
 
-  if (isHost) {
-    const karts = { [peer.id]: myState };
-    for (const [pid, entry] of remoteKarts) {
-      karts[pid] = { x: entry.target.pos.x, y: entry.target.pos.y, z: entry.target.pos.z, ry: entry.target.ry, rz: entry.target.rz, speed: entry.target.speed };
+  for (const [pid, entry] of remoteKarts.entries()) {
+    snapshot[pid] = {
+      x: entry.target.pos.x,
+      y: entry.target.pos.y,
+      z: entry.target.pos.z,
+      ry: entry.target.ry,
+      speed: entry.target.speed,
+      nick: entry.nickname,
+      kartId: entry.kartId,
+      progress: entry.progress,
+      lapCount: entry.lapCount,
+      finished: entry.finished
+    };
+  }
+
+  for (const conn of activeGuestConns.values()) {
+    if (conn.open) {
+      conn.send({ t: 'snapshot', karts: snapshot });
     }
-    const payload = { t: 'snapshot', karts };
-    for (const conn of guestConnections.values()) {
-      if (conn.open) conn.send(payload);
-    }
-  } else if (hostConnection && hostConnection.open) {
-    hostConnection.send({ t: 'state', ...myState });
   }
 }
 
 function updateRemoteKarts(dt) {
   for (const entry of remoteKarts.values()) {
     const g = entry.obj.group;
-    const smoothing = Math.min(1, dt * 8);
-    g.position.lerp(entry.target.pos, smoothing);
-    g.rotation.y += shortestAngleDiff(g.rotation.y, entry.target.ry) * smoothing;
-    g.rotation.z += (entry.target.rz - g.rotation.z) * smoothing;
-    entry.obj.wheels.forEach(w => w.rotation.x -= entry.target.speed * dt * 2);
+    const lerpSpeed = Math.min(1, dt * 12);
+
+    g.position.lerp(entry.target.pos, lerpSpeed);
+    g.rotation.y += (entry.target.ry - g.rotation.y) * lerpSpeed;
   }
 }
 
-function updateHUD(currentSpeed, maxSpeed, currentLap, position) {
-  const hudPlayerName = document.getElementById('hud-player-name');
-  const hudCurrentLap = document.getElementById('hud-current-lap');
-  const hudTotalLaps = document.getElementById('hud-total-laps');
-  const hudPosition = document.getElementById('hud-position');
-  const hudSpeed = document.getElementById('hud-speed');
-  const hudSpeedBar = document.getElementById('speedfill');
+initRaceMultiplayer();
 
-  if (hudPlayerName) hudPlayerName.innerText = "VOCÊ";
-  if (hudCurrentLap) hudCurrentLap.innerText = currentLap || 1;
-  if (hudTotalLaps) hudTotalLaps.innerText = "3";
-  if (hudPosition) hudPosition.innerText = `${position || 1}º`;
+// ------------------------------------------------------------
+// CLASSIFICAÇÃO DA HUD
+// ------------------------------------------------------------
+function updateStandings() {
+  const standingsEl = document.getElementById('standingsList');
+  if (!standingsEl || !kart) return [];
 
-  const displaySpeed = Math.floor(currentSpeed * 3.6);
-  if (hudSpeed) hudSpeed.innerText = displaySpeed;
+  const localTracker = raceTrackers.get('local');
+  const racers = [
+    {
+      key: 'local',
+      name: playerNickname,
+      progress: localTracker ? localTracker.progress : 0,
+      finished: localTracker ? localTracker.finished : false
+    }
+  ];
 
-  if (hudSpeedBar) {
-    const speedPercentage = Math.min(100, Math.max(0, ((currentSpeed || 0) / (maxSpeed || 1.5)) * 100));
-    hudSpeedBar.style.width = `${speedPercentage}%`;
+  for (const [pid, entry] of remoteKarts.entries()) {
+    racers.push({
+      key: pid,
+      name: entry.nickname,
+      progress: entry.progress || 0,
+      finished: entry.finished || false
+    });
+  }
+
+  // Ordena corretamente pelo progresso real percorrido na pista
+  racers.sort((a, b) => b.progress - a.progress);
+
+  standingsEl.innerHTML = racers.map((r, index) => {
+    const isMe = r.key === 'local';
+    const highlightStyle = isMe ? 'color: #FFD54F; font-weight: bold;' : 'color: #cbd5e1;';
+    const finishedFlag = r.finished ? ' 🏁' : '';
+    return `<div style="${highlightStyle}">${index + 1}º ${r.name}${finishedFlag}</div>`;
+  }).join('');
+
+  return racers;
+}
+
+function updateHUD() {
+  const nameEl = document.getElementById('hud-player-name');
+  if (nameEl) nameEl.innerText = playerNickname;
+
+  if (kart) {
+    const tr = updateRaceTracker('local', kart.position);
+
+    const racers = updateStandings();
+    const myRank = racers.findIndex(r => r.key === 'local') + 1;
+
+    const lapEl = document.getElementById('hud-current-lap');
+    const speedEl = document.getElementById('hud-speed');
+    const speedFillEl = document.getElementById('speedfill');
+
+    if (lapEl) lapEl.innerText = tr.lapCount;
+    if (speedEl) speedEl.innerText = Math.floor(Math.abs(physics.speed) * 3.6);
+    if (speedFillEl) speedFillEl.style.width = `${Math.min(100, (Math.abs(physics.speed) / physics.maxSpeed) * 100)}%`;
+
+    if (tr.finished && !localFinishNotified) {
+      localFinishNotified = true;
+      showFinishOverlay(myRank);
+    }
   }
 }
 
@@ -1081,43 +891,11 @@ function animate() {
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
-  // updateAudio(physics, keys);
   updatePhysics(dt);
   updateCamera(dt);
-  updateRemoteKarts(dt);
   networkTick(dt);
-
-  if (turboFlashTimer > 0) {
-    turboFlashTimer -= dt;
-    if (turboFlashTimer <= 0 && turboLabel) turboLabel.style.opacity = '0';
-  }
-
-  hudTimer += dt;
-  if (hudTimer > 0.15) {
-    hudTimer = 0;
-
-    if (kart) {
-      const localTr = updateRaceTracker('local', kart.position);
-      for (const pid of remoteKarts.keys()) {
-        updateRaceTracker(pid, remoteKarts.get(pid).obj.group.position);
-      }
-
-      if (lapcountEl) lapcountEl.textContent = localTr.lapCount;
-
-      const rows = updateStandingsHUD();
-      const myRank = rows.findIndex(r => r.key === 'local') + 1 || 1;
-
-      const speed = Math.abs(physics.speed);
-      const maxSpd = physics.maxSpeed;
-      updateHUD(speed, maxSpd, localTr.lapCount, myRank);
-
-      if (localTr.finished && !localFinishNotified) {
-        localFinishNotified = true;
-        const place = rows.findIndex(r => r.key === 'local') + 1;
-        showFinishOverlay(place, rows.length);
-      }
-    }
-  }
+  updateRemoteKarts(dt);
+  updateHUD();
 
   renderer.render(scene, camera);
 }
