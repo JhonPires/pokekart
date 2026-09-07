@@ -347,16 +347,12 @@ const physics = {
   turboTimer: 0,
 };
 
-// CONTROLE DE ASSETS PRONTOS
 let localKartLoaded = false;
 let countdownStarted = false;
 
 function checkAndStartCountdown() {
-  // Só inicia a contagem uma única vez e quando o kart local já estiver pronto na pista
   if (localKartLoaded && !countdownStarted) {
     countdownStarted = true;
-
-    // Aguarda 1.5 segundos extras após o carregamento para estabilizar a cena
     setTimeout(() => {
       startCountdown();
     }, 1500);
@@ -377,7 +373,6 @@ function setLocalKartModel(kartEntry) {
     kart.rotation.y = grid.heading;
     physics.heading = grid.heading;
 
-    // Marca como carregado e dispara o fluxo da largada
     localKartLoaded = true;
     checkAndStartCountdown();
   });
@@ -419,12 +414,8 @@ window.addEventListener('keydown', (event) => {
   }
 });
 
-// VARIÁVEL DE CONTROLE DA CORRIDA
-let raceStarted = false; // Bloqueia o movimento durante a contagem
+let raceStarted = false;
 
-// ------------------------------------------------------------
-// SISTEMA DE CONTAGEM REGRESSIVA (START RACE)
-// ------------------------------------------------------------
 function startCountdown() {
   const overlay = document.getElementById('countdownOverlay');
   if (!overlay) return;
@@ -439,24 +430,32 @@ function startCountdown() {
       overlay.innerText = count;
     } else if (count === 0) {
       overlay.innerText = 'GO!';
-      overlay.style.color = '#4CAF50'; // Fica verde no "GO!"
-      raceStarted = true; // Libera os karts para acelerar
+      overlay.style.color = '#4CAF50';
+      raceStarted = true;
     } else {
       clearInterval(timer);
-      overlay.style.display = 'none'; // Esconde a overlay
+      overlay.style.display = 'none';
     }
   }, 1000);
 }
 
 function updatePhysics(dt) {
-  // Impede aceleração e controle até a contagem terminar
   if (!kart || isPaused || !raceStarted) return;
+
+  if (isControlInverted) {
+    controlInvertTimer -= dt;
+    if (controlInvertTimer <= 0) isControlInverted = false;
+  }
 
   const raceOver = raceTrackers.get('local')?.finished;
   const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp']);
   const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown']);
-  const left = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
-  const right = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
+
+  let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
+  let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
+
+  const left = isControlInverted ? rawRight : rawLeft;
+  const right = isControlInverted ? rawLeft : rawRight;
   const driftKey = !raceOver && keys['Space'];
 
   if (forward) physics.speed += physics.accel * dt;
@@ -535,15 +534,6 @@ function updateCamera(dt) {
 // ------------------------------------------------------------
 const TOTAL_LAPS = 3;
 const raceTrackers = new Map();
-const START_LINE_T = 0.98; // Ponto exato da linha de chegada na curva
-
-function getAdjustedLapProgress(position) {
-  const rawT = nearestTrackSample(position).sample.t;
-  // Desloca o t para que a linha de chegada seja 0.0 e o fim da volta seja 1.0
-  let lapT = rawT - START_LINE_T;
-  if (lapT < 0) lapT += 1.0;
-  return { rawT, lapT };
-}
 
 function updateRaceTracker(key, position) {
   let tr = raceTrackers.get(key);
@@ -553,14 +543,12 @@ function updateRaceTracker(key, position) {
   }
   if (tr.finished) return tr;
 
-  const { rawT, lapT } = getAdjustedLapProgress(position);
+  const rawT = nearestTrackSample(position).sample.t;
 
-  // Checkpoint no meio da pista
   if (rawT > 0.4 && rawT < 0.6) {
     tr.passedMidpoint = true;
   }
 
-  // Avança de volta somente se cruzou a linha vindo da direção correta
   if (tr.lastRawT > 0.85 && rawT < 0.15) {
     if (tr.passedMidpoint) {
       if (tr.lapCount >= TOTAL_LAPS) {
@@ -574,8 +562,7 @@ function updateRaceTracker(key, position) {
   }
 
   tr.lastRawT = rawT;
-  // O progresso total agora é: (Voltas Completadas) + (Progresso da Volta Atual de 0 a 1)
-  tr.progress = tr.finished ? TOTAL_LAPS : (tr.lapCount - 1) + lapT;
+  tr.progress = tr.finished ? TOTAL_LAPS : (tr.lapCount - 1) + rawT;
   return tr;
 }
 
@@ -595,6 +582,183 @@ function showFinishOverlay(place) {
   `;
   document.body.appendChild(overlay);
   document.getElementById('btnRestart').onclick = () => window.location.href = 'index.html';
+}
+
+// ------------------------------------------------------------
+// SISTEMA DE POKÉBOLAS (ITEM BOXES) E ARMADILHAS NA PISTA [TECLA X]
+// ------------------------------------------------------------
+const SKILLS = {
+  TURBO: { id: 'TURBO', name: 'Aceleração de Fogo', icon: '🔥' },
+  ICE: { id: 'ICE', name: 'Gelo na Pista', icon: '❄️' },
+  LODO: { id: 'LODO', name: 'Lodo Obscuro', icon: '💩' },
+  SHIELD: { id: 'SHIELD', name: 'Proteção', icon: '🛡️' }
+};
+
+let currentItem = null;
+let isShieldActive = false;
+let isControlInverted = false;
+let controlInvertTimer = 0;
+
+// TEXTURA DA POKÉBOLA
+function createPokeballTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128; canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#f0f0f0'; ctx.fillRect(0, 0, 128, 128);
+  ctx.fillStyle = '#e53935'; ctx.fillRect(0, 0, 128, 64);
+  ctx.fillStyle = '#212121'; ctx.fillRect(0, 56, 128, 12);
+  ctx.beginPath(); ctx.arc(64, 64, 20, 0, Math.PI * 2); ctx.fillStyle = '#212121'; ctx.fill();
+  ctx.beginPath(); ctx.arc(64, 64, 12, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+  return new THREE.CanvasTexture(canvas);
+}
+
+const pokeballMat = new THREE.MeshStandardMaterial({
+  map: createPokeballTexture(),
+  roughness: 0.3,
+  metalness: 0.1
+});
+
+// MATERIAIS DAS ARMADILHAS NA PISTA
+const iceTrapMat = new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.8, roughness: 0.1 });
+const lodoTrapMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, transparent: true, opacity: 0.85, roughness: 0.9 });
+
+// CAIXAS DE ITEM (POKÉBOLAS REDONDAS E MENORES)
+const itemBoxes = [];
+function spawnItemBoxes() {
+  // Alterado para Esfera de raio 0.45 (Menor e redonda)
+  const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
+  const samplePoints = [0.15, 0.4, 0.65, 0.88];
+
+  samplePoints.forEach(t => {
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    [-2.8, 0, 2.8].forEach(offset => {
+      const mesh = new THREE.Mesh(sphereGeo, pokeballMat);
+      const pos = point.clone().addScaledVector(normal, offset);
+      mesh.position.set(pos.x, 0.6, pos.z);
+      mesh.rotation.z = Math.PI / 6; // Inclinação charmosa da Pokébola
+      mesh.castShadow = true;
+      scene.add(mesh);
+
+      itemBoxes.push({
+        mesh,
+        baseY: 0.6,
+        active: true,
+        respawnTimer: 0
+      });
+    });
+  });
+}
+spawnItemBoxes();
+
+function updateItemBoxes(dt) {
+  itemBoxes.forEach(box => {
+    if (!box.active) {
+      box.respawnTimer -= dt;
+      if (box.respawnTimer <= 0) {
+        box.active = true;
+        box.mesh.visible = true;
+      }
+      return;
+    }
+
+    // Rotação leve flutuante
+    box.mesh.rotation.y += dt * 1.8;
+    box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.004) * 0.12;
+
+    if (kart && box.mesh.position.distanceTo(kart.position) < 1.4) {
+      box.active = false;
+      box.mesh.visible = false;
+      box.respawnTimer = 7.0;
+
+      if (!currentItem) {
+        getItemFromBox();
+      }
+    }
+  });
+}
+
+function getItemFromBox() {
+  const skillKeys = Object.keys(SKILLS);
+  const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+  currentItem = SKILLS[randomKey];
+
+  const iconEl = document.getElementById('itemIcon');
+  if (iconEl) iconEl.innerText = currentItem.icon;
+}
+
+// ARMADILHAS DEPOSITADAS NA PISTA (GELO E LODO)
+const placedTraps = [];
+
+function dropTrapOnTrack(type) {
+  if (!kart) return;
+
+  // Lança a armadilha ligeiramente atrás do kart
+  const backVector = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+  const trapPos = kart.position.clone().add(backVector);
+
+  const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
+  const mat = type === 'ICE' ? iceTrapMat : lodoTrapMat;
+  const mesh = new THREE.Mesh(geo, mat);
+
+  mesh.position.set(trapPos.x, 0.03, trapPos.z);
+  scene.add(mesh);
+
+  placedTraps.push({ mesh, type, active: true });
+}
+
+function updateTraps(dt) {
+  placedTraps.forEach((trap, index) => {
+    if (!trap.active) return;
+
+    // Checa colisão do Kart Local com a armadilha na pista
+    if (kart && trap.mesh.position.distanceTo(kart.position) < 1.8) {
+      trap.active = false;
+      scene.remove(trap.mesh);
+
+      if (!isShieldActive) {
+        if (trap.type === 'ICE') {
+          physics.speed *= 0.25; // Perde 75% da velocidade
+        } else if (trap.type === 'LODO') {
+          isControlInverted = true; // Inverte direção
+          controlInvertTimer = 3.0;
+        }
+      }
+    }
+  });
+}
+
+// USO DO ITEM NA TECLA X
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyX' && currentItem && raceStarted) {
+    useEquippedSkill(currentItem);
+    currentItem = null;
+    const iconEl = document.getElementById('itemIcon');
+    if (iconEl) iconEl.innerText = '❓';
+  }
+});
+
+function useEquippedSkill(skill) {
+  switch (skill.id) {
+    case 'TURBO':
+      physics.turboTimer = 2.5;
+      break;
+
+    case 'SHIELD':
+      isShieldActive = true;
+      setTimeout(() => { isShieldActive = false; }, 5000);
+      break;
+
+    case 'ICE':
+      dropTrapOnTrack('ICE'); // Lança placa de gelo na pista atrás
+      break;
+
+    case 'LODO':
+      dropTrapOnTrack('LODO'); // Lança poça de lodo na pista atrás
+      break;
+  }
 }
 
 // ------------------------------------------------------------
@@ -673,7 +837,6 @@ function initRaceMultiplayer() {
       conn.on('open', () => {
         activeGuestConns.set(conn.peer, conn);
 
-        // Dá um tempo de 2.5 segundos para o cliente carregar seus assets antes de mandar contar
         setTimeout(() => {
           conn.send({ t: 'start_countdown' });
         }, 2500);
@@ -688,7 +851,6 @@ function initRaceMultiplayer() {
       conn.on('close', () => removeRemoteKart(conn.peer));
       conn.on('error', () => removeRemoteKart(conn.peer));
     });
-
 
   } else {
     racePeer = new Peer();
@@ -723,11 +885,10 @@ function initRaceMultiplayer() {
         });
 
         hostConn.on('data', (data) => {
-          // Cliente recebe a ordem do Host e inicia a contagem simultaneamente
           if (data.t === 'start_countdown') {
             setTimeout(() => {
               startCountdown();
-            }, 1000); // Delay de tolerância para renders mais lentos
+            }, 1000);
           }
 
           if (data.t === 'snapshot' && data.karts) {
@@ -752,7 +913,6 @@ function initRaceMultiplayer() {
     });
   }
 
-  // Se for partida solo (sem sala), inicia a contagem imediatamente
   if (!roomCodeParam) {
     setTimeout(startCountdown, 500);
   }
@@ -818,38 +978,41 @@ function updateRemoteKarts(dt) {
 initRaceMultiplayer();
 
 // ------------------------------------------------------------
-// CLASSIFICAÇÃO DA HUD
+// CLASSIFICAÇÃO DA HUD (RESTAURADA E COMPATÍVEL)
 // ------------------------------------------------------------
 function updateStandings() {
   const standingsEl = document.getElementById('standingsList');
   if (!standingsEl || !kart) return [];
 
-  const localTracker = raceTrackers.get('local');
   const racers = [
-    {
-      key: 'local',
-      name: playerNickname,
-      progress: localTracker ? localTracker.progress : 0,
-      finished: localTracker ? localTracker.finished : false
-    }
+    { key: 'local', name: playerNickname, tr: raceTrackers.get('local') }
   ];
 
-  for (const [pid, entry] of remoteKarts.entries()) {
-    racers.push({
-      key: pid,
-      name: entry.nickname,
-      progress: entry.progress || 0,
-      finished: entry.finished || false
-    });
+  if (typeof remoteKarts !== 'undefined' && remoteKarts) {
+    for (const [pid, entry] of remoteKarts.entries()) {
+      racers.push({
+        key: pid,
+        name: entry.nickname || friendLabel(pid),
+        tr: raceTrackers.get(pid)
+      });
+    }
   }
 
-  // Ordena corretamente pelo progresso real percorrido na pista
-  racers.sort((a, b) => b.progress - a.progress);
+  racers.forEach(r => {
+    if (!r.tr) r.tr = { progress: 0, finished: false, finishTime: Infinity };
+  });
+
+  racers.sort((a, b) => {
+    if (a.tr.finished && b.tr.finished) return a.tr.finishTime - b.tr.finishTime;
+    if (a.tr.finished) return -1;
+    if (b.tr.finished) return 1;
+    return b.tr.progress - a.tr.progress;
+  });
 
   standingsEl.innerHTML = racers.map((r, index) => {
     const isMe = r.key === 'local';
     const highlightStyle = isMe ? 'color: #FFD54F; font-weight: bold;' : 'color: #cbd5e1;';
-    const finishedFlag = r.finished ? ' 🏁' : '';
+    const finishedFlag = r.tr.finished ? ' 🏁' : '';
     return `<div style="${highlightStyle}">${index + 1}º ${r.name}${finishedFlag}</div>`;
   }).join('');
 
@@ -893,6 +1056,8 @@ function animate() {
 
   updatePhysics(dt);
   updateCamera(dt);
+  updateItemBoxes(dt);
+  updateTraps(dt);
   networkTick(dt);
   updateRemoteKarts(dt);
   updateHUD();

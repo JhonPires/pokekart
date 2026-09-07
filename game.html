@@ -13,86 +13,90 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #000;
-            user-select: none;
         }
 
-        #raceScreen {
+        #hud {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        .hudBox {
-            position: absolute;
-            background: rgba(15, 23, 42, 0.75);
-            color: #fff;
-            padding: 10px 18px;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 213, 79, 0.4);
-            font-weight: bold;
-        }
-
-        #hudTopLeft {
             top: 20px;
             left: 20px;
+            color: #fff;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
-        #hudTopRight {
-            top: 20px;
+        #speedometer {
+            position: absolute;
+            bottom: 20px;
             right: 20px;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            pointer-events: none;
+            z-index: 100;
             text-align: right;
         }
 
-        #hudBottomRight {
-            bottom: 20px;
-            right: 20px;
-            text-align: center;
-        }
-
-        #speedBarBg {
-            width: 140px;
+        #speedbar {
+            width: 150px;
             height: 12px;
-            background: #334155;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid #fff;
             border-radius: 6px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 4px;
         }
 
         #speedfill {
             width: 0%;
             height: 100%;
-            background: #4CAF50;
-            transition: width 0.05s;
+            background: #FFD54F;
+            transition: width 0.1s;
+        }
+
+        #standings {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            background: rgba(15, 23, 42, 0.75);
+            padding: 12px 18px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            z-index: 100;
+            min-width: 140px;
         }
 
         #pauseMenu {
-            display: none;
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 200;
+            background: rgba(15, 23, 42, 0.85);
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            z-index: 300;
             color: #fff;
-            pointer-events: auto;
         }
 
         .lobbyBtn {
             background: #FFD54F;
             color: #0f172a;
             border: none;
-            padding: 10px 20px;
-            font-size: 15px;
+            padding: 12px 24px;
+            font-size: 16px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
@@ -102,48 +106,55 @@
 
 <body>
 
-    <div id="raceScreen">
-        <div id="hudTopLeft" class="hudBox">
-            <div>Volta: <span id="hud-current-lap">1</span> / <span id="hud-total-laps">3</span></div>
-        </div>
+    <!-- HUD PRINCIPAL -->
+    <div id="hud">
+        <div>PILOTO: <span id="hud-player-name" style="color: #FFD54F;">-</span></div>
+        <div>VOLTA: <span id="hud-current-lap">1</span> / 3</div>
+    </div>
 
-        <div id="hudTopRight" class="hudBox">
-            <div
-                style="color: #FFD54F; font-size: 14px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,213,79,0.3); padding-bottom: 4px;">
-                CLASSIFICAÇÃO</div>
-            <div id="standingsList" style="font-size: 14px; line-height: 1.4;">
-                <!-- Será preenchido dinamicamente via JS -->
-            </div>
-        </div>
+    <!-- LEADERBOARD ORIGINAL -->
+    <div id="standings">
+        <div style="font-size: 12px; color: #94a3b8; font-weight: bold; margin-bottom: 6px;">CLASSIFICAÇÃO</div>
+        <div id="standingsList" style="display: flex; flex-direction: column; gap: 4px; font-size: 15px;"></div>
+    </div>
 
-        <div id="hudBottomRight" class="hudBox">
-            <div><span id="hud-speed" style="font-size: 24px;">0</span> <small>KM/H</small></div>
-            <div id="speedBarBg">
-                <div id="speedfill"></div>
-            </div>
+    <!-- VELOCÍMETRO -->
+    <div id="speedometer">
+        <div><span id="hud-speed">0</span> KM/H</div>
+        <div id="speedbar">
+            <div id="speedfill"></div>
         </div>
     </div>
 
     <!-- CONTADOR DE LARGADA -->
     <div id="countdownOverlay" style="
-position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-display: flex; align-items: center; justify-content: center;
-font-size: 120px; font-weight: 900; color: #FFD54F;
-text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,213,79,0.6);
-pointer-events: none; z-index: 200; font-family: sans-serif;
-">3</div>
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    display: none; align-items: center; justify-content: center;
+    font-size: 120px; font-weight: 900; color: #FFD54F;
+    text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,213,79,0.6);
+    pointer-events: none; z-index: 200; font-family: sans-serif;
+  ">3</div>
 
-    <div id="pauseMenu">
-        <h2>PAUSADO</h2>
-        <button id="btnReturnLobby" class="lobbyBtn" style="margin-top: 15px;">Voltar ao Lobby</button>
+    <!-- ITEM [X] -->
+    <div id="itemBox" style="
+    position: absolute; bottom: 30px; left: 30px; width: 70px; height: 70px;
+    background: rgba(15, 23, 42, 0.85); border: 3px solid #FFD54F; border-radius: 12px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100; color: #fff; font-family: sans-serif;
+  ">
+        <div style="font-size: 10px; color: #94a3b8; font-weight: bold; margin-bottom: 2px;">TECLA [X]</div>
+        <div id="itemIcon" style="font-size: 26px;">❓</div>
     </div>
 
-    <!-- DEPENDÊNCIAS -->
+    <!-- MENU ESC -->
+    <div id="pauseMenu">
+        <h1 style="color: #FFD54F; margin-bottom: 20px;">JOGO PAUSADO</h1>
+        <button id="btnReturnLobby" class="lobbyBtn">Sair para o Lobby</button>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
-    <!-- LÓGICA DO JOGO -->
     <script src="game.js"></script>
 </body>
 
