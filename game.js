@@ -36,14 +36,62 @@ function getKartUrl(filename) {
 }
 
 const KART_DATABASE = [
-  { id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), template: null },
-  { id: 'zoroark', name: 'Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), template: null },
-  { id: 'togetic', name: 'Togetic Kart', modelUrl: getKartUrl('togetic.glb'), template: null },
-  { id: 'charizard', name: 'Charizard Kart', modelUrl: getKartUrl('charizard.glb'), template: null },
-  { id: 'flygon', name: 'Flygon Kart', modelUrl: getKartUrl('flygon.glb'), template: null },
-  { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb'), template: null },
-  { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), template: null },
-  { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), template: null }
+  {
+    id: 'jolteon',
+    name: 'Jolteon Kart',
+    modelUrl: getKartUrl('jolteon.glb'),
+    // Ágil e de rápida aceleração, mas com velocidade máxima menor
+    stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
+  },
+  {
+    id: 'zoroark',
+    name: 'Zoroark Kart',
+    modelUrl: getKartUrl('zoroark.glb'),
+    // Equilibrado para derrapagens constantes
+    stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 }
+  },
+  {
+    id: 'togetic',
+    name: 'Togetic Kart',
+    modelUrl: getKartUrl('togetic.glb'),
+    // Fácil de manusear, boa sustentação
+    stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 }
+  },
+  {
+    id: 'charizard',
+    name: 'Charizard Kart',
+    modelUrl: getKartUrl('charizard.glb'),
+    // Velocidade final alta, porém muito pesado em curvas fechadas
+    stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 }
+  },
+  {
+    id: 'flygon',
+    name: 'Flygon Kart',
+    modelUrl: getKartUrl('flygon.glb'),
+    // Especialista em carregar turbo de Drift
+    stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 }
+  },
+  {
+    id: 'gengar',
+    name: 'Gengar Kart',
+    modelUrl: getKartUrl('gengar.glb'),
+    // Mudança de direção rápida, mas escorrega se virar sem Drift
+    stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 }
+  },
+  {
+    id: 'oshawott',
+    name: 'Oshawott Kart',
+    modelUrl: getKartUrl('oshawott.glb'),
+    // Estável com boa tração básica
+    stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 }
+  },
+  {
+    id: 'snorlax',
+    name: 'Snorlax Kart',
+    modelUrl: getKartUrl('snorlax.glb'),
+    // Tanque pesado: Curva extremamente dura, velocidade final alta e turbo longo
+    stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 }
+  }
 ];
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -176,15 +224,125 @@ const trackMesh = new THREE.Mesh(
 trackMesh.receiveShadow = true;
 scene.add(trackMesh);
 
+// ============================================================
+// 1. COLE AQUI A TEXTURA E O GERADOR DE ZEBRAS (NOVO CÓDIGO)
+// ============================================================
+function createKerbTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+
+  const stripeWidth = 32;
+  for (let i = 0; i < 128; i += stripeWidth) {
+    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? '#e53935' : '#ffffff';
+    ctx.fillRect(i, 0, stripeWidth, 128);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(60, 1);
+  return texture;
+}
+
+const kerbMaterial = new THREE.MeshStandardMaterial({
+  map: createKerbTexture(),
+  roughness: 0.6
+});
+
+// ------------------------------------------------------------
+// GERADOR DAS ZEBRAS NAS BORDAS DA PISTA (ESPAÇAMENTO CORRIGIDO)
+// ------------------------------------------------------------
+function addTrackKerbs() {
+  const segments = 500;
+  const kerbWidth = 0.8;
+  const points = trackCurve.getSpacedPoints(segments);
+
+  [-1, 1].forEach(sideSign => {
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+
+    for (let i = 0; i <= segments; i++) {
+      const pPrev = points[(i - 1 + segments) % segments];
+      const pNext = points[(i + 1) % segments];
+
+      const dir = new THREE.Vector3().subVectors(pNext, pPrev);
+      dir.y = 0;
+      dir.normalize();
+
+      const normal = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
+      const current = points[i % segments];
+
+      const innerEdge = current.clone().addScaledVector(normal, sideSign * (trackWidth / 2));
+      const outerEdge = current.clone().addScaledVector(normal, sideSign * (trackWidth / 2 + kerbWidth));
+
+      positions.push(innerEdge.x, 0.035, innerEdge.z);
+      positions.push(outerEdge.x, 0.035, outerEdge.z);
+
+      const progress = i / segments;
+      // VOLTOU AO PADRÃO ORIGINAL: Repetição suave ao longo da extensão da pista
+      uvs.push(progress * 6, 0);
+      uvs.push(progress * 6, 1);
+    }
+
+    for (let i = 0; i < segments; i++) {
+      const a = i * 2;
+      const b = i * 2 + 1;
+      const c = (i + 1) * 2;
+      const d = (i + 1) * 2 + 1;
+
+      if (sideSign === 1) {
+        indices.push(a, b, c);
+        indices.push(b, d, c);
+      } else {
+        indices.push(a, c, b);
+        indices.push(b, c, d);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    const kerbMesh = new THREE.Mesh(geo, kerbMaterial);
+    kerbMesh.receiveShadow = true;
+    scene.add(kerbMesh);
+  });
+}
+
+// Executa o gerador para criar as zebras na cena
+addTrackKerbs();
+
+// Grama em Faixas
+function createStripedGrassTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const stripeHeight = 32;
+  for (let i = 0; i < 256; i += stripeHeight) {
+    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#519e3e' : '#438a32';
+    ctx.fillRect(0, i, 256, stripeHeight);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(40, 40);
+  return texture;
+}
+
 const grass = new THREE.Mesh(
   new THREE.PlaneGeometry(600, 600),
-  new THREE.MeshStandardMaterial({ color: 0x5a9c4a, roughness: 1 })
+  new THREE.MeshStandardMaterial({ map: createStripedGrassTexture(), roughness: 0.9 })
 );
 grass.rotation.x = -Math.PI / 2;
 grass.position.y = -0.02;
 grass.receiveShadow = true;
 scene.add(grass);
 
+// Pneus
 function createStripedTireTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
@@ -209,7 +367,8 @@ function addTires() {
     const currentMat = (i % 2 === 0) ? blackTireMat : stripedTireMat;
 
     for (const side of [1, -1]) {
-      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 0.8));
+      // ALTERADO: de +0.8 para +3.5 para posicionar os pneus mais longe do asfalto
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const tireStack = new THREE.Group();
 
       const tireBottom = new THREE.Mesh(tireGeo, currentMat);
@@ -345,6 +504,8 @@ const physics = {
   driftDirection: 0,
   driftCharge: 0,
   turboTimer: 0,
+  stunTimer: 0,
+  spinTimer: 0
 };
 
 let localKartLoaded = false;
@@ -367,6 +528,15 @@ function setLocalKartModel(kartEntry) {
       wheels = localKartObj.wheels;
     }
     applyModelToGroup(kart, template, 0xE53935);
+
+    // APLICA AS VANTAGENS DO KART NA FÍSICA
+    if (kartEntry.stats) {
+      physics.accel = kartEntry.stats.accel;
+      physics.maxSpeed = kartEntry.stats.maxSpeed;
+      physics.turnSpeed = kartEntry.stats.turnSpeed;
+      physics.turboBonus = kartEntry.stats.turboBonus || 1.0;
+      physics.driftRate = kartEntry.stats.driftRate || 1.0;
+    }
 
     const grid = getGridPosition(playerSlotParam);
     kart.position.copy(grid.pos);
@@ -415,14 +585,10 @@ window.addEventListener('keydown', (event) => {
 });
 
 let raceStarted = false;
-
-// ------------------------------------------------------------
-// CONTAGEM REGRESSIVA (CORRIGIDA - SEM DUPLICAÇÃO)
-// ------------------------------------------------------------
-let countdownInProgress = false; // Trava para impedir múltiplos temporizadores
+let countdownInProgress = false;
 
 function startCountdown() {
-  if (countdownInProgress || raceStarted) return; // Evita que a contagem rode duas vezes
+  if (countdownInProgress || raceStarted) return;
   countdownInProgress = true;
 
   const overlay = document.getElementById('countdownOverlay');
@@ -440,7 +606,7 @@ function startCountdown() {
     } else if (count === 0) {
       overlay.innerText = 'GO!';
       overlay.style.color = '#4CAF50';
-      raceStarted = true; // Libera os karts para acelerar
+      raceStarted = true;
     } else {
       clearInterval(timer);
       overlay.style.display = 'none';
@@ -451,6 +617,20 @@ function startCountdown() {
 
 function updatePhysics(dt) {
   if (!kart || isPaused || !raceStarted) return;
+
+  // Processa a rotação de 360° do Gelo e trava o kart em velocidade 0
+  if (physics.spinTimer > 0) {
+    physics.spinTimer -= dt;
+    physics.speed = 0;
+    kart.rotation.y += dt * 12; // Rotação rápida de derrapagem
+    return;
+  }
+
+  if (physics.stunTimer > 0) {
+    physics.stunTimer -= dt;
+    physics.speed = 0;
+    return;
+  }
 
   if (isControlInverted) {
     controlInvertTimer -= dt;
@@ -484,18 +664,28 @@ function updatePhysics(dt) {
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
   const turnInput = (left ? 1 : 0) - (right ? 1 : 0);
-  const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.15, 1);
-  const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.4;
+  const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
+  const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
+  // 1. PENALIDADE POR ESTERÇAR A SECO (Sem Drift em alta velocidade)
+  if (turnInput !== 0 && !canDrift && physics.speed > 8) {
+    const gripPenalty = 18 * (1.1 - (physics.grip || 0.7));
+    physics.speed = Math.max(5, physics.speed - gripPenalty * dt);
+  }
+
+  // 2. SISTEMA DE DRIFT E ROTAÇÃO RÍGIDA
   if (canDrift && !backward) {
     if (!physics.isDrifting) {
       physics.isDrifting = true;
       physics.driftDirection = turnInput !== 0 ? Math.sign(turnInput) : (left ? 1 : -1);
       physics.driftCharge = 0;
     }
-    physics.driftCharge += dt;
-    physics.heading += physics.driftDirection * physics.turnSpeed * 0.6 * movingFactor * dt;
-    physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2);
+    physics.driftCharge += dt * (physics.driftRate || 1.0);
+
+    // Ajuste de ângulo no Drift (multiplicado pelo fator de rigidez 0.38)
+    const driftSteer = physics.turnSpeed * (physics.driftControl || 1.0);
+    physics.heading += physics.driftDirection * driftSteer * 0.38 * movingFactor * dt;
+    physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2.5);
   } else {
     if (physics.isDrifting && physics.driftCharge > 0.8) {
       physics.turboTimer = 0.8;
@@ -503,10 +693,13 @@ function updatePhysics(dt) {
     physics.isDrifting = false;
     physics.driftCharge = 0;
     physics.driftFactor = Math.max(0, physics.driftFactor - dt * 3);
-    physics.heading += turnInput * physics.turnSpeed * movingFactor * dt;
+
+    // CURVA NORMAL RÍGIDA (multiplicada pelo fator de rigidez 0.45)
+    physics.heading += turnInput * physics.turnSpeed * 0.45 * movingFactor * dt;
   }
 
-  const slideBlend = physics.driftFactor * 0.35;
+  // 3. VETOR DE MOVIMENTO COM ARRASTO LATERAL (Inércia)
+  const slideBlend = physics.driftFactor * 0.45;
   const slipHeading = physics.heading - physics.driftDirection * slideBlend;
   const moveDir = new THREE.Vector3(Math.sin(slipHeading), 0, Math.cos(slipHeading));
 
@@ -522,11 +715,24 @@ function enforceTrackBoundary() {
   const offset = new THREE.Vector3().subVectors(kart.position, sample.point);
   const lateral = offset.dot(sample.normal);
 
-  if (Math.abs(lateral) > (trackWidth / 2 + 0.6)) {
+  const halfWidth = trackWidth / 2; // Borda do asfalto (5.0m)
+  const kerbWidth = 0.8;             // Largura da zebra (0.8m)
+  const grassStart = halfWidth + kerbWidth; // Início real da grama (5.8m)
+
+  // 1. PISOU NA GRAMA (Apenas se passar do asfalto E da zebra)
+  if (Math.abs(lateral) > grassStart && Math.abs(lateral) <= (grassStart + 3.2)) {
+    const maxGrassSpeed = 4.5; // ~16 km/h na grama
+    if (physics.speed > maxGrassSpeed) {
+      physics.speed = THREE.MathUtils.lerp(physics.speed, maxGrassSpeed, 0.1);
+    }
+  }
+
+  // 2. COLISÃO COM OS PNEUS (Barreira externa)
+  if (Math.abs(lateral) > (grassStart + 3.3)) {
     const sign = Math.sign(lateral);
     const along = offset.clone().addScaledVector(sample.normal, -lateral);
-    kart.position.copy(sample.point.clone().add(along).addScaledVector(sample.normal, sign * (trackWidth / 2 + 0.6)));
-    physics.speed *= 0.55;
+    kart.position.copy(sample.point.clone().add(along).addScaledVector(sample.normal, sign * (grassStart + 3.3)));
+    physics.speed = 0; // Trava o kart nos pneus
   }
 }
 
@@ -595,13 +801,15 @@ function showFinishOverlay(place) {
 }
 
 // ------------------------------------------------------------
-// POKÉBOLAS E ARMADILHAS SINCRONIZADAS VIA REDE
+// POKÉBOLAS, ARMADILHAS E HABILIDADES NO (X)
 // ------------------------------------------------------------
 const SKILLS = {
   TURBO: { id: 'TURBO', name: 'Aceleração de Fogo', icon: '🔥' },
   ICE: { id: 'ICE', name: 'Gelo na Pista', icon: '❄️' },
   LODO: { id: 'LODO', name: 'Lodo Obscuro', icon: '💩' },
-  SHIELD: { id: 'SHIELD', name: 'Proteção', icon: '🛡️' }
+  SHIELD: { id: 'SHIELD', name: 'Proteção', icon: '🛡️' },
+  CHOQUE: { id: 'CHOQUE', name: 'Trovoada Elétrica', icon: '⚡' },
+  FUMACA: { id: 'FUMACA', name: 'Cortina de Fumaça', icon: '💨' }
 };
 
 let currentItem = null;
@@ -629,6 +837,22 @@ const pokeballMat = new THREE.MeshStandardMaterial({
 
 const iceTrapMat = new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.8, roughness: 0.1 });
 const lodoTrapMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, transparent: true, opacity: 0.85, roughness: 0.9 });
+// MATERIAL DA FUMAÇA (CINZA ESCURO / FUMÊ TRANSPARENTE)
+const fumacaTrapMat = new THREE.MeshStandardMaterial({
+  color: 0x2a2a2a,
+  transparent: true,
+  opacity: 0.7,
+  roughness: 1.0,
+  depthWrite: false // Evita falhas de transparência no WebGL
+});
+
+const fumacaCoreMat = new THREE.MeshStandardMaterial({
+  color: 0x111111,
+  transparent: true,
+  opacity: 0.85,
+  roughness: 1.0,
+  depthWrite: false
+});
 
 const itemBoxes = [];
 function spawnItemBoxes() {
@@ -708,19 +932,51 @@ const placedTraps = [];
 let trapNextId = 0;
 
 function createTrapMesh(trapData) {
-  const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
-  const mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
-  const mesh = new THREE.Mesh(geo, mat);
+  let geo, mat;
 
-  mesh.position.set(trapData.x, 0.03, trapData.z);
-  scene.add(mesh);
+  if (trapData.type === 'FUMACA') {
+    const group = new THREE.Group();
 
-  placedTraps.push({
-    id: trapData.id,
-    mesh,
-    type: trapData.type,
-    active: true
-  });
+    // Reduzido: Raio externo de 3.8 -> 1.8 e altura de 2.2 -> 1.2
+    const outerGeo = new THREE.CylinderGeometry(1.8, 1.8, 1.2, 16);
+    const outerMesh = new THREE.Mesh(outerGeo, fumacaTrapMat);
+    outerMesh.position.y = 0.6;
+    group.add(outerMesh);
+
+    // Reduzido: Núcleo denso de 2.2 -> 1.1 e altura de 1.8 -> 0.9
+    const innerGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.9, 12);
+    const innerMesh = new THREE.Mesh(innerGeo, fumacaCoreMat);
+    innerMesh.position.y = 0.5;
+    group.add(innerMesh);
+
+    group.position.set(trapData.x, 0, trapData.z);
+    scene.add(group);
+
+    placedTraps.push({
+      id: trapData.id,
+      mesh: group,
+      outerMesh: outerMesh,
+      innerMesh: innerMesh,
+      type: trapData.type,
+      active: true
+    });
+    return;
+
+  } else {
+    geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
+    mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(trapData.x, 0.03, trapData.z);
+    scene.add(mesh);
+
+    placedTraps.push({
+      id: trapData.id,
+      mesh: mesh,
+      type: trapData.type,
+      active: true
+    });
+  }
 }
 
 function dropTrapOnTrack(type) {
@@ -752,21 +1008,82 @@ function updateTraps(dt) {
   placedTraps.forEach((trap) => {
     if (!trap.active) return;
 
-    if (kart && trap.mesh.position.distanceTo(kart.position) < 1.8) {
-      trap.active = false;
-      removeTrapMesh(trap.id);
-      sendNetworkEvent({ t: 'destroy_trap', trapId: trap.id });
+    if (trap.type === 'FUMACA' && trap.outerMesh) {
+      trap.outerMesh.rotation.y += dt * 0.4;
+      trap.innerMesh.rotation.y -= dt * 0.8;
+    }
+
+    // Raio de colisão da fumaça reduzido para 2.0
+    const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
+
+    if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
+      if (trap.type !== 'FUMACA') {
+        trap.active = false;
+        removeTrapMesh(trap.id);
+        sendNetworkEvent({ t: 'destroy_trap', trapId: trap.id });
+      }
 
       if (!isShieldActive) {
         if (trap.type === 'ICE') {
-          physics.speed *= 0.25;
+          physics.speed = 0;      // Zera a velocidade instantaneamente
+          physics.spinTimer = 0.8; // Faz o kart rodar por 0.8s
         } else if (trap.type === 'LODO') {
           isControlInverted = true;
           controlInvertTimer = 3.0;
+        } else if (trap.type === 'FUMACA') {
+          physics.speed *= 0.85;
         }
       }
     }
   });
+}
+
+// EFEITO VISUAL DE FAÍSCAS (CHOQUE)
+function triggerSparkEffect(targetPos) {
+  const pGroup = new THREE.Group();
+  const pGeo = new THREE.BufferGeometry();
+  const pCount = 20;
+  const posArray = new Float32Array(pCount * 3);
+
+  for (let i = 0; i < pCount * 3; i++) {
+    posArray[i] = (Math.random() - 0.5) * 1.5;
+  }
+  pGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+  const pMat = new THREE.PointsMaterial({ color: 0xffff00, size: 0.3 });
+  const pSystem = new THREE.Points(pGeo, pMat);
+  pGroup.add(pSystem);
+  pGroup.position.copy(targetPos);
+  scene.add(pGroup);
+
+  let timer = 0;
+  const interval = setInterval(() => {
+    timer += 0.1;
+    pSystem.rotation.y += 0.5;
+    if (timer >= 1.0) {
+      clearInterval(interval);
+      scene.remove(pGroup);
+    }
+  }, 50);
+}
+
+// CORREÇÃO DO CHOQUE: BUSCA O PEER ID CORRETO DO JOGADOR À FRENTE
+function castShockAbility() {
+  if (!kart) return;
+  const myProgress = raceTrackers.get('local')?.progress || 0;
+  let targetPeerId = null;
+  let bestAheadProgress = Infinity;
+
+  // Percorre os karts remotos conectados
+  for (const [pid, entry] of remoteKarts.entries()) {
+    if (entry.progress > myProgress && entry.progress < bestAheadProgress) {
+      bestAheadProgress = entry.progress;
+      targetPeerId = pid;
+    }
+  }
+
+  if (targetPeerId) {
+    sendNetworkEvent({ t: 'apply_stun', targetId: targetPeerId });
+  }
 }
 
 window.addEventListener('keydown', (e) => {
@@ -795,6 +1112,14 @@ function useEquippedSkill(skill) {
 
     case 'LODO':
       dropTrapOnTrack('LODO');
+      break;
+
+    case 'CHOQUE':
+      castShockAbility();
+      break;
+
+    case 'FUMACA':
+      dropTrapOnTrack('FUMACA');
       break;
   }
 }
@@ -840,6 +1165,16 @@ function handleNetworkMessage(data) {
   } else if (data.t === 'destroy_trap') {
     removeTrapMesh(data.trapId);
     if (isHost) broadcastEvent(data);
+  } else if (data.t === 'apply_stun') {
+    // Apenas aplica o atordoamento se o ID recebido corresponder ao ID deste Peer
+    if (racePeer && data.targetId === racePeer.id) {
+      if (!isShieldActive) {
+        physics.stunTimer = 1.0;
+        if (kart) triggerSparkEffect(kart.position);
+      }
+    } else if (isHost) {
+      broadcastEvent(data);
+    }
   }
 }
 
@@ -957,9 +1292,7 @@ function initRaceMultiplayer() {
 
         hostConn.on('data', (data) => {
           if (data.t === 'start_countdown') {
-            setTimeout(() => {
-              startCountdown();
-            }, 1000);
+            startCountdown();
           } else if (data.t === 'snapshot' && data.karts) {
             for (const [peerId, state] of Object.entries(data.karts)) {
               if (peerId !== racePeer.id) {
