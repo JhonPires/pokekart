@@ -1,0 +1,276 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  user-select: none;
+}
+
+body {
+  background: #0f172a;
+  color: #f8fafc;
+  overflow: hidden;
+  height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 32px;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 10;
+  border-bottom: 1px solid #334155;
+}
+
+.btn-back {
+  background: #334155;
+  color: #fff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.2s;
+}
+
+.btn-back:hover {
+  background: #475569;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nickname {
+  font-weight: bold;
+  font-size: 18px;
+  color: #cbd5e1;
+}
+
+.currency {
+  background: #1e293b;
+  padding: 6px 16px;
+  border-radius: 20px;
+  border: 1px solid #334155;
+  font-weight: bold;
+  font-size: 18px;
+  color: #facc15;
+}
+
+.garage-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+}
+
+.viewport-3d {
+  flex: 1;
+  height: 100%;
+  position: relative;
+}
+
+.spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #94a3b8;
+  font-size: 16px;
+  background: rgba(15, 23, 42, 0.8);
+  padding: 12px 24px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+.side-panel {
+  width: 400px;
+  background: #1e293b;
+  border-left: 1px solid #334155;
+  padding: 85px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Container do Grid com Scroll Personalizado */
+.kart-grid-container {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.kart-grid-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.kart-grid-container::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+/* Grid de 2 Colunas */
+.kart-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.kart-card {
+  background: #0f172a;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.kart-card:hover {
+  border-color: #64748b;
+  transform: translateY(-2px);
+}
+
+.kart-card.selected {
+  border-color: #38bdf8;
+  background: #1a2a40;
+}
+
+.kart-card.locked {
+  opacity: 0.65;
+}
+
+/* Prévia da Imagem do Pokémon */
+.kart-thumb {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  margin-bottom: 6px;
+}
+
+.kart-card-name {
+  font-size: 12px;
+  font-weight: bold;
+  color: #f8fafc;
+  text-align: center;
+}
+
+.kart-card-price {
+  font-size: 11px;
+  color: #facc15;
+  font-weight: bold;
+  margin-top: 2px;
+}
+
+.stats-panel {
+  background: #0f172a;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #334155;
+}
+
+.stats-panel h2 {
+  margin-bottom: 12px;
+  font-size: 18px;
+  color: #f8fafc;
+}
+
+.stat-group {
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.bar-bg {
+  height: 8px;
+  background: #334155;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+.bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #38bdf8;
+  transition: width 0.3s ease;
+}
+
+.action-panel {
+  margin-top: auto;
+}
+
+.btn-action {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.btn-action.primary {
+  background: #38bdf8;
+  color: #0f172a;
+}
+
+.btn-action.buy {
+  background: #22c55e;
+  color: #0f172a;
+}
+
+.btn-action.equipped {
+  background: #334155;
+  color: #94a3b8;
+  cursor: default;
+}
+
+/* Container da Imagem de Ficha Técnica */
+.concept-preview-container {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  max-height: 230px;
+}
+
+.concept-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.concept-img:hover {
+  transform: scale(1.03);
+  border-color: #38bdf8;
+}
+
+.viewport-3d {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  /* Imagem de Fundo do Laboratório */
+  background-image: url('img/fundo.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

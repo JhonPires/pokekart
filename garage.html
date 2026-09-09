@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garagem & Loja de Karts</title>
+  <link rel="stylesheet" href="garage.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <button class="btn-back" id="btnBack">⬅ Voltar ao Menu</button>
+    <div class="user-info">
+      <span id="playerNickname" class="nickname">Carregando...</span>
+      <div class="currency">
+        <span class="coin-icon">🪙</span>
+        <span id="playerCoins">0</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="garage-container">
+    <!-- Visualizador 3D -->
+    <div class="viewport-3d" id="kartViewport">
+      <div class="spinner" id="loadingSpinner">Carregando modelo 3D...</div>
+    </div>
+
+    <!-- Painel Lateral -->
+    <aside class="side-panel">
+      <!-- Grid de Karts (2 Colunas) -->
+      <div class="kart-grid-container">
+        <div class="kart-grid" id="kartList"></div>
+      </div>
+
+      <!-- Atributos -->
+      <div class="stats-panel">
+        <h2 id="kartName">Nome do Kart</h2>
+
+        <div class="stat-group">
+          <span>Velocidade Máxima</span>
+          <div class="bar-bg">
+            <div class="bar-fill" id="barSpeed"></div>
+          </div>
+        </div>
+
+        <div class="stat-group">
+          <span>Aceleração</span>
+          <div class="bar-bg">
+            <div class="bar-fill" id="barAccel"></div>
+          </div>
+        </div>
+
+        <div class="stat-group">
+          <span>Dirigibilidade</span>
+          <div class="bar-bg">
+            <div class="bar-fill" id="barHandling"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Container da Ficha Técnica / Concept Art (Abaixo dos Stats) -->
+      <div class="concept-preview-container">
+        <img id="kartConceptImg" src="img/jolteon.png" alt="Ficha Técnica do Kart" class="concept-img" />
+      </div>
+
+      <!-- Botão de Ação -->
+      <div class="action-panel">
+        <button id="btnAction" class="btn-action primary">EQUIPAR</button>
+      </div>
+    </aside>
+  </main>
+  <!-- Gerenciador de Cache de Assets -->
+  <script src="assets.js"></script>
+  <script src="auth.js"></script>
+  <script src="garage.js"></script>
+</body>
+
+</html>

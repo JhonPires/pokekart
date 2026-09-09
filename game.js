@@ -40,63 +40,55 @@ const KART_DATABASE = [
     id: 'jolteon',
     name: 'Jolteon Kart',
     modelUrl: getKartUrl('jolteon.glb'),
-    // Ágil e de rápida aceleração, mas com velocidade máxima menor
     stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
   },
   {
     id: 'zoroark',
     name: 'Zoroark Kart',
     modelUrl: getKartUrl('zoroark.glb'),
-    // Equilibrado para derrapagens constantes
     stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 }
   },
   {
     id: 'togetic',
     name: 'Togetic Kart',
     modelUrl: getKartUrl('togetic.glb'),
-    // Fácil de manusear, boa sustentação
     stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 }
   },
   {
     id: 'charizard',
     name: 'Charizard Kart',
     modelUrl: getKartUrl('charizard.glb'),
-    // Velocidade final alta, porém muito pesado em curvas fechadas
     stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 }
   },
   {
     id: 'flygon',
     name: 'Flygon Kart',
     modelUrl: getKartUrl('flygon.glb'),
-    // Especialista em carregar turbo de Drift
     stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 }
   },
   {
     id: 'gengar',
     name: 'Gengar Kart',
     modelUrl: getKartUrl('gengar.glb'),
-    // Mudança de direção rápida, mas escorrega se virar sem Drift
     stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 }
   },
   {
     id: 'oshawott',
     name: 'Oshawott Kart',
     modelUrl: getKartUrl('oshawott.glb'),
-    // Estável com boa tração básica
     stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 }
   },
   {
     id: 'snorlax',
     name: 'Snorlax Kart',
     modelUrl: getKartUrl('snorlax.glb'),
-    // Tanque pesado: Curva extremamente dura, velocidade final alta e turbo longo
     stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 }
   }
 ];
 
 const urlParams = new URLSearchParams(window.location.search);
 const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
-const selectedKartId = urlParams.get('kart') || 'zoroark';
+const selectedKartId = urlParams.get('kart') || 'jolteon';
 const roomCodeParam = urlParams.get('room');
 const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
 
@@ -224,9 +216,6 @@ const trackMesh = new THREE.Mesh(
 trackMesh.receiveShadow = true;
 scene.add(trackMesh);
 
-// ============================================================
-// 1. COLE AQUI A TEXTURA E O GERADOR DE ZEBRAS (NOVO CÓDIGO)
-// ============================================================
 function createKerbTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128;
@@ -251,9 +240,6 @@ const kerbMaterial = new THREE.MeshStandardMaterial({
   roughness: 0.6
 });
 
-// ------------------------------------------------------------
-// GERADOR DAS ZEBRAS NAS BORDAS DA PISTA (ESPAÇAMENTO CORRIGIDO)
-// ------------------------------------------------------------
 function addTrackKerbs() {
   const segments = 500;
   const kerbWidth = 0.8;
@@ -282,9 +268,8 @@ function addTrackKerbs() {
       positions.push(outerEdge.x, 0.035, outerEdge.z);
 
       const progress = i / segments;
-      // VOLTOU AO PADRÃO ORIGINAL: Repetição suave ao longo da extensão da pista
-      uvs.push(progress * 6, 0);
-      uvs.push(progress * 6, 1);
+      uvs.push(progress * 12, 0);
+      uvs.push(progress * 12, 1);
     }
 
     for (let i = 0; i < segments; i++) {
@@ -313,11 +298,8 @@ function addTrackKerbs() {
     scene.add(kerbMesh);
   });
 }
-
-// Executa o gerador para criar as zebras na cena
 addTrackKerbs();
 
-// Grama em Faixas
 function createStripedGrassTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
@@ -342,7 +324,6 @@ grass.position.y = -0.02;
 grass.receiveShadow = true;
 scene.add(grass);
 
-// Pneus
 function createStripedTireTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
@@ -367,7 +348,6 @@ function addTires() {
     const currentMat = (i % 2 === 0) ? blackTireMat : stripedTireMat;
 
     for (const side of [1, -1]) {
-      // ALTERADO: de +0.8 para +3.5 para posicionar os pneus mais longe do asfalto
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const tireStack = new THREE.Group();
 
@@ -529,7 +509,6 @@ function setLocalKartModel(kartEntry) {
     }
     applyModelToGroup(kart, template, 0xE53935);
 
-    // APLICA AS VANTAGENS DO KART NA FÍSICA
     if (kartEntry.stats) {
       physics.accel = kartEntry.stats.accel;
       physics.maxSpeed = kartEntry.stats.maxSpeed;
@@ -618,11 +597,10 @@ function startCountdown() {
 function updatePhysics(dt) {
   if (!kart || isPaused || !raceStarted) return;
 
-  // Processa a rotação de 360° do Gelo e trava o kart em velocidade 0
   if (physics.spinTimer > 0) {
     physics.spinTimer -= dt;
     physics.speed = 0;
-    kart.rotation.y += dt * 12; // Rotação rápida de derrapagem
+    kart.rotation.y += dt * 12;
     return;
   }
 
@@ -667,13 +645,11 @@ function updatePhysics(dt) {
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
   const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
-  // 1. PENALIDADE POR ESTERÇAR A SECO (Sem Drift em alta velocidade)
   if (turnInput !== 0 && !canDrift && physics.speed > 8) {
     const gripPenalty = 18 * (1.1 - (physics.grip || 0.7));
     physics.speed = Math.max(5, physics.speed - gripPenalty * dt);
   }
 
-  // 2. SISTEMA DE DRIFT E ROTAÇÃO RÍGIDA
   if (canDrift && !backward) {
     if (!physics.isDrifting) {
       physics.isDrifting = true;
@@ -682,7 +658,6 @@ function updatePhysics(dt) {
     }
     physics.driftCharge += dt * (physics.driftRate || 1.0);
 
-    // Ajuste de ângulo no Drift (multiplicado pelo fator de rigidez 0.38)
     const driftSteer = physics.turnSpeed * (physics.driftControl || 1.0);
     physics.heading += physics.driftDirection * driftSteer * 0.38 * movingFactor * dt;
     physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2.5);
@@ -694,11 +669,9 @@ function updatePhysics(dt) {
     physics.driftCharge = 0;
     physics.driftFactor = Math.max(0, physics.driftFactor - dt * 3);
 
-    // CURVA NORMAL RÍGIDA (multiplicada pelo fator de rigidez 0.45)
     physics.heading += turnInput * physics.turnSpeed * 0.45 * movingFactor * dt;
   }
 
-  // 3. VETOR DE MOVIMENTO COM ARRASTO LATERAL (Inércia)
   const slideBlend = physics.driftFactor * 0.45;
   const slipHeading = physics.heading - physics.driftDirection * slideBlend;
   const moveDir = new THREE.Vector3(Math.sin(slipHeading), 0, Math.cos(slipHeading));
@@ -715,11 +688,10 @@ function enforceTrackBoundary() {
   const offset = new THREE.Vector3().subVectors(kart.position, sample.point);
   const lateral = offset.dot(sample.normal);
 
-  const halfWidth = trackWidth / 2; // Borda do asfalto (5.0m)
-  const kerbWidth = 0.8;             // Largura da zebra (0.8m)
-  const grassStart = halfWidth + kerbWidth; // Início real da grama (5.8m)
+  const halfWidth = trackWidth / 2;
+  const kerbWidth = 0.8;
+  const grassStart = halfWidth + kerbWidth;
 
-  // 1. PISOU NA GRAMA (Apenas se passar do asfalto E da zebra)
   if (Math.abs(lateral) > grassStart && Math.abs(lateral) <= (grassStart + 3.2)) {
     const maxGrassSpeed = 4.5; // ~16 km/h na grama
     if (physics.speed > maxGrassSpeed) {
@@ -727,12 +699,11 @@ function enforceTrackBoundary() {
     }
   }
 
-  // 2. COLISÃO COM OS PNEUS (Barreira externa)
   if (Math.abs(lateral) > (grassStart + 3.3)) {
     const sign = Math.sign(lateral);
     const along = offset.clone().addScaledVector(sample.normal, -lateral);
     kart.position.copy(sample.point.clone().add(along).addScaledVector(sample.normal, sign * (grassStart + 3.3)));
-    physics.speed = 0; // Trava o kart nos pneus
+    physics.speed = 0;
   }
 }
 
@@ -768,8 +739,10 @@ function updateRaceTracker(key, position) {
   if (tr.lastRawT > 0.85 && rawT < 0.15) {
     if (tr.passedMidpoint) {
       if (tr.lapCount >= TOTAL_LAPS) {
-        tr.finished = true;
-        tr.finishTime = performance.now();
+        if (!tr.finished) {
+          tr.finished = true;
+          tr.finishTime = Date.now(); // Carimbo sincronizado absoluto
+        }
       } else {
         tr.lapCount++;
       }
@@ -783,7 +756,20 @@ function updateRaceTracker(key, position) {
 }
 
 let localFinishNotified = false;
-function showFinishOverlay(place) {
+async function showFinishOverlay(place) {
+  const rewards = {
+    1: { coins: 150, trophies: 25 },
+    2: { coins: 90, trophies: 12 },
+    3: { coins: 50, trophies: 4 },
+    4: { coins: 20, trophies: -5 }
+  };
+
+  const currentReward = rewards[place] || { coins: 10, trophies: 0 };
+
+  if (typeof addRewards === 'function') {
+    await addRewards(currentReward.coins, currentReward.trophies);
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
   overlay.style.cssText = `
@@ -794,7 +780,10 @@ function showFinishOverlay(place) {
   overlay.innerHTML = `
     <h1 style="margin:0; color:#FFD54F; font-size:40px;">🏁 Corrida Finalizada!</h1>
     <div style="font-size:24px; margin: 15px 0;">Você terminou em ${place}º lugar!</div>
-    <button id="btnRestart" class="lobbyBtn" style="background:#FFD54F; color:#0f172a; border:none; padding:12px 24px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer;">Jogar Novamente</button>
+    <div style="font-size:20px; color:#4CAF50; margin-bottom: 20px;">
+      Recompensa: +${currentReward.coins} 🪙 | ${currentReward.trophies >= 0 ? '+' : ''}${currentReward.trophies} 🏆
+    </div>
+    <button id="btnRestart" style="background:#FFD54F; color:#0f172a; border:none; padding:12px 24px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer;">Continuar</button>
   `;
   document.body.appendChild(overlay);
   document.getElementById('btnRestart').onclick = () => window.location.href = 'index.html';
@@ -837,13 +826,12 @@ const pokeballMat = new THREE.MeshStandardMaterial({
 
 const iceTrapMat = new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.8, roughness: 0.1 });
 const lodoTrapMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, transparent: true, opacity: 0.85, roughness: 0.9 });
-// MATERIAL DA FUMAÇA (CINZA ESCURO / FUMÊ TRANSPARENTE)
 const fumacaTrapMat = new THREE.MeshStandardMaterial({
   color: 0x2a2a2a,
   transparent: true,
   opacity: 0.7,
   roughness: 1.0,
-  depthWrite: false // Evita falhas de transparência no WebGL
+  depthWrite: false
 });
 
 const fumacaCoreMat = new THREE.MeshStandardMaterial({
@@ -919,11 +907,13 @@ function updateItemBoxes(dt) {
   });
 }
 
+// Quando pega uma Pokébola na pista
 function getItemFromBox() {
   const skillKeys = Object.keys(SKILLS);
   const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
   currentItem = SKILLS[randomKey];
 
+  // Atualiza o ícone central
   const iconEl = document.getElementById('itemIcon');
   if (iconEl) iconEl.innerText = currentItem.icon;
 }
@@ -937,13 +927,11 @@ function createTrapMesh(trapData) {
   if (trapData.type === 'FUMACA') {
     const group = new THREE.Group();
 
-    // Reduzido: Raio externo de 3.8 -> 1.8 e altura de 2.2 -> 1.2
     const outerGeo = new THREE.CylinderGeometry(1.8, 1.8, 1.2, 16);
     const outerMesh = new THREE.Mesh(outerGeo, fumacaTrapMat);
     outerMesh.position.y = 0.6;
     group.add(outerMesh);
 
-    // Reduzido: Núcleo denso de 2.2 -> 1.1 e altura de 1.8 -> 0.9
     const innerGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.9, 12);
     const innerMesh = new THREE.Mesh(innerGeo, fumacaCoreMat);
     innerMesh.position.y = 0.5;
@@ -1013,7 +1001,6 @@ function updateTraps(dt) {
       trap.innerMesh.rotation.y -= dt * 0.8;
     }
 
-    // Raio de colisão da fumaça reduzido para 2.0
     const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
 
     if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
@@ -1025,8 +1012,8 @@ function updateTraps(dt) {
 
       if (!isShieldActive) {
         if (trap.type === 'ICE') {
-          physics.speed = 0;      // Zera a velocidade instantaneamente
-          physics.spinTimer = 0.8; // Faz o kart rodar por 0.8s
+          physics.speed = 0;
+          physics.spinTimer = 0.8;
         } else if (trap.type === 'LODO') {
           isControlInverted = true;
           controlInvertTimer = 3.0;
@@ -1038,7 +1025,6 @@ function updateTraps(dt) {
   });
 }
 
-// EFEITO VISUAL DE FAÍSCAS (CHOQUE)
 function triggerSparkEffect(targetPos) {
   const pGroup = new THREE.Group();
   const pGeo = new THREE.BufferGeometry();
@@ -1066,14 +1052,12 @@ function triggerSparkEffect(targetPos) {
   }, 50);
 }
 
-// CORREÇÃO DO CHOQUE: BUSCA O PEER ID CORRETO DO JOGADOR À FRENTE
 function castShockAbility() {
   if (!kart) return;
   const myProgress = raceTrackers.get('local')?.progress || 0;
   let targetPeerId = null;
   let bestAheadProgress = Infinity;
 
-  // Percorre os karts remotos conectados
   for (const [pid, entry] of remoteKarts.entries()) {
     if (entry.progress > myProgress && entry.progress < bestAheadProgress) {
       bestAheadProgress = entry.progress;
@@ -1086,10 +1070,13 @@ function castShockAbility() {
   }
 }
 
+// Quando usa a habilidade ao pressionar a tecla [X]
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyX' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
     currentItem = null;
+
+    // Reseta o ícone central para a interrogação
     const iconEl = document.getElementById('itemIcon');
     if (iconEl) iconEl.innerText = '❓';
   }
@@ -1098,7 +1085,7 @@ window.addEventListener('keydown', (e) => {
 function useEquippedSkill(skill) {
   switch (skill.id) {
     case 'TURBO':
-      physics.turboTimer = 2.5;
+      physics.turboTimer = 2.5 * (physics.turboBonus || 1.0);
       break;
 
     case 'SHIELD':
@@ -1166,7 +1153,6 @@ function handleNetworkMessage(data) {
     removeTrapMesh(data.trapId);
     if (isHost) broadcastEvent(data);
   } else if (data.t === 'apply_stun') {
-    // Apenas aplica o atordoamento se o ID recebido corresponder ao ID deste Peer
     if (racePeer && data.targetId === racePeer.id) {
       if (!isShieldActive) {
         physics.stunTimer = 1.0;
@@ -1287,7 +1273,7 @@ function initRaceMultiplayer() {
                 finished: myTracker ? myTracker.finished : false
               });
             }
-          }, 1000 / 20);
+          }, 1000 / 30); // 30 FPS para transmissão fluida
         });
 
         hostConn.on('data', (data) => {
@@ -1327,7 +1313,7 @@ function networkTick(dt) {
   if (!isHost || !racePeer) return;
 
   netTimer += dt;
-  if (netTimer < 1 / 20) return;
+  if (netTimer < 1 / 30) return; // 30 FPS
   netTimer = 0;
 
   const myTracker = raceTrackers.get('local');
@@ -1372,10 +1358,27 @@ function networkTick(dt) {
 function updateRemoteKarts(dt) {
   for (const entry of remoteKarts.values()) {
     const g = entry.obj.group;
-    const lerpSpeed = Math.min(1, dt * 12);
 
-    g.position.lerp(entry.target.pos, lerpSpeed);
-    g.rotation.y += (entry.target.ry - g.rotation.y) * lerpSpeed;
+    // 1. PREDIÇÃO (Dead Reckoning)
+    if (Math.abs(entry.target.speed) > 1) {
+      const moveDir = new THREE.Vector3(
+        Math.sin(entry.target.ry),
+        0,
+        Math.cos(entry.target.ry)
+      );
+      entry.target.pos.addScaledVector(moveDir, entry.target.speed * dt);
+    }
+
+    // 2. INTERPOLAÇÃO (Lerp suave)
+    const lerpFactor = Math.min(1, dt * 18);
+    g.position.lerp(entry.target.pos, lerpFactor);
+
+    // 3. SUAVIZAÇÃO DA ROTAÇÃO
+    let diffY = entry.target.ry - g.rotation.y;
+    while (diffY < -Math.PI) diffY += Math.PI * 2;
+    while (diffY > Math.PI) diffY -= Math.PI * 2;
+
+    g.rotation.y += diffY * lerpFactor;
   }
 }
 
@@ -1448,6 +1451,67 @@ function updateHUD() {
   }
 }
 
+// CONFIGURAÇÃO DO MINIMAPA 2D
+const minimapCanvas = document.getElementById('minimapCanvas');
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+
+// Normaliza as coordenadas 3D para o Canvas 2D
+function mapToMinimap(x, z) {
+  // Ajuste a escala (0.65) e os offsets conforme o tamanho da sua pista
+  const scale = 0.65;
+  const cx = 80; // Centro X do canvas (160/2)
+  const cy = 80; // Centro Y do canvas (160/2)
+
+  return {
+    x: cx + x * scale,
+    y: cy + z * scale
+  };
+}
+
+function drawMinimap() {
+  if (!minimapCtx || !kart) return;
+
+  minimapCtx.clearRect(0, 0, 160, 160);
+
+  // 1. Desenha o traçado da Pista
+  minimapCtx.beginPath();
+  minimapCtx.lineWidth = 6;
+  minimapCtx.strokeStyle = '#475569';
+
+  const segments = 100;
+  for (let i = 0; i <= segments; i++) {
+    const pt = trackCurve.getPointAt(i / segments);
+    const mPt = mapToMinimap(pt.x, pt.z);
+    if (i === 0) minimapCtx.moveTo(mPt.x, mPt.y);
+    else minimapCtx.lineTo(mPt.x, mPt.y);
+  }
+  minimapCtx.closePath();
+  minimapCtx.stroke();
+
+  // 2. Desenha os Oponentes Remotos (Pontos Azuis)
+  if (typeof remoteKarts !== 'undefined') {
+    for (const entry of remoteKarts.values()) {
+      const pos = entry.obj.group.position;
+      const mPt = mapToMinimap(pos.x, pos.z);
+
+      minimapCtx.beginPath();
+      minimapCtx.arc(mPt.x, mPt.y, 4, 0, Math.PI * 2);
+      minimapCtx.fillStyle = '#38bdf8';
+      minimapCtx.fill();
+    }
+  }
+
+  // 3. Desenha o Jogador Local (Ponto Amarelo/Dourado com Borda)
+  const myPt = mapToMinimap(kart.position.x, kart.position.z);
+  minimapCtx.beginPath();
+  minimapCtx.arc(myPt.x, myPt.y, 5, 0, Math.PI * 2);
+  minimapCtx.fillStyle = '#FFD54F';
+  minimapCtx.fill();
+  minimapCtx.lineWidth = 1.5;
+  minimapCtx.strokeStyle = '#ffffff';
+  minimapCtx.stroke();
+}
+
 // ------------------------------------------------------------
 // LOOP PRINCIPAL
 // ------------------------------------------------------------
@@ -1465,6 +1529,7 @@ function animate() {
   networkTick(dt);
   updateRemoteKarts(dt);
   updateHUD();
+  drawMinimap();
 
   renderer.render(scene, camera);
 }

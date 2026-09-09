@@ -6,10 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pokémon Kart - Lobby</title>
   <style>
-    body,
-    html {
+    * {
+      box-sizing: border-box;
       margin: 0;
       padding: 0;
+    }
+
+    body,
+    html {
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -21,114 +25,223 @@
       color: #fff;
     }
 
-    .lobbyCard {
+    /* Layout Lado a Lado dos Modais */
+    #lobbyMainContainer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: rgba(15, 23, 42, 0.85);
-      padding: 25px 35px;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      padding: 20px;
+      z-index: 100;
+    }
+
+    /* Estilo Padronizado dos Modais */
+    .lobbyCard {
+      background: #1e293b;
+      padding: 24px;
       border-radius: 16px;
-      border: 2px solid #FFD54F;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
       display: flex;
       flex-direction: column;
       align-items: center;
       gap: 12px;
-      min-width: 300px;
+      width: 360px;
+      height: 520px;
+      box-sizing: border-box;
     }
 
     .selectNavBtn {
-      background: #FFD54F;
-      border: none;
-      color: #1e293b;
-      font-size: 20px;
+      background: #334155;
+      border: 1px solid #475569;
+      color: #FFD54F;
+      font-size: 16px;
       font-weight: bold;
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      cursor: pointer;
-      transition: transform 0.1s;
-    }
-
-    .selectNavBtn:hover {
-      transform: scale(1.1);
-    }
-
-    .lobbyBtn {
-      background: #FFD54F;
-      color: #0f172a;
-      border: none;
-      padding: 10px 20px;
-      font-size: 15px;
-      font-weight: bold;
-      border-radius: 8px;
       cursor: pointer;
       transition: all 0.2s;
     }
 
+    .selectNavBtn:hover {
+      background: #475569;
+      transform: scale(1.05);
+    }
+
+    .lobbyBtn {
+      background: #22c55e;
+      color: #0f172a;
+      border: none;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+    }
+
     .lobbyBtn:hover {
-      background: #ffe082;
-      transform: translateY(-2px);
+      filter: brightness(1.1);
+      transform: translateY(-1px);
     }
 
     .lobbyBtnGhost {
       background: transparent;
-      color: #FFD54F;
-      border: 2px solid #FFD54F;
+      color: #38bdf8;
+      border: 1px solid #38bdf8;
+    }
+
+    .lobbyBtnGhost:hover {
+      background: rgba(56, 189, 248, 0.1);
     }
 
     input {
       padding: 10px;
-      border-radius: 6px;
-      border: 1px solid #475569;
-      background: #1e293b;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #0f172a;
       color: #fff;
       text-align: center;
-      font-size: 15px;
+      font-size: 14px;
       outline: none;
+    }
+
+    /* Scrollbar Estilizada */
+    #leaderboardList::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #leaderboardList::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
     }
   </style>
 </head>
 
 <body>
+  <!-- Modal de Autenticação -->
+  <div id="authModal"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    <div
+      style="background: #1e293b; padding: 32px; border-radius: 16px; border: 1px solid #334155; width: 320px; color: #fff; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+      <h2 id="authTitle" style="margin-bottom: 20px; color: #facc15;">Criar Conta</h2>
 
-  <div class="lobbyCard">
-    <h1 style="margin: 0; color: #FFD54F;">🏁 Pokémon Kart</h1>
+      <input type="text" id="authNick" placeholder="Seu Nickname"
+        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
+      <input type="email" id="authEmail" placeholder="Seu E-mail"
+        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
+      <input type="password" id="authPassword" placeholder="Sua Senha"
+        style="width: 100%; padding: 12px; margin-bottom: 20px; box-sizing: border-box;" />
 
-    <input id="playerNickname" type="text" placeholder="Seu Nickname" maxlength="12">
+      <button id="btnAuthSubmit"
+        style="width: 100%; padding: 14px; background: #22c55e; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 12px;">CADASTRAR</button>
 
-    <div id="kartSelector" style="display: flex; align-items: center; gap: 15px;">
-      <button id="btnPrevKart" class="selectNavBtn">◀</button>
-      <div style="text-align: center;">
-        <div id="previewContainer"
-          style="width: 260px; height: 180px; background: rgba(0,0,0,0.4); border-radius: 10px; border: 2px solid #FFD54F;">
+      <div style="font-size: 14px; color: #94a3b8; cursor: pointer;" id="toggleAuthMode">Já tem uma conta? Entrar</div>
+    </div>
+  </div>
+
+  <!-- CONTAINER PRINCIPAL (LOBBY + RANKING) -->
+  <div id="lobbyMainContainer">
+
+    <!-- MODAL 1: LOBBY DE JOGO -->
+    <div class="lobbyCard">
+      <h2 style="margin: 0; color: #facc15; font-size: 20px;">🏎️ Pokémon Kart</h2>
+
+      <!-- Input de Nickname (Preenchido pelo Supabase) -->
+      <input type="text" id="playerNicknameInput" value="Carregando..." disabled readonly
+        style="width: 100%; color: #facc15; font-weight: bold; cursor: not-allowed;" />
+
+      <!-- Badges de Economia -->
+      <div
+        style="width: 100%; display: flex; justify-content: space-around; background: #0f172a; padding: 8px; border-radius: 8px; border: 1px solid #334155;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 16px;">🪙</span>
+          <span id="playerCoinsText" style="font-weight: bold; color: #facc15; font-size: 14px;">0</span>
         </div>
-        <div id="kartName" style="margin-top: 6px; font-weight: bold; color: #FFD54F;">Zoroark Kart</div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 16px;">🏆</span>
+          <span id="playerTrophiesText" style="font-weight: bold; color: #38bdf8; font-size: 14px;">0</span>
+        </div>
       </div>
-      <button id="btnNextKart" class="selectNavBtn">▶</button>
+
+      <!-- Seletor 3D de Kart -->
+      <div id="kartSelector" style="display: flex; align-items: center; gap: 10px;">
+        <button id="btnPrevKart" class="selectNavBtn">◀</button>
+        <div style="text-align: center;">
+          <div id="previewContainer"
+            style="width: 200px; height: 120px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+          </div>
+          <div id="kartName" style="margin-top: 4px; font-weight: bold; color: #38bdf8; font-size: 13px;">Jolteon Kart
+          </div>
+        </div>
+        <button id="btnNextKart" class="selectNavBtn">▶</button>
+      </div>
+
+      <!-- Controles de Sala Multiplayer -->
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button id="btnHost" class="lobbyBtn" style="background: #38bdf8;">Criar Sala</button>
+        <button id="btnJoin" class="lobbyBtn lobbyBtnGhost">Entrar em Sala</button>
+      </div>
+
+      <div id="joinBox" style="display: none; gap: 5px; width: 100%;">
+        <input id="joinCode" placeholder="CÓDIGO" maxlength="5" style="text-transform: uppercase; width: 60%;">
+        <button id="btnConnect" class="lobbyBtn" style="width: 40%;">Conectar</button>
+      </div>
+
+      <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
+      <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
+
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button id="btnStartRace" class="lobbyBtn" style="display:none;">Iniciar Corrida 🏁</button>
+        <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="width: 100%;">Jogar Sozinho</button>
+      </div>
+
+      <!-- Botão para Abrir a Garagem -->
+      <button id="btnOpenGarage"
+        style="width: 100%; padding: 10px; background: #facc15; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;">
+        🛠️ GARAGEM & LOJA
+      </button>
     </div>
 
-    <div style="display: flex; gap: 10px; margin-top: 5px;">
-      <button id="btnHost" class="lobbyBtn">Criar Sala</button>
-      <button id="btnJoin" class="lobbyBtn">Entrar em Sala</button>
+    <!-- MODAL 2: RANKING GLOBAL DE TROFÉUS -->
+    <div class="lobbyCard" style="align-items: stretch;">
+      <h3
+        style="color: #38bdf8; font-size: 18px; text-align: center; margin: 0 0 4px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        🏆 RANKING GLOBAL
+      </h3>
+
+      <!-- Cabeçalho da Tabela -->
+      <div
+        style="display: flex; justify-content: space-between; padding: 8px 12px; background: #0f172a; border-radius: 8px 8px 0 0; font-size: 12px; color: #94a3b8; font-weight: bold; border: 1px solid #334155; border-bottom: none;">
+        <span>POS. JOGADOR</span>
+        <span>TROFÉUS</span>
+      </div>
+
+      <!-- Lista de Jogadores com Scroll Vertical -->
+      <div id="leaderboardList"
+        style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 6px; background: #0f172a; border-radius: 0 0 8px 8px; border: 1px solid #334155; padding: 8px;">
+        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando ranking...</div>
+      </div>
     </div>
 
-    <div id="joinBox" style="display: none; gap: 5px; margin-top: 5px;">
-      <input id="joinCode" placeholder="Código" maxlength="5" style="text-transform: uppercase; width: 100px;">
-      <button id="btnConnect" class="lobbyBtn">Conectar</button>
-    </div>
-
-    <div id="roomCodeDisplay"
-      style="display:none; color: #4CAF50; font-weight: bold; font-size: 18px; margin-top: 5px;"></div>
-    <div id="lobbyStatus" style="color: #94a3b8; font-size: 13px;"></div>
-
-    <div style="display: flex; gap: 10px; margin-top: 10px;">
-      <button id="btnStartRace" class="lobbyBtn" style="display:none; background: #4CAF50; color: #fff;">Iniciar Corrida
-        🏁</button>
-      <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost">Jogar Sozinho</button>
-    </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script src="assets.js"></script>
+  <script src="auth.js"></script>
 
   <script>
     const gltfLoader = new THREE.GLTFLoader();
@@ -149,26 +262,23 @@
       { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') }
     ];
 
-    // LEITURA DO SESSION STORAGE (Restaura o índice e o Nick)
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
     let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
-    if (selectedIndex === -1) selectedIndex = 1; // Padrão Zoroark se não houver salvo
+    if (selectedIndex === -1) selectedIndex = 0; // Padrão inicial definido como 0 (Jolteon)
 
+    // VARIÁVEIS GLOBAIS DA CENA E CONTROLE DE REQUISIÇÃO
     let previewScene, previewCamera, previewRenderer, currentModel;
+    let previewRequestId = 0; // DECLARAÇÃO GLOBAL DA VARIÁVEL
 
     function initPreview() {
       const container = document.getElementById('previewContainer');
 
-      // Restaura o Nickname salvo anteriormente na sessão
-      const savedNick = sessionStorage.getItem('pkart_nickname');
-      if (savedNick) {
-        document.getElementById('playerNickname').value = savedNick;
-      }
-
       previewScene = new THREE.Scene();
       previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-      previewCamera.position.set(0, 1.2, 3.8);
-      previewCamera.lookAt(0, 0.4, 0);
+
+      // ALTERADO: Posição Z mudou de 3.8 para 2.8 para aproximar a visão do kart
+      previewCamera.position.set(0, 1.1, 2.8);
+      previewCamera.lookAt(0, 0.3, 0);
 
       previewRenderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
       previewRenderer.setSize(container.clientWidth, container.clientHeight);
@@ -191,24 +301,80 @@
 
     function updatePreview() {
       const item = KART_DATABASE[selectedIndex];
-      document.getElementById('kartName').innerText = item.name;
+      const kartNameEl = document.getElementById('kartName');
 
-      // Salva a escolha atual na sessão
       sessionStorage.setItem('pkart_selected_kart', item.id);
 
-      if (currentModel) previewScene.remove(currentModel);
+      const requestId = ++previewRequestId;
 
+      if (currentModel) {
+        previewScene.remove(currentModel);
+        currentModel = null;
+      }
+
+      checkKartLockStatus(item.id);
+
+      // 1. REUTILIZAÇÃO INSTANTÂNEA DO CACHE (0ms)
+      if (window.KART_ASSETS && window.KART_ASSETS[item.id]) {
+        currentModel = window.KART_ASSETS[item.id].clone(true);
+
+        // ALTERADO: Aumentado de 1.5 para 2.2
+        currentModel.scale.setScalar(2.2);
+
+        previewScene.add(currentModel);
+        return;
+      }
+
+      // 2. FALLBACK SE AINDA NÃO CARREGOU DO CACHE
       gltfLoader.load(item.modelUrl, (gltf) => {
-        currentModel = gltf.scene;
-        currentModel.scale.setScalar(1.5);
+        if (requestId !== previewRequestId) return;
+
+        if (!window.KART_ASSETS) window.KART_ASSETS = {};
+        window.KART_ASSETS[item.id] = gltf.scene;
+
+        currentModel = gltf.scene.clone(true);
+
+        // ALTERADO: Aumentado de 1.5 para 2.2
+        currentModel.scale.setScalar(2.2);
+
         previewScene.add(currentModel);
       });
     }
 
-    // Escuta alterações no Nickname para salvar na sessão instantaneamente
-    document.getElementById('playerNickname').addEventListener('input', (e) => {
-      sessionStorage.setItem('pkart_nickname', e.target.value.trim().toUpperCase());
-    });
+    // CORREÇÃO DA TRAVA: Garante Jolteon e Charizard como sempre desbloqueados
+    function checkKartLockStatus(kartId) {
+      const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
+
+      // Jolteon e Charizard são gratuitos por padrão
+      let unlockedKarts = ['jolteon', 'charizard'];
+
+      if (profile && profile.unlocked_karts) {
+        unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
+      }
+
+      const isUnlocked = unlockedKarts.includes(kartId);
+
+      const btnStartRace = document.getElementById('btnStartRace');
+      const btnPlaySolo = document.getElementById('btnPlaySolo');
+      const btnHost = document.getElementById('btnHost');
+      const kartNameEl = document.getElementById('kartName');
+
+      const currentItem = KART_DATABASE[selectedIndex];
+
+      if (!isUnlocked) {
+        if (kartNameEl) kartNameEl.innerText = `${currentItem.name} 🔒 (BLOQUEADO)`;
+
+        if (btnPlaySolo) { btnPlaySolo.disabled = true; btnPlaySolo.style.opacity = '0.5'; btnPlaySolo.style.cursor = 'not-allowed'; }
+        if (btnHost) { btnHost.disabled = true; btnHost.style.opacity = '0.5'; btnHost.style.cursor = 'not-allowed'; }
+        if (btnStartRace) { btnStartRace.disabled = true; btnStartRace.style.opacity = '0.5'; btnStartRace.style.cursor = 'not-allowed'; }
+      } else {
+        if (kartNameEl) kartNameEl.innerText = currentItem.name;
+
+        if (btnPlaySolo) { btnPlaySolo.disabled = false; btnPlaySolo.style.opacity = '1'; btnPlaySolo.style.cursor = 'pointer'; }
+        if (btnHost) { btnHost.disabled = false; btnHost.style.opacity = '1'; btnHost.style.cursor = 'pointer'; }
+        if (btnStartRace) { btnStartRace.disabled = false; btnStartRace.style.opacity = '1'; btnStartRace.style.cursor = 'pointer'; }
+      }
+    }
 
     document.getElementById('btnPrevKart').onclick = () => {
       selectedIndex = (selectedIndex - 1 + KART_DATABASE.length) % KART_DATABASE.length;
@@ -220,13 +386,22 @@
       updatePreview();
     };
 
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof preloadAllKarts === 'function') {
+        preloadAllKarts((progress) => {
+          console.log(`Carregando karts: ${Math.round(progress * 100)}%`);
+        });
+      }
+    });
+
     let peer = null;
     let roomCode = '';
     let myAssignedSlot = 0;
     const guestConnections = [];
 
     function getNickname() {
-      const nick = document.getElementById('playerNickname').value.trim().toUpperCase() || 'JOGADOR';
+      const nickInput = document.getElementById('playerNicknameInput');
+      const nick = nickInput ? nickInput.value.trim().toUpperCase() : 'JOGADOR';
       sessionStorage.setItem('pkart_nickname', nick);
       return nick;
     }
@@ -240,7 +415,7 @@
         document.getElementById('roomCodeDisplay').style.display = 'block';
         document.getElementById('roomCodeDisplay').textContent = 'CÓDIGO: ' + roomCode.toUpperCase();
         document.getElementById('btnStartRace').style.display = 'inline-block';
-        document.getElementById('lobbyStatus').textContent = 'Sala criada! Mande o código para seus amigos.';
+        document.getElementById('lobbyStatus').textContent = 'Sala criada! Envie o código.';
       });
 
       peer.on('connection', (conn) => {
@@ -275,7 +450,7 @@
         const conn = peer.connect('pkart-lobby-' + code);
 
         conn.on('open', () => {
-          document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o host iniciar a corrida...';
+          document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o host...';
         });
 
         conn.on('data', (data) => {
