@@ -3,7 +3,6 @@
 // Basta trocar o número no final pelo ID do Pokémon.
 const POKEAPI_SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 
-// Mapeamento dos IDs dos Pokémons na PokeAPI para cada Kart
 const KART_POKEMON_IDS = {
   'jolteon': 135,
   'charizard': 6,
@@ -13,9 +12,8 @@ const KART_POKEMON_IDS = {
   'gengar': 94,
   'oshawott': 501,
   'snorlax': 143,
-  // Novos Pokémons
   'golem': 76,
-  'jinx': 124, // Jynx na PokeAPI usa o ID 124
+  'jinx': 124,
   'sudowoodo': 185,
   'sylveon': 700,
   'umbreon': 197
@@ -159,47 +157,38 @@ async function loadUserData() {
   document.getElementById('playerCoins').innerText = playerProfile.coins;
 }
 
-async function renderKartGrid() {
+function renderKartGrid() {
   const gridEl = document.getElementById('kartList');
   if (!gridEl) return;
-  gridEl.innerHTML = ''; // Limpa o grid existente
+  gridEl.innerHTML = '';
 
-  // Criamos uma lista de promessas para renderizar todos os cards
-  const cardPromises = KART_CATALOG.map(async (kart) => {
-    const isUnlocked = playerProfile.unlocked_karts.includes(kart.id);
+  const unlockedList = (currentUserProfile && currentUserProfile.unlocked_karts)
+    ? currentUserProfile.unlocked_karts
+    : ['jolteon', 'charizard'];
+
+  KART_CATALOG.forEach((kart) => {
+    const isUnlocked = unlockedList.includes(kart.id);
     const isSelected = kart.id === selectedKartId;
 
-    // Busca o ID do Pokémon correspondente
     const pokemonId = KART_POKEMON_IDS[kart.id];
-
-    // Constrói a URL da imagem da PokeAPI (Official Artwork)
-    // Fallback para uma pokebola caso não encontre o ID mapeado
     const thumbSrc = pokemonId
       ? `${POKEAPI_SPRITE_BASE}${pokemonId}.png`
       : 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
 
-    // Cria o elemento do card
     const card = document.createElement('div');
     card.className = `kart-card ${isUnlocked ? '' : 'locked'} ${isSelected ? 'selected' : ''}`;
 
-    // Monta o HTML interno do card usando a imagem da PokeAPI
     card.innerHTML = `
-      <img src="${thumbSrc}" class="kart-thumb" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';" alt="${kart.name}">
+      <img src="${thumbSrc}" class="kart-thumb" loading="lazy" onerror="this.onerror=null; this.src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';" alt="${kart.name}">
       <div class="kart-card-name">${kart.name.split(' ')[0]}</div>
-      ${!isUnlocked ? `<div class="kart-card-price">🪙 ${kart.price}</div>` : `<div class="kart-card-price" style="color:#4caf50;">OK</div>`}
+      ${!isUnlocked ? `<div class="kart-card-price">🪙 ${kart.price}</div>` : `<div class="kart-card-price" style="color:#22c55e;">OK</div>`}
     `;
 
-    // Adiciona o evento de clique
+    // Clique direto sem reconstruir a DOM inteira desnecessariamente
     card.onclick = () => selectKart(kart.id);
 
-    return card;
+    gridEl.appendChild(card);
   });
-
-  // Aguarda todos os cards serem gerados
-  const cards = await Promise.all(cardPromises);
-
-  // Adiciona todos os cards ao grid de uma vez
-  cards.forEach(card => gridEl.appendChild(card));
 }
 
 function updateStatsDisplay(kartId) {
@@ -223,72 +212,83 @@ function updateStatsDisplay(kartId) {
 }
 
 function selectKart(kartId) {
+  // 1. Atualiza a variável de estado global do kart selecionado
   selectedKartId = kartId;
+
+  // 2. Atualização leve da interface (destaca o card clicado sem refazer o DOM)
+  const cards = document.querySelectorAll('.kart-card');
+  cards.forEach(card => {
+    // Se o card pertencer ao kart selecionado, adiciona a classe 'selected'
+    if (card.getAttribute('onclick')?.includes(kartId) || card.dataset.kartId === kartId) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+
+  // 3. Atualiza os dados da ficha técnica (Acelerador, Velocidade, Curva e Preço/Ações)
   const kartData = KART_CATALOG.find(k => k.id === kartId);
+  if (kartData) {
+    // Atualiza nome
+    const nameEl = document.getElementById('kartNameDisplay');
+    if (nameEl) nameEl.innerText = kartData.name;
 
-  if (!kartData) return;
+    // Atualiza barras de estatísticas
+    if (kartData.stats) {
+      const speedEl = document.getElementById('statSpeed');
+      const accelEl = document.getElementById('statAccel');
+      const handlingEl = document.getElementById('statHandling');
 
-  // 1. Atualiza o Nome
-  const nameEl = document.getElementById('kartName');
-  if (nameEl) nameEl.innerText = kartData.name;
-
-  // 2. Atualiza os Atributos
-  const speedEl = document.getElementById('barSpeed');
-  const accelEl = document.getElementById('barAccel');
-  const handEl = document.getElementById('barHandling');
-
-  if (speedEl) speedEl.style.width = `${kartData.stats.speed}%`;
-  if (accelEl) accelEl.style.width = `${kartData.stats.accel}%`;
-  if (handEl) handEl.style.width = `${kartData.stats.handling}%`;
-
-  // 3. Atualiza a Imagem do Concept Art (Ficha Técnica)
-  // Atualização da Imagem de Ficha Técnica
-  const conceptImgEl = document.getElementById('kartConceptImg');
-  if (conceptImgEl) {
-    // Garante que não passe 'undefined' na URL
-    const imgPath = kartData.conceptImg || kartData.previewImg || `img/${kartData.id}.png`;
-
-    if (imgPath && !imgPath.includes('undefined')) {
-      conceptImgEl.src = imgPath;
-    } else {
-      conceptImgEl.src = 'img/jolteon.png'; // Fallback seguro
+      if (speedEl) speedEl.style.width = `${kartData.stats.speed}%`;
+      if (accelEl) accelEl.style.width = `${kartData.stats.accel}%`;
+      if (handlingEl) handlingEl.style.width = `${kartData.stats.handling}%`;
     }
 
-    conceptImgEl.onerror = () => {
-      conceptImgEl.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png';
-    };
+    // Atualiza o estado dos botões de Comprar / Equipar
+    updateGarageButtons(kartData);
   }
 
-  // 4. Atualiza o Botão de Ação (Equipar / Comprar)
-  const isUnlocked = playerProfile.unlocked_karts.includes(kartId);
-  const isEquipped = playerProfile.selected_kart === kartId;
-  const btn = document.getElementById('btnAction');
-
-  if (btn) {
-    if (isEquipped) {
-      btn.className = 'btn-action equipped';
-      btn.innerText = 'EQUIPADO';
-      btn.onclick = null;
-    } else if (isUnlocked) {
-      btn.className = 'btn-action primary';
-      btn.innerText = 'EQUIPAR';
-      btn.onclick = () => equipKart(kartId);
-    } else {
-      btn.className = 'btn-action buy';
-      btn.innerText = `COMPRAR (🪙 ${kartData.price})`;
-      btn.onclick = () => buyKart(kartData);
-    }
-  }
-
-  // 5. Recarrega o Grid visual para destacar o card selecionado e o Modelo 3D
-  renderKartGrid();
-  // Executa a atualização de atributos APENAS se a função existir
+  // 4. Se existir a função utilitária dedicada de atributos, executa com segurança
   if (typeof updateStatsDisplay === 'function') {
     updateStatsDisplay(kartId);
   }
-  loadKartModel(kartData.id, kartData.modelUrl);
+
+  // 5. Exibe o modelo 3D instantaneamente utilizando o cache em memória (0ms)
+  loadKartModel(kartId);
 }
 
+
+// Função auxiliar para gerenciar o estado do botão (Comprar vs Equipar)
+function updateGarageButtons(kartData) {
+  const btnAction = document.getElementById('btnActionKart');
+  if (!btnAction) return;
+
+  const unlockedList = (currentUserProfile && currentUserProfile.unlocked_karts)
+    ? currentUserProfile.unlocked_karts
+    : ['jolteon', 'charizard'];
+
+  const isUnlocked = unlockedList.includes(kartData.id);
+  const isEquipped = currentUserProfile && currentUserProfile.selected_kart === kartData.id;
+
+  if (isEquipped) {
+    btnAction.innerText = 'EQUIPADO';
+    btnAction.style.background = '#94a3b8';
+    btnAction.style.cursor = 'default';
+    btnAction.disabled = true;
+  } else if (isUnlocked) {
+    btnAction.innerText = 'EQUIPAR KART';
+    btnAction.style.background = '#22c55e';
+    btnAction.style.cursor = 'pointer';
+    btnAction.disabled = false;
+    btnAction.onclick = () => equipKart(kartData.id);
+  } else {
+    btnAction.innerText = `COMPRAR (🪙 ${kartData.price})`;
+    btnAction.style.background = '#facc15';
+    btnAction.style.cursor = 'pointer';
+    btnAction.disabled = false;
+    btnAction.onclick = () => buyKart(kartData.id, kartData.price);
+  }
+}
 // Controle de requisição ativa para impedir sobreposição
 let garageRequestId = 0;
 
