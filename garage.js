@@ -101,44 +101,82 @@ function init3DViewport() {
   animate();
 }
 
-// Carregamento de Alta Velocidade do Modelo 3D (0ms)
-function loadKartModel(kartId) {
+async function loadKartModel(kartId) {
   const spinner = document.getElementById('loadingSpinner');
+  if (spinner) spinner.style.display = 'block';
+
   const requestId = ++garageRequestId;
 
+  // 1. Limpa o modelo 3D atual da cena
   if (currentMesh) {
     scene.remove(currentMesh);
     currentMesh = null;
   }
 
-  // 1. Usa o Cache Global Pré-carregado no Lobby
-  if (window.KART_ASSETS && window.KART_ASSETS[kartId]) {
-    if (spinner) spinner.style.display = 'none';
-    currentMesh = window.KART_ASSETS[kartId].clone(true);
+  // Helper para ocultar o spinner e adicionar à cena com segurança
+  const attachMeshToScene = (gltfScene) => {
+    if (requestId !== garageRequestId) return;
+
+    currentMesh = gltfScene.clone(true);
     currentMesh.scale.setScalar(2.0);
     currentMesh.position.set(0, 0, 0);
     scene.add(currentMesh);
+
+    // Oculta o indicador "Carregando modelo 3D..."
+    if (spinner) spinner.style.display = 'none';
+  };
+
+  // 2. RAM CACHE (window.KART_ASSETS) - 0ms
+  if (window.KART_ASSETS && window.KART_ASSETS[kartId]) {
+    attachMeshToScene(window.KART_ASSETS[kartId]);
     return;
   }
 
-  // 2. Fallback Relativo Direct Loader
-  if (spinner) spinner.style.display = 'block';
+  // 3. DISK CACHE (CacheStorage)
+  const modelUrl = `./models/${kartId}.glb`;
   const loader = new THREE.GLTFLoader();
-  loader.load(`./models/${kartId}.glb`, (gltf) => {
-    if (requestId !== garageRequestId) return;
+  const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v1';
 
-    if (!window.KART_ASSETS) window.KART_ASSETS = {};
-    window.KART_ASSETS[kartId] = gltf.scene;
+  try {
+    let arrayBuffer = null;
 
-    currentMesh = gltf.scene.clone(true);
-    currentMesh.scale.setScalar(2.0);
-    currentMesh.position.set(0, 0, 0);
-    scene.add(currentMesh);
+    if ('caches' in window) {
+      const cache = await caches.open(targetCacheName);
+      const cachedResponse = await cache.match(modelUrl);
+      if (cachedResponse) {
+        arrayBuffer = await cachedResponse.arrayBuffer();
+      }
+    }
 
-    if (spinner) spinner.style.display = 'none';
-  });
+    if (arrayBuffer) {
+      loader.parse(arrayBuffer, './models/', (gltf) => {
+        if (!window.KART_ASSETS) window.KART_ASSETS = {};
+        window.KART_ASSETS[kartId] = gltf.scene;
+
+        attachMeshToScene(gltf.scene);
+      });
+      return;
+    }
+  } catch (err) {
+    console.warn('[Garagem] Erro ao ler CacheStorage:', err);
+  }
+
+  // 4. NETWORK FALLBACK
+  loader.load(
+    modelUrl,
+    (gltf) => {
+      if (!window.KART_ASSETS) window.KART_ASSETS = {};
+      window.KART_ASSETS[kartId] = gltf.scene;
+
+      attachMeshToScene(gltf.scene);
+    },
+    undefined,
+    (err) => {
+      console.warn(`[Garagem] Erro ao carregar ${modelUrl}:`, err);
+      if (spinner) spinner.style.display = 'none';
+    }
+  );
 }
-
 // Renderiza a Lista de Cards (Executado Apenas Uma Vez)
 function renderKartGrid() {
   const gridEl = document.getElementById('kartList');
