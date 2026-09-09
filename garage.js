@@ -202,6 +202,26 @@ async function renderKartGrid() {
   cards.forEach(card => gridEl.appendChild(card));
 }
 
+function updateStatsDisplay(kartId) {
+  const kart = KART_CATALOG.find(k => k.id === kartId);
+  if (!kart) return;
+
+  // Atualiza os textos da ficha técnica
+  const nameEl = document.getElementById('kartNameDisplay');
+  if (nameEl) nameEl.innerText = kart.name;
+
+  // Atualiza as barras de atributos
+  if (kart.stats) {
+    const speedBar = document.getElementById('statSpeed');
+    const accelBar = document.getElementById('statAccel');
+    const handlingBar = document.getElementById('statHandling');
+
+    if (speedBar) speedBar.style.width = `${kart.stats.speed}%`;
+    if (accelBar) accelBar.style.width = `${kart.stats.accel}%`;
+    if (handlingBar) handlingBar.style.width = `${kart.stats.handling}%`;
+  }
+}
+
 function selectKart(kartId) {
   selectedKartId = kartId;
   const kartData = KART_CATALOG.find(k => k.id === kartId);
