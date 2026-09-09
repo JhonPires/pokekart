@@ -262,28 +262,29 @@ function selectKart(kartId) {
 
   // 5. Recarrega o Grid visual para destacar o card selecionado e o Modelo 3D
   renderKartGrid();
+  updateStatsDisplay(kartId);
   loadKartModel(kartData.id, kartData.modelUrl);
 }
 
 // Controle de requisição ativa para impedir sobreposição
-let currentLoadRequestId = 0;
+let garageRequestId = 0; // Evita sobreposição ao clicar rápido
 
-function loadKartModel(kartId, modelUrl) {
+function loadKartModel(kartId) {
   const spinner = document.getElementById('loadingSpinner');
   if (spinner) spinner.style.display = 'block';
 
-  // Incrementa a ID do pedido atual. Chamadas antigas serão ignoradas!
-  const requestId = ++currentLoadRequestId;
+  // Incrementa a requisição atual
+  const requestId = ++garageRequestId;
 
-  // 1. Limpa QUALQUER modelo que já esteja na cena
+  // 1. Limpa o modelo 3D atual da cena antes de colocar o novo
   if (currentMesh) {
     scene.remove(currentMesh);
     currentMesh = null;
   }
 
-  // 2. Se o modelo já foi pré-carregado na memória global, usa INSTANTANEAMENTE
+  // 2. REUTILIZAÇÃO INSTANTÂNEA DO CACHE GLOBAL (0ms)
   if (window.KART_ASSETS && window.KART_ASSETS[kartId]) {
-    if (requestId !== currentLoadRequestId) return; // Cancela se o usuário já clicou em outro
+    if (requestId !== garageRequestId) return;
 
     currentMesh = window.KART_ASSETS[kartId].clone(true);
     currentMesh.scale.setScalar(2.0);
@@ -294,38 +295,33 @@ function loadKartModel(kartId, modelUrl) {
     return;
   }
 
-  // 3. Fallback: Se não estava no cache, carrega via rede de forma segura
+  // 3. FALLBACK: Se por algum motivo não estava no cache, carrega do caminho relativo
+  const modelUrl = `./models/${kartId}.glb`;
   const loader = new THREE.GLTFLoader();
-  loader.load(modelUrl, (gltf) => {
-    // SE O USUÁRIO CLICOU EM OUTRO KART ENQUANTO ESTE BAIXAVA, IGNORA O RESULTADO
-    if (requestId !== currentLoadRequestId) return;
 
-    // Garante limpeza extra antes de adicionar
-    if (currentMesh) scene.remove(currentMesh);
+  loader.load(
+    modelUrl,
+    (gltf) => {
+      // Se o usuário trocou de kart durante o download, descarta
+      if (requestId !== garageRequestId) return;
 
-    // Guarda no cache global para as próximas vezes
-    if (!window.KART_ASSETS) window.KART_ASSETS = {};
-    window.KART_ASSETS[kartId] = gltf.scene;
+      if (!window.KART_ASSETS) window.KART_ASSETS = {};
+      window.KART_ASSETS[kartId] = gltf.scene;
 
-    currentMesh = gltf.scene.clone(true);
-    currentMesh.scale.setScalar(2.0);
-    currentMesh.position.set(0, 0, 0);
-    scene.add(currentMesh);
+      currentMesh = gltf.scene.clone(true);
+      currentMesh.scale.setScalar(2.0);
+      currentMesh.position.set(0, 0, 0);
+      scene.add(currentMesh);
 
-    if (spinner) spinner.style.display = 'none';
-  }, undefined, (err) => {
-    if (requestId !== currentLoadRequestId) return;
-
-    console.warn(`[3D] Erro ao carregar ${modelUrl}. Exibindo modelo básico.`, err);
-
-    const geo = new THREE.BoxGeometry(1.2, 0.6, 2);
-    const mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8 });
-    currentMesh = new THREE.Mesh(geo, mat);
-    currentMesh.position.set(0, 0.5, 0);
-    scene.add(currentMesh);
-
-    if (spinner) spinner.style.display = 'none';
-  });
+      if (spinner) spinner.style.display = 'none';
+    },
+    undefined,
+    (err) => {
+      if (requestId !== garageRequestId) return;
+      console.warn(`[Garagem] Erro ao carregar ${modelUrl}`, err);
+      if (spinner) spinner.style.display = 'none';
+    }
+  );
 }
 
 async function equipKart(kartId) {
