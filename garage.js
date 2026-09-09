@@ -282,7 +282,10 @@ function selectKart(kartId) {
 
   // 5. Recarrega o Grid visual para destacar o card selecionado e o Modelo 3D
   renderKartGrid();
-  updateStatsDisplay(kartId);
+ // Executa a atualização de atributos APENAS se a função existir
+  if (typeof updateStatsDisplay === 'function') {
+    updateStatsDisplay(kartId);
+  }
   loadKartModel(kartData.id, kartData.modelUrl);
 }
 
