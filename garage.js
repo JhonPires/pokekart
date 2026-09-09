@@ -12,7 +12,13 @@ const KART_POKEMON_IDS = {
   'flygon': 330,
   'gengar': 94,
   'oshawott': 501,
-  'snorlax': 143
+  'snorlax': 143,
+  // Novos Pokémons
+  'golem': 76,
+  'jinx': 124, // Jynx na PokeAPI usa o ID 124
+  'sudowoodo': 185,
+  'sylveon': 700,
+  'umbreon': 197
 };
 
 // Atualize os caminhos no KART_CATALOG
@@ -24,7 +30,13 @@ const KART_CATALOG = [
   { id: 'flygon', name: 'Flygon Kart', price: 1500, conceptImg: 'img/flygon.png', modelUrl: 'models/flygon.glb', stats: { speed: 90, accel: 70, handling: 75 } },
   { id: 'gengar', name: 'Gengar Kart', price: 2000, conceptImg: 'img/gengar.png', modelUrl: 'models/gengar.glb', stats: { speed: 78, accel: 85, handling: 65 } },
   { id: 'oshawott', name: 'Oshawott Kart', price: 2200, conceptImg: 'img/oshawott.png', modelUrl: 'models/oshawott.glb', stats: { speed: 78, accel: 88, handling: 75 } },
-  { id: 'snorlax', name: 'Snorlax Kart', price: 3500, conceptImg: 'img/snorlax.png', modelUrl: 'models/snorlax.glb', stats: { speed: 98, accel: 55, handling: 85 } }
+  { id: 'snorlax', name: 'Snorlax Kart', price: 3500, conceptImg: 'img/snorlax.png', modelUrl: 'models/snorlax.glb', stats: { speed: 98, accel: 55, handling: 85 } },
+  // Novos Karts com Preços e Atributos Balanceados
+  { id: 'sudowoodo', name: 'Sudowoodo Kart', price: 1200, conceptImg: 'img/sudowoodo.png', modelUrl: 'models/sudowoodo.glb', stats: { speed: 65, accel: 75, handling: 90 } },
+  { id: 'golem', name: 'Golem Kart', price: 1800, conceptImg: 'img/golem.png', modelUrl: 'models/golem.glb', stats: { speed: 92, accel: 60, handling: 70 } },
+  { id: 'jinx', name: 'Jynx Kart', price: 2400, conceptImg: 'img/jinx.png', modelUrl: 'models/jinx.glb', stats: { speed: 82, accel: 82, handling: 80 } },
+  { id: 'umbreon', name: 'Umbreon Kart', price: 3000, conceptImg: 'img/umbreon.png', modelUrl: 'models/umbreon.glb', stats: { speed: 88, accel: 85, handling: 85 } },
+  { id: 'sylveon', name: 'Sylveon Kart', price: 3200, conceptImg: 'img/sylveon.png', modelUrl: 'models/sylveon.glb', stats: { speed: 84, accel: 92, handling: 90 } }
 ];
 
 let playerProfile = null;

@@ -9,7 +9,13 @@ const ASSET_LIST = [
   { id: 'flygon', url: 'models/flygon.glb' },
   { id: 'gengar', url: 'models/gengar.glb' },
   { id: 'oshawott', url: 'models/oshawott.glb' },
-  { id: 'snorlax', url: 'models/snorlax.glb' }
+  { id: 'snorlax', url: 'models/snorlax.glb' },
+  // Novos Karts
+  { id: 'golem', url: 'models/golem.glb' },
+  { id: 'jinx', url: 'models/jinx.glb' },
+  { id: 'sudowoodo', url: 'models/sudowoodo.glb' },
+  { id: 'sylveon', url: 'models/sylveon.glb' },
+  { id: 'umbreon', url: 'models/umbreon.glb' }
 ];
 
 async function preloadAllKarts(onProgress) {
