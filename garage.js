@@ -282,7 +282,7 @@ function selectKart(kartId) {
 
   // 5. Recarrega o Grid visual para destacar o card selecionado e o Modelo 3D
   renderKartGrid();
- // Executa a atualização de atributos APENAS se a função existir
+  // Executa a atualização de atributos APENAS se a função existir
   if (typeof updateStatsDisplay === 'function') {
     updateStatsDisplay(kartId);
   }
@@ -290,61 +290,47 @@ function selectKart(kartId) {
 }
 
 // Controle de requisição ativa para impedir sobreposição
-let garageRequestId = 0; // Evita sobreposição ao clicar rápido
+let garageRequestId = 0;
 
 function loadKartModel(kartId) {
   const spinner = document.getElementById('loadingSpinner');
-  if (spinner) spinner.style.display = 'block';
-
-  // Incrementa a requisição atual
   const requestId = ++garageRequestId;
 
-  // 1. Limpa o modelo 3D atual da cena antes de colocar o novo
+  // 1. Remove o modelo 3D atual da cena instantaneamente
   if (currentMesh) {
     scene.remove(currentMesh);
     currentMesh = null;
   }
 
-  // 2. REUTILIZAÇÃO INSTANTÂNEA DO CACHE GLOBAL (0ms)
+  // Esconde o spinner de carregamento imediatamente se o item estiver em cache
   if (window.KART_ASSETS && window.KART_ASSETS[kartId]) {
+    if (spinner) spinner.style.display = 'none';
+
+    // Clona e insere na cena síncronamente (0ms)
+    currentMesh = window.KART_ASSETS[kartId].clone(true);
+    currentMesh.scale.setScalar(2.0);
+    currentMesh.position.set(0, 0, 0);
+    scene.add(currentMesh);
+    return;
+  }
+
+  // 2. FALLBACK (Se por algum motivo o preloader ainda não tiver terminado)
+  if (spinner) spinner.style.display = 'block';
+
+  const loader = new THREE.GLTFLoader();
+  loader.load(`./models/${kartId}.glb`, (gltf) => {
     if (requestId !== garageRequestId) return;
 
-    currentMesh = window.KART_ASSETS[kartId].clone(true);
+    if (!window.KART_ASSETS) window.KART_ASSETS = {};
+    window.KART_ASSETS[kartId] = gltf.scene;
+
+    currentMesh = gltf.scene.clone(true);
     currentMesh.scale.setScalar(2.0);
     currentMesh.position.set(0, 0, 0);
     scene.add(currentMesh);
 
     if (spinner) spinner.style.display = 'none';
-    return;
-  }
-
-  // 3. FALLBACK: Se por algum motivo não estava no cache, carrega do caminho relativo
-  const modelUrl = `./models/${kartId}.glb`;
-  const loader = new THREE.GLTFLoader();
-
-  loader.load(
-    modelUrl,
-    (gltf) => {
-      // Se o usuário trocou de kart durante o download, descarta
-      if (requestId !== garageRequestId) return;
-
-      if (!window.KART_ASSETS) window.KART_ASSETS = {};
-      window.KART_ASSETS[kartId] = gltf.scene;
-
-      currentMesh = gltf.scene.clone(true);
-      currentMesh.scale.setScalar(2.0);
-      currentMesh.position.set(0, 0, 0);
-      scene.add(currentMesh);
-
-      if (spinner) spinner.style.display = 'none';
-    },
-    undefined,
-    (err) => {
-      if (requestId !== garageRequestId) return;
-      console.warn(`[Garagem] Erro ao carregar ${modelUrl}`, err);
-      if (spinner) spinner.style.display = 'none';
-    }
-  );
+  });
 }
 
 async function equipKart(kartId) {
