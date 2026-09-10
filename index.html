@@ -18,7 +18,6 @@
       height: 100%;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      /* Textura de Linhas Diagonais Estilo Persona/Kart no Tom Azul do Tema */
       background-color: #0b1329;
       background-image: repeating-linear-gradient(-45deg,
           rgba(30, 41, 59, 0.4) 0,
@@ -60,7 +59,6 @@
       height: 48px;
     }
 
-    /* Layout Centralizado do Lobby com Suporte para a Logo */
     #lobbyMainContainer {
       position: fixed;
       top: 0;
@@ -78,7 +76,6 @@
       z-index: 100;
     }
 
-    /* Logo do Jogo */
     .gameLogo {
       max-width: 280px;
       height: auto;
@@ -86,7 +83,6 @@
       filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
     }
 
-    /* Estilo Padronizado do Card Principal */
     .lobbyCard {
       background: #1e293b;
       padding: 24px;
@@ -159,7 +155,6 @@
       outline: none;
     }
 
-    /* COMPONENTE DROPDOWN CUSTOMIZADO */
     .customDropdownWrapper {
       position: relative;
       width: 100%;
@@ -243,7 +238,6 @@
       color: #0f172a;
     }
 
-    /* Estilos dos Botões do Menu Lateral */
     .sideMenuBtn {
       width: 100%;
       background: #0f172a;
@@ -317,139 +311,8 @@
     </div>
   </div>
 
-  <!-- OVERLAY ESCURO DO MENU LATERAL -->
-  <div id="sideMenuOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
-  </div>
-
-  <!-- PAINEL DO MENU LATERAL (DRAWER) -->
-  <div id="sideMenuDrawer"
-    style="position: fixed; top: 0; left: -320px; width: 300px; height: 100vh; background: #171e2e; border-right: 1px solid #334155; padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; transition: left 0.3s ease; z-index: 900; box-shadow: 5px 0 25px rgba(0,0,0,0.5);">
-    <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h2 style="color: #fff; font-size: 22px; font-weight: 900; letter-spacing: 1px; margin: 0;">MENU</h2>
-        <button id="btnCloseSideMenu"
-          style="background: #0f172a; border: 1px solid #334155; color: #fff; width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <button class="sideMenuBtn" id="menuBtnGarage">
-          <span>🏪</span> Loja / Garagem
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnTrackBuilder">
-          <span>🎨</span> Criador de Pistas
-        </button>
-
-        <button class="sideMenuBtn active" id="menuBtnRankings">
-          <span>🏆</span> Rankings
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnHowToPlay">
-          <span>❓</span> Como jogar
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnOptions">
-          <span>⚙️</span> Opções
-        </button>
-      </div>
-    </div>
-
-    <div>
-      <div
-        style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; background: #0f172a; padding: 10px; border-radius: 10px; border: 1px solid #334155;">
-        <div
-          style="width: 40px; height: 40px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid #fff;">
-          🧢
-        </div>
-        <div>
-          <div id="sideMenuNick" style="color: #fff; font-weight: bold; font-size: 15px;">Piloto</div>
-          <div style="color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">LENDA DAS PISTAS</div>
-        </div>
-      </div>
-
-      <button id="btnLogout"
-        style="background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; text-align: left;">
-        Sair da conta
-      </button>
-    </div>
-  </div>
-
-  <!-- MODAL POPUP DE RANKINGS -->
-  <div id="rankingModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="lobbyCard"
-      style="width: 380px; height: 520px; align-items: stretch; justify-content: flex-start; position: relative;">
-      <button id="btnCloseRankingModal"
-        style="position: absolute; top: 16px; right: 16px; background: #0f172a; border: 1px solid #334155; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
-
-      <h2 style="color: #facc15; font-size: 18px; text-align: center; margin-bottom: 12px;">🏆 Rankings Globais</h2>
-
-      <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
-        <button id="tabLeaderboardTrophies" class="lobbyBtn"
-          style="flex: 1; background: #38bdf8; color: #0f172a; font-size: 12px; font-weight: bold; padding: 8px; border: none; border-radius: 8px; cursor: pointer;">
-          🏆 Troféus
-        </button>
-        <button id="tabLeaderboardTracks" class="lobbyBtn"
-          style="flex: 1; background: transparent; color: #94a3b8; font-size: 12px; font-weight: bold; padding: 8px; border: 1px solid #334155; border-radius: 8px; cursor: pointer;">
-          ⏱️ Recordes
-        </button>
-      </div>
-
-      <!-- SELETOR DE RECORDES POR PISTA (CUSTOMIZADO) -->
-      <div id="trackRecordSelectorBox" style="display: none; width: 100%; margin-bottom: 8px;">
-        <select id="leaderboardTrackSelect" style="display:none;">
-          <option value="default">🏁 Circuito Oficial (Padrão)</option>
-        </select>
-
-        <div class="customDropdownWrapper" id="customRankDropdown">
-          <div class="customDropdownTrigger" id="rankDropdownTrigger">
-            <span id="rankDropdownSelectedLabel">🏁 Circuito Oficial (Padrão)</span>
-            <span class="customDropdownArrow">▼</span>
-          </div>
-          <div class="customDropdownMenu" id="rankDropdownMenu">
-            <div class="customDropdownOption selected" data-value="default">🏁 Circuito Oficial (Padrão)</div>
-          </div>
-        </div>
-      </div>
-
-      <div
-        style="display: flex; justify-content: space-between; padding: 8px 12px; background: #0f172a; border-radius: 8px 8px 0 0; font-size: 12px; color: #94a3b8; font-weight: bold; border: 1px solid #334155; border-bottom: none;">
-        <span>POS. JOGADOR</span>
-        <span id="leaderboardColumnTitle">TROFÉUS</span>
-      </div>
-
-      <div id="leaderboardList"
-        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: #0f172a; border-radius: 0 0 8px 8px; border: 1px solid #334155; padding: 8px;">
-        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando ranking...</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL DE AUTENTICAÇÃO -->
-  <div id="authModal"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div
-      style="background: #1e293b; padding: 32px; border-radius: 16px; border: 1px solid #334155; width: 320px; color: #fff; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-      <h2 id="authTitle" style="margin-bottom: 20px; color: #facc15;">Criar Conta</h2>
-
-      <input type="text" id="authNick" placeholder="Seu Nickname"
-        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
-      <input type="email" id="authEmail" placeholder="Seu E-mail"
-        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
-      <input type="password" id="authPassword" placeholder="Sua Senha"
-        style="width: 100%; padding: 12px; margin-bottom: 20px; box-sizing: border-box;" />
-
-      <button id="btnAuthSubmit"
-        style="width: 100%; padding: 14px; background: #22c55e; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 12px;">CADASTRAR</button>
-
-      <div style="font-size: 14px; color: #94a3b8; cursor: pointer;" id="toggleAuthMode">Já tem uma conta? Entrar</div>
-    </div>
-  </div>
-
   <!-- CONTAINER PRINCIPAL DO LOBBY -->
   <div id="lobbyMainContainer">
-    <!-- LOGO DO JOGO -->
     <img src="img/logo.png" alt="Pokémon Kart Logo" class="gameLogo">
 
     <div class="lobbyCard">
@@ -481,10 +344,8 @@
       <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
       <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
 
-      <!-- SELETOR DE PISTA CUSTOMIZADO -->
       <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
-        <label style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">ESCOLHA A
-          PISTA:</label>
+        <label style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">ESCOLHA A PISTA:</label>
 
         <select id="trackSelectDropdown" style="display:none;">
           <option value="">🏁 Circuito Oficial (Padrão)</option>
@@ -707,7 +568,6 @@
       updatePreview();
     };
 
-    // LÓGICA DE BINDING DOS DROPDOWNS CUSTOMIZADOS
     function bindCustomDropdown(triggerId, menuId, nativeSelectId, labelId, onChangeCallback) {
       const trigger = document.getElementById(triggerId);
       const menu = document.getElementById(menuId);
@@ -750,21 +610,15 @@
     }
 
     function setupCustomDropdowns() {
-      // Dropdown Principal do Lobby
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
-
-      // Dropdown de Pistas do Modal de Ranking
-      bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel', (val) => {
-        if (typeof loadTrackRecordsLeaderboard === 'function') {
-          loadTrackRecordsLeaderboard(val);
-        }
-      });
     }
 
+    // VARIABLES MULTIPLAYER LOBBY
     let peer = null;
     let roomCode = '';
     let myAssignedSlot = 0;
-    const guestConnections = [];
+    let guestConnections = [];
+    let hostLobbyConn = null;
 
     function getNickname() {
       const nickHeader = document.getElementById('playerHeaderNick');
@@ -814,13 +668,13 @@
       peer = new Peer();
 
       peer.on('open', () => {
-        const conn = peer.connect('pkart-lobby-' + code);
+        hostLobbyConn = peer.connect('pkart-lobby-' + code, { reliable: true });
 
-        conn.on('open', () => {
+        hostLobbyConn.on('open', () => {
           document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o host...';
         });
 
-        conn.on('data', (data) => {
+        hostLobbyConn.on('data', (data) => {
           if (data.t === 'assign_slot') {
             myAssignedSlot = data.slot;
           }
@@ -845,80 +699,27 @@
 
     document.getElementById('btnStartRace').onclick = () => {
       const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
+      
+      // Notifica todos os convidados via PeerJS
       guestConnections.forEach(conn => {
         if (conn.open) {
           conn.send({ t: 'start', trackId: chosenTrack });
         }
       });
 
+      // Aguarda 600ms para garantir o envio das mensagens antes do Host navegar
       setTimeout(() => {
         redirectToRace(roomCode, 0, chosenTrack);
-      }, 200);
+      }, 600);
     };
 
     document.getElementById('btnPlaySolo').onclick = () => {
       redirectToRace('', 0);
     };
 
-    async function loadApprovedTracks() {
-      const raceTrackSelect = document.getElementById('trackSelectDropdown');
-      const rankTrackSelect = document.getElementById('leaderboardTrackSelect');
-      const customMenu = document.getElementById('dropdownMenu');
-      const customRankMenu = document.getElementById('rankDropdownMenu');
-
-      if (typeof supabaseClient === 'undefined') return;
-
-      try {
-        const { data: tracks, error } = await supabaseClient
-          .from('custom_tracks')
-          .select('id, name, creator_name')
-          .eq('is_approved', true)
-          .order('created_at', { ascending: false });
-
-        if (error || !tracks) return;
-
-        tracks.forEach(tr => {
-          const optionText = `📍 ${tr.name} (por ${tr.creator_name})`;
-
-          if (raceTrackSelect) {
-            const opt = document.createElement('option');
-            opt.value = tr.id;
-            opt.textContent = optionText;
-            raceTrackSelect.appendChild(opt);
-          }
-
-          if (rankTrackSelect) {
-            const optRank = document.createElement('option');
-            optRank.value = tr.id;
-            optRank.textContent = optionText;
-            rankTrackSelect.appendChild(optRank);
-          }
-
-          if (customMenu) {
-            const customOpt = document.createElement('div');
-            customOpt.className = 'customDropdownOption';
-            customOpt.setAttribute('data-value', tr.id);
-            customOpt.textContent = optionText;
-            customMenu.appendChild(customOpt);
-          }
-
-          if (customRankMenu) {
-            const customRankOpt = document.createElement('div');
-            customRankOpt.className = 'customDropdownOption';
-            customRankOpt.setAttribute('data-value', tr.id);
-            customRankOpt.textContent = optionText;
-            customRankMenu.appendChild(customRankOpt);
-          }
-        });
-      } catch (err) {
-        console.warn('Erro ao carregar pistas da comunidade:', err);
-      }
-    }
-
     window.onload = () => {
       initPreview();
       setupCustomDropdowns();
-      loadApprovedTracks();
     };
   </script>
 </body>
