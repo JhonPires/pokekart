@@ -869,7 +869,7 @@ function setLocalKartModel(kartEntry) {
 setLocalKartModel(KART_DATABASE[selectedKartIndex]);
 
 // ------------------------------------------------------------
-// CONTROLES E CÂMERA
+// CONTROLES, GIROSCÓPIO E CÂMERA
 // ------------------------------------------------------------
 let isPaused = false;
 const pauseMenuEl = document.getElementById('pauseMenu');
@@ -891,6 +891,119 @@ if (btnReturnLobbyEl) {
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
+
+// CONTROLES MÓVEIS (TOUCH & GIROSCÓPIO)
+let isMobileDevice = false;
+let gyroTurnInput = 0; // Varia de -1 (esquerda total) até 1 (direita total)
+let touchControls = { forward: false, backward: false, drift: false };
+
+function detectMobileAndSetupControls() {
+  isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+  const container = document.getElementById('mobileHudContainer');
+  if (!container) return;
+
+  if (isMobileDevice) {
+    container.style.display = 'block';
+    setupTouchButtons();
+    initGyroscopeAuto();
+  }
+}
+
+function initGyroscopeAuto() {
+  const btnGyro = document.getElementById('btnEnableGyro');
+  
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    if (btnGyro) {
+      btnGyro.onclick = () => {
+        DeviceOrientationEvent.requestPermission()
+          .then(permissionState => {
+            if (permissionState === 'granted') {
+              window.addEventListener('deviceorientation', handleGyroscopeOrientation);
+              btnGyro.style.borderColor = '#22c55e';
+              btnGyro.style.color = '#22c55e';
+              btnGyro.innerText = '📱 Giroscópio Ativo';
+            } else {
+              alert('Permissão para uso do giroscópio negada.');
+            }
+          })
+          .catch(console.error);
+      };
+    }
+  } else {
+    window.addEventListener('deviceorientation', handleGyroscopeOrientation);
+    if (btnGyro) {
+      btnGyro.innerText = '📱 Giroscópio Ativo';
+      btnGyro.style.borderColor = '#22c55e';
+      btnGyro.style.color = '#22c55e';
+    }
+  }
+}
+
+function handleGyroscopeOrientation(event) {
+  if (event.gamma === null) return;
+
+  let tilt = event.gamma;
+
+  if (window.orientation === 90 || window.orientation === -90) {
+    tilt = window.orientation === -90 ? -event.gamma : event.gamma;
+  }
+
+  if (Math.abs(tilt) < 3) {
+    gyroTurnInput = 0;
+  } else {
+    const maxTilt = 28;
+    const clamped = THREE.MathUtils.clamp(tilt, -maxTilt, maxTilt);
+    gyroTurnInput = clamped / maxTilt;
+  }
+}
+
+function bindTouchButton(elementId, onPress, onRelease) {
+  const btn = document.getElementById(elementId);
+  if (!btn) return;
+
+  btn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    onPress();
+  }, { passive: false });
+
+  btn.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    onRelease();
+  }, { passive: false });
+}
+
+function setupTouchButtons() {
+  bindTouchButton('btnMobileAccel', 
+    () => { touchControls.forward = true; }, 
+    () => { touchControls.forward = false; }
+  );
+
+  bindTouchButton('btnMobileBrake', 
+    () => { touchControls.backward = true; }, 
+    () => { touchControls.backward = false; }
+  );
+
+  bindTouchButton('btnMobileDrift', 
+    () => { touchControls.drift = true; }, 
+    () => { touchControls.drift = false; }
+  );
+
+  const btnItem = document.getElementById('btnMobileItem');
+  if (btnItem) {
+    btnItem.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (currentItem && raceStarted) {
+        useEquippedSkill(currentItem);
+        currentItem = null;
+        const iconEl = document.getElementById('itemIcon');
+        if (iconEl) iconEl.innerText = '❓';
+      }
+    }, { passive: false });
+  }
+}
+
+detectMobileAndSetupControls();
 
 const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
@@ -956,15 +1069,16 @@ function updatePhysics(dt) {
   }
 
   const raceOver = raceTrackers.get('local')?.finished;
-  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp']);
-  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown']);
+
+  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || touchControls.forward);
+  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || touchControls.backward);
 
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
 
   const left = isControlInverted ? rawRight : rawLeft;
   const right = isControlInverted ? rawLeft : rawRight;
-  const driftKey = !raceOver && keys['Space'];
+  const driftKey = !raceOver && (keys['Space'] || touchControls.drift);
 
   if (forward) physics.speed += physics.accel * dt;
   else if (backward) physics.speed -= physics.brakeDecel * dt;
@@ -981,9 +1095,11 @@ function updatePhysics(dt) {
 
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
-  const turnInput = (left ? 1 : 0) - (right ? 1 : 0);
+  const keyboardTurn = (left ? 1 : 0) - (right ? 1 : 0);
+  const turnInput = gyroTurnInput !== 0 ? -gyroTurnInput : keyboardTurn;
+
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
-  const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
+  const canDrift = driftKey && (turnInput !== 0) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
   if (turnInput !== 0 && !canDrift && physics.speed > 8) {
     const gripPenalty = 18 * (1.1 - (physics.grip || 0.7));
@@ -993,7 +1109,7 @@ function updatePhysics(dt) {
   if (canDrift && !backward) {
     if (!physics.isDrifting) {
       physics.isDrifting = true;
-      physics.driftDirection = turnInput !== 0 ? Math.sign(turnInput) : (left ? 1 : -1);
+      physics.driftDirection = Math.sign(turnInput);
       physics.driftCharge = 0;
     }
     physics.driftCharge += dt * (physics.driftRate || 1.0);
@@ -1794,7 +1910,7 @@ function updateStandings() {
   racers.sort((a, b) => {
     if (a.tr.finished && b.tr.finished) return a.tr.finishTime - b.tr.finishTime;
     if (a.tr.finished) return -1;
-    if (b.tr.finished) return 1;
+    if (a.tr.finished) return 1;
     return b.tr.progress - a.tr.progress;
   });
 
