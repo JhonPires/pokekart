@@ -4,8 +4,24 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Estado local do jogador logado
+// Estado local do jogador logado e modo do ranking
 let currentUserProfile = null;
+let currentLeaderboardMode = 'trophies'; // 'trophies' | 'tracks'
+
+// Helper para sanitize de texto (prevenir XSS)
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Helper para formatar tempo (ms -> mm:ss.mmm)
+function formatRecordTime(ms) {
+  if (!ms || isNaN(ms)) return '--:--.---';
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const milliseconds = Math.floor(ms % 1000);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+}
 
 // Cadastrar com Email e Senha
 async function signUpPlayer(email, password, nickname) {
@@ -43,6 +59,13 @@ async function fetchPlayerProfile() {
   }
 
   currentUserProfile = data;
+
+  // Atualiza o nickname no Menu Lateral
+  const sideNickEl = document.getElementById('sideMenuNick');
+  if (sideNickEl && data.nickname) {
+    sideNickEl.innerText = data.nickname;
+  }
+
   return data;
 }
 
@@ -85,23 +108,18 @@ async function addRewards(coinsEarned, trophiesEarned) {
 
 let isLoginMode = false;
 
-// Preenche o modal e ativa as ações do Lobby com os dados do Supabase
+// Preenche a barra superior e ativa as ações do Lobby com os dados do Supabase
 async function updateLobbyUI() {
   // 1. Dados do Jogador Logado
   const profile = await fetchPlayerProfile();
   if (profile) {
-    const nickInput = document.getElementById('playerNicknameInput');
+    const headerNick = document.getElementById('playerHeaderNick');
     const coinsText = document.getElementById('playerCoinsText');
     const trophiesText = document.getElementById('playerTrophiesText');
 
-    if (nickInput) {
-      nickInput.value = profile.nickname;
-      nickInput.disabled = true;
-      nickInput.readOnly = true;
-    }
-
-    if (coinsText) coinsText.innerText = profile.coins;
-    if (trophiesText) trophiesText.innerText = profile.trophies;
+    if (headerNick) headerNick.innerText = profile.nickname || 'Piloto';
+    if (coinsText) coinsText.innerText = profile.coins || 0;
+    if (trophiesText) trophiesText.innerText = profile.trophies || 0;
 
     // Sincroniza o seletor de kart do lobby com o kart equipado no perfil do jogador
     if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {
@@ -114,11 +132,6 @@ async function updateLobbyUI() {
   }
 
   // 2. Configura os Botões do Lobby
-  const btnGarage = document.getElementById('btnOpenGarage');
-  if (btnGarage) {
-    btnGarage.onclick = () => window.location.href = 'garage.html';
-  }
-
   const btnStartRace = document.getElementById('btnStartRace');
   if (btnStartRace) {
     btnStartRace.onclick = () => {
@@ -128,21 +141,23 @@ async function updateLobbyUI() {
     };
   }
 
-  // 3. Busca e Renderiza o Ranking Global
-  await loadLeaderboard();
+  // 3. Busca e Renderiza o Ranking Inicial (Troféus)
+  await loadTrophiesLeaderboard();
 }
 
-// Função para buscar os TOP 10 Jogadores com mais Troféus no Supabase
-async function loadLeaderboard() {
+// Renderiza o Ranking Global por Troféus
+async function loadTrophiesLeaderboard() {
   const listEl = document.getElementById('leaderboardList');
+  const titleEl = document.getElementById('leaderboardColumnTitle');
   if (!listEl) return;
+
+  if (titleEl) titleEl.innerText = 'TROFÉUS';
 
   if (typeof supabaseClient === 'undefined') {
     listEl.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:12px;">Erro ao conectar Supabase</div>';
     return;
   }
 
-  // Busca do banco ordenando por maior quantidade de troféus
   const { data: topPlayers, error } = await supabaseClient
     .from('profiles')
     .select('nickname, trophies')
@@ -158,19 +173,17 @@ async function loadLeaderboard() {
   listEl.innerHTML = '';
 
   topPlayers.forEach((player, index) => {
-    const item = document.createElement('div');
-    item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
-
-    // Destaque para os 3 primeiros colocados (Ouro, Prata e Bronze)
     let posBadge = `${index + 1}º`;
     if (index === 0) posBadge = '🥇 1º';
     else if (index === 1) posBadge = '🥈 2º';
     else if (index === 2) posBadge = '🥉 3º';
 
+    const item = document.createElement('div');
+    item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
     item.innerHTML = `
       <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
         <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
-        <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${player.nickname || 'Anônimo'}</span>
+        <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(player.nickname || 'Anônimo')}</span>
       </div>
       <div style="font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
         <span>🏆</span> ${player.trophies || 0}
@@ -181,6 +194,178 @@ async function loadLeaderboard() {
   });
 }
 
+// Renderiza o Ranking de Recordes por Pista (Join track_records -> profiles)
+async function loadTrackRecordsLeaderboard(trackId) {
+  const listEl = document.getElementById('leaderboardList');
+  const titleEl = document.getElementById('leaderboardColumnTitle');
+  if (!listEl) return;
+
+  if (titleEl) titleEl.innerText = 'TEMPO';
+  listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; padding-top:10px;">Carregando recordes...</div>';
+
+  try {
+    const { data: records, error } = await supabaseClient
+      .from('track_records')
+      .select('best_time_ms, profiles ( nickname )')
+      .eq('track_id', trackId || 'default')
+      .order('best_time_ms', { ascending: true }) // Menor tempo primeiro
+      .limit(10);
+
+    if (error) throw error;
+
+    if (!records || records.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; padding-top:10px;">Nenhum recorde registrado nesta pista ainda!</div>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    records.forEach((rec, index) => {
+      let posBadge = `${index + 1}º`;
+      if (index === 0) posBadge = '🥇 1º';
+      else if (index === 1) posBadge = '🥈 2º';
+      else if (index === 2) posBadge = '🥉 3º';
+
+      const nick = rec.profiles ? rec.profiles.nickname : 'Piloto';
+      const timeStr = formatRecordTime(rec.best_time_ms);
+
+      const item = document.createElement('div');
+      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+          <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
+          <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">${escapeHtml(nick)}</span>
+        </div>
+        <div style="font-weight: bold; color: #facc15; font-family: monospace; font-size: 13px;">
+          ⏱️ ${timeStr}
+        </div>
+      `;
+      listEl.appendChild(item);
+    });
+
+  } catch (err) {
+    console.error('Erro ao buscar recordes:', err);
+    listEl.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:12px;">Erro ao carregar recordes</div>';
+  }
+}
+
+// Configura as Abas e Seletores do Ranking
+function setupLeaderboardTabs() {
+  const btnTrophies = document.getElementById('tabLeaderboardTrophies');
+  const btnTracks = document.getElementById('tabLeaderboardTracks');
+  const trackSelectorBox = document.getElementById('trackRecordSelectorBox');
+  const trackSelect = document.getElementById('leaderboardTrackSelect');
+
+  if (btnTrophies && btnTracks) {
+    // Clique na Aba TROFÉUS
+    btnTrophies.onclick = () => {
+      currentLeaderboardMode = 'trophies';
+
+      // Estilo Ativo (Azul com texto escuro)
+      btnTrophies.style.background = '#38bdf8';
+      btnTrophies.style.color = '#0f172a';
+      btnTrophies.style.border = 'none';
+
+      // Estilo Inativo (Transparente com texto cinza)
+      btnTracks.style.background = 'transparent';
+      btnTracks.style.color = '#94a3b8';
+      btnTracks.style.border = '1px solid #334155';
+
+      if (trackSelectorBox) trackSelectorBox.style.display = 'none';
+      loadTrophiesLeaderboard();
+    };
+
+    // Clique na Aba RECORDES
+    btnTracks.onclick = () => {
+      currentLeaderboardMode = 'tracks';
+
+      // Estilo Ativo (Azul com texto escuro)
+      btnTracks.style.background = '#38bdf8';
+      btnTracks.style.color = '#0f172a';
+      btnTracks.style.border = 'none';
+
+      // Estilo Inativo (Transparente com texto cinza)
+      btnTrophies.style.background = 'transparent';
+      btnTrophies.style.color = '#94a3b8';
+      btnTrophies.style.border = '1px solid #334155';
+
+      if (trackSelectorBox) trackSelectorBox.style.display = 'block';
+      const selectedTrack = trackSelect ? trackSelect.value : 'default';
+      loadTrackRecordsLeaderboard(selectedTrack);
+    };
+  }
+
+  if (trackSelect) {
+    trackSelect.onchange = () => {
+      if (currentLeaderboardMode === 'tracks') {
+        loadTrackRecordsLeaderboard(trackSelect.value);
+      }
+    };
+  }
+}
+
+// Gerenciamento do Menu Lateral (Drawer) e Modais Popup
+function setupSideMenu() {
+  const btnOpen = document.getElementById('btnOpenSideMenu');
+  const btnClose = document.getElementById('btnCloseSideMenu');
+  const drawer = document.getElementById('sideMenuDrawer');
+  const overlay = document.getElementById('sideMenuOverlay');
+
+  const btnRankings = document.getElementById('menuBtnRankings');
+  const rankingModal = document.getElementById('rankingModalOverlay');
+  const btnCloseRanking = document.getElementById('btnCloseRankingModal');
+  const btnGarage = document.getElementById('menuBtnGarage');
+  const btnLogout = document.getElementById('btnLogout');
+  const btnTrackBuilder = document.getElementById('menuBtnTrackBuilder');
+
+  if (btnTrackBuilder) {
+    btnTrackBuilder.onclick = () => window.location.href = 'track_builder.html';
+  }
+
+  function openMenu() {
+    if (drawer) drawer.style.left = '0px';
+    if (overlay) overlay.style.display = 'block';
+  }
+
+  function closeMenu() {
+    if (drawer) drawer.style.left = '-320px';
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  if (btnOpen) btnOpen.onclick = openMenu;
+  if (btnClose) btnClose.onclick = closeMenu;
+  if (overlay) overlay.onclick = closeMenu;
+
+  // Abrir Modal de Rankings pelo Menu Lateral
+  if (btnRankings) {
+    btnRankings.onclick = () => {
+      closeMenu();
+      if (rankingModal) rankingModal.style.display = 'flex';
+      loadTrophiesLeaderboard();
+    };
+  }
+
+  if (btnCloseRanking) {
+    btnCloseRanking.onclick = () => {
+      if (rankingModal) rankingModal.style.display = 'none';
+    };
+  }
+
+  // Redirecionar para a Garagem
+  if (btnGarage) {
+    btnGarage.onclick = () => window.location.href = 'garage.html';
+  }
+
+  // Ação de Sair da Conta (Logout)
+  if (btnLogout) {
+    btnLogout.onclick = async () => {
+      if (confirm('Deseja realmente sair da sua conta?')) {
+        await supabaseClient.auth.signOut();
+        window.location.reload();
+      }
+    };
+  }
+}
+
 // Inicialização dos Eventos e Autenticação
 document.addEventListener('DOMContentLoaded', async () => {
   const modal = document.getElementById('authModal');
@@ -189,30 +374,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   const title = document.getElementById('authTitle');
   const nickInput = document.getElementById('authNick');
 
-  // Verifica se o jogador já está logado ao abrir a página
-  const profile = await fetchPlayerProfile();
-  if (profile) {
+  setupLeaderboardTabs();
+  setupSideMenu();
+
+  // Verifica a sessão atual com o Supabase
+  const { data: { session } } = await supabaseClient.auth.getSession();
+
+  if (session) {
     if (modal) modal.style.display = 'none';
-    console.log('Jogador logado:', profile.nickname);
+    await updateLobbyUI();
+  } else {
+    if (modal) modal.style.display = 'flex';
   }
 
   // Alterna entre modo Cadastro e Login
   if (toggleBtn) {
     toggleBtn.onclick = () => {
       isLoginMode = !isLoginMode;
-      title.innerText = isLoginMode ? 'Entrar na Conta' : 'Criar Conta';
-      submitBtn.innerText = isLoginMode ? 'ENTRAR' : 'CADASTRAR';
-      toggleBtn.innerText = isLoginMode ? 'Não tem conta? Cadastrar-se' : 'Já tem uma conta? Entrar';
-      nickInput.style.display = isLoginMode ? 'none' : 'block';
+      if (title) title.innerText = isLoginMode ? 'Entrar na Conta' : 'Criar Conta';
+      if (submitBtn) submitBtn.innerText = isLoginMode ? 'ENTRAR' : 'CADASTRAR';
+      if (toggleBtn) toggleBtn.innerText = isLoginMode ? 'Não tem conta? Cadastrar-se' : 'Já tem uma conta? Entrar';
+      if (nickInput) nickInput.style.display = isLoginMode ? 'none' : 'block';
     };
   }
 
-  // Envio do Formulário
+  // Envio do Formulário de Auth
   if (submitBtn) {
     submitBtn.onclick = async () => {
-      const email = document.getElementById('authEmail').value;
-      const password = document.getElementById('authPassword').value;
-      const nickname = document.getElementById('authNick').value;
+      const emailEl = document.getElementById('authEmail');
+      const passEl = document.getElementById('authPassword');
+      const nickEl = document.getElementById('authNick');
+
+      const email = emailEl ? emailEl.value.trim() : '';
+      const password = passEl ? passEl.value.trim() : '';
+      const nickname = nickEl ? nickEl.value.trim() : '';
 
       try {
         if (isLoginMode) {
@@ -223,13 +418,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           await loginPlayer(email, password);
         }
         if (modal) modal.style.display = 'none';
-        window.location.reload(); // Recarrega para aplicar os dados logados no menu
+        window.location.reload();
       } catch (err) {
         alert('Erro ao autenticar: ' + err.message);
       }
     };
   }
-
-  // Atualiza a Interface do Lobby
-  updateLobbyUI();
 });

@@ -4,6 +4,9 @@
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+let raceStartTime = 0;
+let totalRaceTimeMs = 0;
+let raceTimerInterval = null;
 // Gerador de Árvores Paralelo às Margens da Pista (Zero Árvores no Asfalto)
 let currentTreeGroup = null;
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -15,6 +18,13 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+function formatTime(ms) {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  const milliseconds = Math.floor(ms % 1000);
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+}
 
 // Configuração do Cenário Visual (Céu, Névoa, Sol e Vegetação)
 function setupEnhancedEnvironment(scene) {
@@ -213,6 +223,7 @@ function getTrackCurve() {
 }
 
 let trackCurve = getTrackCurve();
+let currentTrackPoints = trackCurve.getSpacedPoints(150);
 let trackWidth = 10;
 const trackElementsGroup = new THREE.Group();
 scene.add(trackElementsGroup);
@@ -229,6 +240,7 @@ function updateTrackSamples() {
     const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
     trackSamples.push({ t, point, normal });
   }
+  currentTrackPoints = trackCurve.getSpacedPoints(150);
 }
 
 // OBRIGATÓRIO: Força a geração dos pontos antes de qualquer checagem de distância
@@ -424,7 +436,7 @@ function createStripedGrassTexture() {
 }
 
 const grassMat = new THREE.MeshStandardMaterial({
-  color: 0x388e3c, // Cor verde garantida caso a textura demore para carregar
+  color: 0x388e3c,
   map: createStripedGrassTexture(),
   roughness: 0.9
 });
@@ -554,8 +566,6 @@ addTires();
 addStartFinishLine();
 setupEnhancedEnvironment(scene);
 
-
-
 function respawnTreesForTrack() {
   if (currentTreeGroup) {
     scene.remove(currentTreeGroup);
@@ -579,7 +589,6 @@ function respawnTreesForTrack() {
   let attempts = 0;
   const maxAttempts = 1500;
 
-  // AUMENTADO: Largura da pista (10/2 = 5) + 14.0m de margem = 19m longe do centro da pista
   const MIN_DISTANCE_FROM_TRACK = (trackWidth / 2) + 14.0;
 
   while (spawned < treeCount && attempts < maxAttempts) {
@@ -591,7 +600,6 @@ function respawnTreesForTrack() {
     const z = Math.sin(angle) * radius;
     const treePos = new THREE.Vector3(x, 0, z);
 
-    // Valida com base nos samples recém-gerados
     const { sample } = nearestTrackSample(treePos);
     const distToTrack = sample.point.distanceTo(treePos);
 
@@ -669,8 +677,6 @@ async function loadCustomTrack(trackParam) {
     addTrackKerbs();
     addTires();
     addStartFinishLine();
-    // spawnBoostPads(trackData.boosts);
-    // Atualiza caixas de itens e recria árvores
     spawnItemBoxes(trackData.items);
     respawnTreesForTrack();
 
@@ -713,7 +719,7 @@ function getGridPosition(gridIndex) {
 }
 
 // ------------------------------------------------------------
-// CARREGAMENTO 3D (CACHE STORAGE + DRACO) E FÍSICA DO KART
+// CARREGAMENTO 3D E FÍSICA DO KART
 // ------------------------------------------------------------
 const KART_MODEL_SCALE = 2.2;
 
@@ -723,14 +729,12 @@ async function loadKartTemplate(kartEntry, callback) {
     return;
   }
 
-  // 1. TENTA USAR A MEMÓRIA RAM
   if (window.KART_ASSETS && window.KART_ASSETS[kartEntry.id]) {
     kartEntry.template = window.KART_ASSETS[kartEntry.id];
     if (callback) callback(kartEntry.template);
     return;
   }
 
-  // Configuração do Loader com Suporte a DRACO
   const loader = new THREE.GLTFLoader();
   if (typeof THREE.DRACOLoader !== 'undefined') {
     const dracoLoader = new THREE.DRACOLoader();
@@ -740,7 +744,6 @@ async function loadKartTemplate(kartEntry, callback) {
 
   const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
 
-  // 2. TENTA LER DO CACHE STORAGE DO NAVEGADOR (0ms)
   try {
     if ('caches' in window) {
       const cache = await caches.open(targetCacheName);
@@ -760,7 +763,6 @@ async function loadKartTemplate(kartEntry, callback) {
     console.warn('[Game] Erro ao carregar Cache Storage:', err);
   }
 
-  // 3. FALLBACK DE REDE COM GRAVAÇÃO NO CACHE
   try {
     const response = await fetch(kartEntry.modelUrl);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -896,7 +898,7 @@ const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-const ZOOM_LEVELS = [20, 25];
+const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
 window.addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'c') {
@@ -929,6 +931,7 @@ function startCountdown() {
       overlay.innerText = 'GO!';
       overlay.style.color = '#4CAF50';
       raceStarted = true;
+      raceStartTime = performance.now();
     } else {
       clearInterval(timer);
       overlay.style.display = 'none';
@@ -977,7 +980,6 @@ function updatePhysics(dt) {
   }
 
   let currentMax = physics.maxSpeed;
-  // checkBoostPads();
   if (physics.turboTimer > 0) {
     physics.turboTimer -= dt;
     currentMax *= 1.4;
@@ -1105,13 +1107,45 @@ async function showFinishOverlay(place) {
     1: { coins: 150, trophies: 25 },
     2: { coins: 90, trophies: 12 },
     3: { coins: 50, trophies: 4 },
-    4: { coins: 20, trophies: -5 }
+    4: { coins: 20, trophies: 1 }
   };
 
   const currentReward = rewards[place] || { coins: 10, trophies: 0 };
+  const finalTimeMs = Math.round(totalRaceTimeMs);
+  const formattedTime = formatTime(finalTimeMs);
+  let isNewRecord = false;
 
   if (typeof addRewards === 'function') {
     await addRewards(currentReward.coins, currentReward.trophies);
+  }
+
+  const currentTrackId = customTrackParam || 'default';
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
+    try {
+      const { data: existingRecord } = await supabaseClient
+        .from('track_records')
+        .select('*')
+        .eq('user_id', currentUserProfile.id)
+        .eq('track_id', currentTrackId)
+        .single();
+
+      if (!existingRecord) {
+        await supabaseClient.from('track_records').insert({
+          user_id: currentUserProfile.id,
+          track_id: currentTrackId,
+          best_time_ms: finalTimeMs
+        });
+        isNewRecord = true;
+      } else if (finalTimeMs < existingRecord.best_time_ms) {
+        await supabaseClient.from('track_records').update({
+          best_time_ms: finalTimeMs,
+          created_at: new Date()
+        }).eq('id', existingRecord.id);
+        isNewRecord = true;
+      }
+    } catch (err) {
+      console.warn('Erro ao salvar recorde de tempo:', err);
+    }
   }
 
   const overlay = document.createElement('div');
@@ -1121,20 +1155,25 @@ async function showFinishOverlay(place) {
     background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 300; color: #fff;
   `;
+
   overlay.innerHTML = `
     <h1 style="margin:0; color:#FFD54F; font-size:40px;">🏁 Corrida Finalizada!</h1>
-    <div style="font-size:24px; margin: 15px 0;">Você terminou em ${place}º lugar!</div>
-    <div style="font-size:20px; color:#4CAF50; margin-bottom: 20px;">
+    <div style="font-size:22px; margin: 10px 0;">Sua Posição: <strong>${place}º lugar</strong></div>
+    <div style="font-size:26px; color:#38bdf8; font-weight:bold; margin-bottom: 5px;">
+      Tempo Total: ${formattedTime} ${isNewRecord ? '🔥 <span style="color:#22c55e; font-size:18px;">(NOVO RECORDE!)</span>' : ''}
+    </div>
+    <div style="font-size:18px; color:#4CAF50; margin-bottom: 20px;">
       Recompensa: +${currentReward.coins} 🪙 | ${currentReward.trophies >= 0 ? '+' : ''}${currentReward.trophies} 🏆
     </div>
     <button id="btnRestart" style="background:#FFD54F; color:#0f172a; border:none; padding:12px 24px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer;">Continuar</button>
   `;
+
   document.body.appendChild(overlay);
   document.getElementById('btnRestart').onclick = () => window.location.href = 'index.html';
 }
 
 // ------------------------------------------------------------
-// POKÉBOLAS, ARMADILHAS E HABILIDADES NO (X)
+// POKÉBOLAS, ARMADILHAS E HABILIDADES NO (E)
 // ------------------------------------------------------------
 const SKILLS = {
   TURBO: { id: 'TURBO', name: 'Aceleração de Fogo', icon: '🔥' },
@@ -1190,7 +1229,6 @@ const itemBoxes = [];
 const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
 
 function spawnItemBoxes(customItems) {
-  // Limpa caixas antigas da cena
   itemBoxes.forEach(b => {
     if (b.mesh) scene.remove(b.mesh);
   });
@@ -1233,7 +1271,7 @@ function disableItemBox(boxId) {
   if (box && box.active) {
     box.active = false;
     box.mesh.visible = false;
-    box.respawnTimer = 5.0; // Renasce em 5 segundos
+    box.respawnTimer = 5.0;
   }
 }
 
@@ -1422,7 +1460,7 @@ function castShockAbility() {
 }
 
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'KeyX' && currentItem && raceStarted) {
+  if (e.code === 'KeyE' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
     currentItem = null;
 
@@ -1785,10 +1823,16 @@ function updateHUD() {
     const lapEl = document.getElementById('hud-current-lap');
     const speedEl = document.getElementById('hud-speed');
     const speedFillEl = document.getElementById('speedfill');
+    const timerEl = document.getElementById('hud-race-timer');
 
     if (lapEl) lapEl.innerText = tr.lapCount;
     if (speedEl) speedEl.innerText = Math.floor(Math.abs(physics.speed) * 3.6);
     if (speedFillEl) speedFillEl.style.width = `${Math.min(100, (Math.abs(physics.speed) / physics.maxSpeed) * 100)}%`;
+
+    if (raceStarted && !tr.finished) {
+      totalRaceTimeMs = performance.now() - raceStartTime;
+      if (timerEl) timerEl.innerText = formatTime(totalRaceTimeMs);
+    }
 
     if (tr.finished && !localFinishNotified) {
       localFinishNotified = true;
@@ -1797,60 +1841,161 @@ function updateHUD() {
   }
 }
 
-// MINIMAPA 2D
-const minimapCanvas = document.getElementById('minimapCanvas');
-const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+// ------------------------------------------------------------
+// CÁLCULO E DESENHO DINÂMICO DO MINIMAPA
+// ------------------------------------------------------------
+// CÁLCULO E DESENHO DINÂMICO DO MINIMAPA
+function getTrackBounds(trackPoints) {
+  let minX = Infinity, maxX = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
 
-function mapToMinimap(x, z) {
-  const scale = 0.65;
-  const cx = 80;
-  const cy = 80;
+  trackPoints.forEach(p => {
+    if (p.x < minX) minX = p.x;
+    if (p.x > maxX) maxX = p.x;
+    if (p.z < minZ) minZ = p.z;
+    if (p.z > maxZ) maxZ = p.z;
+  });
 
+  // Aumentado a margem para evitar que a pista encoste na borda do minimapa circular
+  const padding = 45;
   return {
-    x: cx + x * scale,
-    y: cy + z * scale
+    minX: minX - padding,
+    maxX: maxX + padding,
+    minZ: minZ - padding,
+    maxZ: maxZ + padding,
+    width: (maxX - minX) + (padding * 2),
+    height: (maxZ - minZ) + (padding * 2)
   };
 }
 
 function drawMinimap() {
-  if (!minimapCtx || !kart) return;
+  const canvas = document.getElementById('minimapCanvas');
+  if (!canvas || !currentTrackPoints || currentTrackPoints.length === 0) return;
+  const ctx = canvas.getContext('2d');
 
-  minimapCtx.clearRect(0, 0, 160, 160);
+  const width = canvas.width;
+  const height = canvas.height;
+  const radius = width / 2;
 
-  minimapCtx.beginPath();
-  minimapCtx.lineWidth = 6;
-  minimapCtx.strokeStyle = '#475569';
+  ctx.clearRect(0, 0, width, height);
 
-  const segments = 100;
-  for (let i = 0; i <= segments; i++) {
-    const pt = trackCurve.getPointAt(i / segments);
-    const mPt = mapToMinimap(pt.x, pt.z);
-    if (i === 0) minimapCtx.moveTo(mPt.x, mPt.y);
-    else minimapCtx.lineTo(mPt.x, mPt.y);
+  // 1. MÁSCARA CIRCULAR (Evita que qualquer desenho vaze do minimapa)
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
+  ctx.clip();
+
+  // 2. FUNDO TECH / RADAR COM GRADIENTE E GRADE
+  const bgGrad = ctx.createRadialGradient(radius, radius, 10, radius, radius, radius);
+  bgGrad.addColorStop(0, '#1e293b');
+  bgGrad.addColorStop(1, '#0b1329');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, width, height);
+
+  // Linhas de Grade Estilo Radar Suaves
+  ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(radius, 0); ctx.lineTo(radius, height);
+  ctx.moveTo(0, radius); ctx.lineTo(width, radius);
+  ctx.arc(radius, radius, radius * 0.5, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // 3. MAPEAMENTO DE COORDENADAS
+  const bounds = getTrackBounds(currentTrackPoints);
+  const mapSize = Math.min(width, height);
+  const scale = mapSize / Math.max(bounds.width, bounds.height);
+  const offsetX = (width - bounds.width * scale) / 2;
+  const offsetY = (height - bounds.height * scale) / 2;
+
+  function worldToMinimap(x, z) {
+    return {
+      x: offsetX + (x - bounds.minX) * scale,
+      y: offsetY + (z - bounds.minZ) * scale
+    };
   }
-  minimapCtx.closePath();
-  minimapCtx.stroke();
 
-  if (typeof remoteKarts !== 'undefined') {
-    for (const entry of remoteKarts.values()) {
-      const pos = entry.obj.group.position;
-      const mPt = mapToMinimap(pos.x, pos.z);
+  // 4. DESENHO DA PISTA - CAMADA 1: SOMBRA DO ASFALTO (Borda Escura)
+  ctx.beginPath();
+  ctx.strokeStyle = '#020617';
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  currentTrackPoints.forEach((pt, i) => {
+    const pos = worldToMinimap(pt.x, pt.z);
+    if (i === 0) ctx.moveTo(pos.x, pos.y);
+    else ctx.lineTo(pos.x, pos.y);
+  });
+  ctx.closePath();
+  ctx.stroke();
 
-      minimapCtx.beginPath();
-      minimapCtx.arc(mPt.x, mPt.y, 4, 0, Math.PI * 2);
-      minimapCtx.fillStyle = '#38bdf8';
-      minimapCtx.fill();
+  // 5. DESENHO DA PISTA - CAMADA 2: TRAÇADO PRINCIPAL EM BRANCO GLOW
+  ctx.save();
+  ctx.shadowColor = '#38bdf8';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 3.5;
+  currentTrackPoints.forEach((pt, i) => {
+    const pos = worldToMinimap(pt.x, pt.z);
+    if (i === 0) ctx.moveTo(pos.x, pos.y);
+    else ctx.lineTo(pos.x, pos.y);
+  });
+  ctx.closePath();
+  ctx.stroke();
+  ctx.restore();
+
+  // 6. LINHA DE CHEGADA / LARGADA (Ponto quadriculado)
+  const startPos = worldToMinimap(currentTrackPoints[0].x, currentTrackPoints[0].z);
+  ctx.fillStyle = '#facc15';
+  ctx.beginPath();
+  ctx.arc(startPos.x, startPos.y, 3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 7. RENDERIZAR ADVERSÁRIOS REMOTOS (Pontos Vermelhos com Borda)
+  for (const entry of remoteKarts.values()) {
+    if (entry.obj && entry.obj.group) {
+      const pos = worldToMinimap(entry.obj.group.position.x, entry.obj.group.position.z);
+
+      ctx.fillStyle = '#ef4444';
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
     }
   }
 
-  const myPt = mapToMinimap(kart.position.x, kart.position.z);
-  minimapCtx.beginPath();
-  minimapCtx.arc(myPt.x, myPt.y, 5, 0, Math.PI * 2);
-  minimapCtx.fillStyle = '#FFD54F';
-  minimapCtx.fill();
-  minimapCtx.lineWidth = 1.5;
-  minimapCtx.strokeStyle = '#ffffff';
-  minimapCtx.stroke();
+  // 8. RENDERIZAR JOGADOR LOCAL (Ponto Amarelo com Pulso / Glow)
+  if (kart) {
+    const pos = worldToMinimap(kart.position.x, kart.position.z);
+    const pulseRadius = 5 + Math.sin(performance.now() * 0.008) * 1.5;
+
+    // Anel de Brilho Pulsante
+    ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, pulseRadius + 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Marcador Central
+    ctx.fillStyle = '#facc15';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  ctx.restore(); // Remove a máscara circular
+
+  // 9. BORDA EXTERNA ESTILIZADA DO MINIMAPA
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 1.5, 0, Math.PI * 2);
+  ctx.stroke();
 }
 
 // ------------------------------------------------------------

@@ -73,10 +73,7 @@ function loadPreset() {
     { t: 0.50 },
     { t: 0.75 }
   ];
-  boosts = [
-    { t: 0.15 },
-    { t: 0.65 }
-  ];
+
   isClosed = true;
   updateInfo();
   render();

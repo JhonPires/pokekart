@@ -18,14 +18,49 @@
       height: 100%;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: radial-gradient(circle, #2c3e50 0%, #0f172a 100%);
+      /* Textura de Linhas Diagonais Estilo Persona/Kart no Tom Azul do Tema */
+      background-color: #0b1329;
+      background-image: repeating-linear-gradient(-45deg,
+          rgba(30, 41, 59, 0.4) 0,
+          rgba(30, 41, 59, 0.4) 8px,
+          transparent 8px,
+          transparent 16px);
       display: flex;
       align-items: center;
       justify-content: center;
       color: #fff;
     }
 
-    /* Layout Lado a Lado dos Modais */
+    /* BARRA SUPERIOR (TOPBAR) */
+    #topHeaderBar {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 500;
+      pointer-events: none;
+    }
+
+    #topHeaderBar>* {
+      pointer-events: auto;
+    }
+
+    .topHeaderBadge {
+      background: #171e2e;
+      border: 2px solid #0f172a;
+      border-radius: 12px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 3px 3px 0px #0f172a;
+      height: 48px;
+    }
+
+    /* Layout Centralizado do Lobby com Suporte para a Logo */
     #lobbyMainContainer {
       position: fixed;
       top: 0;
@@ -35,14 +70,23 @@
       background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(8px);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 24px;
+      gap: 16px;
       padding: 20px;
       z-index: 100;
     }
 
-    /* Estilo Padronizado dos Modais */
+    /* Logo do Jogo */
+    .gameLogo {
+      max-width: 280px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+    }
+
+    /* Estilo Padronizado do Card Principal */
     .lobbyCard {
       background: #1e293b;
       padding: 24px;
@@ -52,9 +96,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       width: 360px;
-      min-height: 520px;
       height: auto;
       box-sizing: border-box;
     }
@@ -81,7 +124,7 @@
       background: #22c55e;
       color: #0f172a;
       border: none;
-      padding: 10px 16px;
+      padding: 12px 16px;
       font-size: 14px;
       font-weight: bold;
       border-radius: 8px;
@@ -116,12 +159,126 @@
       outline: none;
     }
 
-    /* Scrollbar Estilizada */
-    #leaderboardList::-webkit-scrollbar {
+    /* COMPONENTE DROPDOWN CUSTOMIZADO */
+    .customDropdownWrapper {
+      position: relative;
+      width: 100%;
+    }
+
+    .customDropdownTrigger {
+      width: 100%;
+      background: #0f172a;
+      border: 2px solid #334155;
+      color: #facc15;
+      font-weight: 800;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .customDropdownTrigger:hover,
+    .customDropdownTrigger.open {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+    }
+
+    .customDropdownArrow {
+      transition: transform 0.2s ease;
+      font-size: 10px;
+      color: #facc15;
+    }
+
+    .customDropdownTrigger.open .customDropdownArrow {
+      transform: rotate(180deg);
+    }
+
+    .customDropdownMenu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      width: 100%;
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
+      padding: 6px;
+      display: none;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 180px;
+      overflow-y: auto;
+      z-index: 600;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .customDropdownMenu.show {
+      display: flex;
+    }
+
+    .customDropdownOption {
+      padding: 8px 10px;
+      border-radius: 6px;
+      color: #facc15;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .customDropdownOption:hover {
+      background: #1e293b;
+      color: #38bdf8;
+    }
+
+    .customDropdownOption.selected {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    /* Estilos dos Botões do Menu Lateral */
+    .sideMenuBtn {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+
+    .sideMenuBtn:hover {
+      background: #1e293b;
+      border-color: #38bdf8;
+      transform: translateX(4px);
+    }
+
+    .sideMenuBtn.active {
+      border: 2px solid #38bdf8;
+      box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    #leaderboardList::-webkit-scrollbar,
+    .customDropdownMenu::-webkit-scrollbar {
       width: 6px;
     }
 
-    #leaderboardList::-webkit-scrollbar-thumb {
+    #leaderboardList::-webkit-scrollbar-thumb,
+    .customDropdownMenu::-webkit-scrollbar-thumb {
       background: #334155;
       border-radius: 4px;
     }
@@ -129,9 +286,149 @@
 </head>
 
 <body>
-  <!-- Modal de Autenticação -->
+
+  <!-- BARRA SUPERIOR (HEADER) -->
+  <div id="topHeaderBar">
+    <button id="btnOpenSideMenu"
+      style="width: 48px; height: 48px; background: #171e2e; border: 2px solid #0f172a; border-radius: 12px; box-shadow: 3px 3px 0px #0f172a; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;">
+      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
+      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
+      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
+    </button>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <div class="topHeaderBadge">
+        <span style="font-size: 18px;">🪙</span>
+        <span id="playerCoinsText" style="font-weight: 900; color: #fff; font-size: 16px;">0</span>
+      </div>
+
+      <div class="topHeaderBadge">
+        <span style="font-size: 18px;">🏆</span>
+        <span id="playerTrophiesText" style="font-weight: 900; color: #fff; font-size: 16px;">0</span>
+      </div>
+
+      <div class="topHeaderBadge" style="padding: 6px 14px 6px 8px;">
+        <div
+          style="width: 32px; height: 32px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff;">
+          🧢
+        </div>
+        <span id="playerHeaderNick" style="font-weight: 900; color: #fff; font-size: 15px;">Piloto</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY ESCURO DO MENU LATERAL -->
+  <div id="sideMenuOverlay"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
+  </div>
+
+  <!-- PAINEL DO MENU LATERAL (DRAWER) -->
+  <div id="sideMenuDrawer"
+    style="position: fixed; top: 0; left: -320px; width: 300px; height: 100vh; background: #171e2e; border-right: 1px solid #334155; padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; transition: left 0.3s ease; z-index: 900; box-shadow: 5px 0 25px rgba(0,0,0,0.5);">
+    <div>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <h2 style="color: #fff; font-size: 22px; font-weight: 900; letter-spacing: 1px; margin: 0;">MENU</h2>
+        <button id="btnCloseSideMenu"
+          style="background: #0f172a; border: 1px solid #334155; color: #fff; width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <button class="sideMenuBtn" id="menuBtnGarage">
+          <span>🏪</span> Loja / Garagem
+        </button>
+
+        <button class="sideMenuBtn" id="menuBtnTrackBuilder">
+          <span>🎨</span> Criador de Pistas
+        </button>
+
+        <button class="sideMenuBtn active" id="menuBtnRankings">
+          <span>🏆</span> Rankings
+        </button>
+
+        <button class="sideMenuBtn" id="menuBtnHowToPlay">
+          <span>❓</span> Como jogar
+        </button>
+
+        <button class="sideMenuBtn" id="menuBtnOptions">
+          <span>⚙️</span> Opções
+        </button>
+      </div>
+    </div>
+
+    <div>
+      <div
+        style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; background: #0f172a; padding: 10px; border-radius: 10px; border: 1px solid #334155;">
+        <div
+          style="width: 40px; height: 40px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid #fff;">
+          🧢
+        </div>
+        <div>
+          <div id="sideMenuNick" style="color: #fff; font-weight: bold; font-size: 15px;">Piloto</div>
+          <div style="color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">LENDA DAS PISTAS</div>
+        </div>
+      </div>
+
+      <button id="btnLogout"
+        style="background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; text-align: left;">
+        Sair da conta
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL POPUP DE RANKINGS -->
+  <div id="rankingModalOverlay"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCard"
+      style="width: 380px; height: 520px; align-items: stretch; justify-content: flex-start; position: relative;">
+      <button id="btnCloseRankingModal"
+        style="position: absolute; top: 16px; right: 16px; background: #0f172a; border: 1px solid #334155; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
+
+      <h2 style="color: #facc15; font-size: 18px; text-align: center; margin-bottom: 12px;">🏆 Rankings Globais</h2>
+
+      <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
+        <button id="tabLeaderboardTrophies" class="lobbyBtn"
+          style="flex: 1; background: #38bdf8; color: #0f172a; font-size: 12px; font-weight: bold; padding: 8px; border: none; border-radius: 8px; cursor: pointer;">
+          🏆 Troféus
+        </button>
+        <button id="tabLeaderboardTracks" class="lobbyBtn"
+          style="flex: 1; background: transparent; color: #94a3b8; font-size: 12px; font-weight: bold; padding: 8px; border: 1px solid #334155; border-radius: 8px; cursor: pointer;">
+          ⏱️ Recordes
+        </button>
+      </div>
+
+      <!-- SELETOR DE RECORDES POR PISTA (CUSTOMIZADO) -->
+      <div id="trackRecordSelectorBox" style="display: none; width: 100%; margin-bottom: 8px;">
+        <select id="leaderboardTrackSelect" style="display:none;">
+          <option value="default">🏁 Circuito Oficial (Padrão)</option>
+        </select>
+
+        <div class="customDropdownWrapper" id="customRankDropdown">
+          <div class="customDropdownTrigger" id="rankDropdownTrigger">
+            <span id="rankDropdownSelectedLabel">🏁 Circuito Oficial (Padrão)</span>
+            <span class="customDropdownArrow">▼</span>
+          </div>
+          <div class="customDropdownMenu" id="rankDropdownMenu">
+            <div class="customDropdownOption selected" data-value="default">🏁 Circuito Oficial (Padrão)</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="display: flex; justify-content: space-between; padding: 8px 12px; background: #0f172a; border-radius: 8px 8px 0 0; font-size: 12px; color: #94a3b8; font-weight: bold; border: 1px solid #334155; border-bottom: none;">
+        <span>POS. JOGADOR</span>
+        <span id="leaderboardColumnTitle">TROFÉUS</span>
+      </div>
+
+      <div id="leaderboardList"
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: #0f172a; border-radius: 0 0 8px 8px; border: 1px solid #334155; padding: 8px;">
+        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando ranking...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE AUTENTICAÇÃO -->
   <div id="authModal"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000;">
     <div
       style="background: #1e293b; padding: 32px; border-radius: 16px; border: 1px solid #334155; width: 320px; color: #fff; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
       <h2 id="authTitle" style="margin-bottom: 20px; color: #facc15;">Criar Conta</h2>
@@ -150,37 +447,20 @@
     </div>
   </div>
 
-  <!-- CONTAINER PRINCIPAL (LOBBY + RANKING) -->
+  <!-- CONTAINER PRINCIPAL DO LOBBY -->
   <div id="lobbyMainContainer">
+    <!-- LOGO DO JOGO -->
+    <img src="img/logo.png" alt="Pokémon Kart Logo" class="gameLogo">
 
-    <!-- MODAL 1: LOBBY DE JOGO -->
     <div class="lobbyCard">
-      <h2 style="margin: 0; color: #facc15; font-size: 20px;">🏎️ Pokémon Kart</h2>
-
-      <!-- Input de Nickname (Preenchido pelo Supabase) -->
-      <input type="text" id="playerNicknameInput" value="Carregando..." disabled readonly
-        style="width: 100%; color: #facc15; font-weight: bold; cursor: not-allowed;" />
-
-      <!-- Badges de Economia -->
-      <div
-        style="width: 100%; display: flex; justify-content: space-around; background: #0f172a; padding: 8px; border-radius: 8px; border: 1px solid #334155;">
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-size: 16px;">🪙</span>
-          <span id="playerCoinsText" style="font-weight: bold; color: #facc15; font-size: 14px;">0</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 6px;">
-          <span style="font-size: 16px;">🏆</span>
-          <span id="playerTrophiesText" style="font-weight: bold; color: #38bdf8; font-size: 14px;">0</span>
-        </div>
-      </div>
-
-      <!-- Seletor 3D de Kart -->
       <div id="kartSelector" style="display: flex; align-items: center; gap: 10px;">
         <button id="btnPrevKart" class="selectNavBtn">◀</button>
         <div style="text-align: center;">
           <div id="previewContainer"
             style="width: 200px; height: 120px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; position: relative; overflow: hidden;">
-            <div id="previewSpinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; font-size: 12px; pointer-events: none; font-weight: bold;">Carregando...</div>
+            <div id="previewSpinner"
+              style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; font-size: 12px; pointer-events: none; font-weight: bold;">
+              Carregando...</div>
           </div>
           <div id="kartName" style="margin-top: 4px; font-weight: bold; color: #38bdf8; font-size: 13px;">Jolteon Kart
           </div>
@@ -188,7 +468,6 @@
         <button id="btnNextKart" class="selectNavBtn">▶</button>
       </div>
 
-      <!-- Controles de Sala Multiplayer -->
       <div style="display: flex; gap: 8px; width: 100%;">
         <button id="btnHost" class="lobbyBtn" style="background: #38bdf8;">Criar Sala</button>
         <button id="btnJoin" class="lobbyBtn lobbyBtnGhost">Entrar em Sala</button>
@@ -202,53 +481,31 @@
       <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
       <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
 
-      <!-- Seletor de Pista -->
-      <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
-        <label style="font-size: 11px; color: #94a3b8; font-weight: bold;">ESCOLHA A PISTA:</label>
-        <select id="trackSelectDropdown" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #facc15; font-weight: bold; padding: 8px 10px; border-radius: 8px; font-size: 13px; outline: none; cursor: pointer;">
+      <!-- SELETOR DE PISTA CUSTOMIZADO -->
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
+        <label style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">ESCOLHA A
+          PISTA:</label>
+
+        <select id="trackSelectDropdown" style="display:none;">
           <option value="">🏁 Circuito Oficial (Padrão)</option>
         </select>
+
+        <div class="customDropdownWrapper" id="customTrackDropdown">
+          <div class="customDropdownTrigger" id="dropdownTrigger">
+            <span id="dropdownSelectedLabel">🏁 Circuito Oficial (Padrão)</span>
+            <span class="customDropdownArrow">▼</span>
+          </div>
+          <div class="customDropdownMenu" id="dropdownMenu">
+            <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial (Padrão)</div>
+          </div>
+        </div>
       </div>
 
       <div style="display: flex; gap: 8px; width: 100%;">
         <button id="btnStartRace" class="lobbyBtn" style="display:none;">Iniciar Corrida 🏁</button>
         <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="width: 100%;">Jogar Sozinho</button>
       </div>
-
-      <!-- Ações Extras: Garagem e Criador de Pistas -->
-      <div style="display: flex; gap: 8px; width: 100%;">
-        <button id="btnOpenGarage"
-          style="flex: 1; padding: 10px; background: #facc15; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s;">
-          🛠️ GARAGEM
-        </button>
-        <button id="btnOpenTrackBuilder"
-          style="flex: 1; padding: 10px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s;">
-          🎨 PISTAS
-        </button>
-      </div>
     </div>
-
-    <!-- MODAL 2: RANKING GLOBAL DE TROFÉUS -->
-    <div class="lobbyCard" style="align-items: stretch;">
-      <h3
-        style="color: #38bdf8; font-size: 18px; text-align: center; margin: 0 0 4px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
-        🏆 RANKING GLOBAL
-      </h3>
-
-      <!-- Cabeçalho da Tabela -->
-      <div
-        style="display: flex; justify-content: space-between; padding: 8px 12px; background: #0f172a; border-radius: 8px 8px 0 0; font-size: 12px; color: #94a3b8; font-weight: bold; border: 1px solid #334155; border-bottom: none;">
-        <span>POS. JOGADOR</span>
-        <span>TROFÉUS</span>
-      </div>
-
-      <!-- Lista de Jogadores com Scroll Vertical -->
-      <div id="leaderboardList"
-        style="flex: 1; overflow-y: auto; padding-right: 4px; display: flex; flex-direction: column; gap: 6px; background: #0f172a; border-radius: 0 0 8px 8px; border: 1px solid #334155; padding: 8px;">
-        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando ranking...</div>
-      </div>
-    </div>
-
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -281,7 +538,6 @@
       { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb') },
       { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb') },
       { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') },
-      // Novos Karts
       { id: 'golem', name: 'Golem Kart', modelUrl: getKartUrl('golem.glb') },
       { id: 'jinx', name: 'Jynx Kart', modelUrl: getKartUrl('jinx.glb') },
       { id: 'sudowoodo', name: 'Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb') },
@@ -300,11 +556,10 @@
 
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
     let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
-    if (selectedIndex === -1) selectedIndex = 0; // Padrão inicial definido como 0 (Jolteon)
+    if (selectedIndex === -1) selectedIndex = 0;
 
-    // VARIÁVEIS GLOBAIS DA CENA E CONTROLE DE REQUISIÇÃO
     let previewScene, previewCamera, previewRenderer, currentModel;
-    let previewRequestId = 0; // DECLARAÇÃO GLOBAL DA VARIÁVEL
+    let previewRequestId = 0;
 
     function initPreview() {
       const container = document.getElementById('previewContainer');
@@ -312,7 +567,6 @@
       previewScene = new THREE.Scene();
       previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
 
-      // ALTERADO: Posição Z mudou de 3.8 para 2.8 para aproximar a visão do kart
       previewCamera.position.set(0, 1.1, 2.8);
       previewCamera.lookAt(0, 0.3, 0);
 
@@ -359,7 +613,6 @@
         if (spinnerEl) spinnerEl.style.display = 'none';
       };
 
-      // 1. REUTILIZAÇÃO INSTANTÂNEA DA MEMÓRIA RAM (0ms)
       if (window.KART_ASSETS && window.KART_ASSETS[item.id]) {
         displayModel(window.KART_ASSETS[item.id]);
         return;
@@ -367,7 +620,6 @@
 
       if (spinnerEl) spinnerEl.style.display = 'block';
 
-      // 2. DISK CACHE (CacheStorage do Navegador)
       const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
       try {
         if ('caches' in window) {
@@ -387,7 +639,6 @@
         console.warn('[Lobby] Erro ao ler CacheStorage:', err);
       }
 
-      // 3. FALLBACK DE REDE COM GRAVAÇÃO AUTOMÁTICA NO CACHE
       try {
         const response = await fetch(item.modelUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -413,11 +664,9 @@
       }
     }
 
-    // CORREÇÃO DA TRAVA: Garante Jolteon e Charizard como sempre desbloqueados
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
 
-      // Jolteon e Charizard são gratuitos por padrão
       let unlockedKarts = ['jolteon', 'charizard'];
 
       if (profile && profile.unlocked_karts) {
@@ -458,10 +707,59 @@
       updatePreview();
     };
 
-    // Inicialização do Lobby: Carrega apenas o kart selecionado (lazy load sob demanda)
-    document.addEventListener('DOMContentLoaded', () => {
-      // Não bloqueia a página baixando 13 modelos ao mesmo tempo
-    });
+    // LÓGICA DE BINDING DOS DROPDOWNS CUSTOMIZADOS
+    function bindCustomDropdown(triggerId, menuId, nativeSelectId, labelId, onChangeCallback) {
+      const trigger = document.getElementById(triggerId);
+      const menu = document.getElementById(menuId);
+      const nativeSelect = document.getElementById(nativeSelectId);
+      const selectedLabel = document.getElementById(labelId);
+
+      if (!trigger || !menu) return;
+
+      trigger.onclick = (e) => {
+        e.stopPropagation();
+        trigger.classList.toggle('open');
+        menu.classList.toggle('show');
+      };
+
+      document.addEventListener('click', () => {
+        trigger.classList.remove('open');
+        menu.classList.remove('show');
+      });
+
+      menu.onclick = (e) => {
+        const option = e.target.closest('.customDropdownOption');
+        if (!option) return;
+
+        const val = option.getAttribute('data-value');
+        const label = option.textContent;
+
+        selectedLabel.textContent = label;
+        if (nativeSelect) {
+          nativeSelect.value = val;
+          nativeSelect.dispatchEvent(new Event('change'));
+        }
+
+        menu.querySelectorAll('.customDropdownOption').forEach(opt => opt.classList.remove('selected'));
+        option.classList.add('selected');
+
+        if (typeof onChangeCallback === 'function') {
+          onChangeCallback(val);
+        }
+      };
+    }
+
+    function setupCustomDropdowns() {
+      // Dropdown Principal do Lobby
+      bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
+
+      // Dropdown de Pistas do Modal de Ranking
+      bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel', (val) => {
+        if (typeof loadTrackRecordsLeaderboard === 'function') {
+          loadTrackRecordsLeaderboard(val);
+        }
+      });
+    }
 
     let peer = null;
     let roomCode = '';
@@ -469,8 +767,8 @@
     const guestConnections = [];
 
     function getNickname() {
-      const nickInput = document.getElementById('playerNicknameInput');
-      const nick = nickInput ? nickInput.value.trim().toUpperCase() : 'JOGADOR';
+      const nickHeader = document.getElementById('playerHeaderNick');
+      const nick = nickHeader ? nickHeader.innerText.trim().toUpperCase() : 'JOGADOR';
       sessionStorage.setItem('pkart_nickname', nick);
       return nick;
     }
@@ -562,16 +860,13 @@
       redirectToRace('', 0);
     };
 
-    // Abre o Criador de Pistas
-    const btnTrackBuilder = document.getElementById('btnOpenTrackBuilder');
-    if (btnTrackBuilder) {
-      btnTrackBuilder.onclick = () => window.location.href = 'track_builder.html';
-    }
-
-    // Carrega Pistas Aprovadas da Comunidade no Dropdown
     async function loadApprovedTracks() {
-      const selectEl = document.getElementById('trackSelectDropdown');
-      if (!selectEl || typeof supabaseClient === 'undefined') return;
+      const raceTrackSelect = document.getElementById('trackSelectDropdown');
+      const rankTrackSelect = document.getElementById('leaderboardTrackSelect');
+      const customMenu = document.getElementById('dropdownMenu');
+      const customRankMenu = document.getElementById('rankDropdownMenu');
+
+      if (typeof supabaseClient === 'undefined') return;
 
       try {
         const { data: tracks, error } = await supabaseClient
@@ -583,10 +878,37 @@
         if (error || !tracks) return;
 
         tracks.forEach(tr => {
-          const opt = document.createElement('option');
-          opt.value = tr.id;
-          opt.textContent = `📍 ${tr.name} (por ${tr.creator_name})`;
-          selectEl.appendChild(opt);
+          const optionText = `📍 ${tr.name} (por ${tr.creator_name})`;
+
+          if (raceTrackSelect) {
+            const opt = document.createElement('option');
+            opt.value = tr.id;
+            opt.textContent = optionText;
+            raceTrackSelect.appendChild(opt);
+          }
+
+          if (rankTrackSelect) {
+            const optRank = document.createElement('option');
+            optRank.value = tr.id;
+            optRank.textContent = optionText;
+            rankTrackSelect.appendChild(optRank);
+          }
+
+          if (customMenu) {
+            const customOpt = document.createElement('div');
+            customOpt.className = 'customDropdownOption';
+            customOpt.setAttribute('data-value', tr.id);
+            customOpt.textContent = optionText;
+            customMenu.appendChild(customOpt);
+          }
+
+          if (customRankMenu) {
+            const customRankOpt = document.createElement('div');
+            customRankOpt.className = 'customDropdownOption';
+            customRankOpt.setAttribute('data-value', tr.id);
+            customRankOpt.textContent = optionText;
+            customRankMenu.appendChild(customRankOpt);
+          }
         });
       } catch (err) {
         console.warn('Erro ao carregar pistas da comunidade:', err);
@@ -595,6 +917,7 @@
 
     window.onload = () => {
       initPreview();
+      setupCustomDropdowns();
       loadApprovedTracks();
     };
   </script>
