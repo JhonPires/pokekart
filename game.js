@@ -45,13 +45,10 @@ function setupEnhancedEnvironment(scene) {
   respawnTreesForTrack();
 }
 
-
-
 // ------------------------------------------------------------
 // DATABASE E URLS
 // ------------------------------------------------------------
 function getKartUrl(filename) {
-  // const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
   return `./models/${filename}`;
 }
 
@@ -243,7 +240,6 @@ function updateTrackSamples() {
   currentTrackPoints = trackCurve.getSpacedPoints(150);
 }
 
-// OBRIGATÓRIO: Força a geração dos pontos antes de qualquer checagem de distância
 updateTrackSamples();
 
 function nearestTrackSample(position) {
@@ -418,7 +414,6 @@ function addTrackKerbs() {
   });
 }
 
-// Gramado com Cor Verde Sólida de Base + Textura Listrada
 function createStripedGrassTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
@@ -520,7 +515,6 @@ function addStartFinishLine() {
   trackElementsGroup.add(stripe);
 }
 
-// Pads de Turbo / Aceleração
 const boostPadsList = [];
 const boostPadMat = new THREE.MeshStandardMaterial({
   color: 0xfacc15,
@@ -559,7 +553,6 @@ function checkBoostPads() {
   }
 }
 
-// Constrói os elementos da pista padrão inicialmente
 buildAndAddTrackMesh();
 addTrackKerbs();
 addTires();
@@ -629,7 +622,6 @@ function respawnTreesForTrack() {
   scene.add(currentTreeGroup);
 }
 
-// Carregador Dinâmico de Pistas Customizadas
 async function loadCustomTrack(trackParam) {
   let trackData = null;
 
@@ -658,21 +650,17 @@ async function loadCustomTrack(trackParam) {
     console.log('[PokéKart] Carregando pista customizada com sucesso!');
     const pts = trackData.points.map(p => new THREE.Vector3(p.x, 0, p.z));
 
-    // 1. Atualiza a curva da pista para a customizada
     trackCurve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
     if (trackData.width) trackWidth = trackData.width;
 
-    // 2. Limpa elementos visuais da pista antiga
     while (trackElementsGroup.children.length > 0) {
       const c = trackElementsGroup.children[0];
       trackElementsGroup.remove(c);
       if (c.geometry) c.geometry.dispose();
     }
 
-    // 3. Atualiza os pontos de amostragem
     updateTrackSamples();
 
-    // 4. Reconstrói malha da pista, zebras, pneus e linha de chegada
     buildAndAddTrackMesh();
     addTrackKerbs();
     addTires();
@@ -838,6 +826,12 @@ let countdownStarted = false;
 
 function checkAndStartCountdown() {
   if (localKartLoaded && !countdownStarted) {
+    // Se for corrida em sala Multiplayer e for o Host, aguarda outro participante conectar
+    if (roomCodeParam && isHost && activeGuestConns.size === 0) {
+      console.log('[Multiplayer] Aguardando conexões para dar partida...');
+      return;
+    }
+
     countdownStarted = true;
     setTimeout(() => {
       startCountdown();
@@ -1614,9 +1608,13 @@ function initRaceMultiplayer() {
       conn.on('open', () => {
         activeGuestConns.set(conn.peer, conn);
 
-        setTimeout(() => {
-          conn.send({ t: 'start_countdown' });
-        }, 2500);
+        // Notifica o convidado para iniciar o contador
+        conn.send({ t: 'start_countdown' });
+
+        // Inicia a partida do host ao detectar a entrada do convidado
+        if (!countdownStarted) {
+          checkAndStartCountdown();
+        }
       });
 
       conn.on('data', (data) => {
@@ -1844,7 +1842,6 @@ function updateHUD() {
 // ------------------------------------------------------------
 // CÁLCULO E DESENHO DINÂMICO DO MINIMAPA
 // ------------------------------------------------------------
-// CÁLCULO E DESENHO DINÂMICO DO MINIMAPA
 function getTrackBounds(trackPoints) {
   let minX = Infinity, maxX = -Infinity;
   let minZ = Infinity, maxZ = -Infinity;
@@ -1856,7 +1853,6 @@ function getTrackBounds(trackPoints) {
     if (p.z > maxZ) maxZ = p.z;
   });
 
-  // Aumentado a margem para evitar que a pista encoste na borda do minimapa circular
   const padding = 45;
   return {
     minX: minX - padding,
@@ -1879,20 +1875,17 @@ function drawMinimap() {
 
   ctx.clearRect(0, 0, width, height);
 
-  // 1. MÁSCARA CIRCULAR (Evita que qualquer desenho vaze do minimapa)
   ctx.save();
   ctx.beginPath();
   ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
   ctx.clip();
 
-  // 2. FUNDO TECH / RADAR COM GRADIENTE E GRADE
   const bgGrad = ctx.createRadialGradient(radius, radius, 10, radius, radius, radius);
   bgGrad.addColorStop(0, '#1e293b');
   bgGrad.addColorStop(1, '#0b1329');
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  // Linhas de Grade Estilo Radar Suaves
   ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -1901,7 +1894,6 @@ function drawMinimap() {
   ctx.arc(radius, radius, radius * 0.5, 0, Math.PI * 2);
   ctx.stroke();
 
-  // 3. MAPEAMENTO DE COORDENADAS
   const bounds = getTrackBounds(currentTrackPoints);
   const mapSize = Math.min(width, height);
   const scale = mapSize / Math.max(bounds.width, bounds.height);
@@ -1915,7 +1907,6 @@ function drawMinimap() {
     };
   }
 
-  // 4. DESENHO DA PISTA - CAMADA 1: SOMBRA DO ASFALTO (Borda Escura)
   ctx.beginPath();
   ctx.strokeStyle = '#020617';
   ctx.lineWidth = 8;
@@ -1929,7 +1920,6 @@ function drawMinimap() {
   ctx.closePath();
   ctx.stroke();
 
-  // 5. DESENHO DA PISTA - CAMADA 2: TRAÇADO PRINCIPAL EM BRANCO GLOW
   ctx.save();
   ctx.shadowColor = '#38bdf8';
   ctx.shadowBlur = 6;
@@ -1945,14 +1935,12 @@ function drawMinimap() {
   ctx.stroke();
   ctx.restore();
 
-  // 6. LINHA DE CHEGADA / LARGADA (Ponto quadriculado)
   const startPos = worldToMinimap(currentTrackPoints[0].x, currentTrackPoints[0].z);
   ctx.fillStyle = '#facc15';
   ctx.beginPath();
   ctx.arc(startPos.x, startPos.y, 3, 0, Math.PI * 2);
   ctx.fill();
 
-  // 7. RENDERIZAR ADVERSÁRIOS REMOTOS (Pontos Vermelhos com Borda)
   for (const entry of remoteKarts.values()) {
     if (entry.obj && entry.obj.group) {
       const pos = worldToMinimap(entry.obj.group.position.x, entry.obj.group.position.z);
@@ -1967,18 +1955,15 @@ function drawMinimap() {
     }
   }
 
-  // 8. RENDERIZAR JOGADOR LOCAL (Ponto Amarelo com Pulso / Glow)
   if (kart) {
     const pos = worldToMinimap(kart.position.x, kart.position.z);
     const pulseRadius = 5 + Math.sin(performance.now() * 0.008) * 1.5;
 
-    // Anel de Brilho Pulsante
     ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, pulseRadius + 3, 0, Math.PI * 2);
     ctx.fill();
 
-    // Marcador Central
     ctx.fillStyle = '#facc15';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -1988,9 +1973,8 @@ function drawMinimap() {
     ctx.stroke();
   }
 
-  ctx.restore(); // Remove a máscara circular
+  ctx.restore();
 
-  // 9. BORDA EXTERNA ESTILIZADA DO MINIMAPA
   ctx.strokeStyle = '#38bdf8';
   ctx.lineWidth = 3;
   ctx.beginPath();
