@@ -318,6 +318,35 @@
   </button>
 </div>
 
+<!-- CONTROLES VIRTUAIS PARA DISPOSITIVOS MÓVEIS -->
+<div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;">
+  
+  <!-- LADO ESQUERDO: FREIO / RÉ E DRIFT -->
+  <div style="position: absolute; bottom: 25px; left: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
+    <button id="btnMobileBrake" style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
+      FREIO
+    </button>
+    <button id="btnMobileDrift" style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
+      DRIFT
+    </button>
+  </div>
+
+  <!-- LADO DIREITO: USAR ITEM E ACELERAR -->
+  <div style="position: absolute; bottom: 25px; right: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
+    <button id="btnMobileItem" style="width: 62px; height: 62px; border-radius: 50%; background: rgba(250, 204, 21, 0.9); color: #0f172a; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+      ITEM
+    </button>
+    <button id="btnMobileAccel" style="width: 85px; height: 85px; border-radius: 50%; background: rgba(34, 197, 94, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+      GO!
+    </button>
+  </div>
+
+  <!-- BOTÃO DE ATIVAÇÃO / CALIBRAGEM DO GIROSCÓPIO -->
+  <button id="btnEnableGyro" style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); pointer-events: auto; background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
+    📱 Ativar Giroscópio
+  </button>
+</div>
+
     <!-- DEPENDÊNCIAS E CARREGADORES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
