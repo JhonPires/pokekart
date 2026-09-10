@@ -1,12 +1,11 @@
 // ------------------------------------------------------------
-// SETUP BÁSICO DA CORRIDA
+// SETUP BÁSICO DA CORRIDA E AMBIENTE APRIMORADO
 // ------------------------------------------------------------
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x87CEEB);
-scene.fog = new THREE.Fog(0x87CEEB, 60, 260);
-
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+// Gerador de Árvores Paralelo às Margens da Pista (Zero Árvores no Asfalto)
+let currentTreeGroup = null;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
@@ -17,15 +16,26 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// Luz Principal
-const sun = new THREE.DirectionalLight(0xffffff, 1.1);
-sun.position.set(40, 60, 20);
-sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
-sun.shadow.camera.left = -110; sun.shadow.camera.right = 110;
-sun.shadow.camera.top = 110; sun.shadow.camera.bottom = -110;
-scene.add(sun);
-scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+// Configuração do Cenário Visual (Céu, Névoa, Sol e Vegetação)
+function setupEnhancedEnvironment(scene) {
+  const skyColor = 0x87CEEB;
+  scene.background = new THREE.Color(skyColor);
+  scene.fog = new THREE.FogExp2(skyColor, 0.0035);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+
+  const sun = new THREE.DirectionalLight(0xfff5e6, 1.3);
+  sun.position.set(40, 60, 20);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.left = -110; sun.shadow.camera.right = 110;
+  sun.shadow.camera.top = 110; sun.shadow.camera.bottom = -110;
+  scene.add(sun);
+
+  respawnTreesForTrack();
+}
+
+
 
 // ------------------------------------------------------------
 // DATABASE E URLS
@@ -83,6 +93,90 @@ const KART_DATABASE = [
     name: 'Snorlax Kart',
     modelUrl: getKartUrl('snorlax.glb'),
     stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 }
+  },
+  {
+    id: 'golem',
+    name: 'Golem Kart',
+    modelUrl: getKartUrl('golem.glb'),
+    stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 }
+  },
+  {
+    id: 'jinx',
+    name: 'Jynx Kart',
+    modelUrl: getKartUrl('jinx.glb'),
+    stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 }
+  },
+  {
+    id: 'sudowoodo',
+    name: 'Sudowoodo Kart',
+    modelUrl: getKartUrl('sudowoodo.glb'),
+    stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 }
+  },
+  {
+    id: 'sylveon',
+    name: 'Sylveon Kart',
+    modelUrl: getKartUrl('sylveon.glb'),
+    stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 }
+  },
+  {
+    id: 'umbreon',
+    name: 'Umbreon Kart',
+    modelUrl: getKartUrl('umbreon.glb'),
+    stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 }
+  },
+  {
+    id: 'pikachu',
+    name: 'Pikachu Kart',
+    modelUrl: getKartUrl('pikachu.glb'),
+    stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 }
+  },
+  {
+    id: 'gliscor',
+    name: 'Gliscor Kart',
+    modelUrl: getKartUrl('gliscor.glb'),
+    stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 }
+  },
+  {
+    id: 'mewtwo',
+    name: 'Mewtwo Kart',
+    modelUrl: getKartUrl('mewtwo.glb'),
+    stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 }
+  },
+  {
+    id: 'zekrom',
+    name: 'Zekrom Kart',
+    modelUrl: getKartUrl('zekrom.glb'),
+    stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 }
+  },
+  {
+    id: 'swampert',
+    name: 'Swampert Kart',
+    modelUrl: getKartUrl('swampert.glb'),
+    stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 }
+  },
+  {
+    id: 'rayquaza',
+    name: 'Rayquaza Kart',
+    modelUrl: getKartUrl('rayquaza.glb'),
+    stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 }
+  },
+  {
+    id: 'espeon',
+    name: 'Espeon Kart',
+    modelUrl: getKartUrl('espeon.glb'),
+    stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 }
+  },
+  {
+    id: 'tatsugiri',
+    name: 'Tatsugiri Kart',
+    modelUrl: getKartUrl('tatsugiri.glb'),
+    stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 }
+  },
+  {
+    id: 'scyther',
+    name: 'Scyther Kart',
+    modelUrl: getKartUrl('scyther.glb'),
+    stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 }
   }
 ];
 
@@ -90,6 +184,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
 const selectedKartId = urlParams.get('kart') || 'jolteon';
 const roomCodeParam = urlParams.get('room');
+const customTrackParam = urlParams.get('customTrack');
 const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
 
 let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
@@ -117,18 +212,27 @@ function getTrackCurve() {
   return new THREE.CatmullRomCurve3(TRACK_PRESETS.circuitoE, true, 'centripetal', 0.5);
 }
 
-const trackCurve = getTrackCurve();
-const trackWidth = 10;
+let trackCurve = getTrackCurve();
+let trackWidth = 10;
+const trackElementsGroup = new THREE.Group();
+scene.add(trackElementsGroup);
 
 const TRACK_SAMPLE_COUNT = 360;
 const trackSamples = [];
-for (let i = 0; i < TRACK_SAMPLE_COUNT; i++) {
-  const t = i / TRACK_SAMPLE_COUNT;
-  const point = trackCurve.getPointAt(t);
-  const tangent = trackCurve.getTangentAt(t).normalize();
-  const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-  trackSamples.push({ t, point, normal });
+
+function updateTrackSamples() {
+  trackSamples.length = 0;
+  for (let i = 0; i < TRACK_SAMPLE_COUNT; i++) {
+    const t = i / TRACK_SAMPLE_COUNT;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    trackSamples.push({ t, point, normal });
+  }
 }
+
+// OBRIGATÓRIO: Força a geração dos pontos antes de qualquer checagem de distância
+updateTrackSamples();
 
 function nearestTrackSample(position) {
   let best = trackSamples[0], bestDist = Infinity, bestIndex = 0;
@@ -209,12 +313,15 @@ trackTexture.wrapS = THREE.RepeatWrapping; trackTexture.wrapT = THREE.RepeatWrap
 trackTexture.repeat.set(1, 10);
 trackTexture.needsUpdate = true;
 
-const trackMesh = new THREE.Mesh(
-  buildTrackMesh(),
-  new THREE.MeshStandardMaterial({ map: trackTexture, roughness: 0.9, side: THREE.DoubleSide })
-);
-trackMesh.receiveShadow = true;
-scene.add(trackMesh);
+let trackMesh = null;
+function buildAndAddTrackMesh() {
+  trackMesh = new THREE.Mesh(
+    buildTrackMesh(),
+    new THREE.MeshStandardMaterial({ map: trackTexture, roughness: 0.9, side: THREE.DoubleSide })
+  );
+  trackMesh.receiveShadow = true;
+  trackElementsGroup.add(trackMesh);
+}
 
 function createKerbTexture() {
   const canvas = document.createElement('canvas');
@@ -295,30 +402,34 @@ function addTrackKerbs() {
 
     const kerbMesh = new THREE.Mesh(geo, kerbMaterial);
     kerbMesh.receiveShadow = true;
-    scene.add(kerbMesh);
+    trackElementsGroup.add(kerbMesh);
   });
 }
-addTrackKerbs();
 
+// Gramado com Cor Verde Sólida de Base + Textura Listrada
 function createStripedGrassTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
   const stripeHeight = 32;
   for (let i = 0; i < 256; i += stripeHeight) {
-    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#519e3e' : '#438a32';
+    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#43a047' : '#2e7d32';
     ctx.fillRect(0, i, 256, stripeHeight);
   }
   const texture = new THREE.CanvasTexture(canvas);
-  texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(40, 40);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(50, 50);
   return texture;
 }
 
-const grass = new THREE.Mesh(
-  new THREE.PlaneGeometry(600, 600),
-  new THREE.MeshStandardMaterial({ map: createStripedGrassTexture(), roughness: 0.9 })
-);
+const grassMat = new THREE.MeshStandardMaterial({
+  color: 0x388e3c, // Cor verde garantida caso a textura demore para carregar
+  map: createStripedGrassTexture(),
+  roughness: 0.9
+});
+
+const grass = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), grassMat);
 grass.rotation.x = -Math.PI / 2;
 grass.position.y = -0.02;
 grass.receiveShadow = true;
@@ -328,8 +439,11 @@ function createStripedTireTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 128; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0, 0, 128, 128);
-  ctx.fillStyle = '#ff5722'; ctx.fillRect(0, 20, 128, 25); ctx.fillRect(0, 75, 128, 25);
+  const stripeWidth = 16;
+  for (let i = 0; i < 128; i += stripeWidth) {
+    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? '#ffffff' : '#e53935';
+    ctx.fillRect(i, 0, stripeWidth, 128);
+  }
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
   return texture;
@@ -340,8 +454,9 @@ const stripedTireMat = new THREE.MeshStandardMaterial({ map: createStripedTireTe
 
 function addTires() {
   const tireGeo = new THREE.TorusGeometry(0.5, 0.25, 12, 24);
-  for (let i = 0; i < 120; i++) {
-    const t = i / 120;
+  const tireCount = 120;
+  for (let i = 0; i < tireCount; i++) {
+    const t = i / tireCount;
     const point = trackCurve.getPointAt(t);
     const tangent = trackCurve.getTangentAt(t).normalize();
     const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
@@ -362,11 +477,10 @@ function addTires() {
       tireStack.add(tireTop);
 
       tireStack.position.set(pos.x, 0, pos.z);
-      scene.add(tireStack);
+      trackElementsGroup.add(tireStack);
     }
   }
 }
-addTires();
 
 function addStartFinishLine() {
   const point = trackCurve.getPointAt(0);
@@ -391,9 +505,188 @@ function addStartFinishLine() {
   stripe.rotation.z = heading;
   stripe.position.set(point.x, 0.04, point.z);
   stripe.receiveShadow = true;
-  scene.add(stripe);
+  trackElementsGroup.add(stripe);
 }
+
+// Pads de Turbo / Aceleração
+const boostPadsList = [];
+const boostPadMat = new THREE.MeshStandardMaterial({
+  color: 0xfacc15,
+  emissive: 0xca8a04,
+  roughness: 0.3
+});
+const boostPadGeo = new THREE.PlaneGeometry(trackWidth * 0.75, 3.2);
+
+function spawnBoostPads(customBoosts) {
+  boostPadsList.length = 0;
+  if (!customBoosts || !customBoosts.length) return;
+
+  customBoosts.forEach(b => {
+    const pt = trackCurve.getPointAt(b.t);
+    const tangent = trackCurve.getTangentAt(b.t).normalize();
+    const heading = Math.atan2(tangent.x, tangent.z);
+
+    const pad = new THREE.Mesh(boostPadGeo, boostPadMat);
+    pad.rotation.x = -Math.PI / 2;
+    pad.rotation.z = heading;
+    pad.position.set(pt.x, 0.045, pt.z);
+    trackElementsGroup.add(pad);
+
+    boostPadsList.push({ position: new THREE.Vector3(pt.x, 0, pt.z) });
+  });
+}
+
+function checkBoostPads() {
+  if (!kart) return;
+  for (const pad of boostPadsList) {
+    if (kart.position.distanceTo(pad.position) < 3.5) {
+      if (physics.turboTimer < 1.0) {
+        physics.turboTimer = 1.3 * (physics.turboBonus || 1.0);
+      }
+    }
+  }
+}
+
+// Constrói os elementos da pista padrão inicialmente
+buildAndAddTrackMesh();
+addTrackKerbs();
+addTires();
 addStartFinishLine();
+setupEnhancedEnvironment(scene);
+
+
+
+function respawnTreesForTrack() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+
+  currentTreeGroup = new THREE.Group();
+
+  const treeCount = 120;
+  const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 2.5, 6);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
+  const leavesGeo = new THREE.ConeGeometry(2, 5, 6);
+  const leavesMat = new THREE.MeshStandardMaterial({ color: 0x1e5631, roughness: 0.8 });
+
+  const trunkInstanced = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+  const leavesInstanced = new THREE.InstancedMesh(leavesGeo, leavesMat, treeCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0;
+  let attempts = 0;
+  const maxAttempts = 1500;
+
+  // AUMENTADO: Largura da pista (10/2 = 5) + 14.0m de margem = 19m longe do centro da pista
+  const MIN_DISTANCE_FROM_TRACK = (trackWidth / 2) + 14.0;
+
+  while (spawned < treeCount && attempts < maxAttempts) {
+    attempts++;
+
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const treePos = new THREE.Vector3(x, 0, z);
+
+    // Valida com base nos samples recém-gerados
+    const { sample } = nearestTrackSample(treePos);
+    const distToTrack = sample.point.distanceTo(treePos);
+
+    if (distToTrack >= MIN_DISTANCE_FROM_TRACK) {
+      const scale = 0.8 + Math.random() * 0.5;
+
+      dummy.position.set(x, 1.25 * scale, z);
+      dummy.scale.setScalar(scale);
+      dummy.updateMatrix();
+      trunkInstanced.setMatrixAt(spawned, dummy.matrix);
+
+      dummy.position.set(x, (2.5 + 2.0) * scale, z);
+      dummy.updateMatrix();
+      leavesInstanced.setMatrixAt(spawned, dummy.matrix);
+
+      spawned++;
+    }
+  }
+
+  trunkInstanced.count = spawned;
+  leavesInstanced.count = spawned;
+  trunkInstanced.instanceMatrix.needsUpdate = true;
+  leavesInstanced.instanceMatrix.needsUpdate = true;
+
+  currentTreeGroup.add(trunkInstanced);
+  currentTreeGroup.add(leavesInstanced);
+  scene.add(currentTreeGroup);
+}
+
+// Carregador Dinâmico de Pistas Customizadas
+async function loadCustomTrack(trackParam) {
+  let trackData = null;
+
+  if (trackParam === 'preview') {
+    const raw = sessionStorage.getItem('pkart_custom_track_data');
+    if (raw) {
+      try { trackData = JSON.parse(raw); } catch (e) { console.error('Erro ao ler preview da pista:', e); }
+    }
+  } else if (typeof supabaseClient !== 'undefined') {
+    try {
+      const { data, error } = await supabaseClient
+        .from('custom_tracks')
+        .select('*')
+        .eq('id', trackParam)
+        .single();
+
+      if (!error && data && data.track_data) {
+        trackData = data.track_data;
+      }
+    } catch (err) {
+      console.warn('Erro ao carregar pista customizada do Supabase:', err);
+    }
+  }
+
+  if (trackData && trackData.points && trackData.points.length >= 3) {
+    console.log('[PokéKart] Carregando pista customizada com sucesso!');
+    const pts = trackData.points.map(p => new THREE.Vector3(p.x, 0, p.z));
+
+    // 1. Atualiza a curva da pista para a customizada
+    trackCurve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
+    if (trackData.width) trackWidth = trackData.width;
+
+    // 2. Limpa elementos visuais da pista antiga
+    while (trackElementsGroup.children.length > 0) {
+      const c = trackElementsGroup.children[0];
+      trackElementsGroup.remove(c);
+      if (c.geometry) c.geometry.dispose();
+    }
+
+    // 3. Atualiza os pontos de amostragem
+    updateTrackSamples();
+
+    // 4. Reconstrói malha da pista, zebras, pneus e linha de chegada
+    buildAndAddTrackMesh();
+    addTrackKerbs();
+    addTires();
+    addStartFinishLine();
+    // spawnBoostPads(trackData.boosts);
+    // Atualiza caixas de itens e recria árvores
+    spawnItemBoxes(trackData.items);
+    respawnTreesForTrack();
+
+    if (kart) {
+      const grid = getGridPosition(playerSlotParam);
+      kart.position.copy(grid.pos);
+      kart.rotation.y = grid.heading;
+      physics.heading = grid.heading;
+      physics.speed = 0;
+    }
+  }
+}
+
+if (customTrackParam) {
+  loadCustomTrack(customTrackParam);
+}
 
 // ------------------------------------------------------------
 // GRID DE LARGADA
@@ -420,28 +713,78 @@ function getGridPosition(gridIndex) {
 }
 
 // ------------------------------------------------------------
-// CARREGAMENTO 3D E FÍSICA DO KART
+// CARREGAMENTO 3D (CACHE STORAGE + DRACO) E FÍSICA DO KART
 // ------------------------------------------------------------
-const gltfLoader = new THREE.GLTFLoader();
 const KART_MODEL_SCALE = 2.2;
 
-function loadKartTemplate(kartEntry, callback) {
+async function loadKartTemplate(kartEntry, callback) {
   if (kartEntry.template) {
     if (callback) callback(kartEntry.template);
     return;
   }
-  gltfLoader.load(
-    kartEntry.modelUrl,
-    (gltf) => {
+
+  // 1. TENTA USAR A MEMÓRIA RAM
+  if (window.KART_ASSETS && window.KART_ASSETS[kartEntry.id]) {
+    kartEntry.template = window.KART_ASSETS[kartEntry.id];
+    if (callback) callback(kartEntry.template);
+    return;
+  }
+
+  // Configuração do Loader com Suporte a DRACO
+  const loader = new THREE.GLTFLoader();
+  if (typeof THREE.DRACOLoader !== 'undefined') {
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    loader.setDRACOLoader(dracoLoader);
+  }
+
+  const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
+
+  // 2. TENTA LER DO CACHE STORAGE DO NAVEGADOR (0ms)
+  try {
+    if ('caches' in window) {
+      const cache = await caches.open(targetCacheName);
+      const cachedResponse = await cache.match(kartEntry.modelUrl);
+      if (cachedResponse) {
+        const arrayBuffer = await cachedResponse.arrayBuffer();
+        loader.parse(arrayBuffer, './models/', (gltf) => {
+          if (!window.KART_ASSETS) window.KART_ASSETS = {};
+          window.KART_ASSETS[kartEntry.id] = gltf.scene;
+          kartEntry.template = gltf.scene;
+          if (callback) callback(kartEntry.template);
+        });
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('[Game] Erro ao carregar Cache Storage:', err);
+  }
+
+  // 3. FALLBACK DE REDE COM GRAVAÇÃO NO CACHE
+  try {
+    const response = await fetch(kartEntry.modelUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    if ('caches' in window) {
+      try {
+        const cache = await caches.open(targetCacheName);
+        cache.put(kartEntry.modelUrl, response.clone());
+      } catch (e) {
+        console.warn('[Game] Falha ao salvar no cache:', e);
+      }
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    loader.parse(arrayBuffer, './models/', (gltf) => {
+      if (!window.KART_ASSETS) window.KART_ASSETS = {};
+      window.KART_ASSETS[kartEntry.id] = gltf.scene;
       kartEntry.template = gltf.scene;
       if (callback) callback(kartEntry.template);
-    },
-    undefined,
-    (err) => {
-      console.error(`[GLB] Erro ao carregar ${kartEntry.name}:`, err);
-      if (callback) callback(null);
-    }
-  );
+    });
+  } catch (err) {
+    console.error(`[GLB] Erro ao carregar ${kartEntry.name}:`, err);
+    if (callback) callback(null);
+  }
 }
 
 function applyModelToGroup(group, templateScene, chassisColor) {
@@ -634,6 +977,7 @@ function updatePhysics(dt) {
   }
 
   let currentMax = physics.maxSpeed;
+  // checkBoostPads();
   if (physics.turboTimer > 0) {
     physics.turboTimer -= dt;
     currentMax *= 1.4;
@@ -693,7 +1037,7 @@ function enforceTrackBoundary() {
   const grassStart = halfWidth + kerbWidth;
 
   if (Math.abs(lateral) > grassStart && Math.abs(lateral) <= (grassStart + 3.2)) {
-    const maxGrassSpeed = 4.5; // ~16 km/h na grama
+    const maxGrassSpeed = 4.5;
     if (physics.speed > maxGrassSpeed) {
       physics.speed = THREE.MathUtils.lerp(physics.speed, maxGrassSpeed, 0.1);
     }
@@ -741,7 +1085,7 @@ function updateRaceTracker(key, position) {
       if (tr.lapCount >= TOTAL_LAPS) {
         if (!tr.finished) {
           tr.finished = true;
-          tr.finishTime = Date.now(); // Carimbo sincronizado absoluto
+          tr.finishTime = Date.now();
         }
       } else {
         tr.lapCount++;
@@ -843,9 +1187,20 @@ const fumacaCoreMat = new THREE.MeshStandardMaterial({
 });
 
 const itemBoxes = [];
-function spawnItemBoxes() {
-  const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
-  const samplePoints = [0.15, 0.4, 0.65, 0.88];
+const sphereGeo = new THREE.SphereGeometry(0.45, 16, 16);
+
+function spawnItemBoxes(customItems) {
+  // Limpa caixas antigas da cena
+  itemBoxes.forEach(b => {
+    if (b.mesh) scene.remove(b.mesh);
+  });
+  itemBoxes.length = 0;
+
+  let samplePoints = [0.15, 0.40, 0.65, 0.88];
+  if (customItems && customItems.length > 0) {
+    samplePoints = customItems.map(it => it.t);
+  }
+
   let boxId = 0;
 
   samplePoints.forEach(t => {
@@ -863,7 +1218,7 @@ function spawnItemBoxes() {
 
       itemBoxes.push({
         id: boxId++,
-        mesh,
+        mesh: mesh,
         baseY: 0.6,
         active: true,
         respawnTimer: 0
@@ -875,10 +1230,10 @@ spawnItemBoxes();
 
 function disableItemBox(boxId) {
   const box = itemBoxes.find(b => b.id === boxId);
-  if (box) {
+  if (box && box.active) {
     box.active = false;
     box.mesh.visible = false;
-    box.respawnTimer = 7.0;
+    box.respawnTimer = 5.0; // Renasce em 5 segundos
   }
 }
 
@@ -893,10 +1248,10 @@ function updateItemBoxes(dt) {
       return;
     }
 
-    box.mesh.rotation.y += dt * 1.8;
-    box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.004) * 0.12;
+    box.mesh.rotation.y += dt * 2.0;
+    box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.005) * 0.15;
 
-    if (kart && box.mesh.position.distanceTo(kart.position) < 1.4) {
+    if (kart && box.mesh.position.distanceTo(kart.position) < 1.6) {
       disableItemBox(box.id);
       sendNetworkEvent({ t: 'take_box', boxId: box.id });
 
@@ -907,13 +1262,11 @@ function updateItemBoxes(dt) {
   });
 }
 
-// Quando pega uma Pokébola na pista
 function getItemFromBox() {
   const skillKeys = Object.keys(SKILLS);
   const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
   currentItem = SKILLS[randomKey];
 
-  // Atualiza o ícone central
   const iconEl = document.getElementById('itemIcon');
   if (iconEl) iconEl.innerText = currentItem.icon;
 }
@@ -922,8 +1275,6 @@ const placedTraps = [];
 let trapNextId = 0;
 
 function createTrapMesh(trapData) {
-  let geo, mat;
-
   if (trapData.type === 'FUMACA') {
     const group = new THREE.Group();
 
@@ -951,8 +1302,8 @@ function createTrapMesh(trapData) {
     return;
 
   } else {
-    geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
-    mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
+    const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
+    const mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
 
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(trapData.x, 0.03, trapData.z);
@@ -1070,13 +1421,11 @@ function castShockAbility() {
   }
 }
 
-// Quando usa a habilidade ao pressionar a tecla [X]
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyX' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
     currentItem = null;
 
-    // Reseta o ícone central para a interrogação
     const iconEl = document.getElementById('itemIcon');
     if (iconEl) iconEl.innerText = '❓';
   }
@@ -1273,7 +1622,7 @@ function initRaceMultiplayer() {
                 finished: myTracker ? myTracker.finished : false
               });
             }
-          }, 1000 / 30); // 30 FPS para transmissão fluida
+          }, 1000 / 30);
         });
 
         hostConn.on('data', (data) => {
@@ -1313,7 +1662,7 @@ function networkTick(dt) {
   if (!isHost || !racePeer) return;
 
   netTimer += dt;
-  if (netTimer < 1 / 30) return; // 30 FPS
+  if (netTimer < 1 / 30) return;
   netTimer = 0;
 
   const myTracker = raceTrackers.get('local');
@@ -1359,7 +1708,6 @@ function updateRemoteKarts(dt) {
   for (const entry of remoteKarts.values()) {
     const g = entry.obj.group;
 
-    // 1. PREDIÇÃO (Dead Reckoning)
     if (Math.abs(entry.target.speed) > 1) {
       const moveDir = new THREE.Vector3(
         Math.sin(entry.target.ry),
@@ -1369,11 +1717,9 @@ function updateRemoteKarts(dt) {
       entry.target.pos.addScaledVector(moveDir, entry.target.speed * dt);
     }
 
-    // 2. INTERPOLAÇÃO (Lerp suave)
     const lerpFactor = Math.min(1, dt * 18);
     g.position.lerp(entry.target.pos, lerpFactor);
 
-    // 3. SUAVIZAÇÃO DA ROTAÇÃO
     let diffY = entry.target.ry - g.rotation.y;
     while (diffY < -Math.PI) diffY += Math.PI * 2;
     while (diffY > Math.PI) diffY -= Math.PI * 2;
@@ -1451,16 +1797,14 @@ function updateHUD() {
   }
 }
 
-// CONFIGURAÇÃO DO MINIMAPA 2D
+// MINIMAPA 2D
 const minimapCanvas = document.getElementById('minimapCanvas');
 const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
-// Normaliza as coordenadas 3D para o Canvas 2D
 function mapToMinimap(x, z) {
-  // Ajuste a escala (0.65) e os offsets conforme o tamanho da sua pista
   const scale = 0.65;
-  const cx = 80; // Centro X do canvas (160/2)
-  const cy = 80; // Centro Y do canvas (160/2)
+  const cx = 80;
+  const cy = 80;
 
   return {
     x: cx + x * scale,
@@ -1473,7 +1817,6 @@ function drawMinimap() {
 
   minimapCtx.clearRect(0, 0, 160, 160);
 
-  // 1. Desenha o traçado da Pista
   minimapCtx.beginPath();
   minimapCtx.lineWidth = 6;
   minimapCtx.strokeStyle = '#475569';
@@ -1488,7 +1831,6 @@ function drawMinimap() {
   minimapCtx.closePath();
   minimapCtx.stroke();
 
-  // 2. Desenha os Oponentes Remotos (Pontos Azuis)
   if (typeof remoteKarts !== 'undefined') {
     for (const entry of remoteKarts.values()) {
       const pos = entry.obj.group.position;
@@ -1501,7 +1843,6 @@ function drawMinimap() {
     }
   }
 
-  // 3. Desenha o Jogador Local (Ponto Amarelo/Dourado com Borda)
   const myPt = mapToMinimap(kart.position.x, kart.position.z);
   minimapCtx.beginPath();
   minimapCtx.arc(myPt.x, myPt.y, 5, 0, Math.PI * 2);

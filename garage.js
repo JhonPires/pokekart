@@ -1,6 +1,6 @@
 // garage.js - Versão Otimizada com Cache Imediato e Lógica do Supabase
 
-let scene, camera, renderer, currentMesh;
+let scene, camera, renderer, currentMesh, controls;
 let selectedKartId = 'jolteon';
 let garageRequestId = 0;
 
@@ -20,7 +20,16 @@ const KART_POKEMON_IDS = {
   'jinx': 124,
   'sudowoodo': 185,
   'sylveon': 700,
-  'umbreon': 197
+  'umbreon': 197,
+  'pikachu': 25,
+  'gliscor': 472,
+  'mewtwo': 150,
+  'zekrom': 644,
+  'swampert': 260,
+  'rayquaza': 384,
+  'espeon': 196,
+  'tatsugiri': 978,
+  'scyther': 123
 };
 
 const KART_CATALOG = [
@@ -36,7 +45,16 @@ const KART_CATALOG = [
   { id: 'golem', name: 'Golem Kart', price: 1800, conceptImg: 'img/golem.png', stats: { speed: 92, accel: 60, handling: 70 } },
   { id: 'jinx', name: 'Jynx Kart', price: 2400, conceptImg: 'img/jinx.png', stats: { speed: 82, accel: 82, handling: 80 } },
   { id: 'umbreon', name: 'Umbreon Kart', price: 3000, conceptImg: 'img/umbreon.png', stats: { speed: 88, accel: 85, handling: 85 } },
-  { id: 'sylveon', name: 'Sylveon Kart', price: 3200, conceptImg: 'img/sylveon.png', stats: { speed: 84, accel: 92, handling: 90 } }
+  { id: 'sylveon', name: 'Sylveon Kart', price: 3200, conceptImg: 'img/sylveon.png', stats: { speed: 84, accel: 92, handling: 90 } },
+  { id: 'pikachu', name: 'Pikachu Kart', price: 500, conceptImg: 'img/pikachu.png', stats: { speed: 80, accel: 85, handling: 80 } },
+  { id: 'gliscor', name: 'Gliscor Kart', price: 2600, conceptImg: 'img/gliscor.png', stats: { speed: 82, accel: 80, handling: 85 } },
+  { id: 'mewtwo', name: 'Mewtwo Kart', price: 4500, conceptImg: 'img/mewtwo.png', stats: { speed: 95, accel: 88, handling: 82 } },
+  { id: 'zekrom', name: 'Zekrom Kart', price: 4200, conceptImg: 'img/zekrom.png', stats: { speed: 94, accel: 85, handling: 75 } },
+  { id: 'swampert', name: 'Swampert Kart', price: 2800, conceptImg: 'img/swampert.jpeg', stats: { speed: 86, accel: 84, handling: 80 } },
+  { id: 'rayquaza', name: 'Rayquaza Kart', price: 5000, conceptImg: 'img/rayquaza.jpeg', stats: { speed: 98, accel: 90, handling: 78 } },
+  { id: 'espeon', name: 'Espeon Kart', price: 3100, conceptImg: 'img/espeon.png', stats: { speed: 86, accel: 88, handling: 88 } },
+  { id: 'tatsugiri', name: 'Tatsugiri Kart', price: 2100, conceptImg: 'img/tatsugiri.png', stats: { speed: 76, accel: 92, handling: 92 } },
+  { id: 'scyther', name: 'Scyther Kart', price: 2500, conceptImg: 'img/scyther.png', stats: { speed: 88, accel: 82, handling: 84 } }
 ];
 
 // Inicialização da Garagem
@@ -73,7 +91,7 @@ function updateHeaderData() {
   }
 }
 
-// Configuração da Cena 3D do Laboratório
+// Configuração da Cena 3D com Rotação Automática Inteligente
 function init3DViewport() {
   const container = document.getElementById('kartViewport');
   if (!container) return;
@@ -93,9 +111,42 @@ function init3DViewport() {
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
 
+  // Estado de interação do usuário
+  let isUserInteracting = false;
+  let resumeAutoRotateTimeout = null;
+
+  if (typeof THREE.OrbitControls !== 'undefined') {
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.enableZoom = true;
+    controls.autoRotate = false;
+
+    // Quando começa a arrastar/girar, pausa a rotação automática
+    controls.addEventListener('start', () => {
+      isUserInteracting = true;
+      if (resumeAutoRotateTimeout) {
+        clearTimeout(resumeAutoRotateTimeout);
+      }
+    });
+
+    // Quando solta o mouse/touch, espera 2 segundos e retoma a rotação
+    controls.addEventListener('end', () => {
+      resumeAutoRotateTimeout = setTimeout(() => {
+        isUserInteracting = false;
+      }, 2000); // 2000ms = 2 segundos
+    });
+  }
+
   function animate() {
     requestAnimationFrame(animate);
-    if (currentMesh) currentMesh.rotation.y += 0.01;
+
+    // Gira automaticamente apenas se o usuário não estiver interagindo
+    if (currentMesh && !isUserInteracting) {
+      currentMesh.rotation.y += 0.01;
+    }
+
+    if (controls) controls.update();
     renderer.render(scene, camera);
   }
   animate();
@@ -113,7 +164,6 @@ async function loadKartModel(kartId) {
     currentMesh = null;
   }
 
-  // Helper para ocultar o spinner e adicionar à cena com segurança
   const attachMeshToScene = (gltfScene) => {
     if (requestId !== garageRequestId) return;
 
@@ -122,7 +172,6 @@ async function loadKartModel(kartId) {
     currentMesh.position.set(0, 0, 0);
     scene.add(currentMesh);
 
-    // Oculta o indicador "Carregando modelo 3D..."
     if (spinner) spinner.style.display = 'none';
   };
 
@@ -135,7 +184,13 @@ async function loadKartModel(kartId) {
   // 3. DISK CACHE (CacheStorage)
   const modelUrl = `./models/${kartId}.glb`;
   const loader = new THREE.GLTFLoader();
-  const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v1';
+  if (typeof THREE.DRACOLoader !== 'undefined') {
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    loader.setDRACOLoader(dracoLoader);
+  }
+
+  const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
 
   try {
     let arrayBuffer = null;
@@ -161,23 +216,34 @@ async function loadKartModel(kartId) {
     console.warn('[Garagem] Erro ao ler CacheStorage:', err);
   }
 
-  // 4. NETWORK FALLBACK
-  loader.load(
-    modelUrl,
-    (gltf) => {
+  // 4. NETWORK FALLBACK COM SALVAMENTO NO CACHE
+  try {
+    const response = await fetch(modelUrl);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+    if ('caches' in window) {
+      try {
+        const cache = await caches.open(targetCacheName);
+        cache.put(modelUrl, response.clone());
+      } catch (e) {
+        console.warn('[Garagem] Falha ao salvar no cache:', e);
+      }
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    loader.parse(arrayBuffer, './models/', (gltf) => {
       if (!window.KART_ASSETS) window.KART_ASSETS = {};
       window.KART_ASSETS[kartId] = gltf.scene;
 
       attachMeshToScene(gltf.scene);
-    },
-    undefined,
-    (err) => {
-      console.warn(`[Garagem] Erro ao carregar ${modelUrl}:`, err);
-      if (spinner) spinner.style.display = 'none';
-    }
-  );
+    });
+  } catch (err) {
+    console.warn(`[Garagem] Erro ao carregar ${modelUrl}:`, err);
+    if (spinner) spinner.style.display = 'none';
+  }
 }
-// Renderiza a Lista de Cards (Executado Apenas Uma Vez)
+
+// Renderiza a Lista de Cards
 function renderKartGrid() {
   const gridEl = document.getElementById('kartList');
   if (!gridEl) return;
@@ -207,11 +273,10 @@ function renderKartGrid() {
   });
 }
 
-// Seleção Instantânea do Kart (Sem Recriar a Lista Inteira)
+// Seleção Instantânea do Kart
 function selectKart(kartId) {
   selectedKartId = kartId;
 
-  // Atualiza borda do card selecionado sem causar re-render na lista
   const cards = document.querySelectorAll('.kart-card');
   cards.forEach(card => {
     if (card.dataset.kartId === kartId) {
@@ -223,11 +288,9 @@ function selectKart(kartId) {
 
   const kartData = KART_CATALOG.find(k => k.id === kartId);
   if (kartData) {
-    // Atualiza nome
     const nameEl = document.getElementById('kartName');
     if (nameEl) nameEl.innerText = kartData.name;
 
-    // Atualiza barras de estatísticas
     if (kartData.stats) {
       const speedBar = document.getElementById('barSpeed');
       const accelBar = document.getElementById('barAccel');
@@ -238,19 +301,16 @@ function selectKart(kartId) {
       if (handlingBar) handlingBar.style.width = `${kartData.stats.handling}%`;
     }
 
-    // Atualiza imagem da Ficha Técnica
     const conceptImg = document.getElementById('kartConceptImg');
     if (conceptImg) conceptImg.src = kartData.conceptImg;
 
-    // Atualiza o estado do botão Principal (COMPRAR vs EQUIPAR)
     updateActionButton(kartData);
   }
 
-  // Renderiza o 3D instantaneamente
   loadKartModel(kartId);
 }
 
-// Gerenciamento Preciso do Botão de Ação (Comprar vs Equipar)
+// Gerenciamento Preciso do Botão de Ação
 function updateActionButton(kartData) {
   const btnAction = document.getElementById('btnAction');
   if (!btnAction) return;

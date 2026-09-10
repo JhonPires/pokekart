@@ -112,7 +112,7 @@
         <div>VOLTA: <span id="hud-current-lap">1</span> / 3</div>
     </div>
 
-    <!-- LEADERBOARD ORIGINAL -->
+    <!-- LEADERBOARD -->
     <div id="standings">
         <div style="font-size: 12px; color: #94a3b8; font-weight: bold; margin-bottom: 6px;">CLASSIFICAÇÃO</div>
         <div id="standingsList" style="display: flex; flex-direction: column; gap: 4px; font-size: 15px;"></div>
@@ -135,20 +135,19 @@
     pointer-events: none; z-index: 200; font-family: sans-serif;
   ">3</div>
 
-
     <!-- MENU ESC -->
     <div id="pauseMenu">
         <h1 style="color: #FFD54F; margin-bottom: 20px;">JOGO PAUSADO</h1>
         <button id="btnReturnLobby" class="lobbyBtn">Sair para o Lobby</button>
     </div>
 
-    <!-- Minimapa (Canto Inferior Esquerdo) -->
+    <!-- MINIMAPA -->
     <div id="minimapContainer"
         style="position: absolute; bottom: 20px; left: 20px; width: 160px; height: 160px; background: rgba(15, 23, 42, 0.75); border: 2px solid #334155; border-radius: 50%; overflow: hidden; z-index: 100;">
         <canvas id="minimapCanvas" width="160" height="160"></canvas>
     </div>
 
-    <!-- Container da Habilidade ÚNICO (Centro Inferior da Tela) -->
+    <!-- CONTAINER HABILIDADE -->
     <div id="itemContainer"
         style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 100;">
         <div id="itemIcon"
@@ -159,11 +158,15 @@
             style="color: #fff; font-size: 11px; font-weight: bold; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px;">Pressione
             [X]</span>
     </div>
+
+    <!-- DEPENDÊNCIAS E CARREGADORES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="assets.js"></script>
     <script src="game.js"></script>
 </body>
 

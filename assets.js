@@ -14,14 +14,54 @@ const ASSET_LIST = [
   { id: 'jinx', url: './models/jinx.glb' },
   { id: 'sudowoodo', url: './models/sudowoodo.glb' },
   { id: 'sylveon', url: './models/sylveon.glb' },
-  { id: 'umbreon', url: './models/umbreon.glb' }
+  { id: 'umbreon', url: './models/umbreon.glb' },
+  { id: 'pikachu', url: './models/pikachu.glb' },
+  { id: 'gliscor', url: './models/gliscor.glb' },
+  { id: 'mewtwo', url: './models/mewtwo.glb' },
+  { id: 'zekrom', url: './models/zekrom.glb' },
+  { id: 'swampert', url: './models/swampert.glb' },
+  { id: 'rayquaza', url: './models/rayquaza.glb' },
+  { id: 'espeon', url: './models/espeon.glb' },
+  { id: 'tatsugiri', url: './models/tatsugiri.glb' },
+  { id: 'scyther', url: './models/scyther.glb' }
 ];
 
-const CACHE_NAME = 'pkart-3d-models-v1';
+const CACHE_NAME = 'pkart-3d-models-v2';
+
+async function createGLTFLoader() {
+  const loader = new THREE.GLTFLoader();
+  if (typeof THREE.DRACOLoader !== 'undefined') {
+    const dracoLoader = new THREE.DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    loader.setDRACOLoader(dracoLoader);
+  }
+  return loader;
+}
+
+async function preloadSingleKart(kartId) {
+  const asset = ASSET_LIST.find(a => a.id === kartId);
+  if (!asset) return;
+
+  const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
+  if (!('caches' in window)) return;
+
+  try {
+    const cache = await caches.open(targetCacheName);
+    const cached = await cache.match(asset.url);
+    if (!cached) {
+      const res = await fetch(asset.url);
+      if (res.ok) {
+        await cache.put(asset.url, res);
+      }
+    }
+  } catch (e) {
+    console.warn('[Assets] Preload silencioso falhou para ' + kartId, e);
+  }
+}
 
 async function preloadAllKarts(onProgress) {
   if (!window.KART_ASSETS) window.KART_ASSETS = {};
-  const loader = new THREE.GLTFLoader();
+  const loader = await createGLTFLoader();
   let loadedCount = 0;
 
   // Cria um renderizador fantasma temporário para forçar o envio dos shaders para a placa de vídeo

@@ -1,0 +1,12 @@
+# Backup dos modelos 3D pesados originais
+models_backup/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# SO
+.DS_Store
+Thumbs.db

@@ -54,7 +54,8 @@
       align-items: center;
       gap: 12px;
       width: 360px;
-      height: 520px;
+      min-height: 520px;
+      height: auto;
       box-sizing: border-box;
     }
 
@@ -178,7 +179,8 @@
         <button id="btnPrevKart" class="selectNavBtn">◀</button>
         <div style="text-align: center;">
           <div id="previewContainer"
-            style="width: 200px; height: 120px; background: #0f172a; border-radius: 8px; border: 1px solid #334155;">
+            style="width: 200px; height: 120px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; position: relative; overflow: hidden;">
+            <div id="previewSpinner" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; font-size: 12px; pointer-events: none; font-weight: bold;">Carregando...</div>
           </div>
           <div id="kartName" style="margin-top: 4px; font-weight: bold; color: #38bdf8; font-size: 13px;">Jolteon Kart
           </div>
@@ -200,16 +202,30 @@
       <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
       <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
 
+      <!-- Seletor de Pista -->
+      <div style="width: 100%; display: flex; flex-direction: column; gap: 4px;">
+        <label style="font-size: 11px; color: #94a3b8; font-weight: bold;">ESCOLHA A PISTA:</label>
+        <select id="trackSelectDropdown" style="width: 100%; background: #0f172a; border: 1px solid #334155; color: #facc15; font-weight: bold; padding: 8px 10px; border-radius: 8px; font-size: 13px; outline: none; cursor: pointer;">
+          <option value="">🏁 Circuito Oficial (Padrão)</option>
+        </select>
+      </div>
+
       <div style="display: flex; gap: 8px; width: 100%;">
         <button id="btnStartRace" class="lobbyBtn" style="display:none;">Iniciar Corrida 🏁</button>
         <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="width: 100%;">Jogar Sozinho</button>
       </div>
 
-      <!-- Botão para Abrir a Garagem -->
-      <button id="btnOpenGarage"
-        style="width: 100%; padding: 10px; background: #facc15; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: 0.2s;">
-        🛠️ GARAGEM & LOJA
-      </button>
+      <!-- Ações Extras: Garagem e Criador de Pistas -->
+      <div style="display: flex; gap: 8px; width: 100%;">
+        <button id="btnOpenGarage"
+          style="flex: 1; padding: 10px; background: #facc15; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s;">
+          🛠️ GARAGEM
+        </button>
+        <button id="btnOpenTrackBuilder"
+          style="flex: 1; padding: 10px; background: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.2s;">
+          🎨 PISTAS
+        </button>
+      </div>
     </div>
 
     <!-- MODAL 2: RANKING GLOBAL DE TROFÉUS -->
@@ -237,6 +253,7 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -245,6 +262,11 @@
 
   <script>
     const gltfLoader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader !== 'undefined') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      gltfLoader.setDRACOLoader(dracoLoader);
+    }
 
     function getKartUrl(filename) {
       return `./models/${filename}`;
@@ -264,7 +286,16 @@
       { id: 'jinx', name: 'Jynx Kart', modelUrl: getKartUrl('jinx.glb') },
       { id: 'sudowoodo', name: 'Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb') },
       { id: 'sylveon', name: 'Sylveon Kart', modelUrl: getKartUrl('sylveon.glb') },
-      { id: 'umbreon', name: 'Umbreon Kart', modelUrl: getKartUrl('umbreon.glb') }
+      { id: 'umbreon', name: 'Umbreon Kart', modelUrl: getKartUrl('umbreon.glb') },
+      { id: 'pikachu', name: 'Pikachu Kart', modelUrl: getKartUrl('pikachu.glb') },
+      { id: 'gliscor', name: 'Gliscor Kart', modelUrl: getKartUrl('gliscor.glb') },
+      { id: 'mewtwo', name: 'Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb') },
+      { id: 'zekrom', name: 'Zekrom Kart', modelUrl: getKartUrl('zekrom.glb') },
+      { id: 'swampert', name: 'Swampert Kart', modelUrl: getKartUrl('swampert.glb') },
+      { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb') },
+      { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb') },
+      { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb') },
+      { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb') }
     ];
 
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
@@ -304,9 +335,10 @@
       animate();
     }
 
-    function updatePreview() {
+    async function updatePreview() {
       const item = KART_DATABASE[selectedIndex];
       const kartNameEl = document.getElementById('kartName');
+      const spinnerEl = document.getElementById('previewSpinner');
 
       sessionStorage.setItem('pkart_selected_kart', item.id);
 
@@ -319,31 +351,66 @@
 
       checkKartLockStatus(item.id);
 
-      // 1. REUTILIZAÇÃO INSTANTÂNEA DO CACHE (0ms)
-      if (window.KART_ASSETS && window.KART_ASSETS[item.id]) {
-        currentModel = window.KART_ASSETS[item.id].clone(true);
-
-        // ALTERADO: Aumentado de 1.5 para 2.2
+      const displayModel = (modelScene) => {
+        if (requestId !== previewRequestId) return;
+        currentModel = modelScene.clone(true);
         currentModel.scale.setScalar(2.2);
-
         previewScene.add(currentModel);
+        if (spinnerEl) spinnerEl.style.display = 'none';
+      };
+
+      // 1. REUTILIZAÇÃO INSTANTÂNEA DA MEMÓRIA RAM (0ms)
+      if (window.KART_ASSETS && window.KART_ASSETS[item.id]) {
+        displayModel(window.KART_ASSETS[item.id]);
         return;
       }
 
-      // 2. FALLBACK SE AINDA NÃO CARREGOU DO CACHE
-      gltfLoader.load(item.modelUrl, (gltf) => {
-        if (requestId !== previewRequestId) return;
+      if (spinnerEl) spinnerEl.style.display = 'block';
 
-        if (!window.KART_ASSETS) window.KART_ASSETS = {};
-        window.KART_ASSETS[item.id] = gltf.scene;
+      // 2. DISK CACHE (CacheStorage do Navegador)
+      const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
+      try {
+        if ('caches' in window) {
+          const cache = await caches.open(targetCacheName);
+          const cachedResponse = await cache.match(item.modelUrl);
+          if (cachedResponse) {
+            const arrayBuffer = await cachedResponse.arrayBuffer();
+            gltfLoader.parse(arrayBuffer, './models/', (gltf) => {
+              if (!window.KART_ASSETS) window.KART_ASSETS = {};
+              window.KART_ASSETS[item.id] = gltf.scene;
+              displayModel(gltf.scene);
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('[Lobby] Erro ao ler CacheStorage:', err);
+      }
 
-        currentModel = gltf.scene.clone(true);
+      // 3. FALLBACK DE REDE COM GRAVAÇÃO AUTOMÁTICA NO CACHE
+      try {
+        const response = await fetch(item.modelUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-        // ALTERADO: Aumentado de 1.5 para 2.2
-        currentModel.scale.setScalar(2.2);
+        if ('caches' in window) {
+          try {
+            const cache = await caches.open(targetCacheName);
+            cache.put(item.modelUrl, response.clone());
+          } catch (e) {
+            console.warn('[Lobby] Falha ao gravar no cache:', e);
+          }
+        }
 
-        previewScene.add(currentModel);
-      });
+        const arrayBuffer = await response.arrayBuffer();
+        gltfLoader.parse(arrayBuffer, './models/', (gltf) => {
+          if (!window.KART_ASSETS) window.KART_ASSETS = {};
+          window.KART_ASSETS[item.id] = gltf.scene;
+          displayModel(gltf.scene);
+        });
+      } catch (networkErr) {
+        console.error('[Lobby] Erro ao carregar modelo:', networkErr);
+        if (spinnerEl) spinnerEl.style.display = 'none';
+      }
     }
 
     // CORREÇÃO DA TRAVA: Garante Jolteon e Charizard como sempre desbloqueados
@@ -391,12 +458,9 @@
       updatePreview();
     };
 
+    // Inicialização do Lobby: Carrega apenas o kart selecionado (lazy load sob demanda)
     document.addEventListener('DOMContentLoaded', () => {
-      if (typeof preloadAllKarts === 'function') {
-        preloadAllKarts((progress) => {
-          console.log(`Carregando karts: ${Math.round(progress * 100)}%`);
-        });
-      }
+      // Não bloqueia a página baixando 13 modelos ao mesmo tempo
     });
 
     let peer = null;
@@ -463,30 +527,34 @@
             myAssignedSlot = data.slot;
           }
           if (data.t === 'start') {
-            redirectToRace(code, myAssignedSlot);
+            redirectToRace(code, myAssignedSlot, data.trackId || '');
           }
         });
       });
     };
 
-    function redirectToRace(room = '', slot = 0) {
+    function redirectToRace(room = '', slot = 0, trackId = '') {
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = room.trim().toLowerCase();
+      const chosenTrack = trackId || (document.getElementById('trackSelectDropdown')?.value || '');
+
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}`;
       if (cleanRoom) target += `&room=${cleanRoom}`;
+      if (chosenTrack) target += `&customTrack=${chosenTrack}`;
       window.location.href = target;
     }
 
     document.getElementById('btnStartRace').onclick = () => {
+      const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
       guestConnections.forEach(conn => {
         if (conn.open) {
-          conn.send({ t: 'start' });
+          conn.send({ t: 'start', trackId: chosenTrack });
         }
       });
 
       setTimeout(() => {
-        redirectToRace(roomCode, 0);
+        redirectToRace(roomCode, 0, chosenTrack);
       }, 200);
     };
 
@@ -494,7 +562,41 @@
       redirectToRace('', 0);
     };
 
-    window.onload = initPreview;
+    // Abre o Criador de Pistas
+    const btnTrackBuilder = document.getElementById('btnOpenTrackBuilder');
+    if (btnTrackBuilder) {
+      btnTrackBuilder.onclick = () => window.location.href = 'track_builder.html';
+    }
+
+    // Carrega Pistas Aprovadas da Comunidade no Dropdown
+    async function loadApprovedTracks() {
+      const selectEl = document.getElementById('trackSelectDropdown');
+      if (!selectEl || typeof supabaseClient === 'undefined') return;
+
+      try {
+        const { data: tracks, error } = await supabaseClient
+          .from('custom_tracks')
+          .select('id, name, creator_name')
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false });
+
+        if (error || !tracks) return;
+
+        tracks.forEach(tr => {
+          const opt = document.createElement('option');
+          opt.value = tr.id;
+          opt.textContent = `📍 ${tr.name} (por ${tr.creator_name})`;
+          selectEl.appendChild(opt);
+        });
+      } catch (err) {
+        console.warn('Erro ao carregar pistas da comunidade:', err);
+      }
+    }
+
+    window.onload = () => {
+      initPreview();
+      loadApprovedTracks();
+    };
   </script>
 </body>
 

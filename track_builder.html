@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Criador de Pistas - Pokémon Kart</title>
+  <link rel="stylesheet" href="track_builder.css">
+</head>
+
+<body>
+
+  <div id="builderContainer">
+    <!-- Topbar -->
+    <header class="builder-topbar">
+      <div class="topbar-left">
+        <button class="btn-builder" id="btnBack">⬅ Voltar ao Lobby</button>
+        <div class="topbar-title">🎨 Criador de Pistas Pokémon Kart</div>
+      </div>
+
+      <div class="topbar-right">
+        <button class="btn-builder" id="btnPreset">🏁 Carregar Modelo</button>
+        <button class="btn-builder" id="btnClear">🧹 Limpar</button>
+        <button class="btn-builder btn-accent" id="btnTest">🎮 Testar Pista</button>
+        <button class="btn-builder btn-primary" id="btnSave">💾 Salvar Pista</button>
+        <button class="btn-builder btn-admin" id="btnAdmin" style="display: none;">🛡️ Moderação</button>
+      </div>
+    </header>
+
+    <!-- Workspace com Canvas Interativo -->
+    <main class="workspace" id="workspace">
+      <canvas id="trackCanvas"></canvas>
+
+      <!-- Barra de Ferramentas Flutuante -->
+      <div class="floating-toolbar">
+        <div class="tool-section-title">Ferramentas</div>
+        <button class="tool-btn active" id="toolNodes" data-mode="nodes">
+          <span>🛣️</span> Traçado (Pontos)
+        </button>
+        <button class="tool-btn" id="toolItems" data-mode="items">
+          <span>🎁</span> Caixas de Item
+        </button>
+        <!-- <button class="tool-btn" id="toolBoosts" data-mode="boosts">
+          <span>⚡</span> Pads de Turbo
+        </button> -->
+
+        <div class="tool-section-title" style="margin-top: 6px;">Circuito</div>
+        <button class="tool-btn" id="btnToggleLoop">
+          <span id="loopIcon">🔄</span> <span id="loopText">Fechar Circuito</span>
+        </button>
+        <button class="tool-btn" id="btnResetView">
+          <span>🔍</span> Centralizar Visão
+        </button>
+      </div>
+
+      <!-- Barra de Informações Inferior -->
+      <div class="info-bar">
+        <div class="info-item">Pontos: <span id="infoPoints" class="info-val">0</span></div>
+        <div class="info-item">Circuito: <span id="infoClosed" class="info-val" style="color: #ef4444;">Aberto</span>
+        </div>
+        <div class="info-item">Extensão: <span id="infoLength" class="info-val">0m</span></div>
+        <div class="info-item">Itens: <span id="infoItems" class="info-val">0</span></div>
+        <div class="info-item">Turbos: <span id="infoBoosts" class="info-val">0</span></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Modal para Salvar Pista -->
+  <div class="modal-overlay" id="saveModal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>💾 Salvar e Publicar Pista</h2>
+        <button class="modal-close" id="btnCloseSaveModal">&times;</button>
+      </div>
+
+      <div class="form-group">
+        <label for="trackNameInput">Nome da Pista *</label>
+        <input type="text" id="trackNameInput" placeholder="Ex: Rota do Charizard, Circuito Eevee..." maxlength="40" />
+      </div>
+
+      <div class="form-group">
+        <label for="trackDescInput">Descrição (Opcional)</label>
+        <textarea id="trackDescInput" rows="3"
+          placeholder="Conte mais sobre o traçado, curvas ou segredos..."></textarea>
+      </div>
+
+      <div id="saveStatus" style="font-size: 13px; color: #94a3b8; min-height: 18px;"></div>
+
+      <button class="btn-builder btn-primary" id="btnConfirmSave"
+        style="padding: 12px; font-size: 15px; justify-content: center;">
+        PUBLICAR PARA AVALIAÇÃO
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal de Moderação (Apenas Administrador) -->
+  <div class="modal-overlay" id="adminModal" style="display: none;">
+    <div class="modal-card" style="width: 760px;">
+      <div class="modal-header">
+        <h2>🛡️ Painel de Moderação de Pistas</h2>
+        <button class="modal-close" id="btnCloseAdminModal">&times;</button>
+      </div>
+
+      <div style="font-size: 13px; color: #94a3b8;">
+        Gerencie as pistas enviadas pela comunidade. Pistas aprovadas ficam visíveis imediatamente no Lobby.
+      </div>
+
+      <div style="max-height: 400px; overflow-y: auto;">
+        <table class="moderation-table">
+          <thead>
+            <tr>
+              <th>Pista</th>
+              <th>Criador</th>
+              <th>Status</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="moderationListBody">
+            <tr>
+              <td colspan="4" style="text-align: center; color: #94a3b8;">Carregando pistas...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dependências -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script src="track_builder.js"></script>
+</body>
+
+</html>
