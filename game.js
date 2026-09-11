@@ -767,6 +767,103 @@ const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
+// --- INTEGRAÇÃO MOBILE (GIROSCÓPIO + CONTROLES INVISÍVEIS) ---
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let gyroTurnInput = 0;
+let mobileGasActive = false;
+let mobileBrakeActive = false;
+
+function setupMobileControls() {
+  if (!isMobile) return;
+
+  const controlsContainer = document.createElement('div');
+  controlsContainer.id = 'mobileControls';
+  controlsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; touch-action: none; display: flex; pointer-events: none;';
+
+  const leftArea = document.createElement('div');
+  leftArea.style.cssText = 'width: 50%; height: 100%; display: flex; flex-direction: column; pointer-events: auto;';
+
+  const btnItem = document.createElement('div');
+  btnItem.style.cssText = 'flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;';
+
+  const btnBrake = document.createElement('div');
+  btnBrake.style.cssText = 'flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;';
+
+  leftArea.appendChild(btnItem);
+  leftArea.appendChild(btnBrake);
+
+  const btnGas = document.createElement('div');
+  btnGas.style.cssText = 'width: 50%; height: 100%; pointer-events: auto; display: flex; align-items: center; justify-content: center;';
+
+  controlsContainer.appendChild(leftArea);
+  controlsContainer.appendChild(btnGas);
+  document.body.appendChild(controlsContainer);
+
+  btnGas.addEventListener('touchstart', (e) => { e.preventDefault(); mobileGasActive = true; });
+  btnGas.addEventListener('touchend', (e) => { e.preventDefault(); mobileGasActive = false; });
+  btnGas.addEventListener('touchcancel', (e) => { e.preventDefault(); mobileGasActive = false; });
+
+  btnBrake.addEventListener('touchstart', (e) => { e.preventDefault(); mobileBrakeActive = true; });
+  btnBrake.addEventListener('touchend', (e) => { e.preventDefault(); mobileBrakeActive = false; });
+  btnBrake.addEventListener('touchcancel', (e) => { e.preventDefault(); mobileBrakeActive = false; });
+
+  btnItem.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (currentItem && raceStarted) {
+      useEquippedSkill(currentItem);
+      currentItem = null;
+      const iconEl = document.getElementById('itemIcon');
+      if (iconEl) iconEl.innerText = '❓';
+    }
+  });
+}
+
+async function enableMobileExperience() {
+  if (!isMobile) return;
+
+  try {
+    if (document.documentElement.requestFullscreen) {
+      await document.documentElement.requestFullscreen();
+    }
+
+    if (screen.orientation && screen.orientation.lock) {
+      await screen.orientation.lock('landscape').catch(e => console.warn("Lock de rotação ignorado:", e));
+    }
+
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const permission = await DeviceOrientationEvent.requestPermission();
+      if (permission !== 'granted') return;
+    }
+
+    window.addEventListener('deviceorientation', (event) => {
+      let tilt = event.beta;
+      tilt = THREE.MathUtils.clamp(tilt, -40, 40);
+      gyroTurnInput = -(tilt / 40);
+    });
+
+    setupMobileControls();
+
+  } catch (err) {
+    console.warn("Erro ao configurar modo mobile:", err);
+  }
+}
+
+// Intercepta a primeira interação para carregar permissões visuais de tela no celular no momento da corrida (Garante Fullscreen no Load)
+if (isMobile) {
+  const startOverlay = document.createElement('div');
+  startOverlay.id = 'mobileStartOverlay';
+  startOverlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.95); color: #FFD54F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-size: 22px; font-weight: bold; font-family: sans-serif; text-align: center; padding: 20px;';
+  startOverlay.innerHTML = '🎮 MODO MOBILE ATIVADO<br><br><span style="font-size:16px; color:#38bdf8;">Toque na tela para travar a rotação e ativar o giroscópio</span>';
+  document.body.appendChild(startOverlay);
+
+  startOverlay.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    enableMobileExperience();
+    startOverlay.remove();
+  }, { once: true });
+}
+// -------------------------------------------------------------
+
 const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
 window.addEventListener('keydown', (event) => {
@@ -831,8 +928,10 @@ function updatePhysics(dt) {
   }
 
   const raceOver = raceTrackers.get('local')?.finished;
-  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp']);
-  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown']);
+
+  // Integramos entradas físicas com Mobile e PC
+  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
+  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
 
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
@@ -856,7 +955,17 @@ function updatePhysics(dt) {
 
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
-  const turnInput = (left ? 1 : 0) - (right ? 1 : 0);
+  let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
+
+  // Sobrescreve pelo giroscópio no Mobile com zona morta
+  if (isMobile) {
+    if (Math.abs(gyroTurnInput) > 0.1) {
+      turnInput = gyroTurnInput;
+    } else {
+      turnInput = 0;
+    }
+  }
+
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
   const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
@@ -948,26 +1057,19 @@ function updateRaceTracker(key, position) {
   }
   if (tr.finished) return tr;
 
-  // Descobre o quanto o kart andou desde o último frame
   let deltaT = rawT - tr.lastRawT;
 
-  // Detecta se ele cruzou a linha de chegada para a frente (ex: de 0.99 para 0.01)
   if (deltaT < -0.5) deltaT += 1.0;
-  // Detecta se ele cruzou a linha dando ré (ex: de 0.01 para 0.99)
   else if (deltaT > 0.5) deltaT -= 1.0;
 
   tr.lastRawT = rawT;
-
-  // Soma a distância percorrida (Isso destrava o progresso e o faz ser contínuo!)
   tr.progress += deltaT;
-
-  // A volta é deduzida automaticamente da distância total (1.0 = completou a 1ª volta)
   tr.lapCount = Math.floor(tr.progress) + 1;
 
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
     tr.finishTime = Date.now();
-    tr.lapCount = TOTAL_LAPS; // Trava o visual da HUD na última volta
+    tr.lapCount = TOTAL_LAPS;
   }
 
   return tr;
@@ -1487,12 +1589,10 @@ function handleRemoteKartState(peerId, data) {
   entry.target.ry = data.ry;
   entry.target.speed = data.speed;
 
-  // 🔴 CORREÇÃO VITAL: Aceitamos o progresso diretamente da rede
   entry.progress = typeof data.progress === 'number' ? data.progress : 0;
   entry.lapCount = data.lapCount || 1;
   entry.finished = Boolean(data.finished);
 
-  // Injetamos diretamente no Map da HUD sem chamar o 'updateRaceTracker'
   raceTrackers.set(peerId, {
     progress: entry.progress,
     lapCount: entry.lapCount,
@@ -1721,8 +1821,6 @@ function updateRemoteKarts(dt) {
     while (diffY > Math.PI) diffY -= Math.PI * 2;
 
     g.rotation.y += diffY * lerpFactor;
-
-    // 🔴 A linha updateRaceTracker(pid, g.position) FOI REMOVIDA DAQUI!
   }
 }
 
@@ -1754,7 +1852,6 @@ function updateStandings() {
     if (!r.tr) r.tr = { progress: 0, lapCount: 1, finished: false, finishTime: Infinity };
   });
 
-  // ORDENAÇÃO EXATA: Avalia 100% pelo jogador mais a frente na pista (maior progresso)
   racers.sort((a, b) => {
     if (a.tr.finished && b.tr.finished) return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
     if (a.tr.finished) return -1;

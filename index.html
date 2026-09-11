@@ -18,7 +18,6 @@
       height: 100%;
       overflow: hidden;
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      /* Textura de Linhas Diagonais Estilo Persona/Kart no Tom Azul do Tema */
       background-color: #0b1329;
       background-image: repeating-linear-gradient(-45deg,
           rgba(30, 41, 59, 0.4) 0,
@@ -31,7 +30,6 @@
       color: #fff;
     }
 
-    /* BARRA SUPERIOR (TOPBAR) */
     #topHeaderBar {
       position: fixed;
       top: 16px;
@@ -60,7 +58,6 @@
       height: 48px;
     }
 
-    /* Layout Centralizado do Lobby com Suporte para a Logo */
     #lobbyMainContainer {
       position: fixed;
       top: 0;
@@ -78,7 +75,6 @@
       z-index: 100;
     }
 
-    /* Logo do Jogo */
     .gameLogo {
       max-width: 280px;
       height: auto;
@@ -86,7 +82,6 @@
       filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
     }
 
-    /* Estilo Padronizado do Card Principal */
     .lobbyCard {
       background: #1e293b;
       padding: 24px;
@@ -159,7 +154,6 @@
       outline: none;
     }
 
-    /* COMPONENTE DROPDOWN CUSTOMIZADO */
     .customDropdownWrapper {
       position: relative;
       width: 100%;
@@ -243,7 +237,6 @@
       color: #0f172a;
     }
 
-    /* Estilos dos Botões do Menu Lateral */
     .sideMenuBtn {
       width: 100%;
       background: #0f172a;
@@ -287,7 +280,6 @@
 
 <body>
 
-  <!-- BARRA SUPERIOR (HEADER) -->
   <div id="topHeaderBar">
     <button id="btnOpenSideMenu"
       style="width: 48px; height: 48px; background: #171e2e; border: 2px solid #0f172a; border-radius: 12px; box-shadow: 3px 3px 0px #0f172a; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;">
@@ -317,12 +309,10 @@
     </div>
   </div>
 
-  <!-- OVERLAY ESCURO DO MENU LATERAL -->
   <div id="sideMenuOverlay"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
   </div>
 
-  <!-- PAINEL DO MENU LATERAL (DRAWER) -->
   <div id="sideMenuDrawer"
     style="position: fixed; top: 0; left: -320px; width: 300px; height: 100vh; background: #171e2e; border-right: 1px solid #334155; padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; transition: left 0.3s ease; z-index: 900; box-shadow: 5px 0 25px rgba(0,0,0,0.5);">
     <div>
@@ -375,7 +365,6 @@
     </div>
   </div>
 
-  <!-- MODAL POPUP DE RANKINGS -->
   <div id="rankingModalOverlay"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
     <div class="lobbyCard"
@@ -396,7 +385,6 @@
         </button>
       </div>
 
-      <!-- SELETOR DE RECORDES POR PISTA (CUSTOMIZADO) -->
       <div id="trackRecordSelectorBox" style="display: none; width: 100%; margin-bottom: 8px;">
         <select id="leaderboardTrackSelect" style="display:none;">
           <option value="default">🏁 Circuito Oficial (Padrão)</option>
@@ -426,7 +414,6 @@
     </div>
   </div>
 
-  <!-- MODAL DE AUTENTICAÇÃO -->
   <div id="authModal"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000;">
     <div
@@ -447,9 +434,7 @@
     </div>
   </div>
 
-  <!-- CONTAINER PRINCIPAL DO LOBBY -->
   <div id="lobbyMainContainer">
-    <!-- LOGO DO JOGO -->
     <img src="img/logo.png" alt="Pokémon Kart Logo" class="gameLogo">
 
     <div class="lobbyCard">
@@ -481,7 +466,6 @@
       <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
       <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
 
-      <!-- SELETOR DE PISTA CUSTOMIZADO -->
       <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
         <label style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">ESCOLHA A
           PISTA:</label>
@@ -518,6 +502,23 @@
   <script src="auth.js"></script>
 
   <script>
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Configura a rotação inicial no lobby via API nativa (pode exigir interação prévia do usuário na tela)
+    async function enableMobileExperience() {
+      if (!isMobile) return;
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+        if (screen.orientation && screen.orientation.lock) {
+          await screen.orientation.lock('landscape').catch(e => console.warn("Lock de rotação ignorado:", e));
+        }
+      } catch (err) {
+        console.warn("Erro ao tentar configurar a tela mobile:", err);
+      }
+    }
+
     const gltfLoader = new THREE.GLTFLoader();
     if (typeof THREE.DRACOLoader !== 'undefined') {
       const dracoLoader = new THREE.DRACOLoader();
@@ -752,7 +753,6 @@
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
     }
 
-    // VARIABLES MULTIPLAYER LOBBY
     let peer = null;
     let roomCode = '';
     let myAssignedSlot = 0;
@@ -784,7 +784,6 @@
 
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}`;
 
-      // Garante que a sala seja adicionada, mesmo que o slot seja 0
       if (cleanRoom !== '') {
         target += `&room=${cleanRoom}`;
       }
@@ -797,7 +796,6 @@
       window.location.href = target;
     }
 
-    // HOST: CRIAR SALA
     document.getElementById('btnHost').onclick = () => {
       document.getElementById('lobbyStatus').textContent = 'Criando sala...';
       roomCode = Math.random().toString(36).substring(2, 7).toLowerCase();
@@ -839,7 +837,6 @@
       });
     };
 
-    // CONVIDADO: ENTRAR EM SALA
     document.getElementById('btnJoin').onclick = () => {
       document.getElementById('joinBox').style.display = 'flex';
     };
@@ -876,17 +873,17 @@
       });
     };
 
-    // ESCUTA DE EVENTO GLOBAL PARA O BOTÃO INICIAR CORRIDA
     document.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'btnStartRace') {
-        e.preventDefault(); // BLOQUEIA comportamento de redirecionamento fantasma
+        e.preventDefault();
+
+        enableMobileExperience(); // Ativa contexto mobile
 
         const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
         console.log(`[LOBBY HOST] Botão clicado! Enviando start para ${guestConnections.size} convidados...`);
 
         document.getElementById('lobbyStatus').textContent = 'Enviando sinal de início...';
 
-        // Dispara o sinal de início via PeerJS
         for (const [peerId, conn] of guestConnections.entries()) {
           if (conn && conn.open) {
             console.log('[LOBBY HOST] Disparando para:', peerId);
@@ -894,7 +891,6 @@
           }
         }
 
-        // Também salva no localStorage caso esteja testando em abas do mesmo navegador
         localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({
           t: 'start',
           trackId: chosenTrack,
@@ -907,7 +903,6 @@
       }
     });
 
-    // FALLBACK DE SEGURANÇA PARA ABAS LOCAIS
     window.addEventListener('storage', (e) => {
       if (e.key && e.key.startsWith('pkart_start_signal_') && myAssignedSlot > 0) {
         const data = JSON.parse(e.newValue || '{}');
@@ -920,6 +915,7 @@
     });
 
     document.getElementById('btnPlaySolo').onclick = () => {
+      enableMobileExperience(); // Ativa contexto mobile
       redirectToRace('', 0);
     };
 
