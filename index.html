@@ -1121,8 +1121,52 @@
       window.location.href = target;
     };
 
-    window.onload = () => {
+    // Função para buscar pistas customizadas aprovadas no banco de dados
+    async function fetchCustomTracks() {
+      if (typeof supabaseClient === 'undefined') return;
+
+      try {
+        // Busca pistas. Ajuste o .eq() se a sua tabela tiver uma coluna específica como 'is_approved'
+        const { data: tracks, error } = await supabaseClient
+          .from('custom_tracks')
+          .select('id, name');
+        // .eq('status', 'aprovada'); <-- Descomente e ajuste essa linha se usar status
+
+        if (error || !tracks) {
+          console.warn('[Lobby] Nenhuma pista customizada encontrada ou erro:', error);
+          return;
+        }
+
+        const nativeSelect = document.getElementById('trackSelectDropdown');
+        const customMenu = document.getElementById('dropdownMenu');
+
+        tracks.forEach(track => {
+          // 1. Adiciona a opção no <select> invisível nativo
+          const option = document.createElement('option');
+          option.value = track.id;
+          option.innerText = `🛠️ ${track.name}`;
+          nativeSelect.appendChild(option);
+
+          // 2. Adiciona a opção no menu visual customizado
+          const customOpt = document.createElement('div');
+          customOpt.className = 'customDropdownOption';
+          customOpt.setAttribute('data-value', track.id);
+          customOpt.innerText = `🛠️ ${track.name}`;
+          customMenu.appendChild(customOpt);
+        });
+
+      } catch (err) {
+        console.error('[Lobby] Falha de conexão ao carregar pistas:', err);
+      }
+    }
+
+    window.onload = async () => {
       initPreview();
+
+      // Busca as pistas do banco primeiro
+      await fetchCustomTracks();
+
+      // Depois configura o funcionamento do menu com as pistas já carregadas
       setupCustomDropdowns();
     };
   </script>
