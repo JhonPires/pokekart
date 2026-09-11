@@ -131,14 +131,19 @@ async function updateLobbyUI() {
     }
   }
 
-  // 2. Configura os Botões do Lobby
+  // 2. Configura os Botões do Lobby (Respeitando o Multiplayer)
   const btnStartRace = document.getElementById('btnStartRace');
   if (btnStartRace) {
-    btnStartRace.onclick = () => {
-      const selectedKart = profile ? (profile.selected_kart || 'jolteon') : 'jolteon';
-      const nickname = profile ? profile.nickname : 'JOGADOR';
-      window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}`;
-    };
+    // Removemos o .onclick direto daqui para deixar o gerenciador global do index.html funcionar,
+    // mas garantimos que se clicar sem sala, ele joga solo com o kart e nick corretos do perfil.
+    btnStartRace.addEventListener('click', (e) => {
+      if (typeof roomCode === 'undefined' || !roomCode) {
+        e.preventDefault();
+        const selectedKart = profile ? (profile.selected_kart || 'jolteon') : 'jolteon';
+        const nickname = profile ? profile.nickname : 'JOGADOR';
+        window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}&slot=0`;
+      }
+    });
   }
 
   // 3. Busca e Renderiza o Ranking Inicial (Troféus)

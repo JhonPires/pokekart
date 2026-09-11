@@ -7,7 +7,6 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
-// Gerador de Árvores Paralelo às Margens da Pista (Zero Árvores no Asfalto)
 let currentTreeGroup = null;
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
@@ -26,7 +25,6 @@ function formatTime(ms) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
 }
 
-// Configuração do Cenário Visual (Céu, Névoa, Sol e Vegetação)
 function setupEnhancedEnvironment(scene) {
   const skyColor = 0x87CEEB;
   scene.background = new THREE.Color(skyColor);
@@ -49,142 +47,33 @@ function setupEnhancedEnvironment(scene) {
 // DATABASE E URLS
 // ------------------------------------------------------------
 function getKartUrl(filename) {
-  return `./models/${filename}`;
+  const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+  return isLocal ? `./models/${filename}` : `https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/${filename}`;
 }
 
 const KART_DATABASE = [
-  {
-    id: 'jolteon',
-    name: 'Jolteon Kart',
-    modelUrl: getKartUrl('jolteon.glb'),
-    stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
-  },
-  {
-    id: 'zoroark',
-    name: 'Zoroark Kart',
-    modelUrl: getKartUrl('zoroark.glb'),
-    stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 }
-  },
-  {
-    id: 'togetic',
-    name: 'Togetic Kart',
-    modelUrl: getKartUrl('togetic.glb'),
-    stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 }
-  },
-  {
-    id: 'charizard',
-    name: 'Charizard Kart',
-    modelUrl: getKartUrl('charizard.glb'),
-    stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 }
-  },
-  {
-    id: 'flygon',
-    name: 'Flygon Kart',
-    modelUrl: getKartUrl('flygon.glb'),
-    stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 }
-  },
-  {
-    id: 'gengar',
-    name: 'Gengar Kart',
-    modelUrl: getKartUrl('gengar.glb'),
-    stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 }
-  },
-  {
-    id: 'oshawott',
-    name: 'Oshawott Kart',
-    modelUrl: getKartUrl('oshawott.glb'),
-    stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 }
-  },
-  {
-    id: 'snorlax',
-    name: 'Snorlax Kart',
-    modelUrl: getKartUrl('snorlax.glb'),
-    stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 }
-  },
-  {
-    id: 'golem',
-    name: 'Golem Kart',
-    modelUrl: getKartUrl('golem.glb'),
-    stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 }
-  },
-  {
-    id: 'jinx',
-    name: 'Jynx Kart',
-    modelUrl: getKartUrl('jinx.glb'),
-    stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 }
-  },
-  {
-    id: 'sudowoodo',
-    name: 'Sudowoodo Kart',
-    modelUrl: getKartUrl('sudowoodo.glb'),
-    stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 }
-  },
-  {
-    id: 'sylveon',
-    name: 'Sylveon Kart',
-    modelUrl: getKartUrl('sylveon.glb'),
-    stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 }
-  },
-  {
-    id: 'umbreon',
-    name: 'Umbreon Kart',
-    modelUrl: getKartUrl('umbreon.glb'),
-    stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 }
-  },
-  {
-    id: 'pikachu',
-    name: 'Pikachu Kart',
-    modelUrl: getKartUrl('pikachu.glb'),
-    stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 }
-  },
-  {
-    id: 'gliscor',
-    name: 'Gliscor Kart',
-    modelUrl: getKartUrl('gliscor.glb'),
-    stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 }
-  },
-  {
-    id: 'mewtwo',
-    name: 'Mewtwo Kart',
-    modelUrl: getKartUrl('mewtwo.glb'),
-    stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 }
-  },
-  {
-    id: 'zekrom',
-    name: 'Zekrom Kart',
-    modelUrl: getKartUrl('zekrom.glb'),
-    stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 }
-  },
-  {
-    id: 'swampert',
-    name: 'Swampert Kart',
-    modelUrl: getKartUrl('swampert.glb'),
-    stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 }
-  },
-  {
-    id: 'rayquaza',
-    name: 'Rayquaza Kart',
-    modelUrl: getKartUrl('rayquaza.glb'),
-    stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 }
-  },
-  {
-    id: 'espeon',
-    name: 'Espeon Kart',
-    modelUrl: getKartUrl('espeon.glb'),
-    stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 }
-  },
-  {
-    id: 'tatsugiri',
-    name: 'Tatsugiri Kart',
-    modelUrl: getKartUrl('tatsugiri.glb'),
-    stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 }
-  },
-  {
-    id: 'scyther',
-    name: 'Scyther Kart',
-    modelUrl: getKartUrl('scyther.glb'),
-    stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 }
-  }
+  { id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 } },
+  { id: 'zoroark', name: 'Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
+  { id: 'togetic', name: 'Togetic Kart', modelUrl: getKartUrl('togetic.glb'), stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 } },
+  { id: 'charizard', name: 'Charizard Kart', modelUrl: getKartUrl('charizard.glb'), stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 } },
+  { id: 'flygon', name: 'Flygon Kart', modelUrl: getKartUrl('flygon.glb'), stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 } },
+  { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb'), stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 } },
+  { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 } },
+  { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 } },
+  { id: 'golem', name: 'Golem Kart', modelUrl: getKartUrl('golem.glb'), stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 } },
+  { id: 'jinx', name: 'Jynx Kart', modelUrl: getKartUrl('jinx.glb'), stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 } },
+  { id: 'sudowoodo', name: 'Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb'), stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 } },
+  { id: 'sylveon', name: 'Sylveon Kart', modelUrl: getKartUrl('sylveon.glb'), stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
+  { id: 'umbreon', name: 'Umbreon Kart', modelUrl: getKartUrl('umbreon.glb'), stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
+  { id: 'pikachu', name: 'Pikachu Kart', modelUrl: getKartUrl('pikachu.glb'), stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+  { id: 'gliscor', name: 'Gliscor Kart', modelUrl: getKartUrl('gliscor.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 } },
+  { id: 'mewtwo', name: 'Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 } },
+  { id: 'zekrom', name: 'Zekrom Kart', modelUrl: getKartUrl('zekrom.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 } },
+  { id: 'swampert', name: 'Swampert Kart', modelUrl: getKartUrl('swampert.glb'), stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 } },
+  { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb'), stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 } },
+  { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+  { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
+  { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } }
 ];
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -581,7 +470,6 @@ function respawnTreesForTrack() {
   let spawned = 0;
   let attempts = 0;
   const maxAttempts = 1500;
-
   const MIN_DISTANCE_FROM_TRACK = (trackWidth / 2) + 14.0;
 
   while (spawned < treeCount && attempts < maxAttempts) {
@@ -647,9 +535,7 @@ async function loadCustomTrack(trackParam) {
   }
 
   if (trackData && trackData.points && trackData.points.length >= 3) {
-    console.log('[PokéKart] Carregando pista customizada com sucesso!');
     const pts = trackData.points.map(p => new THREE.Vector3(p.x, 0, p.z));
-
     trackCurve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
     if (trackData.width) trackWidth = trackData.width;
 
@@ -660,7 +546,6 @@ async function loadCustomTrack(trackParam) {
     }
 
     updateTrackSamples();
-
     buildAndAddTrackMesh();
     addTrackKerbs();
     addTires();
@@ -825,17 +710,9 @@ let localKartLoaded = false;
 let countdownStarted = false;
 
 function checkAndStartCountdown() {
-  if (localKartLoaded && !countdownStarted) {
-    // Se for corrida em sala Multiplayer e for o Host, aguarda outro participante conectar
-    if (roomCodeParam && isHost && activeGuestConns.size === 0) {
-      console.log('[Multiplayer] Aguardando conexões para dar partida...');
-      return;
-    }
-
+  if (localKartLoaded && !countdownStarted && !roomCodeParam) {
     countdownStarted = true;
-    setTimeout(() => {
-      startCountdown();
-    }, 1500);
+    setTimeout(() => { startCountdown(); }, 1500);
   }
 }
 
@@ -869,7 +746,7 @@ function setLocalKartModel(kartEntry) {
 setLocalKartModel(KART_DATABASE[selectedKartIndex]);
 
 // ------------------------------------------------------------
-// CONTROLES, GIROSCÓPIO E CÂMERA
+// CONTROLES E CÂMERA
 // ------------------------------------------------------------
 let isPaused = false;
 const pauseMenuEl = document.getElementById('pauseMenu');
@@ -883,127 +760,12 @@ window.addEventListener('keydown', (e) => {
 });
 
 if (btnReturnLobbyEl) {
-  btnReturnLobbyEl.onclick = () => {
-    window.location.href = 'index.html';
-  };
+  btnReturnLobbyEl.onclick = () => { window.location.href = 'index.html'; };
 }
 
 const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
-
-// CONTROLES MÓVEIS (TOUCH & GIROSCÓPIO)
-let isMobileDevice = false;
-let gyroTurnInput = 0; // Varia de -1 (esquerda total) até 1 (direita total)
-let touchControls = { forward: false, backward: false, drift: false };
-
-function detectMobileAndSetupControls() {
-  isMobileDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
-  const container = document.getElementById('mobileHudContainer');
-  if (!container) return;
-
-  if (isMobileDevice) {
-    container.style.display = 'block';
-    setupTouchButtons();
-    initGyroscopeAuto();
-  }
-}
-
-function initGyroscopeAuto() {
-  const btnGyro = document.getElementById('btnEnableGyro');
-  
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    if (btnGyro) {
-      btnGyro.onclick = () => {
-        DeviceOrientationEvent.requestPermission()
-          .then(permissionState => {
-            if (permissionState === 'granted') {
-              window.addEventListener('deviceorientation', handleGyroscopeOrientation);
-              btnGyro.style.borderColor = '#22c55e';
-              btnGyro.style.color = '#22c55e';
-              btnGyro.innerText = '📱 Giroscópio Ativo';
-            } else {
-              alert('Permissão para uso do giroscópio negada.');
-            }
-          })
-          .catch(console.error);
-      };
-    }
-  } else {
-    window.addEventListener('deviceorientation', handleGyroscopeOrientation);
-    if (btnGyro) {
-      btnGyro.innerText = '📱 Giroscópio Ativo';
-      btnGyro.style.borderColor = '#22c55e';
-      btnGyro.style.color = '#22c55e';
-    }
-  }
-}
-
-function handleGyroscopeOrientation(event) {
-  if (event.gamma === null) return;
-
-  let tilt = event.gamma;
-
-  if (window.orientation === 90 || window.orientation === -90) {
-    tilt = window.orientation === -90 ? -event.gamma : event.gamma;
-  }
-
-  if (Math.abs(tilt) < 3) {
-    gyroTurnInput = 0;
-  } else {
-    const maxTilt = 28;
-    const clamped = THREE.MathUtils.clamp(tilt, -maxTilt, maxTilt);
-    gyroTurnInput = clamped / maxTilt;
-  }
-}
-
-function bindTouchButton(elementId, onPress, onRelease) {
-  const btn = document.getElementById(elementId);
-  if (!btn) return;
-
-  btn.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    onPress();
-  }, { passive: false });
-
-  btn.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    onRelease();
-  }, { passive: false });
-}
-
-function setupTouchButtons() {
-  bindTouchButton('btnMobileAccel', 
-    () => { touchControls.forward = true; }, 
-    () => { touchControls.forward = false; }
-  );
-
-  bindTouchButton('btnMobileBrake', 
-    () => { touchControls.backward = true; }, 
-    () => { touchControls.backward = false; }
-  );
-
-  bindTouchButton('btnMobileDrift', 
-    () => { touchControls.drift = true; }, 
-    () => { touchControls.drift = false; }
-  );
-
-  const btnItem = document.getElementById('btnMobileItem');
-  if (btnItem) {
-    btnItem.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (currentItem && raceStarted) {
-        useEquippedSkill(currentItem);
-        currentItem = null;
-        const iconEl = document.getElementById('itemIcon');
-        if (iconEl) iconEl.innerText = '❓';
-      }
-    }, { passive: false });
-  }
-}
-
-detectMobileAndSetupControls();
 
 const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
@@ -1069,16 +831,15 @@ function updatePhysics(dt) {
   }
 
   const raceOver = raceTrackers.get('local')?.finished;
-
-  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || touchControls.forward);
-  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || touchControls.backward);
+  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp']);
+  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown']);
 
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
 
   const left = isControlInverted ? rawRight : rawLeft;
   const right = isControlInverted ? rawLeft : rawRight;
-  const driftKey = !raceOver && (keys['Space'] || touchControls.drift);
+  const driftKey = !raceOver && keys['Space'];
 
   if (forward) physics.speed += physics.accel * dt;
   else if (backward) physics.speed -= physics.brakeDecel * dt;
@@ -1095,11 +856,9 @@ function updatePhysics(dt) {
 
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
-  const keyboardTurn = (left ? 1 : 0) - (right ? 1 : 0);
-  const turnInput = gyroTurnInput !== 0 ? -gyroTurnInput : keyboardTurn;
-
+  const turnInput = (left ? 1 : 0) - (right ? 1 : 0);
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
-  const canDrift = driftKey && (turnInput !== 0) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
+  const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
   if (turnInput !== 0 && !canDrift && physics.speed > 8) {
     const gripPenalty = 18 * (1.1 - (physics.grip || 0.7));
@@ -1109,7 +868,7 @@ function updatePhysics(dt) {
   if (canDrift && !backward) {
     if (!physics.isDrifting) {
       physics.isDrifting = true;
-      physics.driftDirection = Math.sign(turnInput);
+      physics.driftDirection = turnInput !== 0 ? Math.sign(turnInput) : (left ? 1 : -1);
       physics.driftCharge = 0;
     }
     physics.driftCharge += dt * (physics.driftRate || 1.0);
@@ -1180,34 +939,37 @@ const raceTrackers = new Map();
 
 function updateRaceTracker(key, position) {
   let tr = raceTrackers.get(key);
+  const rawT = nearestTrackSample(position).sample.t;
+
   if (!tr) {
-    tr = { lapCount: 1, lastRawT: 0, progress: 0, finished: false, finishTime: null, passedMidpoint: false };
+    tr = { lapCount: 1, lastRawT: rawT, progress: 0, finished: false, finishTime: Infinity };
     raceTrackers.set(key, tr);
+    return tr;
   }
   if (tr.finished) return tr;
 
-  const rawT = nearestTrackSample(position).sample.t;
+  // Descobre o quanto o kart andou desde o último frame
+  let deltaT = rawT - tr.lastRawT;
 
-  if (rawT > 0.4 && rawT < 0.6) {
-    tr.passedMidpoint = true;
-  }
-
-  if (tr.lastRawT > 0.85 && rawT < 0.15) {
-    if (tr.passedMidpoint) {
-      if (tr.lapCount >= TOTAL_LAPS) {
-        if (!tr.finished) {
-          tr.finished = true;
-          tr.finishTime = Date.now();
-        }
-      } else {
-        tr.lapCount++;
-      }
-      tr.passedMidpoint = false;
-    }
-  }
+  // Detecta se ele cruzou a linha de chegada para a frente (ex: de 0.99 para 0.01)
+  if (deltaT < -0.5) deltaT += 1.0;
+  // Detecta se ele cruzou a linha dando ré (ex: de 0.01 para 0.99)
+  else if (deltaT > 0.5) deltaT -= 1.0;
 
   tr.lastRawT = rawT;
-  tr.progress = tr.finished ? TOTAL_LAPS : (tr.lapCount - 1) + rawT;
+
+  // Soma a distância percorrida (Isso destrava o progresso e o faz ser contínuo!)
+  tr.progress += deltaT;
+
+  // A volta é deduzida automaticamente da distância total (1.0 = completou a 1ª volta)
+  tr.lapCount = Math.floor(tr.progress) + 1;
+
+  if (tr.lapCount > TOTAL_LAPS) {
+    tr.finished = true;
+    tr.finishTime = Date.now();
+    tr.lapCount = TOTAL_LAPS; // Trava o visual da HUD na última volta
+  }
+
   return tr;
 }
 
@@ -1225,8 +987,20 @@ async function showFinishOverlay(place) {
   const formattedTime = formatTime(finalTimeMs);
   let isNewRecord = false;
 
-  if (typeof addRewards === 'function') {
-    await addRewards(currentReward.coins, currentReward.trophies);
+  if (typeof supabaseClient !== 'undefined') {
+    try {
+      const { data, error } = await supabaseClient.rpc('grant_race_reward', {
+        p_place: place,
+        p_track_id: customTrackParam || 'default'
+      });
+      if (error) {
+        console.error('[Supabase RPC Error]:', error.message);
+      } else {
+        console.log('[Supabase RPC Success]:', data);
+      }
+    } catch (err) {
+      console.error('[Recompensas] Falha ao atribuir via RPC:', err);
+    }
   }
 
   const currentTrackId = customTrackParam || 'default';
@@ -1555,12 +1329,22 @@ function castShockAbility() {
   if (!kart) return;
   const myProgress = raceTrackers.get('local')?.progress || 0;
   let targetPeerId = null;
-  let bestAheadProgress = Infinity;
 
+  let bestAheadProgress = Infinity;
   for (const [pid, entry] of remoteKarts.entries()) {
     if (entry.progress > myProgress && entry.progress < bestAheadProgress) {
       bestAheadProgress = entry.progress;
       targetPeerId = pid;
+    }
+  }
+
+  if (!targetPeerId) {
+    let bestBehindProgress = -1;
+    for (const [pid, entry] of remoteKarts.entries()) {
+      if (entry.progress < myProgress && entry.progress > bestBehindProgress) {
+        bestBehindProgress = entry.progress;
+        targetPeerId = pid;
+      }
     }
   }
 
@@ -1615,7 +1399,12 @@ const remoteKarts = new Map();
 let racePeer = null;
 let hostConn = null;
 const activeGuestConns = new Map();
-let isHost = (playerSlotParam === 0 && Boolean(roomCodeParam));
+
+const _urlParams = new URLSearchParams(window.location.search);
+const _roomParam = _urlParams.get('room');
+const _slotParam = _urlParams.has('slot') ? parseInt(_urlParams.get('slot'), 10) : 0;
+
+const isHost = Boolean(_roomParam) && _slotParam === 0;
 
 function friendLabel(peerId) {
   return 'AMIGO ' + peerId.slice(-4).toUpperCase();
@@ -1697,9 +1486,19 @@ function handleRemoteKartState(peerId, data) {
   entry.target.pos.set(data.x, data.y, data.z);
   entry.target.ry = data.ry;
   entry.target.speed = data.speed;
+
+  // 🔴 CORREÇÃO VITAL: Aceitamos o progresso diretamente da rede
   entry.progress = typeof data.progress === 'number' ? data.progress : 0;
   entry.lapCount = data.lapCount || 1;
   entry.finished = Boolean(data.finished);
+
+  // Injetamos diretamente no Map da HUD sem chamar o 'updateRaceTracker'
+  raceTrackers.set(peerId, {
+    progress: entry.progress,
+    lapCount: entry.lapCount,
+    finished: entry.finished,
+    finishTime: data.finishTime || (entry.finished ? Date.now() : Infinity)
+  });
 }
 
 function removeRemoteKart(peerId) {
@@ -1709,28 +1508,53 @@ function removeRemoteKart(peerId) {
     remoteKarts.delete(peerId);
   }
   activeGuestConns.delete(peerId);
+  raceTrackers.delete(peerId);
 }
 
 function initRaceMultiplayer() {
-  if (!roomCodeParam) return;
+  if (!_roomParam) {
+    console.log('[Multiplayer] Modo Solo ativado (sem código de sala).');
+    setTimeout(startCountdown, 500);
+    return;
+  }
 
-  const roomClean = roomCodeParam.trim().toLowerCase();
+  const roomClean = _roomParam.trim().toLowerCase();
   const racePeerId = `pkart-race-${roomClean}`;
 
+  const peerOpts = {
+    debug: 1,
+    config: {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    }
+  };
+
   if (isHost) {
-    racePeer = new Peer(racePeerId);
+    console.log('[Multiplayer HOST] Registrando Host da corrida com ID:', racePeerId);
+    if (racePeer) racePeer.destroy();
+
+    racePeer = new Peer(racePeerId, peerOpts);
+
+    racePeer.on('open', (id) => {
+      console.log('[Multiplayer HOST] Servidor de corrida ativo e escutando conexões no ID:', id);
+    });
 
     racePeer.on('connection', (conn) => {
+      console.log('[Multiplayer HOST] Convidado conectou no jogo:', conn.peer);
+
       conn.on('open', () => {
         activeGuestConns.set(conn.peer, conn);
+        console.log(`[Multiplayer HOST] Jogadores conectados na pista: ${activeGuestConns.size + 1}`);
 
-        // Notifica o convidado para iniciar o contador
-        conn.send({ t: 'start_countdown' });
-
-        // Inicia a partida do host ao detectar a entrada do convidado
-        if (!countdownStarted) {
-          checkAndStartCountdown();
-        }
+        setTimeout(() => {
+          console.log('[Multiplayer HOST] Disparando contagem regressiva unificada!');
+          broadcastEvent({ t: 'start_countdown' });
+          if (!raceStarted && !countdownInProgress) {
+            startCountdown();
+          }
+        }, 1000);
       });
 
       conn.on('data', (data) => {
@@ -1745,17 +1569,35 @@ function initRaceMultiplayer() {
       conn.on('error', () => removeRemoteKart(conn.peer));
     });
 
+    racePeer.on('error', (err) => {
+      console.error('[Multiplayer HOST ERROR]', err);
+    });
+
   } else {
-    racePeer = new Peer();
+    console.log('[Multiplayer GUEST] Inicializando Convidado no Slot:', _slotParam);
+    if (racePeer) racePeer.destroy();
 
-    racePeer.on('open', () => {
-      let attempts = 0;
+    racePeer = new Peer(peerOpts);
 
-      function connectToHost() {
-        attempts++;
+    racePeer.on('open', (myId) => {
+      console.log('[Multiplayer GUEST] ID local criado:', myId);
+
+      let attemptCount = 0;
+      const maxAttempts = 25;
+
+      function tryConnectToHost() {
+        attemptCount++;
+        console.log(`[Multiplayer GUEST] Tentando conectar ao Host (${attemptCount}/${maxAttempts})...`);
+
+        if (hostConn) {
+          try { hostConn.close(); } catch (e) { }
+        }
+
         hostConn = racePeer.connect(racePeerId, { reliable: true });
 
         hostConn.on('open', () => {
+          console.log('[Multiplayer GUEST] CONECTADO AO HOST DA CORRIDA COM SUCESSO!');
+
           setInterval(() => {
             if (kart && hostConn && hostConn.open) {
               const myTracker = raceTrackers.get('local');
@@ -1768,7 +1610,7 @@ function initRaceMultiplayer() {
                 speed: physics.speed,
                 nick: playerNickname,
                 kartId: selectedKartId,
-                slot: playerSlotParam,
+                slot: _slotParam,
                 progress: myTracker ? myTracker.progress : 0,
                 lapCount: myTracker ? myTracker.lapCount : 1,
                 finished: myTracker ? myTracker.finished : false
@@ -1779,10 +1621,13 @@ function initRaceMultiplayer() {
 
         hostConn.on('data', (data) => {
           if (data.t === 'start_countdown') {
-            startCountdown();
+            console.log('[Multiplayer GUEST] Recebeu ordem do Host para disparar contagem!');
+            if (!raceStarted && !countdownInProgress) {
+              startCountdown();
+            }
           } else if (data.t === 'snapshot' && data.karts) {
             for (const [peerId, state] of Object.entries(data.karts)) {
-              if (peerId !== racePeer.id) {
+              if (racePeer && peerId !== racePeer.id) {
                 handleRemoteKartState(peerId, state);
               }
             }
@@ -1790,22 +1635,21 @@ function initRaceMultiplayer() {
             handleNetworkMessage(data);
           }
         });
-
-        hostConn.on('close', () => {
-          if (attempts < 8) setTimeout(connectToHost, 800);
-        });
-
-        hostConn.on('error', () => {
-          if (attempts < 8) setTimeout(connectToHost, 800);
-        });
       }
 
-      setTimeout(connectToHost, 300);
-    });
-  }
+      setTimeout(tryConnectToHost, 1000);
 
-  if (!roomCodeParam) {
-    setTimeout(startCountdown, 500);
+      racePeer.on('error', (err) => {
+        if (err.type === 'peer-unavailable') {
+          console.warn('[Multiplayer GUEST] Host ainda não abriu a sala 3D. Tentando novamente em 1.5s...');
+          if (attemptCount < maxAttempts) {
+            setTimeout(tryConnectToHost, 1500);
+          }
+        } else {
+          console.error('[Multiplayer GUEST PEER ERROR]', err);
+        }
+      });
+    });
   }
 }
 
@@ -1857,7 +1701,7 @@ function networkTick(dt) {
 }
 
 function updateRemoteKarts(dt) {
-  for (const entry of remoteKarts.values()) {
+  for (const [pid, entry] of remoteKarts.entries()) {
     const g = entry.obj.group;
 
     if (Math.abs(entry.target.speed) > 1) {
@@ -1877,13 +1721,15 @@ function updateRemoteKarts(dt) {
     while (diffY > Math.PI) diffY -= Math.PI * 2;
 
     g.rotation.y += diffY * lerpFactor;
+
+    // 🔴 A linha updateRaceTracker(pid, g.position) FOI REMOVIDA DAQUI!
   }
 }
 
 initRaceMultiplayer();
 
 // ------------------------------------------------------------
-// CLASSIFICAÇÃO DA HUD
+// CLASSIFICAÇÃO DA HUD (TOTALMENTE REESCRITA E ROBUSTA)
 // ------------------------------------------------------------
 function updateStandings() {
   const standingsEl = document.getElementById('standingsList');
@@ -1895,23 +1741,29 @@ function updateStandings() {
 
   if (typeof remoteKarts !== 'undefined' && remoteKarts) {
     for (const [pid, entry] of remoteKarts.entries()) {
+      const tr = raceTrackers.get(pid) || { progress: 0, lapCount: 1, finished: false, finishTime: Infinity };
       racers.push({
         key: pid,
         name: entry.nickname || friendLabel(pid),
-        tr: raceTrackers.get(pid)
+        tr: tr
       });
     }
   }
 
   racers.forEach(r => {
-    if (!r.tr) r.tr = { progress: 0, finished: false, finishTime: Infinity };
+    if (!r.tr) r.tr = { progress: 0, lapCount: 1, finished: false, finishTime: Infinity };
   });
 
+  // ORDENAÇÃO EXATA: Avalia 100% pelo jogador mais a frente na pista (maior progresso)
   racers.sort((a, b) => {
-    if (a.tr.finished && b.tr.finished) return a.tr.finishTime - b.tr.finishTime;
+    if (a.tr.finished && b.tr.finished) return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
     if (a.tr.finished) return -1;
-    if (a.tr.finished) return 1;
-    return b.tr.progress - a.tr.progress;
+    if (b.tr.finished) return 1;
+
+    const progA = typeof a.tr.progress === 'number' ? a.tr.progress : 0;
+    const progB = typeof b.tr.progress === 'number' ? b.tr.progress : 0;
+
+    return progB - progA;
   });
 
   standingsEl.innerHTML = racers.map((r, index) => {
