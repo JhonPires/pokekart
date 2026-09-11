@@ -374,7 +374,7 @@
           <span>🎨</span> Criador de Pistas
         </button>
 
-        <button class="sideMenuBtn active" id="menuBtnRankings">
+        <button class="sideMenuBtn" id="menuBtnRankings">
           <span>🏆</span> Rankings
         </button>
 
@@ -566,9 +566,8 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <script src="assets.js"></script>
-
+  <script src="music.js"></script>
 
   <script>
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -621,7 +620,17 @@
       { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb') },
       { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb') },
       { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb') },
-      { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb') }
+      { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb') },
+      { id: 'ninetales', name: 'Ninetales Kart', modelUrl: getKartUrl('ninetales.glb') },
+      { id: 'arcanine', name: 'Arcanine Kart', modelUrl: getKartUrl('arcanine.glb') },
+      { id: 'lucario', name: 'Lucario Kart', modelUrl: getKartUrl('lucario.glb') },
+      { id: 'dialga', name: 'Dialga Kart', modelUrl: getKartUrl('dialga.glb') },
+      { id: 'zapdos', name: 'Zapdos Kart', modelUrl: getKartUrl('zapdos.glb') },
+      { id: 'luxray', name: 'Luxray Kart', modelUrl: getKartUrl('luxray.glb') },
+      { id: 'staraptor', name: 'Staraptor Kart', modelUrl: getKartUrl('staraptor.glb') },
+      { id: 'dragonite', name: 'Dragonite Kart', modelUrl: getKartUrl('dragonite.glb') },
+      { id: 'tangela', name: 'Tangela Kart', modelUrl: getKartUrl('tangela.glb') },
+      { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb') }
     ];
 
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
@@ -734,16 +743,54 @@
       }
     }
 
+    // Sistema Dinâmico de Rotação Diária
+    let dailyFreeKarts = [];
+
+    function updateDailyFreeKarts() {
+      const todayDate = new Date().toDateString();
+      const savedDate = localStorage.getItem('pkart_free_date');
+
+      if (savedDate === todayDate) {
+        // Se a data bater, puxa os karts que já foram sorteados para hoje
+        dailyFreeKarts = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
+      } else {
+        // Cria uma lista com todos os IDs, removendo o Jolteon que é o kart padrão permanente
+        const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
+
+        // Sorteia aleatoriamente (Algoritmo de Fisher-Yates)
+        for (let i = availableKarts.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
+        }
+
+        // Separa 4 karts aleatórios
+        dailyFreeKarts = availableKarts.slice(0, 4);
+
+        // Salva a data e o sorteio para manter fixo durante as próximas 24 horas
+        localStorage.setItem('pkart_free_date', todayDate);
+        localStorage.setItem('pkart_free_karts', JSON.stringify(dailyFreeKarts));
+      }
+    }
+
+    // Executa o sorteio assim que o código carrega
+    updateDailyFreeKarts();
+
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
 
-      let unlockedKarts = ['jolteon', 'charizard'];
+      let unlockedKarts = ['jolteon'];
+
+      // Adiciona os karts sorteados aleatoriamente hoje
+      unlockedKarts = [...unlockedKarts, ...dailyFreeKarts];
 
       if (profile && profile.unlocked_karts) {
         unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
       }
 
       const isUnlocked = unlockedKarts.includes(kartId);
+
+      // Verifica se o kart atual está liberado exclusivamente pelo sorteio gratuito
+      const isFreeRotation = dailyFreeKarts.includes(kartId) && !(profile && profile.unlocked_karts && profile.unlocked_karts.includes(kartId));
 
       const btnStartRace = document.getElementById('btnStartRace');
       const btnPlaySolo = document.getElementById('btnPlaySolo');
@@ -754,12 +801,15 @@
 
       if (!isUnlocked) {
         if (kartNameEl) kartNameEl.innerText = `${currentItem.name} 🔒 (BLOQUEADO)`;
-
         if (btnPlaySolo) { btnPlaySolo.disabled = true; btnPlaySolo.style.opacity = '0.5'; btnPlaySolo.style.cursor = 'not-allowed'; }
         if (btnHost) { btnHost.disabled = true; btnHost.style.opacity = '0.5'; btnHost.style.cursor = 'not-allowed'; }
         if (btnStartRace) { btnStartRace.disabled = true; btnStartRace.style.opacity = '0.5'; btnStartRace.style.cursor = 'not-allowed'; }
       } else {
-        if (kartNameEl) kartNameEl.innerText = currentItem.name;
+        if (isFreeRotation) {
+          if (kartNameEl) kartNameEl.innerHTML = `${currentItem.name} <span style="color:#22c55e; font-size:11px; margin-left:4px;">(GRÁTIS HOJE)</span>`;
+        } else {
+          if (kartNameEl) kartNameEl.innerText = currentItem.name;
+        }
 
         if (btnPlaySolo) { btnPlaySolo.disabled = false; btnPlaySolo.style.opacity = '1'; btnPlaySolo.style.cursor = 'pointer'; }
         if (btnHost) { btnHost.disabled = false; btnHost.style.opacity = '1'; btnHost.style.cursor = 'pointer'; }
@@ -785,8 +835,20 @@
 
       if (!trigger || !menu) return;
 
+      // Força o menu a ficar na frente de qualquer modal
+      menu.style.zIndex = "9999";
+
       trigger.onclick = (e) => {
         e.stopPropagation();
+
+        // Fecha outros menus customizados que possam estar abertos
+        document.querySelectorAll('.customDropdownMenu').forEach(m => {
+          if (m.id !== menuId) m.classList.remove('show');
+        });
+        document.querySelectorAll('.customDropdownTrigger').forEach(t => {
+          if (t.id !== triggerId) t.classList.remove('open');
+        });
+
         trigger.classList.toggle('open');
         menu.classList.toggle('show');
       };
@@ -819,7 +881,11 @@
     }
 
     function setupCustomDropdowns() {
+      // Ativa o Dropdown do Lobby (Jogar)
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
+
+      // Ativa o Dropdown do Ranking (Recordes)
+      bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel');
     }
 
     let peer = null;
@@ -907,42 +973,22 @@
     };
 
     // ------------------------------------------------------------
-    // SISTEMA DE ÁUDIO DO LOBBY E PREFERÊNCIAS
+    // SISTEMA DE ÁUDIO DO LOBBY E PREFERÊNCIAS (INTEGRADO AO MUSIC.JS)
     // ------------------------------------------------------------
-    // Adicione os nomes dos seus arquivos de música aqui
-    const playlist = [
-      './sounds/lobby_theme.mp3',
-      './sounds/lobby_theme2.mp3',
-      './sounds/lobby_theme3.mp3'
-    ];
-    let currentTrackIndex = 0;
-
-    const lobbyBgm = new Audio(playlist[currentTrackIndex]);
-
-    // Avança para a próxima música automaticamente
-    lobbyBgm.addEventListener('ended', () => {
-      currentTrackIndex = (currentTrackIndex + 1) % playlist.length;
-      lobbyBgm.src = playlist[currentTrackIndex];
-      if (isMusicEnabled) {
-        lobbyBgm.play().catch(e => console.warn('Aguardando interação para próxima música.'));
-      }
-    });
-
-    // Recupera preferências salvas de status e volume
     let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
-    let savedVolume = parseFloat(localStorage.getItem('pkart_music_vol'));
-    if (isNaN(savedVolume)) savedVolume = 0.4;
+    let uiVolume = parseFloat(localStorage.getItem('pkart_music_vol'));
+    if (isNaN(uiVolume)) uiVolume = 0.4;
 
-    lobbyBgm.volume = savedVolume;
-    let isSfxEnabled = localStorage.getItem('pkart_sfx') !== 'false';
+    // Aplica o volume salvo na música global
+    if (window.globalMusic) {
+      window.globalMusic.volume = uiVolume;
+    }
 
     const musicStatusText = document.getElementById('musicStatusText');
-    // const sfxStatusText = document.getElementById('sfxStatusText');
     const musicVolumeSlider = document.getElementById('musicVolumeSlider');
 
-    if (musicVolumeSlider) musicVolumeSlider.value = savedVolume;
+    if (musicVolumeSlider) musicVolumeSlider.value = uiVolume;
 
-    // Função que pinta a barra dinamicamente
     function updateSliderFill() {
       if (!musicVolumeSlider) return;
       const val = (musicVolumeSlider.value / 1) * 100;
@@ -955,23 +1001,19 @@
         musicStatusText.style.color = isMusicEnabled ? '#22c55e' : '#ef4444';
       }
 
-      // if (sfxStatusText) {
-      //   sfxStatusText.innerText = isSfxEnabled ? 'LIGADOS' : 'DESLIGADOS';
-      //   sfxStatusText.style.color = isSfxEnabled ? '#22c55e' : '#ef4444';
-      // }
-
-      if (isMusicEnabled) {
-        lobbyBgm.play().catch(e => console.warn('Aguardando interação para áudio.'));
-      } else {
-        lobbyBgm.pause();
+      if (window.globalMusic) {
+        if (isMusicEnabled) {
+          window.globalMusic.play().catch(e => console.warn('Aguardando interação para áudio.'));
+        } else {
+          window.globalMusic.pause();
+        }
       }
     }
 
-    // Lógica do Slider de Volume
     if (musicVolumeSlider) {
       musicVolumeSlider.addEventListener('input', (e) => {
         const vol = parseFloat(e.target.value);
-        lobbyBgm.volume = vol;
+        if (window.globalMusic) window.globalMusic.volume = vol;
         localStorage.setItem('pkart_music_vol', vol);
 
         updateSliderFill();
@@ -988,38 +1030,25 @@
       });
     }
 
-    // Permissão de auto-play do navegador
-    document.body.addEventListener('click', () => {
-      if (isMusicEnabled && lobbyBgm.paused) lobbyBgm.play();
-    }, { once: true });
-
-    // Botão de Ligar/Desligar
     const btnMusicToggle = document.getElementById('menuBtnMusicToggle');
     if (btnMusicToggle) {
       btnMusicToggle.onclick = () => {
         isMusicEnabled = !isMusicEnabled;
         localStorage.setItem('pkart_music', isMusicEnabled);
 
-        if (isMusicEnabled && lobbyBgm.volume === 0) {
-          lobbyBgm.volume = 0.4;
-          if (musicVolumeSlider) musicVolumeSlider.value = 0.4;
-          localStorage.setItem('pkart_music_vol', 0.4);
-        } else if (!isMusicEnabled) {
-          if (musicVolumeSlider) musicVolumeSlider.value = 0;
-        } else {
-          if (musicVolumeSlider) musicVolumeSlider.value = lobbyBgm.volume;
+        if (window.globalMusic) {
+          if (isMusicEnabled && window.globalMusic.volume === 0) {
+            window.globalMusic.volume = 0.4;
+            if (musicVolumeSlider) musicVolumeSlider.value = 0.4;
+            localStorage.setItem('pkart_music_vol', 0.4);
+          } else if (!isMusicEnabled) {
+            if (musicVolumeSlider) musicVolumeSlider.value = 0;
+          } else {
+            if (musicVolumeSlider) musicVolumeSlider.value = window.globalMusic.volume;
+          }
         }
 
         updateSliderFill();
-        updateAudioUI();
-      };
-    }
-
-    const btnSfxToggle = document.getElementById('menuBtnSfxToggle');
-    if (btnSfxToggle) {
-      btnSfxToggle.onclick = () => {
-        isSfxEnabled = !isSfxEnabled;
-        localStorage.setItem('pkart_sfx', isSfxEnabled);
         updateAudioUI();
       };
     }
@@ -1123,37 +1152,54 @@
     };
 
     // Função para buscar pistas customizadas aprovadas no banco de dados
+    // Função para buscar pistas customizadas aprovadas no banco de dados
     async function fetchCustomTracks() {
       if (typeof supabaseClient === 'undefined') return;
 
       try {
-        // Busca pistas. Ajuste o .eq() se a sua tabela tiver uma coluna específica como 'is_approved'
         const { data: tracks, error } = await supabaseClient
           .from('custom_tracks')
           .select('id, name');
-        // .eq('status', 'aprovada'); <-- Descomente e ajuste essa linha se usar status
 
         if (error || !tracks) {
           console.warn('[Lobby] Nenhuma pista customizada encontrada ou erro:', error);
           return;
         }
 
+        // Elementos do Lobby Principal
         const nativeSelect = document.getElementById('trackSelectDropdown');
         const customMenu = document.getElementById('dropdownMenu');
 
+        // Elementos do Modal de Ranking
+        const rankNativeSelect = document.getElementById('leaderboardTrackSelect');
+        const rankCustomMenu = document.getElementById('rankDropdownMenu');
+
         tracks.forEach(track => {
-          // 1. Adiciona a opção no <select> invisível nativo
+          // 1. Adiciona a opção no Lobby Principal
           const option = document.createElement('option');
           option.value = track.id;
           option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
 
-          // 2. Adiciona a opção no menu visual customizado
           const customOpt = document.createElement('div');
           customOpt.className = 'customDropdownOption';
           customOpt.setAttribute('data-value', track.id);
           customOpt.innerText = `🛠️ ${track.name}`;
           customMenu.appendChild(customOpt);
+
+          // 2. Adiciona a opção no Modal de Ranking
+          if (rankNativeSelect && rankCustomMenu) {
+            const rankOption = document.createElement('option');
+            rankOption.value = track.id;
+            rankOption.innerText = `🛠️ ${track.name}`;
+            rankNativeSelect.appendChild(rankOption);
+
+            const rankCustomOpt = document.createElement('div');
+            rankCustomOpt.className = 'customDropdownOption';
+            rankCustomOpt.setAttribute('data-value', track.id);
+            rankCustomOpt.innerText = `🛠️ ${track.name}`;
+            rankCustomMenu.appendChild(rankCustomOpt);
+          }
         });
 
       } catch (err) {
@@ -1161,7 +1207,7 @@
       }
     }
 
-    window.onload = async () => {
+    window.addEventListener('DOMContentLoaded', async () => {
       initPreview();
 
       // Busca as pistas do banco primeiro
@@ -1169,8 +1215,9 @@
 
       // Depois configura o funcionamento do menu com as pistas já carregadas
       setupCustomDropdowns();
-    };
+    });
   </script>
+
   <script src="auth.js"></script>
 </body>
 

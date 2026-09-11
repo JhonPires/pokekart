@@ -60,19 +60,43 @@ async function fetchPlayerProfile() {
 
   currentUserProfile = data;
 
+  // --- NOVA VERIFICAÇÃO DE KART EXPIRADO ---
+  // Se o kart equipado no banco não for permanente e não estiver na rotação de hoje, volta para o Jolteon
+  if (currentUserProfile.selected_kart) {
+    const currentKart = currentUserProfile.selected_kart;
+    const isBase = currentKart === 'jolteon' || currentKart === 'charizard';
+    const isPermanent = currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(currentKart);
+    const dailyFree = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
+    const isTemporary = dailyFree.includes(currentKart);
+
+    if (!isBase && !isPermanent && !isTemporary) {
+      console.warn('[Sistema] Kart expirado detectado. Revertendo para kart padrão.');
+      await updateSelectedKart('jolteon');
+    }
+  }
+  // -----------------------------------------
+
   // Atualiza o nickname no Menu Lateral
   const sideNickEl = document.getElementById('sideMenuNick');
   if (sideNickEl && data.nickname) {
     sideNickEl.innerText = data.nickname;
   }
 
-  return data;
+  return currentUserProfile;
 }
 
 // Salvar / Atualizar Kart Selecionado
 async function updateSelectedKart(kartId) {
   if (!currentUserProfile) return;
-  if (!currentUserProfile.unlocked_karts.includes(kartId)) return;
+
+  // Valida se o kart é padrão, comprado permanentemente ou se é grátis hoje
+  const isBase = kartId === 'jolteon' || kartId === 'charizard';
+  const isPermanent = currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(kartId);
+  const dailyFree = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
+  const isTemporary = dailyFree.includes(kartId);
+
+  // Se o jogador não tem acesso legal ao kart, bloqueia
+  if (!isBase && !isPermanent && !isTemporary) return;
 
   const { error } = await supabaseClient
     .from('profiles')

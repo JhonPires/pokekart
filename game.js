@@ -3,6 +3,7 @@
 // ------------------------------------------------------------
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
+const victorySound = new Audio('sounds/victory.mp3');
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 
 let raceStartTime = 0;
@@ -73,7 +74,18 @@ const KART_DATABASE = [
   { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb'), stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 } },
   { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
   { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
-  { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } }
+  { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
+  // --- NOVOS KARTS AQUI ---
+  { id: 'ninetales', name: 'Ninetales Kart', modelUrl: getKartUrl('ninetales.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
+  { id: 'arcanine', name: 'Arcanine Kart', modelUrl: getKartUrl('arcanine.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.2, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
+  { id: 'lucario', name: 'Lucario Kart', modelUrl: getKartUrl('lucario.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
+  { id: 'dialga', name: 'Dialga Kart', modelUrl: getKartUrl('dialga.glb'), stats: { accel: 25, maxSpeed: 38, turnSpeed: 2.9, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
+  { id: 'zapdos', name: 'Zapdos Kart', modelUrl: getKartUrl('zapdos.glb'), stats: { accel: 35, maxSpeed: 34, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.2, driftControl: 1.1, grip: 0.75 } },
+  { id: 'luxray', name: 'Luxray Kart', modelUrl: getKartUrl('luxray.glb'), stats: { accel: 33, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+  { id: 'staraptor', name: 'Staraptor Kart', modelUrl: getKartUrl('staraptor.glb'), stats: { accel: 34, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
+  { id: 'dragonite', name: 'Dragonite Kart', modelUrl: getKartUrl('dragonite.glb'), stats: { accel: 28, maxSpeed: 36, turnSpeed: 3.1, turboBonus: 1.7, driftRate: 1.1, driftControl: 1.1, grip: 0.85 } },
+  { id: 'tangela', name: 'Tangela Kart', modelUrl: getKartUrl('tangela.glb'), stats: { accel: 30, maxSpeed: 29, turnSpeed: 3.8, turboBonus: 1.1, driftRate: 1.5, driftControl: 1.3, grip: 0.95 } },
+  { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } }
 ];
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -554,6 +566,7 @@ async function loadCustomTrack(trackParam) {
     spawnItemBoxes(trackData.items);
     respawnTreesForTrack();
 
+    // Reposiciona o jogador local
     if (kart) {
       const grid = getGridPosition(playerSlotParam);
       kart.position.copy(grid.pos);
@@ -561,6 +574,26 @@ async function loadCustomTrack(trackParam) {
       physics.heading = grid.heading;
       physics.speed = 0;
     }
+
+    // --- CORREÇÃO: Reposiciona os bots na nova pista ---
+    let botIndex = 1;
+    for (const [id, bot] of remoteKarts.entries()) {
+      if (bot.isBot) {
+        const botGrid = getGridPosition(botIndex);
+        bot.obj.group.position.copy(botGrid.pos);
+        bot.obj.group.rotation.y = botGrid.heading;
+        bot.heading = botGrid.heading;
+        bot.speed = 0;
+        bot.progress = 0;
+        bot.lapCount = 1;
+
+        // Recalcula o distanciamento da grama para se adaptar à largura da nova pista
+        bot.laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+
+        botIndex++;
+      }
+    }
+    // ---------------------------------------------------
   }
 }
 
@@ -958,10 +991,17 @@ function updatePhysics(dt) {
 
   let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
 
+  // --- CORREÇÃO: INVERTER VOLANTE NA RÉ ---
+  if (physics.speed < -0.1) {
+    turnInput *= -1;
+  }
+
   // Sobrescreve pelo giroscópio no Mobile com zona morta
   if (isMobile) {
     if (Math.abs(gyroTurnInput) > 0.1) {
       turnInput = gyroTurnInput;
+      // Inverte também no giroscópio se estiver de ré
+      if (physics.speed < -0.1) turnInput *= -1;
     } else {
       turnInput = 0;
     }
@@ -1052,21 +1092,36 @@ function updateRaceTracker(key, position) {
   const rawT = nearestTrackSample(position).sample.t;
 
   if (!tr) {
-    tr = { lapCount: 1, lastRawT: rawT, progress: 0, finished: false, finishTime: Infinity };
+    // CORREÇÃO: Se nascer no grid (ex: 0.98), o progresso inicial será -0.02.
+    // Assim o kart é obrigado a cruzar o 0.0 (Linha de chegada visual) para fechar a volta.
+    let initialProgress = rawT > 0.5 ? rawT - 1.0 : rawT;
+
+    tr = { lapCount: 1, lastRawT: rawT, progress: initialProgress, finished: false, finishTime: Infinity };
     raceTrackers.set(key, tr);
     return tr;
   }
+
   if (tr.finished) return tr;
 
   let deltaT = rawT - tr.lastRawT;
 
+  // Lida com o momento de cruzar a linha de chegada (passar de 0.99 para 0.01)
   if (deltaT < -0.5) deltaT += 1.0;
   else if (deltaT > 0.5) deltaT -= 1.0;
 
+  // ANTI-CHEAT / ANTI-BUG: Impede que karts ganhem progresso se cortarem 
+  // caminho pulando entre partes da pista que estão muito próximas
+  if (Math.abs(deltaT) > 0.25) {
+    deltaT = 0;
+  }
+
   tr.lastRawT = rawT;
   tr.progress += deltaT;
-  tr.lapCount = Math.floor(tr.progress) + 1;
 
+  // A volta atual é o piso do progresso + 1. (Math.max impede que mostre Volta 0 na largada)
+  tr.lapCount = Math.max(1, Math.floor(tr.progress) + 1);
+
+  // A corrida finaliza quando ultrapassar as 3 voltas na linha de chegada exata
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
     tr.finishTime = Date.now();
@@ -1079,6 +1134,18 @@ function updateRaceTracker(key, position) {
 let localFinishNotified = false;
 let finishLeaderboardEl = null;
 async function showFinishOverlay(place) {
+  // Dispara o som e os confetes assim que a tela de fim de corrida for chamada
+  victorySound.play().catch(e => console.warn('Bloqueio de autoplay de áudio:', e));
+
+  if (typeof confetti === 'function') {
+    confetti({
+      particleCount: 150,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors: ['#facc15', '#38bdf8', '#ffffff'],
+      zIndex: 99999
+    });
+  }
   // Cria o container principal com o mesmo estilo "Glassmorphism" escuro do seu Lobby e HUD
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
@@ -1480,7 +1547,8 @@ function castShockAbility() {
 
   let bestAheadProgress = Infinity;
   for (const [pid, entry] of remoteKarts.entries()) {
-    if (entry.progress > myProgress && entry.progress < bestAheadProgress) {
+    // Ignora quem já finalizou a corrida
+    if (!entry.finished && entry.progress > myProgress && entry.progress < bestAheadProgress) {
       bestAheadProgress = entry.progress;
       targetPeerId = pid;
     }
@@ -1489,7 +1557,8 @@ function castShockAbility() {
   if (!targetPeerId) {
     let bestBehindProgress = -1;
     for (const [pid, entry] of remoteKarts.entries()) {
-      if (entry.progress < myProgress && entry.progress > bestBehindProgress) {
+      // Ignora quem já finalizou a corrida
+      if (!entry.finished && entry.progress < myProgress && entry.progress > bestBehindProgress) {
         bestBehindProgress = entry.progress;
         targetPeerId = pid;
       }
@@ -1498,14 +1567,12 @@ function castShockAbility() {
 
   if (targetPeerId) {
     const tBot = remoteKarts.get(targetPeerId);
-    // Se o alvo for um Bot e ele não tem escudo ativo, paralisa ele aqui mesmo
     if (tBot && tBot.isBot) {
       if (tBot.shieldTimer <= 0) {
         tBot.stunTimer = 1.0;
         triggerSparkEffect(tBot.obj.group.position);
       }
     } else {
-      // Se for um jogador real, manda pro servidor paralisá-lo
       sendNetworkEvent({ t: 'apply_stun', targetId: targetPeerId });
     }
   }
@@ -2204,14 +2271,14 @@ spawnBots();
 function updateBots(dt) {
   if (!raceStarted) return;
 
+  const trackLength = trackCurve.getLength();
+
   for (const [id, bot] of remoteKarts.entries()) {
     if (!bot.isBot || bot.finished) continue;
 
-    // Diminui os timers das habilidades e stuns
     if (bot.shieldTimer > 0) bot.shieldTimer -= dt;
     if (bot.turboTimer > 0) bot.turboTimer -= dt;
 
-    // IA usando os itens após pega-los
     if (bot.itemUseTimer > 0) {
       bot.itemUseTimer -= dt;
       if (bot.itemUseTimer <= 0 && bot.currentItem) {
@@ -2220,7 +2287,6 @@ function updateBots(dt) {
       }
     }
 
-    // Bot escorregando ou travado
     if (bot.spinTimer > 0) {
       bot.spinTimer -= dt;
       bot.speed = 0;
@@ -2233,51 +2299,51 @@ function updateBots(dt) {
       continue;
     }
 
-    // Aceleração da IA baseada na dificuldade e Turbo
     let maxSpd = bot.stats.maxSpeed * bot.diffMult;
     if (bot.turboTimer > 0) maxSpd *= 1.4;
-
     bot.speed += bot.stats.accel * dt;
 
-    // Punição de Grama para o Bot
     const { sample } = nearestTrackSample(bot.obj.group.position);
     const offsetVec = new THREE.Vector3().subVectors(bot.obj.group.position, sample.point);
     const lateral = offsetVec.dot(sample.normal);
 
-    if (Math.abs(lateral) > (trackWidth / 2 + 0.8)) {
-      const maxGrassSpeed = 4.5;
-      maxSpd = Math.min(maxSpd, maxGrassSpeed);
-      if (bot.speed > maxGrassSpeed) {
-        bot.speed = THREE.MathUtils.lerp(bot.speed, maxGrassSpeed, 0.1);
-      }
-    }
-
-    if (bot.speed > maxSpd) bot.speed = maxSpd;
-
-    // --- NOVO CÉREBRO DE DIREÇÃO E CURVAS ---
-
-    // 1. Lookahead menor (de 0.035 para 0.022): Faz o bot não tentar "cortar caminho" nas curvas fechadas
-    let lookAheadT = sample.t + 0.022;
+    const lookAheadDistance = 6.0 + (bot.speed * 0.35);
+    let lookAheadT = sample.t + (lookAheadDistance / trackLength);
     if (lookAheadT > 1) lookAheadT -= 1.0;
 
     const targetPt = trackCurve.getPointAt(lookAheadT);
     const targetTangent = trackCurve.getTangentAt(lookAheadT).normalize();
     const targetNormal = new THREE.Vector3(-targetTangent.z, 0, targetTangent.x).normalize();
 
-    // 2. Sistema Anti-Grama: Força o bot a voltar pro meio se chegar perto da beirada
-    let currentTargetOffset = bot.laneOffset;
-    const safeZone = (trackWidth / 2) - 1.8; // Fica a uma margem segura da grama
+    const halfWidth = trackWidth / 2;
+    const safeZone = halfWidth - 1.5;
+    const grassStart = halfWidth + 0.8;
+    const wallStart = grassStart + 3.0;
 
+    // --- CORREÇÃO DA TREMEDEIRA (SUAVIZAÇÃO) ---
     if (Math.abs(lateral) > safeZone) {
-      // Puxa a mira do bot de volta para o centro (0)
-      currentTargetOffset = THREE.MathUtils.lerp(bot.laneOffset, 0, 0.9);
+      // O bot desliza o volante suavemente de volta para o centro (0) em vez de pular instantaneamente
+      bot.laneOffset = THREE.MathUtils.lerp(bot.laneOffset, 0, dt * 3.0);
 
-      // Dá um "puxão" de emergência no volante para fugir da grama
-      const escapeTurn = dt * 2.5;
-      bot.heading += lateral > 0 ? -escapeTurn : escapeTurn;
+      if (Math.abs(lateral) > grassStart) {
+        const maxGrassSpeed = 5.5;
+        maxSpd = Math.min(maxSpd, maxGrassSpeed);
+        if (bot.speed > maxGrassSpeed) {
+          bot.speed = THREE.MathUtils.lerp(bot.speed, maxGrassSpeed, 0.15);
+        }
+      }
+
+      if (Math.abs(lateral) > wallStart) {
+        const sign = Math.sign(lateral);
+        const correction = Math.abs(lateral) - wallStart;
+        bot.obj.group.position.addScaledVector(sample.normal, -sign * correction);
+      }
     }
 
-    targetPt.addScaledVector(targetNormal, currentTargetOffset);
+    if (bot.speed > maxSpd) bot.speed = maxSpd;
+
+    // O alvo final usa o laneOffset unificado e suavizado
+    targetPt.addScaledVector(targetNormal, bot.laneOffset);
 
     const offset = targetPt.clone().sub(bot.obj.group.position);
     const desiredHeading = Math.atan2(offset.x, offset.z);
@@ -2286,16 +2352,20 @@ function updateBots(dt) {
     while (diffHeading < -Math.PI) diffHeading += Math.PI * 2;
     while (diffHeading > Math.PI) diffHeading -= Math.PI * 2;
 
-    // 3. Volante mais rápido: Multiplicador de turnSpeed subiu de 1.5 para 2.4 para evitar sair de frente
-    const turnSpd = bot.stats.turnSpeed * 2.4;
+    if (Math.abs(diffHeading) > 1.2) {
+      bot.speed *= 0.95;
+    }
+
+    // O multiplicador de giro foi levemente reduzido para evitar solavancos na malha
+    const panicTurnMult = Math.abs(lateral) > safeZone ? 3.5 : 2.0;
+    const turnSpd = bot.stats.turnSpeed * panicTurnMult;
+
     bot.heading += Math.sign(diffHeading) * Math.min(Math.abs(diffHeading), turnSpd * dt);
 
-    // Move o Kart do Bot fisicamente
     const moveDir = new THREE.Vector3(Math.sin(bot.heading), 0, Math.cos(bot.heading));
     bot.obj.group.position.addScaledVector(moveDir, bot.speed * dt);
     bot.obj.group.rotation.y = bot.heading;
 
-    // Registra o percurso para ele aparecer na Tabela
     const tr = updateRaceTracker(id, bot.obj.group.position);
     bot.progress = tr.progress;
     bot.lapCount = tr.lapCount;
@@ -2323,13 +2393,28 @@ function useBotSkill(botId, bot, skill) {
       let bestAheadProgress = Infinity;
       const myTr = raceTrackers.get('local');
 
-      // Busca quem está imediatamente à frente do bot (Jogador ou outro Bot)
-      if (myTr && myTr.progress > bot.progress && myTr.progress < bestAheadProgress) {
+      // Busca jogador real à frente que NÃO finalizou
+      if (myTr && !myTr.finished && myTr.progress > bot.progress && myTr.progress < bestAheadProgress) {
         bestAheadProgress = myTr.progress; targetId = 'local';
       }
+
+      // Busca bots remotos à frente que NÃO finalizaram
       for (const [pid, entry] of remoteKarts.entries()) {
-        if (pid !== botId && entry.progress > bot.progress && entry.progress < bestAheadProgress) {
+        if (pid !== botId && !entry.finished && entry.progress > bot.progress && entry.progress < bestAheadProgress) {
           bestAheadProgress = entry.progress; targetId = pid;
+        }
+      }
+
+      // Se ninguém válido estiver à frente, tenta atingir quem está logo atrás
+      if (!targetId) {
+        let bestBehindProgress = -1;
+        if (myTr && !myTr.finished && myTr.progress < bot.progress && myTr.progress > bestBehindProgress) {
+          bestBehindProgress = myTr.progress; targetId = 'local';
+        }
+        for (const [pid, entry] of remoteKarts.entries()) {
+          if (pid !== botId && !entry.finished && entry.progress < bot.progress && entry.progress > bestBehindProgress) {
+            bestBehindProgress = entry.progress; targetId = pid;
+          }
         }
       }
 

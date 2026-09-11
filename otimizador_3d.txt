@@ -1,0 +1,1 @@
+gltf-transform resize ninetales_original.glb t1.glb --width 1024 --height 1024 ; gltf-transform webp t1.glb t2.glb ; gltf-transform draco t2.glb ninetales.glb ; rm t1.glb, t2.glb
