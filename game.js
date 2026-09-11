@@ -47,8 +47,7 @@ function setupEnhancedEnvironment(scene) {
 // DATABASE E URLS
 // ------------------------------------------------------------
 function getKartUrl(filename) {
-  const isLocal = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-  return isLocal ? `./models/${filename}` : `https://media.githubusercontent.com/media/JhonPires/pokekart/main/models/${filename}`;
+  return `./models/${filename}`;
 }
 
 const KART_DATABASE = [
