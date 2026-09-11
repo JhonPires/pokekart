@@ -4,83 +4,744 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Garagem & Loja de Karts</title>
-  <link rel="stylesheet" href="garage.css">
+  <title>PokéKart — Garagem & Loja</title>
+  <link rel="icon" type="image/png" href="img/favicon.png">
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg: #07101f;
+      --panel: #0d1a2d;
+      --panel2: #101f35;
+      --line: #1d3857;
+      --cyan: #21c7ff;
+      --cyan2: #078cff;
+      --yellow: #ffd23f;
+      --text: #f4f8ff;
+      --muted: #8496ad;
+      --danger: #ff4b55;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #050b16 url("img/background_garagem.png") center/cover no-repeat fixed;
+    }
+
+    body:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(2, 8, 20, .46), transparent 30%, rgba(2, 8, 20, .16)),
+        linear-gradient(180deg, rgba(3, 9, 20, .12), rgba(3, 9, 20, .30));
+      z-index: 0;
+    }
+
+    main,
+    .sidebar {
+      position: relative;
+      z-index: 1;
+    }
+
+    .race-glow {
+      position: fixed;
+      right: -12vw;
+      bottom: -22vh;
+      width: 70vw;
+      height: 60vh;
+      background: radial-gradient(ellipse, rgba(0, 145, 255, .16), transparent 65%);
+      filter: blur(35px);
+      pointer-events: none;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: flex;
+    }
+
+    /* --- SIDEBAR IDÊNTICA AO INDEX --- */
+    .sidebar {
+      width: 315px;
+      padding: 22px 18px;
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(8, 25, 47, .78), rgba(4, 13, 28, .86));
+      border-right: 1px solid rgba(67, 181, 255, .38);
+      box-shadow: 20px 0 70px rgba(0, 0, 0, .38), inset -1px 0 0 rgba(255, 255, 255, .04);
+      backdrop-filter: blur(18px) saturate(135%);
+      clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
+      transition: .3s ease;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin: 0 4px 25px;
+    }
+
+    .menu-toggle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid #21415f;
+      background: #102039;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .brand-mini strong {
+      font-size: 25px;
+      letter-spacing: .5px;
+    }
+
+    .brand-mini span {
+      color: var(--cyan);
+    }
+
+    .nav {
+      display: grid;
+      gap: 9px;
+    }
+
+    .nav button,
+    .logout {
+      border: 1px solid #1e3a57;
+      background: rgba(12, 28, 48, .72);
+      color: #edf5ff;
+      min-height: 55px;
+      border-radius: 13px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      transform: skewX(-1.2deg);
+      gap: 13px;
+      font-size: 15px;
+      font-weight: 750;
+      cursor: pointer;
+      text-align: left;
+      transition: .18s;
+    }
+
+    .nav button:hover {
+      transform: translateX(3px);
+      border-color: #2389c5;
+      background: #102a48;
+    }
+
+    .nav button.active {
+      border-color: #0ca8ff;
+      background: linear-gradient(100deg, #087ad8, #0759b6);
+      box-shadow: 0 0 28px rgba(0, 150, 255, .22), inset 0 0 18px rgba(255, 255, 255, .05);
+    }
+
+    .icon {
+      font-size: 20px;
+      width: 22px;
+      text-align: center;
+    }
+
+    .music {
+      margin-top: 9px;
+      padding: 15px;
+      border: 1px solid #1e3a57;
+      border-radius: 13px;
+      background: rgba(12, 28, 48, .72);
+    }
+
+    .music-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .music-row b {
+      font-size: 12px;
+      color: var(--danger);
+    }
+
+    .range {
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      margin-top: 15px;
+      border-radius: 10px;
+      background: #213a54;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range::-webkit-slider-thumb {
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px #1cc5ff;
+      transition: transform 0.1s;
+    }
+
+    .range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* --- TOPBAR --- */
+    main {
+      margin-left: 315px;
+      min-height: 100vh;
+      flex: 1;
+      position: relative;
+    }
+
+    .topbar {
+      position: absolute;
+      right: 25px;
+      top: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .stat {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      border: 1px solid #21496e;
+      border-radius: 14px;
+      background: rgba(10, 24, 42, .62);
+      backdrop-filter: blur(14px) saturate(135%);
+      font-weight: 850;
+    }
+
+    .stat b {
+      font-size: 16px;
+    }
+
+    .stat span {
+      font-size: 20px;
+    }
+
+    .rank {
+      padding-right: 20px;
+    }
+
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--yellow);
+      color: #16385c;
+      border: 2px solid #fff;
+      font-size: 12px;
+    }
+
+    /* --- LAYOUT DA GARAGEM --- */
+    .garage-layout {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+      padding: 90px 25px 25px 25px;
+      gap: 20px;
+    }
+
+    .viewport-3d {
+      flex: 1;
+      position: relative;
+      border-radius: 24px;
+      border: 1px solid #23557c;
+      background: url('img/garage-background3.png') center center/cover no-repeat;
+      box-shadow: inset 0 0 100px rgba(3, 9, 20, 0.95), 0 35px 80px rgba(0, 0, 0, .48);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner {
+      position: absolute;
+      color: var(--cyan);
+      font-weight: bold;
+      font-size: 16px;
+      background: rgba(7, 20, 37, .8);
+      padding: 12px 24px;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 10;
+      border: 1px solid var(--cyan);
+    }
+
+    .info-overlay {
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      padding: 14px 24px;
+      border-radius: 15px;
+      min-width: 330px;
+      background: rgba(4, 17, 31, .65);
+      border: 1px solid rgba(66, 174, 228, .28);
+      backdrop-filter: blur(12px);
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .info-overlay p {
+      margin: 4px 0 0;
+      color: #9eb4c8;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .btn-float {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 10;
+      min-height: 44px;
+      border-radius: 12px;
+      border: 1px solid #128dcc;
+      background: rgba(7, 28, 49, .78);
+      color: #5bd5ff;
+      backdrop-filter: blur(8px);
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: .18s;
+      padding: 0 16px;
+    }
+
+    .btn-float:hover {
+      background: #102a48;
+      border-color: var(--cyan);
+      transform: translateX(-3px);
+    }
+
+    .garage-panel {
+      width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .card {
+      border: 1px solid #23557c;
+      border-radius: 20px;
+      background: linear-gradient(145deg, rgba(17, 43, 72, .55), rgba(5, 20, 39, .64));
+      box-shadow: 0 15px 40px rgba(0, 0, 0, .4), 0 0 30px rgba(0, 132, 255, .1);
+      backdrop-filter: blur(18px) saturate(140%);
+      padding: 16px;
+      position: relative;
+    }
+
+    .section-label {
+      font-size: 12px;
+      color: #91a7be;
+      font-weight: 900;
+      letter-spacing: .7px;
+      margin-bottom: 12px;
+    }
+
+    /* Grid de Karts */
+    .kart-grid-container {
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 5px;
+    }
+
+    .kart-grid-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .kart-grid-container::-webkit-scrollbar-thumb {
+      background: #275276;
+      border-radius: 4px;
+    }
+
+    .kart-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .kart-card {
+      background: rgba(12, 28, 48, .72);
+      border: 1px solid #1e3a57;
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: 0.2s;
+      min-height: 110px;
+    }
+
+    .kart-card:hover {
+      border-color: var(--cyan);
+      background: #102a48;
+      transform: translateY(-2px);
+    }
+
+    .kart-card.selected {
+      border-color: var(--cyan);
+      background: linear-gradient(145deg, #0a1d34, #0d2b4d);
+      box-shadow: 0 0 20px rgba(0, 190, 255, 0.2);
+    }
+
+    .kart-card.locked {
+      opacity: 0.55;
+      filter: grayscale(0.8);
+    }
+
+    .kart-thumb {
+      height: 50px;
+      max-width: 90px;
+      object-fit: contain;
+      margin-bottom: 6px;
+      filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    .kart-card-name {
+      font-size: 12px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+    }
+
+    .kart-card-price {
+      font-size: 11px;
+      color: var(--yellow);
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    .kart-card .free {
+      color: #1cff83;
+      font-size: 10px;
+      font-weight: 900;
+      margin-top: 3px;
+    }
+
+    /* Barras de Status */
+    .stat-group {
+      margin-bottom: 12px;
+    }
+
+    .stat-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .bar-bg {
+      height: 6px;
+      background: #0b1c30;
+      border-radius: 4px;
+      border: 1px solid #1e3a57;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #27c8ff, #078be8);
+      box-shadow: 0 0 10px rgba(39, 200, 255, 0.5);
+      transition: width 0.4s ease;
+    }
+
+    /* Imagem Conceito */
+    .concept-preview {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(77, 128, 164, 0.5);
+      border-radius: 12px;
+      height: 140px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .concept-preview img {
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 5px 15px rgba(0, 0, 0, 0.6));
+      transition: 0.3s;
+    }
+
+    .concept-preview img:hover {
+      transform: scale(1.05);
+    }
+
+    /* Botão Dinâmico de Ação (Sobrescreve as classes do garage.js) */
+    #btnAction {
+      width: 100%;
+      min-height: 55px;
+      border-radius: 13px;
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.18s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      letter-spacing: 0.5px;
+    }
+
+    #btnAction.primary {
+      background: linear-gradient(135deg, #27c8ff, #078be8);
+      border: 1px solid #52d6ff;
+      color: #031525;
+      box-shadow: 0 7px 24px rgba(0, 164, 255, .24);
+    }
+
+    #btnAction.buy {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: 1px solid #4ade80;
+      color: #022c22;
+      box-shadow: 0 7px 24px rgba(34, 197, 94, .24);
+    }
+
+    #btnAction.equipped:not(.primary) {
+      background: rgba(12, 28, 48, .72);
+      border: 1px solid #1e3a57;
+      color: var(--muted);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    #btnAction:not(.equipped):hover {
+      transform: translateY(-2px);
+    }
+
+    @media(max-width:900px) {
+      .sidebar {
+        width: 270px;
+      }
+
+      main {
+        margin-left: 0;
+      }
+
+      .sidebar.closed {
+        transform: translateX(-100%);
+      }
+
+      .garage-layout {
+        flex-direction: column;
+      }
+
+      .garage-panel {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="race-glow"></div>
 
-  <header class="topbar">
-    <button class="btn-back" id="btnBack">⬅ Voltar ao Menu</button>
-    <div class="user-info">
-      <span id="playerNickname" class="nickname">Carregando...</span>
-      <div class="currency">
-        <span class="coin-icon">🪙</span>
-        <span id="playerCoins">0</span>
-      </div>
-    </div>
-  </header>
+  <div class="shell">
+    <!-- MENU LATERAL -->
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-mini">
 
-  <main class="garage-container">
-    <!-- Visualizador 3D -->
-    <div class="viewport-3d" id="kartViewport">
-      <div class="spinner" id="loadingSpinner">Carregando modelo 3D...</div>
-    </div>
-
-    <!-- Painel Lateral -->
-    <aside class="side-panel">
-      <!-- Grid de Karts (2 Colunas) -->
-      <div class="kart-grid-container">
-        <div class="kart-grid" id="kartList"></div>
+        <strong>POKE<span>KART</span></strong>
       </div>
 
-      <!-- Atributos -->
-      <div class="stats-panel">
-        <h2 id="kartName">Nome do Kart</h2>
+      <nav class="nav">
+        <button class="active"><span class="icon">🛍️</span>Loja / Garagem</button>
+        <button onclick="window.location.href='index.html'"><span class="icon">🏠</span>Voltar ao Lobby</button>
+        <button onclick="window.location.href='track_builder.html'"><span class="icon">🗺️</span>Criador de
+          Pistas</button>
+      </nav>
 
-        <div class="stat-group">
-          <span>Velocidade Máxima</span>
-          <div class="bar-bg">
-            <div class="bar-fill" id="barSpeed"></div>
-          </div>
-        </div>
-
-        <div class="stat-group">
-          <span>Aceleração</span>
-          <div class="bar-bg">
-            <div class="bar-fill" id="barAccel"></div>
-          </div>
-        </div>
-
-        <div class="stat-group">
-          <span>Dirigibilidade</span>
-          <div class="bar-bg">
-            <div class="bar-fill" id="barHandling"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Container da Ficha Técnica / Concept Art (Abaixo dos Stats) -->
-      <div class="concept-preview-container">
-        <img id="kartConceptImg" src="img/jolteon.png" alt="Ficha Técnica do Kart" class="concept-img" />
-      </div>
-
-      <!-- Botão de Ação -->
-      <div class="action-panel">
-        <button id="btnAction" class="btn-action primary">EQUIPAR</button>
+      <div class="music">
+        <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
+        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
       </div>
     </aside>
-  </main>
-  <!-- Gerenciador de Cache de Assets -->
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main>
+      <div class="topbar">
+        <div class="stat"><span>🪙</span><b id="playerCoins">0</b></div>
+        <div class="stat rank">
+          <div class="avatar">🏁</div>
+          <strong id="playerNickname">Piloto</strong>
+        </div>
+      </div>
+
+      <div class="garage-layout">
+
+        <!-- VISUALIZADOR 3D -->
+        <div class="viewport-3d" id="kartViewport">
+
+
+          <div class="spinner" id="loadingSpinner">Carregando modelo 3D...</div>
+
+          <div class="info-overlay">
+            <!-- Oculto visualmente, mas necessário pro garage.js ler e escrever o nome oficial -->
+            <span id="kartName" style="display:none;">Jolteon Kart</span>
+            <b id="kartNameMirror" style="color: var(--cyan); font-size: 18px;">Jolteon Kart</b>
+            <p>Arraste o mouse para rotacionar o kart</p>
+          </div>
+        </div>
+
+        <!-- PAINEL DA LOJA / STATUS -->
+        <div class="garage-panel">
+
+          <div class="card" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+            <div class="section-label" style="margin-top: 0;">MODELOS DISPONÍVEIS</div>
+            <div class="kart-grid-container">
+              <div class="kart-grid" id="kartList">
+                <!-- O JS preenche a lista de karts aqui -->
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2 id="kartNamePanel" style="color: var(--cyan); font-size: 16px; margin-bottom: 12px; font-weight: 900;">
+              Selecione um Kart</h2>
+
+            <div class="stat-group">
+              <div class="stat-head"><span>Velocidade Máxima</span></div>
+              <div class="bar-bg">
+                <div class="bar-fill" id="barSpeed"></div>
+              </div>
+            </div>
+            <div class="stat-group">
+              <div class="stat-head"><span>Aceleração</span></div>
+              <div class="bar-bg">
+                <div class="bar-fill" id="barAccel"></div>
+              </div>
+            </div>
+            <div class="stat-group">
+              <div class="stat-head"><span>Dirigibilidade</span></div>
+              <div class="bar-bg">
+                <div class="bar-fill" id="barHandling"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="padding: 10px;">
+            <div class="concept-preview">
+              <img id="kartConceptImg" src="img/jolteon.png" alt="Ficha Técnica do Kart" />
+            </div>
+          </div>
+
+          <button id="btnAction" class="primary">EQUIPAR</button>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- DEPENDÊNCIAS ORIGINAIS -->
   <script src="music.js"></script>
   <script src="assets.js"></script>
   <script src="auth.js"></script>
   <script src="garage.js"></script>
+
+  <!-- Lógica de Sincronização e Áudio da Interface -->
+  <script>
+    // --- SISTEMA DE ÁUDIO BLINDADO ---
+    window.addEventListener('DOMContentLoaded', () => {
+      const btnMusic = document.getElementById('menuBtnMusicToggle');
+      const slider = document.getElementById('musicVolumeSlider');
+      const statusText = document.getElementById('musicStatusText');
+
+      // Puxa as preferências salvas
+      let isEnabled = localStorage.getItem('pkart_music') !== 'false';
+      let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
+      if (isNaN(vol)) vol = 0.4;
+
+      if (slider) slider.value = vol;
+      if (window.globalMusic) window.globalMusic.volume = vol;
+
+      // Função que pinta o botão e a barra de progresso
+      function updateAudioUI() {
+        if (statusText) {
+          statusText.innerText = isEnabled ? 'LIGADA' : 'DESLIGADA';
+          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55'; // Cyan e Danger diretos
+        }
+        if (slider) {
+          const percent = (slider.value / 1) * 100;
+          slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
+        }
+        if (window.globalMusic) {
+          if (isEnabled) window.globalMusic.play().catch(() => console.warn('Aguardando clique para tocar.'));
+          else window.globalMusic.pause();
+        }
+      }
+
+      // Evento de Clique no botão Ligar/Desligar
+      if (btnMusic) {
+        btnMusic.onclick = () => {
+          isEnabled = !isEnabled;
+          localStorage.setItem('pkart_music', isEnabled);
+
+          if (isEnabled && slider && parseFloat(slider.value) === 0) {
+            slider.value = 0.4;
+            if (window.globalMusic) window.globalMusic.volume = 0.4;
+            localStorage.setItem('pkart_music_vol', 0.4);
+          } else if (!isEnabled && slider) {
+            slider.value = 0;
+          }
+          updateAudioUI();
+        };
+      }
+
+      // Evento de arrastar a barra de progresso (Slider)
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          if (window.globalMusic) window.globalMusic.volume = v;
+          localStorage.setItem('pkart_music_vol', v);
+
+          if (v === 0 && isEnabled) {
+            isEnabled = false;
+            localStorage.setItem('pkart_music', false);
+          } else if (v > 0 && !isEnabled) {
+            isEnabled = true;
+            localStorage.setItem('pkart_music', true);
+          }
+          updateAudioUI();
+        });
+      }
+
+      // Dispara a atualização visual logo que a página carrega
+      updateAudioUI();
+    });
+  </script>
 </body>
 
 </html>

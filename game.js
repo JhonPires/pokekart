@@ -1133,20 +1133,18 @@ function updateRaceTracker(key, position) {
 
 let localFinishNotified = false;
 let finishLeaderboardEl = null;
-async function showFinishOverlay(place) {
-  // Dispara o som e os confetes assim que a tela de fim de corrida for chamada
-  victorySound.play().catch(e => console.warn('Bloqueio de autoplay de áudio:', e));
 
+async function showFinishOverlay(place) {
+  // 1. Efeitos Visuais e Sonoros
+  victorySound.play().catch(e => console.warn('Bloqueio de autoplay de áudio:', e));
   if (typeof confetti === 'function') {
     confetti({
-      particleCount: 150,
-      spread: 100,
-      origin: { y: 0.6 },
-      colors: ['#facc15', '#38bdf8', '#ffffff'],
-      zIndex: 99999
+      particleCount: 150, spread: 100, origin: { y: 0.6 },
+      colors: ['#facc15', '#38bdf8', '#ffffff'], zIndex: 99999
     });
   }
-  // Cria o container principal com o mesmo estilo "Glassmorphism" escuro do seu Lobby e HUD
+
+  // 2. Criação da Interface (DOM)
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
   overlay.style.cssText = `
@@ -1155,7 +1153,6 @@ async function showFinishOverlay(place) {
     align-items: center; justify-content: center; z-index: 9999; font-family: 'Segoe UI', Tahoma, sans-serif;
   `;
 
-  // Estiliza a barra de rolagem customizada via CSS injetado
   const style = document.createElement('style');
   style.innerHTML = `
     #finishOverlay ::-webkit-scrollbar { width: 6px; }
@@ -1163,7 +1160,6 @@ async function showFinishOverlay(place) {
   `;
   overlay.appendChild(style);
 
-  // Card Central
   const card = document.createElement('div');
   card.style.cssText = `
     background: rgba(30, 41, 59, 0.95); border: 2px solid #38bdf8; border-radius: 16px;
@@ -1173,14 +1169,12 @@ async function showFinishOverlay(place) {
 
   card.innerHTML = `
     <h2 style="margin:0; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">🏁 CORRIDA FINALIZADA</h2>
-    
     <div style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
-       <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Calculando...</span></div>
-       <div id="rewardDisplay" style="font-size:15px; color:#22c55e; font-weight:bold;">Processando recompensas...</div>
+       <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
+       <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Rank...</div>
     </div>
   `;
 
-  // Container onde os corredores vão aparecer e atualizar em tempo real
   finishLeaderboardEl = document.createElement('div');
   finishLeaderboardEl.style.cssText = `
     width: 100%; display: flex; flex-direction: column; gap: 6px; 
@@ -1188,7 +1182,6 @@ async function showFinishOverlay(place) {
   `;
   card.appendChild(finishLeaderboardEl);
 
-  // Botão de retorno
   const btnRestart = document.createElement('button');
   btnRestart.style.cssText = `
     background: #22c55e; color: #0f172a; border: none; padding: 12px; margin-top: 5px;
@@ -1204,48 +1197,57 @@ async function showFinishOverlay(place) {
   overlay.appendChild(card);
   document.body.appendChild(overlay);
 
-  // --- RECOMPENSAS E SUPABASE ---
-  const rewards = {
-    1: { coins: 150, trophies: 25 },
-    2: { coins: 90, trophies: 12 },
-    3: { coins: 50, trophies: 4 },
-    4: { coins: 20, trophies: 1 }
-  };
-
-  const currentReward = rewards[place] || { coins: 10, trophies: 0 };
+  // 3. Processamento de Recordes de Tempo
   const finalTimeMs = Math.round(totalRaceTimeMs);
   const formattedTime = formatTime(finalTimeMs);
   let isNewRecord = false;
 
-  if (typeof supabaseClient !== 'undefined') {
+  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
     try {
-      await supabaseClient.rpc('grant_race_reward', { p_place: place, p_track_id: customTrackParam || 'default' });
+      const currentTrackId = customTrackParam || 'default';
+      const { data: existingRecord } = await supabaseClient
+        .from('track_records')
+        .select('*')
+        .eq('user_id', currentUserProfile.id)
+        .eq('track_id', currentTrackId)
+        .single();
+
+      if (!existingRecord) {
+        await supabaseClient.from('track_records').insert({ user_id: currentUserProfile.id, track_id: currentTrackId, best_time_ms: finalTimeMs });
+        isNewRecord = true;
+      } else if (finalTimeMs < existingRecord.best_time_ms) {
+        await supabaseClient.from('track_records').update({ best_time_ms: finalTimeMs, created_at: new Date() }).eq('id', existingRecord.id);
+        isNewRecord = true;
+      }
     } catch (err) { }
-
-    if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-      try {
-        const currentTrackId = customTrackParam || 'default';
-        const { data: existingRecord } = await supabaseClient
-          .from('track_records')
-          .select('*')
-          .eq('user_id', currentUserProfile.id)
-          .eq('track_id', currentTrackId)
-          .single();
-
-        if (!existingRecord) {
-          await supabaseClient.from('track_records').insert({ user_id: currentUserProfile.id, track_id: currentTrackId, best_time_ms: finalTimeMs });
-          isNewRecord = true;
-        } else if (finalTimeMs < existingRecord.best_time_ms) {
-          await supabaseClient.from('track_records').update({ best_time_ms: finalTimeMs, created_at: new Date() }).eq('id', existingRecord.id);
-          isNewRecord = true;
-        }
-      } catch (err) { }
-    }
   }
 
-  // Atualiza as infos do jogador visualmente
   document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
-  document.getElementById('rewardDisplay').innerHTML = `+${currentReward.coins} 🪙 | ${currentReward.trophies >= 0 ? '+' : ''}${currentReward.trophies} 🏆`;
+
+  // 4. Sistema Ranqueado Seguro (Supabase RPC)
+  if (typeof supabaseClient !== 'undefined') {
+    try {
+      const { data, error } = await supabaseClient.rpc('processar_trofeus_partida', {
+        posicao_final: place
+      });
+
+      if (error) throw error;
+
+      const resultado = data[0];
+      const ganho = resultado.delta_trofeus > 0 ? `+${resultado.delta_trofeus}` : resultado.delta_trofeus;
+      const corRank = resultado.delta_trofeus >= 0 ? '#22c55e' : '#ef4444';
+
+      document.getElementById('rewardDisplay').innerHTML = `<span style="color:${corRank}">${ganho} 🏆</span> <span style="color:#94a3b8; font-size: 12px;">(Total: ${resultado.novos_trofeus})</span>`;
+
+      // (Opcional) Mantém a chamada legada para moedas se o seu banco ainda exigir
+      try { await supabaseClient.rpc('grant_race_reward', { p_place: place, p_track_id: customTrackParam || 'default' }); } catch (e) { }
+
+    } catch (err) {
+      console.error('Erro ao processar troféus:', err);
+      document.getElementById('rewardDisplay').innerText = 'Erro ao salvar pontuação.';
+      document.getElementById('rewardDisplay').style.color = '#ef4444';
+    }
+  }
 }
 
 // ------------------------------------------------------------
@@ -2014,8 +2016,24 @@ function updateHUD() {
     const timerEl = document.getElementById('hud-race-timer');
 
     if (lapEl) lapEl.innerText = tr.lapCount;
-    if (speedEl) speedEl.innerText = Math.floor(Math.abs(physics.speed) * 3.6);
-    if (speedFillEl) speedFillEl.style.width = `${Math.min(100, (Math.abs(physics.speed) / physics.maxSpeed) * 100)}%`;
+
+    const currentSpeedKmH = Math.floor(Math.abs(physics.speed) * 3.6);
+    if (speedEl) speedEl.innerText = currentSpeedKmH;
+
+    if (speedFillEl) {
+      // Calcula a porcentagem real baseada na velocidade máxima do kart atual
+      const maxPossibleSpeed = physics.maxSpeed * (physics.turboTimer > 0 ? 1.4 : 1.0) * 3.6;
+      const speedPercent = Math.min(100, (currentSpeedKmH / maxPossibleSpeed) * 100);
+
+      speedFillEl.style.width = `${speedPercent}%`;
+
+      // Se passar de 85% da velocidade máxima, muda o brilho/cor para indicar que está no talo (vermelho)
+      if (speedPercent > 85) {
+        speedFillEl.style.boxShadow = '0 0 12px rgba(255, 75, 85, 0.8)';
+      } else {
+        speedFillEl.style.boxShadow = '0 0 10px rgba(39, 200, 255, 0.6)';
+      }
+    }
 
     if (raceStarted && !tr.finished) {
       totalRaceTimeMs = performance.now() - raceStartTime;

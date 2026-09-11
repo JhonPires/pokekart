@@ -139,11 +139,11 @@ async function updateLobbyUI() {
   if (profile) {
     const headerNick = document.getElementById('playerHeaderNick');
     const coinsText = document.getElementById('playerCoinsText');
-    const trophiesText = document.getElementById('playerTrophiesText');
+    const trophiesText = document.getElementById('playerTrophiesText'); // Correção aqui (remoção do .innerText)
 
     if (headerNick) headerNick.innerText = profile.nickname || 'Piloto';
     if (coinsText) coinsText.innerText = profile.coins || 0;
-    if (trophiesText) trophiesText.innerText = profile.trophies || 0;
+    if (trophiesText) trophiesText.innerText = profile.trophies || 0; // Correção aqui (usando 'profile' em vez de 'profileData')
 
     // Sincroniza o seletor de kart do lobby com o kart equipado no perfil do jogador
     if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {

@@ -4,20 +4,514 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Criador de Pistas - Pokémon Kart</title>
-  <link rel="stylesheet" href="track_builder.css">
+  <title>PokeKart — Criador de Pistas</title>
+  <link rel="icon" type="image/png" href="img/favicon.png">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #07101f;
+      --panel: #0d1a2d;
+      --panel2: #101f35;
+      --line: #1d3857;
+      --cyan: #21c7ff;
+      --cyan2: #078cff;
+      --yellow: #ffd23f;
+      --text: #f4f8ff;
+      --muted: #8496ad;
+      --danger: #ff4b55;
+    }
+
+    html,
+    body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #050b16 url("img/background.png") center/cover no-repeat fixed;
+    }
+
+    body:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(2, 8, 20, .46), transparent 30%, rgba(2, 8, 20, .16)),
+        linear-gradient(180deg, rgba(3, 9, 20, .12), rgba(3, 9, 20, .30));
+      z-index: 0;
+    }
+
+    /* --- SIDEBAR IDÊNTICA À GARAGEM --- */
+    .sidebar {
+      width: 315px;
+      padding: 22px 18px;
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 20;
+      background: linear-gradient(180deg, rgba(8, 25, 47, .78), rgba(4, 13, 28, .86));
+      border-right: 1px solid rgba(67, 181, 255, .38);
+      box-shadow: 20px 0 70px rgba(0, 0, 0, .38), inset -1px 0 0 rgba(255, 255, 255, .04);
+      backdrop-filter: blur(18px) saturate(135%);
+      clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin: 0 4px 20px;
+    }
+
+    .menu-toggle {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      border: 1px solid #21415f;
+      background: #102039;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .brand-mini strong {
+      font-size: 25px;
+      letter-spacing: .5px;
+    }
+
+    .brand-mini span {
+      color: var(--cyan);
+    }
+
+    .nav {
+      display: grid;
+      gap: 9px;
+    }
+
+    .nav button {
+      border: 1px solid #1e3a57;
+      background: rgba(12, 28, 48, .72);
+      color: #edf5ff;
+      min-height: 55px;
+      border-radius: 13px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      transform: skewX(-1.2deg);
+      gap: 13px;
+      font-size: 15px;
+      font-weight: 750;
+      cursor: pointer;
+      text-align: left;
+      transition: .18s;
+      width: 100%;
+    }
+
+    .nav button:hover {
+      transform: translateX(3px);
+      border-color: #2389c5;
+      background: #102a48;
+    }
+
+    .nav button.active {
+      border-color: #0ca8ff;
+      background: linear-gradient(100deg, #087ad8, #0759b6);
+      box-shadow: 0 0 28px rgba(0, 150, 255, .22), inset 0 0 18px rgba(255, 255, 255, .05);
+    }
+
+    .icon {
+      font-size: 20px;
+      width: 22px;
+      text-align: center;
+    }
+
+    .tool-section-title {
+      margin: 15px 0 6px 4px;
+      color: var(--cyan);
+      font-weight: 950;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .7px;
+    }
+
+    /* --- BLOCO DE MÚSICA IDÊNTICO À GARAGEM --- */
+    .music {
+      margin-top: 9px;
+      padding: 15px;
+      border: 1px solid #1e3a57;
+      border-radius: 13px;
+      background: rgba(12, 28, 48, .72);
+    }
+
+    .music-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .music-row b {
+      font-size: 12px;
+      color: var(--danger);
+    }
+
+    .range {
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      margin-top: 15px;
+      border-radius: 10px;
+      background: #213a54;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range::-webkit-slider-thumb {
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px #1cc5ff;
+      transition: transform 0.1s;
+    }
+
+    .range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    /* --- ÁREA PRINCIPAL --- */
+    main {
+      margin-left: 315px;
+      width: calc(100vw - 315px);
+      height: 100vh;
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      height: 75px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      gap: 20px;
+      background: rgba(7, 17, 31, .85);
+      border-bottom: 1px solid rgba(87, 188, 241, .25);
+      backdrop-filter: blur(16px);
+      box-shadow: 0 5px 25px rgba(0, 0, 0, .3);
+    }
+
+    .btn-builder {
+      height: 44px;
+      padding: 0 18px;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 900;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #1e3a57;
+      background: rgba(12, 28, 48, .72);
+      box-shadow: 0 0 10px rgba(0, 145, 255, .15);
+      transition: 0.2s;
+    }
+
+    .btn-builder:hover {
+      filter: brightness(1.18);
+      transform: translateY(-1px);
+      border-color: var(--cyan);
+    }
+
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--yellow);
+      letter-spacing: 0.5px;
+    }
+
+    .topbar-right {
+      margin-left: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn-accent {
+      background: linear-gradient(100deg, #087ad8, #0759b6) !important;
+      color: #fff !important;
+      border-color: #0ca8ff !important;
+      box-shadow: 0 0 20px rgba(0, 201, 255, .3) !important;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #16a34a) !important;
+      border-color: #4ade80 !important;
+      color: #031525 !important;
+    }
+
+    .btn-admin {
+      background: linear-gradient(#b45cff, #8635d7) !important;
+      border-color: #d183ff !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      white-space: nowrap !important;
+      padding: 0 16px !important;
+    }
+
+    /* --- WORKSPACE CENTRALIZADO A ~70% --- */
+    .workspace-container {
+      flex: 1;
+      padding: 20px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .workspace {
+      width: 55vw;
+      height: 65vh;
+      max-width: 1250px;
+      max-height: 750px;
+      border-radius: 20px;
+      overflow: hidden;
+      position: relative;
+      border: 2px solid #00c3ff;
+      background: rgba(3, 15, 35, 0.88);
+      box-shadow: 0 0 45px rgba(0, 170, 255, 0.45), inset 0 0 50px rgba(0, 150, 255, 0.2);
+      backdrop-filter: blur(12px);
+    }
+
+    .workspace:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(0, 160, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 160, 255, 0.08) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+
+    #trackCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* --- BARRA DE INFORMAÇÕES COM ESTILO NEON E VIDRO --- */
+    .info-bar {
+      position: absolute;
+      left: 50%;
+      bottom: 25px;
+      transform: translateX(-50%);
+      height: 54px;
+      min-width: 720px;
+      padding: 0 28px;
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      z-index: 15;
+      /* Borda brilhante neon azul idêntica à do workspace */
+      border: 2px solid #00c3ff;
+      background: rgba(3, 15, 35, 0.9);
+      box-shadow: 0 0 35px rgba(0, 170, 255, 0.4), inset 0 0 30px rgba(0, 150, 255, 0.15);
+      backdrop-filter: blur(14px);
+    }
+
+    .info-item {
+      padding: 0 16px;
+      font-size: 13px;
+      font-weight: 800;
+      border-right: 1px solid rgba(0, 170, 255, 0.3);
+      color: var(--muted);
+    }
+
+    .info-item:last-child {
+      border: 0;
+    }
+
+    .info-val {
+      color: var(--cyan);
+      font-weight: 950;
+      text-shadow: 0 0 8px rgba(33, 199, 255, 0.5);
+    }
+
+    /* Modais */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 9, 20, 0.85);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      width: 420px;
+      border: 1px solid #23557c;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(17, 43, 72, .95), rgba(5, 20, 39, .98));
+      box-shadow: 0 35px 80px rgba(0, 0, 0, .7), 0 0 55px rgba(0, 132, 255, .2);
+      backdrop-filter: blur(20px) saturate(140%);
+      padding: 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      color: #fff;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 18px;
+      color: var(--cyan);
+      margin: 0;
+      font-weight: 900;
+    }
+
+    .modal-close {
+      background: rgba(7, 28, 49, .68);
+      border: 1px solid #128dcc;
+      color: #5bd5ff;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      background: #09172a;
+      border: 1px solid #275276;
+      color: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 700;
+      outline: none;
+      font-family: inherit;
+      width: 100%;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px rgba(33, 199, 255, 0.3);
+    }
+
+    .moderation-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .moderation-table th,
+    .moderation-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #1e3a57;
+      font-size: 13px;
+    }
+
+    .moderation-table th {
+      color: var(--muted);
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+  </style>
 </head>
 
 <body>
 
-  <div id="builderContainer">
-    <!-- Topbar -->
-    <header class="builder-topbar">
-      <div class="topbar-left">
-        <button class="btn-builder" id="btnBack">⬅ Voltar ao Lobby</button>
-        <div class="topbar-title">🎨 Criador de Pistas Pokémon Kart</div>
-      </div>
+  <!-- MENU LATERAL -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand-mini">
+      <strong>POKE<span>KART</span></strong>
+    </div>
 
+    <div class="tool-section-title">Ferramentas</div>
+    <nav class="nav">
+      <button class="active" id="toolNodes" data-mode="nodes"><span class="icon">🛣️</span><span>Traçado
+          (Pontos)</span></button>
+      <button id="toolItems" data-mode="items"><span class="icon">🎁</span><span>Caixas de Item</span></button>
+    </nav>
+
+    <div class="tool-section-title">Circuito</div>
+    <nav class="nav">
+      <button id="btnToggleLoop"><span class="icon" id="loopIcon">🔄</span><span id="loopText">Fechar
+          Circuito</span></button>
+      <button id="btnResetView"><span class="icon">🔍</span><span>Centralizar Visão</span></button>
+    </nav>
+
+    <div class="tool-section-title">Opções</div>
+    <nav class="nav">
+      <button id="btnBack"><span class="icon">🏠</span><span>Voltar ao Lobby</span></button>
+    </nav>
+
+    <!-- Bloco de Música Idêntico à Garagem -->
+    <div class="music">
+      <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
+      <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+    </div>
+
+  </aside>
+
+  <!-- CONTEÚDO PRINCIPAL -->
+  <main>
+    <!-- Topbar -->
+    <header>
+      <div class="topbar-title">🎨 CRIADOR DE PISTAS</div>
       <div class="topbar-right">
         <button class="btn-builder" id="btnPreset">🏁 Carregar Modelo</button>
         <button class="btn-builder" id="btnClear">🧹 Limpar</button>
@@ -27,45 +521,25 @@
       </div>
     </header>
 
-    <!-- Workspace com Canvas Interativo -->
-    <main class="workspace" id="workspace">
-      <canvas id="trackCanvas"></canvas>
-
-      <!-- Barra de Ferramentas Flutuante -->
-      <div class="floating-toolbar">
-        <div class="tool-section-title">Ferramentas</div>
-        <button class="tool-btn active" id="toolNodes" data-mode="nodes">
-          <span>🛣️</span> Traçado (Pontos)
-        </button>
-        <button class="tool-btn" id="toolItems" data-mode="items">
-          <span>🎁</span> Caixas de Item
-        </button>
-        <!-- <button class="tool-btn" id="toolBoosts" data-mode="boosts">
-          <span>⚡</span> Pads de Turbo
-        </button> -->
-
-        <div class="tool-section-title" style="margin-top: 6px;">Circuito</div>
-        <button class="tool-btn" id="btnToggleLoop">
-          <span id="loopIcon">🔄</span> <span id="loopText">Fechar Circuito</span>
-        </button>
-        <button class="tool-btn" id="btnResetView">
-          <span>🔍</span> Centralizar Visão
-        </button>
-      </div>
+    <!-- Workspace com Canvas -->
+    <div class="workspace-container">
+      <section class="workspace" id="workspace">
+        <canvas id="trackCanvas"></canvas>
+      </section>
 
       <!-- Barra de Informações Inferior -->
       <div class="info-bar">
-        <div class="info-item">Pontos: <span id="infoPoints" class="info-val">0</span></div>
-        <div class="info-item">Circuito: <span id="infoClosed" class="info-val" style="color: #ef4444;">Aberto</span>
+        <div class="info-item">📍 Pontos: <span id="infoPoints" class="info-val">0</span></div>
+        <div class="info-item">🔗 Circuito: <span id="infoClosed" class="info-val" style="color: #ef4444;">Aberto</span>
         </div>
-        <div class="info-item">Extensão: <span id="infoLength" class="info-val">0m</span></div>
-        <div class="info-item">Itens: <span id="infoItems" class="info-val">0</span></div>
-        <div class="info-item">Turbos: <span id="infoBoosts" class="info-val">0</span></div>
-      </div>
-    </main>
-  </div>
+        <div class="info-item">↗ Extensão: <span id="infoLength" class="info-val">0m</span></div>
+        <div class="info-item">🏁 Itens: <span id="infoItems" class="info-val">0</span></div>
 
-  <!-- Modal para Salvar Pista -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Salvar -->
   <div class="modal-overlay" id="saveModal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
@@ -75,25 +549,24 @@
 
       <div class="form-group">
         <label for="trackNameInput">Nome da Pista *</label>
-        <input type="text" id="trackNameInput" placeholder="Ex: Rota do Charizard, Circuito Eevee..." maxlength="40" />
+        <input type="text" id="trackNameInput" placeholder="Ex: Rota do Charizard..." maxlength="40" />
       </div>
 
       <div class="form-group">
         <label for="trackDescInput">Descrição (Opcional)</label>
-        <textarea id="trackDescInput" rows="3"
-          placeholder="Conte mais sobre o traçado, curvas ou segredos..."></textarea>
+        <textarea id="trackDescInput" rows="3" placeholder="Conte mais sobre o traçado..."></textarea>
       </div>
 
       <div id="saveStatus" style="font-size: 13px; color: #94a3b8; min-height: 18px;"></div>
 
       <button class="btn-builder btn-primary" id="btnConfirmSave"
-        style="padding: 12px; font-size: 15px; justify-content: center;">
+        style="padding: 12px; font-size: 15px; justify-content: center; width: 100%; border: none;">
         PUBLICAR PARA AVALIAÇÃO
       </button>
     </div>
   </div>
 
-  <!-- Modal de Moderação (Apenas Administrador) -->
+  <!-- Modal Moderação -->
   <div class="modal-overlay" id="adminModal" style="display: none;">
     <div class="modal-card" style="width: 760px;">
       <div class="modal-header">
@@ -102,7 +575,7 @@
       </div>
 
       <div style="font-size: 13px; color: #94a3b8;">
-        Gerencie as pistas enviadas pela comunidade. Pistas aprovadas ficam visíveis imediatamente no Lobby.
+        Gerencie as pistas enviadas pela comunidade.
       </div>
 
       <div style="max-height: 400px; overflow-y: auto;">
@@ -129,7 +602,71 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
+  <script src="music.js"></script>
   <script src="track_builder.js"></script>
+
+  <!-- Sincronização de Áudio Idêntica à Garagem -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const btnMusic = document.getElementById('menuBtnMusicToggle');
+      const slider = document.getElementById('musicVolumeSlider');
+      const statusText = document.getElementById('musicStatusText');
+
+      let isEnabled = localStorage.getItem('pkart_music') !== 'false';
+      let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
+      if (isNaN(vol)) vol = 0.4;
+
+      if (slider) slider.value = vol;
+      if (window.globalMusic) window.globalMusic.volume = vol;
+
+      function updateAudioUI() {
+        if (statusText) {
+          statusText.innerText = isEnabled ? 'LIGADA' : 'DESLIGADA';
+          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55';
+        }
+        if (slider) {
+          const percent = (slider.value / 1) * 100;
+          slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
+        }
+        if (window.globalMusic) {
+          if (isEnabled) window.globalMusic.play().catch(() => { });
+          else window.globalMusic.pause();
+        }
+      }
+
+      if (btnMusic) {
+        btnMusic.onclick = () => {
+          isEnabled = !isEnabled;
+          localStorage.setItem('pkart_music', isEnabled);
+          if (isEnabled && slider && parseFloat(slider.value) === 0) {
+            slider.value = 0.4;
+            if (window.globalMusic) window.globalMusic.volume = 0.4;
+            localStorage.setItem('pkart_music_vol', 0.4);
+          } else if (!isEnabled && slider) {
+            slider.value = 0;
+          }
+          updateAudioUI();
+        };
+      }
+
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          if (window.globalMusic) window.globalMusic.volume = v;
+          localStorage.setItem('pkart_music_vol', v);
+          if (v === 0 && isEnabled) {
+            isEnabled = false;
+            localStorage.setItem('pkart_music', false);
+          } else if (v > 0 && !isEnabled) {
+            isEnabled = true;
+            localStorage.setItem('pkart_music', true);
+          }
+          updateAudioUI();
+        });
+      }
+      updateAudioUI();
+    });
+  </script>
 </body>
 
 </html>

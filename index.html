@@ -4,155 +4,495 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pokémon Kart</title>
+  <title>PokéKart — Lobby</title>
   <link rel="icon" type="image/png" href="img/favicon.png">
   <style>
+    :root {
+      --bg: #07101f;
+      --panel: #0d1a2d;
+      --panel2: #101f35;
+      --line: #1d3857;
+      --cyan: #21c7ff;
+      --cyan2: #078cff;
+      --yellow: #ffd23f;
+      --text: #f4f8ff;
+      --muted: #8496ad;
+      --danger: #ff4b55;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
 
-    body,
-    html {
-      width: 100%;
-      height: 100%;
+    body {
+      min-height: 100vh;
       overflow: hidden;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #0b1329;
-      background-image: repeating-linear-gradient(-45deg,
-          rgba(30, 41, 59, 0.4) 0,
-          rgba(30, 41, 59, 0.4) 8px,
-          transparent 8px,
-          transparent 16px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      color: var(--text);
+      background: #050b16 url("img/background.png") center/cover no-repeat fixed;
     }
 
-    #topHeaderBar {
+    body:before {
+      content: "";
       position: fixed;
-      top: 16px;
-      left: 16px;
-      right: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 500;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, rgba(2, 8, 20, .46), transparent 30%, rgba(2, 8, 20, .16)),
+        linear-gradient(180deg, rgba(3, 9, 20, .12), rgba(3, 9, 20, .30));
+      z-index: 0;
+    }
+
+    main,
+    .sidebar {
+      position: relative;
+      z-index: 1;
+    }
+
+    .race-glow {
+      position: fixed;
+      right: -12vw;
+      bottom: -22vh;
+      width: 70vw;
+      height: 60vh;
+      background: radial-gradient(ellipse, rgba(0, 145, 255, .16), transparent 65%);
+      filter: blur(35px);
       pointer-events: none;
     }
 
-    #topHeaderBar>* {
-      pointer-events: auto;
+    .shell {
+      min-height: 100vh;
+      display: flex;
     }
 
-    .topHeaderBadge {
-      background: #171e2e;
-      border: 2px solid #0f172a;
+    .sidebar {
+      width: 315px;
+      padding: 22px 18px;
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(8, 25, 47, .78), rgba(4, 13, 28, .86));
+      border-right: 1px solid rgba(67, 181, 255, .38);
+      box-shadow: 20px 0 70px rgba(0, 0, 0, .38), inset -1px 0 0 rgba(255, 255, 255, .04);
+      backdrop-filter: blur(18px) saturate(135%);
+      clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
+      transition: .3s ease;
+    }
+
+    .brand-mini {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      margin: 0 4px 25px;
+    }
+
+    .menu-toggle {
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
-      padding: 8px 14px;
+      border: 1px solid #21415f;
+      background: #102039;
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .brand-mini strong {
+      font-size: 25px;
+      letter-spacing: .5px;
+    }
+
+    .brand-mini span {
+      color: var(--cyan);
+    }
+
+    .nav {
+      display: grid;
+      gap: 9px;
+    }
+
+    .nav button,
+    .logout {
+      border: 1px solid #1e3a57;
+      background: rgba(12, 28, 48, .72);
+      color: #edf5ff;
+      min-height: 55px;
+      border-radius: 13px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      transform: skewX(-1.2deg);
+      gap: 13px;
+      font-size: 15px;
+      font-weight: 750;
+      cursor: pointer;
+      text-align: left;
+      transition: .18s;
+    }
+
+    .nav button:hover {
+      transform: translateX(3px);
+      border-color: #2389c5;
+      background: #102a48;
+    }
+
+    .nav button.active {
+      border-color: #0ca8ff;
+      background: linear-gradient(100deg, #087ad8, #0759b6);
+      box-shadow: 0 0 28px rgba(0, 150, 255, .22), inset 0 0 18px rgba(255, 255, 255, .05);
+    }
+
+    .icon {
+      font-size: 20px;
+      width: 22px;
+      text-align: center;
+    }
+
+    .music {
+      margin-top: 9px;
+      padding: 15px;
+      border: 1px solid #1e3a57;
+      border-radius: 13px;
+      background: rgba(12, 28, 48, .72);
+    }
+
+    .music-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .music-row b {
+      font-size: 12px;
+      color: var(--danger);
+    }
+
+    .range {
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      margin-top: 15px;
+      border-radius: 10px;
+      background: #213a54;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .range::-webkit-slider-thumb {
+      appearance: none;
+      width: 17px;
+      height: 17px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px #1cc5ff;
+      transition: transform 0.1s;
+    }
+
+    .range::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+
+    .account {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 20px;
+    }
+
+    .profile {
+      padding: 12px;
+      border: 1px solid #1f4568;
+      border-radius: 14px;
+      background: rgba(12, 31, 53, .62);
+      backdrop-filter: blur(12px);
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--yellow);
+      color: #16385c;
+      border: 3px solid #fff;
+      font-size: 20px;
+    }
+
+    .profile strong {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 150px;
+    }
+
+    .profile small {
+      color: var(--cyan);
+      font-weight: 850;
+    }
+
+    .logout {
+      margin-top: 10px;
+      width: 100%;
+      min-height: 45px;
+      background: #17273b;
+      justify-content: center;
+    }
+
+    main {
+      margin-left: 315px;
+      min-height: 100vh;
+      flex: 1;
+      position: relative;
+    }
+
+    .topbar {
+      position: absolute;
+      right: 25px;
+      top: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 5;
+    }
+
+    .stat {
+      height: 52px;
       display: flex;
       align-items: center;
       gap: 10px;
-      box-shadow: 3px 3px 0px #0f172a;
-      height: 48px;
+      padding: 0 16px;
+      border: 1px solid #21496e;
+      border-radius: 14px;
+      background: rgba(10, 24, 42, .62);
+      backdrop-filter: blur(14px) saturate(135%);
+      font-weight: 850;
     }
 
-    #lobbyMainContainer {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(8px);
+    .stat b {
+      font-size: 16px;
+    }
+
+    .stat span {
+      font-size: 20px;
+    }
+
+    .rank {
+      padding-right: 20px;
+    }
+
+    .stage {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 100px 45px 45px;
+    }
+
+    .content {
+      width: min(760px, 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 16px;
-      padding: 20px;
-      z-index: 100;
     }
 
-    .gameLogo {
-      max-width: 280px;
+    .logo {
+      width: min(360px, 58vw);
       height: auto;
       object-fit: contain;
-      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+      filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
+      margin-bottom: 16px;
     }
 
-    .lobbyCard {
-      background: #1e293b;
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #334155;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      width: 360px;
-      height: auto;
-      box-sizing: border-box;
+    .fallback-logo {
+      font-style: italic;
+      font-weight: 1000;
+      font-size: 60px;
+      letter-spacing: -5px;
+      text-shadow: 0 4px 0 #000, 0 0 25px rgba(0, 187, 255, .4);
+      margin-bottom: 20px;
     }
 
-    .selectNavBtn {
-      background: #334155;
-      border: 1px solid #475569;
-      color: #FFD54F;
-      font-size: 16px;
-      font-weight: bold;
-      width: 36px;
-      height: 36px;
+    .fallback-logo i {
+      color: #dfeeff;
+      font-style: normal;
+    }
+
+    .fallback-logo em {
+      color: #ff303b;
+      font-style: normal;
+    }
+
+    .card {
+      width: min(670px, 100%);
+      border: 1px solid #23557c;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(17, 43, 72, .55), rgba(5, 20, 39, .64));
+      box-shadow: 0 35px 80px rgba(0, 0, 0, .48), 0 0 55px rgba(0, 132, 255, .15);
+      backdrop-filter: blur(18px) saturate(140%);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(0, 190, 255, .08), transparent 35%);
+      pointer-events: none;
+    }
+
+    .kart-zone {
+      height: 225px;
+      border-radius: 17px;
+      border: 1px solid #214665;
+      background: radial-gradient(circle at 50% 48%, rgba(0, 182, 255, .18), transparent 32%), linear-gradient(145deg, #09172a, #07101e);
+      display: grid;
+      place-items: center;
+      position: relative;
+      margin-bottom: 13px;
+      overflow: hidden;
+    }
+
+    .kart-zone:after {
+      content: "";
+      position: absolute;
+      bottom: 28px;
+      width: 260px;
+      height: 20px;
       border-radius: 50%;
+      background: rgba(0, 174, 255, .35);
+      filter: blur(13px);
+      pointer-events: none;
+    }
+
+    #previewContainer {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 4;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #0a1d34;
+      border: 1px solid #1765a0;
+      color: #58d5ff;
+      font-size: 31px;
       cursor: pointer;
-      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 4px;
     }
 
-    .selectNavBtn:hover {
-      background: #475569;
-      transform: scale(1.05);
+    .arrow:hover {
+      background: #0d3152;
+      box-shadow: 0 0 20px rgba(0, 190, 255, .3);
     }
 
-    .lobbyBtn {
-      background: #22c55e;
-      color: #0f172a;
-      border: none;
-      padding: 12px 16px;
-      font-size: 14px;
-      font-weight: bold;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      flex: 1;
+    .arrow.left {
+      left: 18px;
     }
 
-    .lobbyBtn:hover {
-      filter: brightness(1.1);
-      transform: translateY(-1px);
+    .arrow.right {
+      right: 18px;
     }
 
-    .lobbyBtnGhost {
-      background: transparent;
-      color: #38bdf8;
-      border: 1px solid #38bdf8;
-    }
-
-    .lobbyBtnGhost:hover {
-      background: rgba(56, 189, 248, 0.1);
-    }
-
-    input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #334155;
-      background: #0f172a;
-      color: #fff;
+    .kart-name {
       text-align: center;
-      font-size: 14px;
+      color: #35caff;
+      font-weight: 900;
+      font-size: 18px;
+      margin: 0 0 16px;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn {
+      min-height: 52px;
+      border-radius: 13px;
+      border: 1px solid #128dcc;
+      background: rgba(7, 28, 49, .68);
+      color: #5bd5ff;
+      backdrop-filter: blur(8px);
+      font-size: 15px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: .18s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0, 170, 255, .15);
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, #27c8ff, #078be8);
+      border-color: #52d6ff;
+      color: #031525;
+      box-shadow: 0 7px 24px rgba(0, 164, 255, .24);
+    }
+
+    .section-label {
+      font-size: 12px;
+      color: #91a7be;
+      font-weight: 900;
+      letter-spacing: .7px;
+      margin: 20px 0 7px;
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 10px;
+    }
+
+    .select,
+    .customDropdownTrigger {
+      min-height: 48px;
+      border: 1px solid #275276;
+      border-radius: 12px;
+      background: #09172a;
+      color: #dcecff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      font-weight: 800;
+      cursor: pointer;
       outline: none;
+      width: 100%;
+    }
+
+    .select .yellow,
+    .customDropdownTrigger .yellow {
+      color: var(--yellow);
+    }
+
+    .select span:last-child,
+    .customDropdownTrigger span:last-child {
+      color: #27c7ff;
     }
 
     .customDropdownWrapper {
@@ -160,47 +500,14 @@
       width: 100%;
     }
 
-    .customDropdownTrigger {
-      width: 100%;
-      background: #0f172a;
-      border: 2px solid #334155;
-      color: #facc15;
-      font-weight: 800;
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      transition: all 0.2s ease;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
-    }
-
-    .customDropdownTrigger:hover,
-    .customDropdownTrigger.open {
-      border-color: #38bdf8;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
-    }
-
-    .customDropdownArrow {
-      transition: transform 0.2s ease;
-      font-size: 10px;
-      color: #facc15;
-    }
-
-    .customDropdownTrigger.open .customDropdownArrow {
-      transform: rotate(180deg);
-    }
-
     .customDropdownMenu {
       position: absolute;
       top: calc(100% + 6px);
       left: 0;
       width: 100%;
-      background: #0f172a;
-      border: 2px solid #38bdf8;
-      border-radius: 10px;
+      background: #09172a;
+      border: 1px solid #275276;
+      border-radius: 12px;
       padding: 6px;
       display: none;
       flex-direction: column;
@@ -216,11 +523,11 @@
     }
 
     .customDropdownOption {
-      padding: 8px 10px;
-      border-radius: 6px;
-      color: #facc15;
+      padding: 10px 12px;
+      border-radius: 8px;
+      color: #dcecff;
       font-weight: 700;
-      font-size: 12px;
+      font-size: 13px;
       cursor: pointer;
       transition: background 0.15s ease;
       display: flex;
@@ -229,360 +536,400 @@
     }
 
     .customDropdownOption:hover {
-      background: #1e293b;
-      color: #38bdf8;
+      background: #1e3a57;
+      color: var(--cyan);
     }
 
     .customDropdownOption.selected {
-      background: #38bdf8;
-      color: #0f172a;
-    }
-
-    .sideMenuBtn {
-      width: 100%;
-      background: #0f172a;
-      border: 1px solid #334155;
+      background: #128dcc;
       color: #fff;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: bold;
+    }
+
+    .bottom-row {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 10px;
+    }
+
+    .play {
+      font-size: 16px;
+    }
+
+    .hint {
+      margin-top: 15px;
+      color: #71869e;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    /* Modais baseados no estilo antigo mas ajustados */
+    .lobbyCardModal {
+      background: #1e293b;
+      padding: 24px;
+      border-radius: 16px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
       display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      text-align: left;
-    }
-
-    .sideMenuBtn:hover {
-      background: #1e293b;
-      border-color: #38bdf8;
-      transform: translateX(4px);
-    }
-
-    .sideMenuBtn.active {
-      border: 2px solid #38bdf8;
-      box-shadow: inset 0 0 10px rgba(56, 189, 248, 0.2);
-    }
-
-    #leaderboardList::-webkit-scrollbar,
-    .customDropdownMenu::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    #leaderboardList::-webkit-scrollbar-thumb,
-    .customDropdownMenu::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 4px;
-    }
-
-    /* Reset do slider de volume */
-    #musicVolumeSlider {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 100%;
-      height: 6px;
-      background: #1e293b;
-      border-radius: 3px;
-      outline: none;
-      margin: 4px 0 0 0;
-      padding: 0;
+      gap: 14px;
       box-sizing: border-box;
     }
 
-    /* Estilização da bolinha (Chrome, Safari, Edge) */
-    #musicVolumeSlider::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      appearance: none;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #38bdf8;
-      cursor: pointer;
-      box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
-      transition: transform 0.1s ease;
+    input.game-input {
+      background: #09172a;
+      border: 1px solid #275276;
+      color: #fff;
+      border-radius: 12px;
+      padding: 0 14px;
+      font-weight: 800;
+      min-height: 48px;
+      width: 100%;
+      outline: none;
     }
 
-    #musicVolumeSlider::-webkit-slider-thumb:hover {
-      transform: scale(1.2);
+    @media(max-width:850px) {
+      .sidebar {
+        width: 270px;
+      }
+
+      .sidebar.closed {
+        transform: translateX(-100%);
+      }
+
+      main {
+        margin-left: 0;
+      }
+
+      .topbar {
+        right: 12px;
+        top: 12px;
+      }
+
+      .stat {
+        height: 44px;
+        padding: 0 11px;
+      }
+
+      .stat.rank strong {
+        display: none;
+      }
+
+      .stage {
+        padding: 85px 18px 25px;
+      }
+
+      .logo {
+        width: 300px;
+      }
+
+      .card {
+        padding: 15px;
+      }
     }
 
-    /* Estilização da bolinha (Firefox) */
-    #musicVolumeSlider::-moz-range-thumb {
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: #38bdf8;
-      border: none;
+    /* ESTILOS DOS MODAIS MODERNIZADOS */
+    .lobbyCardModal {
+      width: 90vw;
+      max-width: 420px;
+      border: 1px solid #23557c;
+      border-radius: 24px;
+      background: linear-gradient(145deg, rgba(17, 43, 72, .85), rgba(5, 20, 39, .95));
+      box-shadow: 0 35px 80px rgba(0, 0, 0, .7), 0 0 55px rgba(0, 132, 255, .2);
+      backdrop-filter: blur(20px) saturate(140%);
+      padding: 24px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .lobbyCardModal:before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(0, 190, 255, .08), transparent 45%);
+      pointer-events: none;
+    }
+
+    .modal-close-btn {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      background: rgba(7, 28, 49, .68);
+      border: 1px solid #128dcc;
+      color: #5bd5ff;
+      font-weight: 900;
+      font-size: 14px;
       cursor: pointer;
-      box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+      transition: .2s;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+      transform: scale(1.1);
+    }
+
+    .modal-title {
+      color: var(--cyan);
+      font-size: 20px;
+      font-weight: 900;
+      text-align: center;
+      margin: 0 0 5px 0;
+      text-shadow: 0 2px 10px rgba(0, 190, 255, 0.3);
+      letter-spacing: 0.5px;
+    }
+
+    /* Sobrescreve as cores injetadas pelo auth.js e pelo script de Changelog */
+    #leaderboardList>div,
+    #changelogContent>div {
+      background: rgba(10, 24, 42, .62) !important;
+      border: 1px solid #21496e !important;
+      border-radius: 14px !important;
+      backdrop-filter: blur(8px) !important;
+      color: var(--text) !important;
+      padding: 14px 16px !important;
+      margin-bottom: 8px !important;
+    }
+
+    #leaderboardList span[style*="#94a3b8"] {
+      color: var(--muted) !important;
+    }
+
+    #leaderboardList span[style*="#f8fafc"] {
+      color: #fff !important;
+      font-weight: 800 !important;
+    }
+
+    #leaderboardList div[style*="#38bdf8"],
+    #leaderboardList div[style*="#facc15"] {
+      color: var(--yellow) !important;
+    }
+
+    #changelogContent>div>div {
+      border-bottom-color: #1d3857 !important;
+    }
+
+    #changelogContent ul {
+      color: #dcecff !important;
+    }
+
+    /* Scrollbars customizados */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #275276;
+      border-radius: 4px;
     }
   </style>
 </head>
 
 <body>
 
-  <div id="topHeaderBar">
-    <button id="btnOpenSideMenu"
-      style="width: 48px; height: 48px; background: #171e2e; border: 2px solid #0f172a; border-radius: 12px; box-shadow: 3px 3px 0px #0f172a; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 5px;">
-      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
-      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
-      <span style="width: 22px; height: 3px; background: #fff; border-radius: 2px;"></span>
-    </button>
+  <div class="race-glow"></div>
 
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <div class="topHeaderBadge">
-        <span style="font-size: 18px;">🪙</span>
-        <span id="playerCoinsText" style="font-weight: 900; color: #fff; font-size: 16px;">0</span>
-      </div>
-
-      <div class="topHeaderBadge">
-        <span style="font-size: 18px;">🏆</span>
-        <span id="playerTrophiesText" style="font-weight: 900; color: #fff; font-size: 16px;">0</span>
-      </div>
-
-      <div class="topHeaderBadge" style="padding: 6px 14px 6px 8px;">
-        <div
-          style="width: 32px; height: 32px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid #fff;">
-          🧢
-        </div>
-        <span id="playerHeaderNick" style="font-weight: 900; color: #fff; font-size: 15px;">Piloto</span>
-      </div>
-    </div>
-  </div>
-
+  <!-- MODALS INVISÍVEIS POR PADRÃO -->
   <div id="sideMenuOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
-  </div>
-
-  <div id="sideMenuDrawer"
-    style="position: fixed; top: 0; left: -320px; width: 300px; height: 100vh; background: #171e2e; border-right: 1px solid #334155; padding: 24px 20px; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; transition: left 0.3s ease; z-index: 900; box-shadow: 5px 0 25px rgba(0,0,0,0.5);">
-    <div>
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
-        <h2 style="color: #fff; font-size: 22px; font-weight: 900; letter-spacing: 1px; margin: 0;">MENU</h2>
-        <button id="btnCloseSideMenu"
-          style="background: #0f172a; border: 1px solid #334155; color: #fff; width: 32px; height: 32px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 10px;">
-        <button class="sideMenuBtn" id="menuBtnGarage">
-          <span>🏪</span> Loja / Garagem
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnTrackBuilder">
-          <span>🎨</span> Criador de Pistas
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnRankings">
-          <span>🏆</span> Rankings
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnHowToPlay">
-          <span>❓</span> Como jogar
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnOptions">
-          <span>⚙️</span> Opções
-        </button>
-
-        <button class="sideMenuBtn" id="menuBtnChangelog">
-          <span>📜</span> Notas da Atualização
-        </button>
-
-        <div
-          style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;"
-            id="menuBtnMusicToggle">
-            <div
-              style="color: #fff; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 12px;">
-              <span>🎵</span> Música
-            </div>
-            <span id="musicStatusText" style="color:#22c55e; font-size: 12px; font-weight: bold;">LIGADA</span>
-          </div>
-          <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
-            style="width: 100%; cursor: pointer; accent-color: #38bdf8;">
-        </div>
-
-        <!-- <button class="sideMenuBtn" id="menuBtnSfxToggle">
-          <span>🔊</span> SFX (Efeitos): <span id="sfxStatusText" style="color:#22c55e;">LIGADOS</span>
-        </button> -->
-      </div>
-    </div>
-
-    <div>
-      <div
-        style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px; background: #0f172a; padding: 10px; border-radius: 10px; border: 1px solid #334155;">
-        <div
-          style="width: 40px; height: 40px; background: #facc15; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid #fff;">
-          🧢
-        </div>
-        <div>
-          <div id="sideMenuNick" style="color: #fff; font-weight: bold; font-size: 15px;">Piloto</div>
-          <div style="color: #38bdf8; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">LENDA DAS PISTAS</div>
-        </div>
-      </div>
-
-      <button id="btnLogout"
-        style="background: #1e293b; border: 1px solid #334155; color: #f8fafc; padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; width: 100%; text-align: left;">
-        Sair da conta
-      </button>
-    </div>
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
   </div>
 
   <div id="rankingModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="lobbyCard"
-      style="width: 380px; height: 520px; align-items: stretch; justify-content: flex-start; position: relative;">
-      <button id="btnCloseRankingModal"
-        style="position: absolute; top: 16px; right: 16px; background: #0f172a; border: 1px solid #334155; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCardModal" style="height: 560px;">
+      <button id="btnCloseRankingModal" class="modal-close-btn">✕</button>
+      <h2 class="modal-title">🏆 RANKINGS GLOBAIS</h2>
 
-      <h2 style="color: #facc15; font-size: 18px; text-align: center; margin-bottom: 12px;">🏆 Rankings Globais</h2>
-
-      <div style="display: flex; gap: 8px; width: 100%; margin-bottom: 8px;">
-        <button id="tabLeaderboardTrophies" class="lobbyBtn"
-          style="flex: 1; background: #38bdf8; color: #0f172a; font-size: 12px; font-weight: bold; padding: 8px; border: none; border-radius: 8px; cursor: pointer;">
-          🏆 Troféus
-        </button>
-        <button id="tabLeaderboardTracks" class="lobbyBtn"
-          style="flex: 1; background: transparent; color: #94a3b8; font-size: 12px; font-weight: bold; padding: 8px; border: 1px solid #334155; border-radius: 8px; cursor: pointer;">
-          ⏱️ Recordes
-        </button>
+      <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 4px; position: relative; z-index: 5;">
+        <button id="tabLeaderboardTrophies" class="btn primary"
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px;">🏆 Troféus</button>
+        <button id="tabLeaderboardTracks" class="btn" style="flex: 1; padding: 0; min-height: 42px; font-size: 13px;">⏱️
+          Recordes</button>
       </div>
 
-      <div id="trackRecordSelectorBox" style="display: none; width: 100%; margin-bottom: 8px;">
+      <div id="trackRecordSelectorBox" style="display: none; width: 100%; position: relative; z-index: 4;">
         <select id="leaderboardTrackSelect" style="display:none;">
-          <option value="default">🏁 Circuito Oficial (Padrão)</option>
+          <option value="default">🏁 Circuito Oficial</option>
         </select>
-
         <div class="customDropdownWrapper" id="customRankDropdown">
-          <div class="customDropdownTrigger" id="rankDropdownTrigger">
-            <span id="rankDropdownSelectedLabel">🏁 Circuito Oficial (Padrão)</span>
-            <span class="customDropdownArrow">▼</span>
+          <div class="customDropdownTrigger" id="rankDropdownTrigger" style="min-height: 42px;">
+            <span id="rankDropdownSelectedLabel">🏁 Circuito Oficial</span><span>▼</span>
           </div>
           <div class="customDropdownMenu" id="rankDropdownMenu">
-            <div class="customDropdownOption selected" data-value="default">🏁 Circuito Oficial (Padrão)</div>
+            <div class="customDropdownOption selected" data-value="default">🏁 Circuito Oficial</div>
           </div>
         </div>
       </div>
 
       <div
-        style="display: flex; justify-content: space-between; padding: 8px 12px; background: #0f172a; border-radius: 8px 8px 0 0; font-size: 12px; color: #94a3b8; font-weight: bold; border: 1px solid #334155; border-bottom: none;">
-        <span>POS. JOGADOR</span>
-        <span id="leaderboardColumnTitle">TROFÉUS</span>
+        style="display: flex; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--muted); font-weight: 900; letter-spacing: 1px; margin-top: 8px;">
+        <span>POS. JOGADOR</span><span id="leaderboardColumnTitle">TROFÉUS</span>
       </div>
 
       <div id="leaderboardList"
-        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; background: #0f172a; border-radius: 0 0 8px 8px; border: 1px solid #334155; padding: 8px;">
-        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando ranking...</div>
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; position: relative; z-index: 2;">
+        <div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Carregando ranking...
+        </div>
       </div>
     </div>
   </div>
 
   <div id="authModal"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15, 23, 42, 0.95); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div
-      style="background: #1e293b; padding: 32px; border-radius: 16px; border: 1px solid #334155; width: 320px; color: #fff; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-      <h2 id="authTitle" style="margin-bottom: 20px; color: #facc15;">Criar Conta</h2>
-
-      <input type="text" id="authNick" placeholder="Seu Nickname"
-        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
-      <input type="email" id="authEmail" placeholder="Seu E-mail"
-        style="width: 100%; padding: 12px; margin-bottom: 12px; box-sizing: border-box;" />
-      <input type="password" id="authPassword" placeholder="Sua Senha"
-        style="width: 100%; padding: 12px; margin-bottom: 20px; box-sizing: border-box;" />
-
-      <button id="btnAuthSubmit"
-        style="width: 100%; padding: 14px; background: #22c55e; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 12px;">CADASTRAR</button>
-
-      <div style="font-size: 14px; color: #94a3b8; cursor: pointer;" id="toggleAuthMode">Já tem uma conta? Entrar</div>
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.9); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
+      <h2 id="authTitle" class="modal-title" style="font-size: 24px; margin-bottom: 20px;">CRIAR CONTA</h2>
+      <input type="text" id="authNick" class="game-input" placeholder="Seu Nickname" style="margin-bottom: 12px;" />
+      <input type="email" id="authEmail" class="game-input" placeholder="Seu E-mail" style="margin-bottom: 12px;" />
+      <input type="password" id="authPassword" class="game-input" placeholder="Sua Senha"
+        style="margin-bottom: 20px;" />
+      <button id="btnAuthSubmit" class="btn primary" style="width: 100%; margin-bottom: 16px;">CADASTRAR</button>
+      <div style="font-size: 13px; color: var(--muted); cursor: pointer; font-weight: 800; transition: color 0.2s;"
+        onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--muted)'" id="toggleAuthMode">Já
+        tem uma conta? Entrar</div>
     </div>
   </div>
 
-  <!-- MODAL DE CHANGELOG -->
   <div id="changelogModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="lobbyCard"
-      style="width: 380px; max-height: 520px; align-items: stretch; justify-content: flex-start; position: relative; overflow: hidden; display: flex; flex-direction: column;">
-
-      <button id="btnCloseChangelog"
-        style="position: absolute; top: 16px; right: 16px; background: #0f172a; border: 1px solid #334155; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
-
-      <h2 style="color: #38bdf8; font-size: 18px; text-align: center; margin-bottom: 16px;">📜 Novidades</h2>
-
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCardModal" style="height: 560px;">
+      <button id="btnCloseChangelog" class="modal-close-btn">✕</button>
+      <h2 class="modal-title">📜 NOTAS DA ATUALIZAÇÃO</h2>
       <div id="changelogContent"
-        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
-        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando notas...</div>
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 4px; position: relative; z-index: 2; margin-top: 10px;">
+        <div
+          style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px; background: transparent !important; border: none !important;">
+          Carregando notas...</div>
       </div>
     </div>
   </div>
+  <!-- FIM DOS MODALS -->
 
-  <div id="lobbyMainContainer">
-    <img src="img/logo.png" alt="Pokémon Kart Logo" class="gameLogo">
+  <div class="shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand-mini">
 
-    <div class="lobbyCard">
-      <div id="kartSelector" style="display: flex; align-items: center; gap: 10px;">
-        <button id="btnPrevKart" class="selectNavBtn">◀</button>
-        <div style="text-align: center;">
-          <div id="previewContainer"
-            style="width: 200px; height: 120px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; position: relative; overflow: hidden;">
-            <div id="previewSpinner"
-              style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #94a3b8; font-size: 12px; pointer-events: none; font-weight: bold;">
-              Carregando...</div>
-          </div>
-          <div id="kartName" style="margin-top: 4px; font-weight: bold; color: #38bdf8; font-size: 13px;">Jolteon Kart
-          </div>
+        <strong>POKE<span>KART</span></strong>
+      </div>
+
+      <nav class="nav">
+        <button id="menuBtnGarage"><span class="icon">🛍️</span>Loja / Garagem</button>
+        <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
+        <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
+        <button id="menuBtnHowToPlay"><span class="icon">❓</span>Como jogar</button>
+        <button id="menuBtnOptions"><span class="icon">⚙️</span>Opções</button>
+        <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da Atualização</button>
+      </nav>
+
+      <div class="music">
+        <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
+        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+      </div>
+
+      <div class="account">
+        <div class="profile">
+          <div class="avatar">🏁</div>
+          <div><strong id="sideMenuNick">Piloto</strong><small>LENDA DAS PISTAS</small></div>
         </div>
-        <button id="btnNextKart" class="selectNavBtn">▶</button>
+        <button id="btnLogout" class="logout">↪ &nbsp; Sair da conta</button>
       </div>
+    </aside>
 
-      <div style="display: flex; gap: 8px; width: 100%;">
-        <button id="btnHost" class="lobbyBtn" style="background: #38bdf8;">Criar Sala</button>
-        <button id="btnJoin" class="lobbyBtn lobbyBtnGhost">Entrar em Sala</button>
-      </div>
-
-      <div id="joinBox" style="display: none; gap: 5px; width: 100%;">
-        <input id="joinCode" placeholder="CÓDIGO" maxlength="5" style="text-transform: uppercase; width: 60%;">
-        <button id="btnConnect" class="lobbyBtn" style="width: 40%;">Conectar</button>
-      </div>
-
-      <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: bold; font-size: 15px;"></div>
-      <div id="lobbyStatus" style="color: #94a3b8; font-size: 12px; min-height: 16px;"></div>
-
-      <div style="width: 100%; display: flex; flex-direction: column; gap: 6px;">
-        <label style="font-size: 11px; color: #94a3b8; font-weight: 800; letter-spacing: 0.5px;">ESCOLHA A
-          PISTA:</label>
-
-        <select id="trackSelectDropdown" style="display:none;">
-          <option value="">🏁 Circuito Oficial (Padrão)</option>
-        </select>
-
-        <div class="customDropdownWrapper" id="customTrackDropdown">
-          <div class="customDropdownTrigger" id="dropdownTrigger">
-            <span id="dropdownSelectedLabel">🏁 Circuito Oficial (Padrão)</span>
-            <span class="customDropdownArrow">▼</span>
-          </div>
-          <div class="customDropdownMenu" id="dropdownMenu">
-            <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial (Padrão)</div>
-          </div>
+    <main>
+      <div class="topbar">
+        <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
+        <div class="stat"><span>🏆</span><b id="playerTrophiesText">0</b></div>
+        <div class="stat rank">
+          <div class="avatar" style="width:28px;height:28px;font-size:12px;border-width:2px;">🏁</div>
+          <strong id="playerHeaderNick">Piloto</strong>
         </div>
       </div>
 
-      <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
-        <button id="btnStartRace" type="button" class="lobbyBtn" style="display:none;">Iniciar Corrida 🏁</button>
+      <section class="stage">
+        <div class="content">
+          <img class="logo" src="img/logo.png" alt="PokeKart"
+            onerror="this.style.display='none';document.querySelector('.fallback-logo').style.display='block'">
+          <div class="fallback-logo" style="display:none"><i>POKE</i><em>KART</em></div>
 
-        <select id="aiDifficulty"
-          style="background: #0f172a; border: 1px solid #334155; color: #38bdf8; font-weight: bold; border-radius: 8px; padding: 10px; width: 45%;">
-          <option value="easy">Bots: Fácil</option>
-          <option value="normal" selected>Bots: Normal</option>
-          <option value="hard">Bots: Difícil</option>
-        </select>
+          <div class="card">
+            <div class="kart-zone">
+              <button id="btnPrevKart" class="arrow left">‹</button>
 
-        <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="flex: 1;">Jogar Sozinho</button>
-      </div>
-    </div>
+              <div id="previewContainer">
+                <div id="previewSpinner"
+                  style="display: none; position: absolute; color: #5bd5ff; font-size: 12px; font-weight: bold; z-index: 3;">
+                  Carregando...</div>
+              </div>
+
+              <button id="btnNextKart" class="arrow right">›</button>
+            </div>
+
+            <div class="kart-name" id="kartName">⚡ Jolteon Kart</div>
+
+            <div class="actions">
+              <button id="btnHost" class="btn primary">🏎️ &nbsp; Criar Sala</button>
+              <button id="btnJoin" class="btn">🚪 &nbsp; Entrar em Sala</button>
+            </div>
+
+            <!-- Caixa de entrada (escondida por padrão) -->
+            <div id="joinBox" style="display: none; gap: 10px; margin-top: 12px; grid-template-columns: 2fr 1fr;">
+              <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
+                style="text-transform:uppercase;" />
+              <button id="btnConnect" class="btn primary">Conectar</button>
+            </div>
+
+            <!-- Status do Lobby / Multiplayer -->
+            <div style="margin-top: 12px; text-align: center;">
+              <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: 900; font-size: 16px;"></div>
+              <div id="lobbyStatus" style="color: #91a7be; font-size: 13px; font-weight: bold; min-height: 18px;"></div>
+            </div>
+
+            <div class="section-label" style="margin-top: 5px;">ESCOLHA A PISTA</div>
+
+            <select id="trackSelectDropdown" style="display:none;">
+              <option value="">🏁 Circuito Oficial</option>
+            </select>
+            <div class="customDropdownWrapper" id="customTrackDropdown">
+              <div class="customDropdownTrigger" id="dropdownTrigger">
+                <span id="dropdownSelectedLabel">🏁 &nbsp; <span class="yellow">Circuito Oficial
+                    (Padrão)</span></span><span>▾</span>
+              </div>
+              <div class="customDropdownMenu" id="dropdownMenu">
+                <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial (Padrão)</div>
+              </div>
+            </div>
+
+            <div class="bottom-row">
+              <select id="aiDifficulty" class="select">
+                <option value="easy">🤖 Bots: Fácil</option>
+                <option value="normal" selected>🤖 Bots: Normal</option>
+                <option value="hard">🤖 Bots: Difícil</option>
+              </select>
+
+              <button id="btnPlaySolo" class="btn primary play">▶ &nbsp; Jogar Sozinho</button>
+              <button id="btnStartRace" type="button" class="btn primary play" style="display:none;">🏁 Iniciar
+                Sala</button>
+            </div>
+
+            <div class="hint">Escolha seu kart, pista e modo de jogo para começar a corrida.</div>
+          </div>
+        </div>
+      </section>
+    </main>
   </div>
 
+  <!-- DEPENDÊNCIAS DO JOGO -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -591,22 +938,18 @@
   <script src="assets.js"></script>
   <script src="music.js"></script>
 
+  <!-- LÓGICA CENTRAL DO MENU -->
   <script>
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Configura a rotação inicial no lobby via API nativa (pode exigir interação prévia do usuário na tela)
     async function enableMobileExperience() {
       if (!isMobile) return;
       try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        }
+        if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
         if (screen.orientation && screen.orientation.lock) {
           await screen.orientation.lock('landscape').catch(e => console.warn("Lock de rotação ignorado:", e));
         }
-      } catch (err) {
-        console.warn("Erro ao tentar configurar a tela mobile:", err);
-      }
+      } catch (err) { }
     }
 
     const gltfLoader = new THREE.GLTFLoader();
@@ -616,43 +959,41 @@
       gltfLoader.setDRACOLoader(dracoLoader);
     }
 
-    function getKartUrl(filename) {
-      return `./models/${filename}`;
-    }
+    function getKartUrl(filename) { return `./models/${filename}`; }
 
     const KART_DATABASE = [
-      { id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb') },
-      { id: 'zoroark', name: 'Zoroark Kart', modelUrl: getKartUrl('zoroark.glb') },
-      { id: 'togetic', name: 'Togetic Kart', modelUrl: getKartUrl('togetic.glb') },
-      { id: 'charizard', name: 'Charizard Kart', modelUrl: getKartUrl('charizard.glb') },
-      { id: 'flygon', name: 'Flygon Kart', modelUrl: getKartUrl('flygon.glb') },
-      { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb') },
-      { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb') },
-      { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') },
-      { id: 'golem', name: 'Golem Kart', modelUrl: getKartUrl('golem.glb') },
-      { id: 'jinx', name: 'Jynx Kart', modelUrl: getKartUrl('jinx.glb') },
-      { id: 'sudowoodo', name: 'Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb') },
-      { id: 'sylveon', name: 'Sylveon Kart', modelUrl: getKartUrl('sylveon.glb') },
-      { id: 'umbreon', name: 'Umbreon Kart', modelUrl: getKartUrl('umbreon.glb') },
-      { id: 'pikachu', name: 'Pikachu Kart', modelUrl: getKartUrl('pikachu.glb') },
-      { id: 'gliscor', name: 'Gliscor Kart', modelUrl: getKartUrl('gliscor.glb') },
-      { id: 'mewtwo', name: 'Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb') },
-      { id: 'zekrom', name: 'Zekrom Kart', modelUrl: getKartUrl('zekrom.glb') },
-      { id: 'swampert', name: 'Swampert Kart', modelUrl: getKartUrl('swampert.glb') },
-      { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb') },
-      { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb') },
-      { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb') },
-      { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb') },
-      { id: 'ninetales', name: 'Ninetales Kart', modelUrl: getKartUrl('ninetales.glb') },
-      { id: 'arcanine', name: 'Arcanine Kart', modelUrl: getKartUrl('arcanine.glb') },
-      { id: 'lucario', name: 'Lucario Kart', modelUrl: getKartUrl('lucario.glb') },
-      { id: 'dialga', name: 'Dialga Kart', modelUrl: getKartUrl('dialga.glb') },
-      { id: 'zapdos', name: 'Zapdos Kart', modelUrl: getKartUrl('zapdos.glb') },
-      { id: 'luxray', name: 'Luxray Kart', modelUrl: getKartUrl('luxray.glb') },
-      { id: 'staraptor', name: 'Staraptor Kart', modelUrl: getKartUrl('staraptor.glb') },
-      { id: 'dragonite', name: 'Dragonite Kart', modelUrl: getKartUrl('dragonite.glb') },
-      { id: 'tangela', name: 'Tangela Kart', modelUrl: getKartUrl('tangela.glb') },
-      { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb') }
+      { id: 'jolteon', name: '⚡ Jolteon Kart', modelUrl: getKartUrl('jolteon.glb') },
+      { id: 'zoroark', name: '🦊 Zoroark Kart', modelUrl: getKartUrl('zoroark.glb') },
+      { id: 'togetic', name: '🥚 Togetic Kart', modelUrl: getKartUrl('togetic.glb') },
+      { id: 'charizard', name: '🔥 Charizard Kart', modelUrl: getKartUrl('charizard.glb') },
+      { id: 'flygon', name: '🐉 Flygon Kart', modelUrl: getKartUrl('flygon.glb') },
+      { id: 'gengar', name: '👻 Gengar Kart', modelUrl: getKartUrl('gengar.glb') },
+      { id: 'oshawott', name: '🦦 Oshawott Kart', modelUrl: getKartUrl('oshawott.glb') },
+      { id: 'snorlax', name: '💤 Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') },
+      { id: 'golem', name: '🪨 Golem Kart', modelUrl: getKartUrl('golem.glb') },
+      { id: 'jinx', name: '💋 Jynx Kart', modelUrl: getKartUrl('jinx.glb') },
+      { id: 'sudowoodo', name: '🌳 Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb') },
+      { id: 'sylveon', name: '🎀 Sylveon Kart', modelUrl: getKartUrl('sylveon.glb') },
+      { id: 'umbreon', name: '🌙 Umbreon Kart', modelUrl: getKartUrl('umbreon.glb') },
+      { id: 'pikachu', name: '⚡ Pikachu Kart', modelUrl: getKartUrl('pikachu.glb') },
+      { id: 'gliscor', name: '🦇 Gliscor Kart', modelUrl: getKartUrl('gliscor.glb') },
+      { id: 'mewtwo', name: '🧬 Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb') },
+      { id: 'zekrom', name: '🌩️ Zekrom Kart', modelUrl: getKartUrl('zekrom.glb') },
+      { id: 'swampert', name: '🐸 Swampert Kart', modelUrl: getKartUrl('swampert.glb') },
+      { id: 'rayquaza', name: '🌪️ Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb') },
+      { id: 'espeon', name: '🔮 Espeon Kart', modelUrl: getKartUrl('espeon.glb') },
+      { id: 'tatsugiri', name: '🍣 Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb') },
+      { id: 'scyther', name: '⚔️ Scyther Kart', modelUrl: getKartUrl('scyther.glb') },
+      { id: 'ninetales', name: '🦊 Ninetales Kart', modelUrl: getKartUrl('ninetales.glb') },
+      { id: 'arcanine', name: '🐕 Arcanine Kart', modelUrl: getKartUrl('arcanine.glb') },
+      { id: 'lucario', name: '🐾 Lucario Kart', modelUrl: getKartUrl('lucario.glb') },
+      { id: 'dialga', name: '⏳ Dialga Kart', modelUrl: getKartUrl('dialga.glb') },
+      { id: 'zapdos', name: '⚡ Zapdos Kart', modelUrl: getKartUrl('zapdos.glb') },
+      { id: 'luxray', name: '🦁 Luxray Kart', modelUrl: getKartUrl('luxray.glb') },
+      { id: 'staraptor', name: '🦅 Staraptor Kart', modelUrl: getKartUrl('staraptor.glb') },
+      { id: 'dragonite', name: '🐉 Dragonite Kart', modelUrl: getKartUrl('dragonite.glb') },
+      { id: 'tangela', name: '🌿 Tangela Kart', modelUrl: getKartUrl('tangela.glb') },
+      { id: 'sneasel', name: '🔪 Sneasel Kart', modelUrl: getKartUrl('sneasel.glb') }
     ];
 
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
@@ -664,10 +1005,8 @@
 
     function initPreview() {
       const container = document.getElementById('previewContainer');
-
       previewScene = new THREE.Scene();
       previewCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-
       previewCamera.position.set(0, 1.1, 2.8);
       previewCamera.lookAt(0, 0.3, 0);
 
@@ -688,6 +1027,12 @@
         previewRenderer.render(previewScene, previewCamera);
       }
       animate();
+
+      window.addEventListener('resize', () => {
+        previewCamera.aspect = container.clientWidth / container.clientHeight;
+        previewCamera.updateProjectionMatrix();
+        previewRenderer.setSize(container.clientWidth, container.clientHeight);
+      });
     }
 
     async function updatePreview() {
@@ -696,7 +1041,6 @@
       const spinnerEl = document.getElementById('previewSpinner');
 
       sessionStorage.setItem('pkart_selected_kart', item.id);
-
       const requestId = ++previewRequestId;
 
       if (currentModel) {
@@ -715,8 +1059,7 @@
       };
 
       if (window.KART_ASSETS && window.KART_ASSETS[item.id]) {
-        displayModel(window.KART_ASSETS[item.id]);
-        return;
+        displayModel(window.KART_ASSETS[item.id]); return;
       }
 
       if (spinnerEl) spinnerEl.style.display = 'block';
@@ -736,23 +1079,17 @@
             return;
           }
         }
-      } catch (err) {
-        console.warn('[Lobby] Erro ao ler CacheStorage:', err);
-      }
+      } catch (err) { }
 
       try {
         const response = await fetch(item.modelUrl);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
         if ('caches' in window) {
           try {
             const cache = await caches.open(targetCacheName);
             cache.put(item.modelUrl, response.clone());
-          } catch (e) {
-            console.warn('[Lobby] Falha ao gravar no cache:', e);
-          }
+          } catch (e) { }
         }
-
         const arrayBuffer = await response.arrayBuffer();
         gltfLoader.parse(arrayBuffer, './models/', (gltf) => {
           if (!window.KART_ASSETS) window.KART_ASSETS = {};
@@ -760,49 +1097,33 @@
           displayModel(gltf.scene);
         });
       } catch (networkErr) {
-        console.error('[Lobby] Erro ao carregar modelo:', networkErr);
         if (spinnerEl) spinnerEl.style.display = 'none';
       }
     }
 
-    // Sistema Dinâmico de Rotação Diária
     let dailyFreeKarts = [];
-
     function updateDailyFreeKarts() {
       const todayDate = new Date().toDateString();
       const savedDate = localStorage.getItem('pkart_free_date');
 
       if (savedDate === todayDate) {
-        // Se a data bater, puxa os karts que já foram sorteados para hoje
         dailyFreeKarts = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
       } else {
-        // Cria uma lista com todos os IDs, removendo o Jolteon que é o kart padrão permanente
         const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
-
-        // Sorteia aleatoriamente (Algoritmo de Fisher-Yates)
         for (let i = availableKarts.length - 1; i > 0; i--) {
           const j = Math.floor(Math.random() * (i + 1));
           [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
         }
-
-        // Separa 4 karts aleatórios
         dailyFreeKarts = availableKarts.slice(0, 4);
-
-        // Salva a data e o sorteio para manter fixo durante as próximas 24 horas
         localStorage.setItem('pkart_free_date', todayDate);
         localStorage.setItem('pkart_free_karts', JSON.stringify(dailyFreeKarts));
       }
     }
-
-    // Executa o sorteio assim que o código carrega
     updateDailyFreeKarts();
 
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
-
       let unlockedKarts = ['jolteon'];
-
-      // Adiciona os karts sorteados aleatoriamente hoje
       unlockedKarts = [...unlockedKarts, ...dailyFreeKarts];
 
       if (profile && profile.unlocked_karts) {
@@ -810,15 +1131,12 @@
       }
 
       const isUnlocked = unlockedKarts.includes(kartId);
-
-      // Verifica se o kart atual está liberado exclusivamente pelo sorteio gratuito
       const isFreeRotation = dailyFreeKarts.includes(kartId) && !(profile && profile.unlocked_karts && profile.unlocked_karts.includes(kartId));
 
       const btnStartRace = document.getElementById('btnStartRace');
       const btnPlaySolo = document.getElementById('btnPlaySolo');
       const btnHost = document.getElementById('btnHost');
       const kartNameEl = document.getElementById('kartName');
-
       const currentItem = KART_DATABASE[selectedIndex];
 
       if (!isUnlocked) {
@@ -843,7 +1161,6 @@
       selectedIndex = (selectedIndex - 1 + KART_DATABASE.length) % KART_DATABASE.length;
       updatePreview();
     };
-
     document.getElementById('btnNextKart').onclick = () => {
       selectedIndex = (selectedIndex + 1) % KART_DATABASE.length;
       updatePreview();
@@ -856,155 +1173,97 @@
       const selectedLabel = document.getElementById(labelId);
 
       if (!trigger || !menu) return;
-
-      // Força o menu a ficar na frente de qualquer modal
       menu.style.zIndex = "9999";
 
       trigger.onclick = (e) => {
         e.stopPropagation();
-
-        // Fecha outros menus customizados que possam estar abertos
-        document.querySelectorAll('.customDropdownMenu').forEach(m => {
-          if (m.id !== menuId) m.classList.remove('show');
-        });
-        document.querySelectorAll('.customDropdownTrigger').forEach(t => {
-          if (t.id !== triggerId) t.classList.remove('open');
-        });
-
+        document.querySelectorAll('.customDropdownMenu').forEach(m => { if (m.id !== menuId) m.classList.remove('show'); });
+        document.querySelectorAll('.customDropdownTrigger').forEach(t => { if (t.id !== triggerId) t.classList.remove('open'); });
         trigger.classList.toggle('open');
         menu.classList.toggle('show');
       };
 
-      document.addEventListener('click', () => {
-        trigger.classList.remove('open');
-        menu.classList.remove('show');
-      });
+      document.addEventListener('click', () => { trigger.classList.remove('open'); menu.classList.remove('show'); });
 
       menu.onclick = (e) => {
         const option = e.target.closest('.customDropdownOption');
         if (!option) return;
-
         const val = option.getAttribute('data-value');
-        const label = option.textContent;
+        const label = option.innerHTML; // Puxa o HTML pra manter formatação da UI
 
-        selectedLabel.textContent = label;
+        selectedLabel.innerHTML = label;
         if (nativeSelect) {
           nativeSelect.value = val;
           nativeSelect.dispatchEvent(new Event('change'));
         }
-
         menu.querySelectorAll('.customDropdownOption').forEach(opt => opt.classList.remove('selected'));
         option.classList.add('selected');
-
-        if (typeof onChangeCallback === 'function') {
-          onChangeCallback(val);
-        }
+        if (typeof onChangeCallback === 'function') onChangeCallback(val);
       };
     }
 
     function setupCustomDropdowns() {
-      // Ativa o Dropdown do Lobby (Jogar)
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
-
-      // Ativa o Dropdown do Ranking (Recordes)
       bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel');
     }
 
-    let peer = null;
-    let roomCode = '';
-    let myAssignedSlot = 0;
+    let peer = null, roomCode = '', myAssignedSlot = 0;
     const guestConnections = new Map();
     let hostLobbyConn = null;
 
     function getNickname() {
       const nickHeader = document.getElementById('playerHeaderNick');
       const nick = nickHeader ? nickHeader.innerText.trim().toUpperCase() : 'JOGADOR';
-      sessionStorage.setItem('pkart_nickname', nick);
-      return nick;
+      sessionStorage.setItem('pkart_nickname', nick); return nick;
     }
 
-    const peerConfig = {
-      debug: 2,
-      config: {
-        iceServers: [
-          { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' }
-        ]
-      }
-    };
+    const peerConfig = { debug: 2, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } };
 
     function redirectToRace(room = '', slot = 0, trackId = '') {
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = typeof room === 'string' ? room.trim().toLowerCase() : '';
       const chosenTrack = trackId || (document.getElementById('trackSelectDropdown')?.value || '');
-
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}`;
-
-      if (cleanRoom !== '') {
-        target += `&room=${cleanRoom}`;
-      }
-
-      if (chosenTrack !== '') {
-        target += `&customTrack=${chosenTrack}`;
-      }
-
-      console.log('[REDIRECT] Redirecionando para:', target);
+      if (cleanRoom !== '') target += `&room=${cleanRoom}`;
+      if (chosenTrack !== '') target += `&customTrack=${chosenTrack}`;
       window.location.href = target;
     }
 
     document.getElementById('btnHost').onclick = () => {
       document.getElementById('lobbyStatus').textContent = 'Criando sala...';
       roomCode = Math.random().toString(36).substring(2, 7).toLowerCase();
-
       if (peer) peer.destroy();
       guestConnections.clear();
-
       peer = new Peer('pkart-lobby-' + roomCode, peerConfig);
 
       peer.on('open', (id) => {
-        console.log('[LOBBY HOST] Sala criada com ID:', id);
         document.getElementById('roomCodeDisplay').style.display = 'block';
         document.getElementById('roomCodeDisplay').textContent = 'CÓDIGO: ' + roomCode.toUpperCase();
         document.getElementById('btnStartRace').style.display = 'inline-block';
+        document.getElementById('btnPlaySolo').style.display = 'none';
         document.getElementById('lobbyStatus').textContent = 'Sala criada! Aguardando jogadores...';
       });
 
       peer.on('connection', (conn) => {
-        console.log('[LOBBY HOST] Conexão recebida de:', conn.peer);
-
         conn.on('open', () => {
           const assignedSlot = guestConnections.size + 1;
           guestConnections.set(conn.peer, conn);
-          console.log(`[LOBBY HOST] Registrado ${conn.peer} no Slot ${assignedSlot}`);
-
           conn.send({ t: 'assign_slot', slot: assignedSlot });
           document.getElementById('lobbyStatus').textContent = `${guestConnections.size + 1}/4 Jogadores na sala!`;
         });
-
         conn.on('close', () => {
-          console.log('[LOBBY HOST] Conexão fechada com:', conn.peer);
           guestConnections.delete(conn.peer);
           document.getElementById('lobbyStatus').textContent = `${guestConnections.size + 1}/4 Jogadores na sala!`;
         });
       });
-
-      peer.on('error', (err) => {
-        console.error('[LOBBY HOST ERROR]', err);
-      });
     };
 
-    // ------------------------------------------------------------
-    // SISTEMA DE ÁUDIO DO LOBBY E PREFERÊNCIAS (INTEGRADO AO MUSIC.JS)
-    // ------------------------------------------------------------
+    // --- ÁUDIO INTEGRADO ---
     let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
     let uiVolume = parseFloat(localStorage.getItem('pkart_music_vol'));
     if (isNaN(uiVolume)) uiVolume = 0.4;
-
-    // Aplica o volume salvo na música global
-    if (window.globalMusic) {
-      window.globalMusic.volume = uiVolume;
-    }
+    if (window.globalMusic) window.globalMusic.volume = uiVolume;
 
     const musicStatusText = document.getElementById('musicStatusText');
     const musicVolumeSlider = document.getElementById('musicVolumeSlider');
@@ -1014,21 +1273,17 @@
     function updateSliderFill() {
       if (!musicVolumeSlider) return;
       const val = (musicVolumeSlider.value / 1) * 100;
-      musicVolumeSlider.style.background = 'linear-gradient(to right, #38bdf8 ' + val + '%, #1e293b ' + val + '%)';
+      musicVolumeSlider.style.background = `linear-gradient(to right, var(--cyan) ${val}%, #213a54 ${val}%)`;
     }
 
     function updateAudioUI() {
       if (musicStatusText) {
         musicStatusText.innerText = isMusicEnabled ? 'LIGADA' : 'DESLIGADA';
-        musicStatusText.style.color = isMusicEnabled ? '#22c55e' : '#ef4444';
+        musicStatusText.style.color = isMusicEnabled ? 'var(--cyan)' : 'var(--danger)';
       }
-
       if (window.globalMusic) {
-        if (isMusicEnabled) {
-          window.globalMusic.play().catch(e => console.warn('Aguardando interação para áudio.'));
-        } else {
-          window.globalMusic.pause();
-        }
+        if (isMusicEnabled) window.globalMusic.play().catch(() => { });
+        else window.globalMusic.pause();
       }
     }
 
@@ -1037,107 +1292,68 @@
         const vol = parseFloat(e.target.value);
         if (window.globalMusic) window.globalMusic.volume = vol;
         localStorage.setItem('pkart_music_vol', vol);
-
         updateSliderFill();
-
-        if (vol === 0 && isMusicEnabled) {
-          isMusicEnabled = false;
-          localStorage.setItem('pkart_music', false);
-          updateAudioUI();
-        } else if (vol > 0 && !isMusicEnabled) {
-          isMusicEnabled = true;
-          localStorage.setItem('pkart_music', true);
-          updateAudioUI();
-        }
+        if (vol === 0 && isMusicEnabled) { isMusicEnabled = false; localStorage.setItem('pkart_music', false); updateAudioUI(); }
+        else if (vol > 0 && !isMusicEnabled) { isMusicEnabled = true; localStorage.setItem('pkart_music', true); updateAudioUI(); }
       });
     }
 
-    const btnMusicToggle = document.getElementById('menuBtnMusicToggle');
-    if (btnMusicToggle) {
-      btnMusicToggle.onclick = () => {
+    if (document.getElementById('menuBtnMusicToggle')) {
+      document.getElementById('menuBtnMusicToggle').onclick = () => {
         isMusicEnabled = !isMusicEnabled;
         localStorage.setItem('pkart_music', isMusicEnabled);
-
         if (window.globalMusic) {
-          if (isMusicEnabled && window.globalMusic.volume === 0) {
-            window.globalMusic.volume = 0.4;
-            if (musicVolumeSlider) musicVolumeSlider.value = 0.4;
-            localStorage.setItem('pkart_music_vol', 0.4);
-          } else if (!isMusicEnabled) {
-            if (musicVolumeSlider) musicVolumeSlider.value = 0;
-          } else {
-            if (musicVolumeSlider) musicVolumeSlider.value = window.globalMusic.volume;
-          }
+          if (isMusicEnabled && window.globalMusic.volume === 0) { window.globalMusic.volume = 0.4; if (musicVolumeSlider) musicVolumeSlider.value = 0.4; localStorage.setItem('pkart_music_vol', 0.4); }
+          else if (!isMusicEnabled) { if (musicVolumeSlider) musicVolumeSlider.value = 0; }
+          else { if (musicVolumeSlider) musicVolumeSlider.value = window.globalMusic.volume; }
         }
-
-        updateSliderFill();
-        updateAudioUI();
+        updateSliderFill(); updateAudioUI();
       };
     }
 
-    updateAudioUI();
-    updateSliderFill();
+    updateAudioUI(); updateSliderFill();
 
-    // ------------------------------------------------------------
-    // SISTEMA DE CHANGELOG (NOTAS DA ATUALIZAÇÃO)
-    // ------------------------------------------------------------
+    // --- CHANGELOG MODAL ---
     const changelogModal = document.getElementById('changelogModalOverlay');
     const btnOpenChangelog = document.getElementById('menuBtnChangelog');
     const btnCloseChangelog = document.getElementById('btnCloseChangelog');
 
     if (btnOpenChangelog && btnCloseChangelog) {
-      btnOpenChangelog.addEventListener('click', () => {
-        changelogModal.style.display = 'flex';
-        loadChangelog(); // Puxa os dados apenas quando o jogador abre a tela
-      });
-
-      btnCloseChangelog.addEventListener('click', () => {
-        changelogModal.style.display = 'none';
-      });
+      btnOpenChangelog.addEventListener('click', () => { changelogModal.style.display = 'flex'; loadChangelog(); });
+      btnCloseChangelog.addEventListener('click', () => { changelogModal.style.display = 'none'; });
     }
 
     async function loadChangelog() {
       const contentDiv = document.getElementById('changelogContent');
       try {
-        // Tenta ler o arquivo gerado pelo seu script Node
         const response = await fetch('./changelog.json');
         if (!response.ok) throw new Error('Arquivo não encontrado');
-
         const data = await response.json();
-
-        // Monta os bloquinhos de texto para cada versão
         contentDiv.innerHTML = data.map((entry, index) => {
           const isLatest = index === 0;
           const badge = isLatest ? `<span style="background: #22c55e; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px;">NOVO</span>` : '';
-
           let changesHTML = entry.changes.map(c => `<li style="margin-bottom: 6px;">• ${c}</li>`).join('');
-
           return `
             <div style="background: #0f172a; border: 1px solid ${isLatest ? '#38bdf8' : '#334155'}; border-radius: 8px; padding: 12px;">
               <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
                 <span style="color: ${isLatest ? '#facc15' : '#cbd5e1'}; font-weight: bold; font-size: 15px;">v${entry.version} ${badge}</span>
                 <span style="color: #64748b; font-size: 11px;">${entry.date}</span>
               </div>
-              <ul style="list-style: none; color: #94a3b8; font-size: 13px; margin: 0; padding: 0;">
-                ${changesHTML}
-              </ul>
+              <ul style="list-style: none; color: #94a3b8; font-size: 13px; margin: 0; padding: 0;">${changesHTML}</ul>
             </div>
           `;
         }).join('');
-
       } catch (error) {
-        contentDiv.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 13px; padding-top: 20px;">Nenhuma atualização registrada ainda.</div>`;
+        contentDiv.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 13px; padding-top: 20px;">Nenhuma atualização registrada.</div>`;
       }
     }
 
-    document.getElementById('btnJoin').onclick = () => {
-      document.getElementById('joinBox').style.display = 'flex';
-    };
+    // --- MULTIPLAYER GUEST ---
+    document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
 
     document.getElementById('btnConnect').onclick = () => {
       const code = document.getElementById('joinCode').value.trim().toLowerCase();
       if (!code) return;
-
       document.getElementById('lobbyStatus').textContent = 'Conectando ao Host...';
       if (peer) peer.destroy();
       peer = new Peer(peerConfig);
@@ -1145,20 +1361,12 @@
       peer.on('open', (myId) => {
         const targetHostId = 'pkart-lobby-' + code;
         hostLobbyConn = peer.connect(targetHostId, { reliable: true });
-
         hostLobbyConn.on('open', () => {
-          console.log('[LOBBY GUEST] Conectado ao Host!');
           document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o Host iniciar...';
         });
-
         hostLobbyConn.on('data', (data) => {
-          console.log('[LOBBY GUEST] Recebeu:', data);
-          if (data.t === 'assign_slot') {
-            myAssignedSlot = data.slot;
-            console.log('[LOBBY GUEST] Slot definido:', myAssignedSlot);
-          }
+          if (data.t === 'assign_slot') myAssignedSlot = data.slot;
           if (data.t === 'start') {
-            console.log('[LOBBY GUEST] AVISO DE START RECEBIDO!');
             document.getElementById('lobbyStatus').textContent = 'Iniciando corrida...';
             redirectToRace(code, myAssignedSlot, data.trackId || '');
           }
@@ -1168,31 +1376,14 @@
 
     document.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'btnStartRace') {
-        e.preventDefault();
-
-        enableMobileExperience(); // Ativa contexto mobile
-
+        e.preventDefault(); enableMobileExperience();
         const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
-        console.log(`[LOBBY HOST] Botão clicado! Enviando start para ${guestConnections.size} convidados...`);
-
         document.getElementById('lobbyStatus').textContent = 'Enviando sinal de início...';
-
         for (const [peerId, conn] of guestConnections.entries()) {
-          if (conn && conn.open) {
-            console.log('[LOBBY HOST] Disparando para:', peerId);
-            conn.send({ t: 'start', trackId: chosenTrack });
-          }
+          if (conn && conn.open) conn.send({ t: 'start', trackId: chosenTrack });
         }
-
-        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({
-          t: 'start',
-          trackId: chosenTrack,
-          time: Date.now()
-        }));
-
-        setTimeout(() => {
-          redirectToRace(roomCode, 0, chosenTrack);
-        }, 1200);
+        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, time: Date.now() }));
+        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack); }, 1200);
       }
     });
 
@@ -1200,7 +1391,6 @@
       if (e.key && e.key.startsWith('pkart_start_signal_') && myAssignedSlot > 0) {
         const data = JSON.parse(e.newValue || '{}');
         if (data.t === 'start') {
-          console.log('[LOBBY GUEST] Start detectado via Storage Fallback!');
           const roomFromKey = e.key.replace('pkart_start_signal_', '');
           redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '');
         }
@@ -1210,13 +1400,6 @@
     document.getElementById('btnPlaySolo').onclick = () => {
       enableMobileExperience();
       const diff = document.getElementById('aiDifficulty').value;
-      const targetUrl = `&ai=${diff}`;
-
-      // Salva o estado e aciona o redirecionamento com a dificuldade na URL
-      redirectToRace('', 0);
-
-      // O redirectToRace não suporta o parâmetro AI nativamente, 
-      // então reescrevemos o click para forçar a URL correta:
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
@@ -1225,73 +1408,43 @@
       window.location.href = target;
     };
 
-    // Função para buscar pistas customizadas aprovadas no banco de dados
-    // Função para buscar pistas customizadas aprovadas no banco de dados
     async function fetchCustomTracks() {
       if (typeof supabaseClient === 'undefined') return;
-
       try {
-        const { data: tracks, error } = await supabaseClient
-          .from('custom_tracks')
-          .select('id, name');
+        const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name');
+        if (error || !tracks) return;
 
-        if (error || !tracks) {
-          console.warn('[Lobby] Nenhuma pista customizada encontrada ou erro:', error);
-          return;
-        }
-
-        // Elementos do Lobby Principal
         const nativeSelect = document.getElementById('trackSelectDropdown');
         const customMenu = document.getElementById('dropdownMenu');
-
-        // Elementos do Modal de Ranking
         const rankNativeSelect = document.getElementById('leaderboardTrackSelect');
         const rankCustomMenu = document.getElementById('rankDropdownMenu');
 
         tracks.forEach(track => {
-          // 1. Adiciona a opção no Lobby Principal
-          const option = document.createElement('option');
-          option.value = track.id;
-          option.innerText = `🛠️ ${track.name}`;
+          const option = document.createElement('option'); option.value = track.id; option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
-
-          const customOpt = document.createElement('div');
-          customOpt.className = 'customDropdownOption';
-          customOpt.setAttribute('data-value', track.id);
-          customOpt.innerText = `🛠️ ${track.name}`;
+          const customOpt = document.createElement('div'); customOpt.className = 'customDropdownOption';
+          customOpt.setAttribute('data-value', track.id); customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
-          // 2. Adiciona a opção no Modal de Ranking
           if (rankNativeSelect && rankCustomMenu) {
-            const rankOption = document.createElement('option');
-            rankOption.value = track.id;
-            rankOption.innerText = `🛠️ ${track.name}`;
+            const rankOption = document.createElement('option'); rankOption.value = track.id; rankOption.innerText = `🛠️ ${track.name}`;
             rankNativeSelect.appendChild(rankOption);
-
-            const rankCustomOpt = document.createElement('div');
-            rankCustomOpt.className = 'customDropdownOption';
-            rankCustomOpt.setAttribute('data-value', track.id);
-            rankCustomOpt.innerText = `🛠️ ${track.name}`;
+            const rankCustomOpt = document.createElement('div'); rankCustomOpt.className = 'customDropdownOption';
+            rankCustomOpt.setAttribute('data-value', track.id); rankCustomOpt.innerText = `🛠️ ${track.name}`;
             rankCustomMenu.appendChild(rankCustomOpt);
           }
         });
-
-      } catch (err) {
-        console.error('[Lobby] Falha de conexão ao carregar pistas:', err);
-      }
+      } catch (err) { }
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
       initPreview();
-
-      // Busca as pistas do banco primeiro
       await fetchCustomTracks();
-
-      // Depois configura o funcionamento do menu com as pistas já carregadas
       setupCustomDropdowns();
     });
   </script>
 
+  <!-- Sistema de Login Seguro -->
   <script src="auth.js"></script>
 </body>
 

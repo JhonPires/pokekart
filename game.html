@@ -5,7 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokémon Kart - Corrida</title>
+    <link rel="icon" type="image/png" href="img/favicon.png">
     <style>
+        :root {
+            --cyan: #28c9ff;
+            --yellow: #ffd43b;
+            --panel-bg: rgba(7, 20, 37, 0.65);
+            --panel-border: 1px solid rgba(67, 173, 232, 0.35);
+            --text: #f4f8ff;
+            --muted: #8da5bd;
+        }
+
         body,
         html {
             margin: 0;
@@ -13,89 +23,39 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Inter, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #000;
+            user-select: none;
         }
 
-        /* ============================================================
-           HUD GAME STYLE - ARCADE TECH (Combina com o Minimapa)
-           ============================================================ */
-
-        /* Estilo Base para os Cards da HUD */
-        .hudCard {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 2px solid #334155;
-            border-radius: 12px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(56, 189, 248, 0.1);
-            padding: 12px 16px;
-            color: #fff;
-            pointer-events: auto;
-            transition: border-color 0.2s ease;
-        }
-
-        .hudCard:hover {
-            border-color: #38bdf8;
-        }
-
-        /* 1. HUD SUPERIOR ESQUERDA (Piloto, Volta, Tempo) */
-        #hud {
+        /* Contêiner Global das Janelas */
+        .hud-panel {
+            background: var(--panel-bg);
+            border: var(--panel-border);
+            backdrop-filter: blur(12px) saturate(130%);
+            border-radius: 16px;
+            color: var(--text);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            min-width: 180px;
             z-index: 100;
-            pointer-events: none;
         }
 
-        .hudRow {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 800;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }
-
-        .hudLabel {
-            color: #94a3b8;
-            font-size: 11px;
-        }
-
-        .hudValueYellow {
-            color: #facc15;
-            text-shadow: 0 0 8px rgba(250, 204, 21, 0.3);
-        }
-
-        .hudValueCyan {
-            color: #38bdf8;
-            font-family: monospace;
-            font-size: 15px;
-            text-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
-        }
-
-        /* 2. PAINEL DE CLASSIFICAÇÃO (Top Direita) */
-        #standings {
-            position: absolute;
+        /* 1. Classificação (Movido para o Canto Superior Direito) */
+        #standingsContainer {
             top: 20px;
             right: 20px;
-            min-width: 160px;
-            z-index: 100;
-            pointer-events: none;
+            left: auto;
+            padding: 16px;
+            min-width: 220px;
         }
 
-        #standings .hudTitle {
+        .hud-title {
             font-size: 11px;
-            color: #38bdf8;
+            color: var(--muted);
             font-weight: 900;
+            margin-bottom: 10px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            margin-bottom: 8px;
-            border-bottom: 1px solid #334155;
-            padding-bottom: 4px;
         }
 
         #standingsList {
@@ -106,87 +66,172 @@
             font-weight: 700;
         }
 
-        /* 3. VELOCÍMETRO (Inferior Direito) */
-        #speedometer {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
+        /* 2. Informativo de Tempo e Volta (Movido para o Canto Superior Esquerdo) */
+        #infoContainer {
+            top: 20px;
+            left: 20px;
+            right: auto;
+            padding: 12px 24px;
             display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 6px;
-            z-index: 100;
-            pointer-events: none;
+            gap: 24px;
         }
 
-        .speedDisplay {
-            display: flex;
-            align-items: baseline;
-            gap: 4px;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
-        }
-
-        .speedNumber {
-            font-size: 32px;
-            line-height: 1;
-            color: #f8fafc;
-            font-family: monospace;
-        }
-
-        .speedUnit {
-            font-size: 12px;
-            color: #38bdf8;
-            letter-spacing: 1px;
-        }
-
-        #speedbar {
-            width: 140px;
-            height: 10px;
-            background: #0f172a;
-            border: 1.5px solid #334155;
-            border-radius: 6px;
-            overflow: hidden;
-            padding: 1px;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
-        }
-
-        #speedfill {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #38bdf8, #facc15, #ef4444);
-            border-radius: 4px;
-            transition: width 0.1s linear;
-            box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
-        }
-
-        /* CONTAINER HABILIDADE */
-        #itemContainer {
-            position: absolute;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
+        .info-box {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+        }
+
+        .info-box span:first-child {
+            font-size: 11px;
+            color: var(--muted);
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+        }
+
+        .info-box .highlight {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--cyan);
+            text-shadow: 0 0 12px rgba(40, 201, 255, 0.4);
+            font-family: monospace, monospace;
+            letter-spacing: -0.5px;
+        }
+
+        /* Trava a largura da caixa do tempo para zerar a trepidação */
+        #hud-race-timer {
+            display: inline-block;
+            width: 115px;
+            text-align: center;
+        }
+
+        /* 3. Velocímetro (Canto Inferior Direito) */
+        #speedContainer {
+            bottom: 25px;
+            right: 25px;
+            padding: 16px;
+            width: 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .speed-number {
+            font-size: 36px;
+            font-weight: 900;
+            font-style: italic;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .speed-number span {
+            font-size: 14px;
+            color: var(--muted);
+            font-style: normal;
+            margin-left: 4px;
+        }
+
+        .speed-bar-bg {
+            width: 100%;
+            height: 8px;
+            background: #0b1c30;
+            border-radius: 4px;
+            border: 1px solid #1e3a57;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        #speedfill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #27c8ff, #ffd43b, #ff4b55);
+            /* Azul -> Amarelo -> Vermelho */
+            box-shadow: 0 0 10px rgba(39, 200, 255, 0.6);
+            transition: width 0.1s linear, background 0.2s ease;
+        }
+
+        /* 4. Caixa de Habilidade / Item (Centro Inferior) */
+        #itemContainer {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            font-size: 32px;
+            background: rgba(7, 20, 37, 0.85);
+            border: 2px solid var(--cyan);
+            box-shadow: 0 0 25px rgba(40, 201, 255, 0.35), inset 0 0 15px rgba(40, 201, 255, 0.2);
+            backdrop-filter: blur(10px);
             z-index: 100;
         }
 
         #itemIcon {
-            background: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 2px solid #38bdf8;
-            border-radius: 14px;
-            width: 64px;
-            height: 64px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 32px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(56, 189, 248, 0.2);
-            transition: all 0.2s ease;
+            width: 100%;
+            height: 100%;
+        }
+
+        #itemHint {
+            position: absolute;
+            top: -25px;
+            color: #38bdf8;
+            font-size: 11px;
+            font-weight: 800;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #334155;
+            padding: 3px 10px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* 5. Minimapa (Canto Inferior Esquerdo) */
+        #minimapContainer {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(67, 173, 232, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(40, 201, 255, 0.15);
+            background: rgba(5, 11, 22, 0.6);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+        }
+
+        #minimapCanvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* CONTADOR DE LARGADA */
+        #countdownOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 120px;
+            font-weight: 900;
+            color: #FFD54F;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 40px rgba(255, 213, 79, 0.6);
+            pointer-events: none;
+            z-index: 200;
+            font-family: sans-serif;
         }
 
         /* MENU ESC */
@@ -227,48 +272,49 @@
 </head>
 
 <body>
-
-    <!-- HUD PRINCIPAL -->
-    <div id="hud" class="hudCard">
-        <div class="hudRow">
-            <span class="hudLabel">PILOTO:</span>
-            <span id="hud-player-name" class="hudValueYellow">-</span>
-        </div>
-        <div class="hudRow">
-            <span class="hudLabel">VOLTA:</span>
-            <span class="hudValueYellow"><span id="hud-current-lap">1</span> / 3</span>
-        </div>
-        <div class="hudRow">
-            <span class="hudLabel">TEMPO:</span>
-            <span id="hud-race-timer" class="hudValueCyan">00:00.000</span>
-        </div>
-    </div>
-
-    <!-- LEADERBOARD -->
-    <div id="standings" class="hudCard">
-        <div class="hudTitle">CLASSIFICAÇÃO</div>
+    <!-- Classificação -->
+    <div id="standingsContainer" class="hud-panel">
+        <div class="hud-title">Classificação</div>
         <div id="standingsList"></div>
     </div>
 
-    <!-- VELOCÍMETRO -->
-    <div id="speedometer" class="hudCard">
-        <div class="speedDisplay">
-            <span id="hud-speed" class="speedNumber">0</span>
-            <span class="speedUnit">KM/H</span>
+    <!-- Tempo e Volta -->
+    <div id="infoContainer" class="hud-panel">
+        <div class="info-box">
+            <span>Volta</span>
+            <div><span id="hud-current-lap" class="highlight">1</span><span
+                    style="font-size: 16px; color: var(--muted); font-weight: bold;"> / 3</span></div>
         </div>
-        <div id="speedbar">
+        <div style="width: 1px; background: rgba(67, 173, 232, 0.3); margin: 0 4px;"></div>
+        <div class="info-box">
+            <span>Tempo</span>
+            <span id="hud-race-timer" class="highlight">00:00.000</span>
+        </div>
+        <!-- Mantido oculto para não quebrar a lógica do game.js -->
+        <span id="hud-player-name" style="display:none;">-</span>
+    </div>
+
+    <!-- Velocímetro -->
+    <div id="speedContainer" class="hud-panel">
+        <div class="speed-number"><span id="hud-speed">0</span> <span>km/h</span></div>
+        <div class="speed-bar-bg">
             <div id="speedfill"></div>
         </div>
     </div>
 
+    <!-- Item (Armadilhas) -->
+    <div id="itemContainer">
+        <div id="itemHint">Pressione [E]</div>
+        <div id="itemIcon">❓</div>
+    </div>
+
+    <!-- Minimapa -->
+    <div id="minimapContainer">
+        <canvas id="minimapCanvas" width="180" height="180"></canvas>
+    </div>
+
     <!-- CONTADOR DE LARGADA -->
-    <div id="countdownOverlay" style="
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: none; align-items: center; justify-content: center;
-    font-size: 120px; font-weight: 900; color: #FFD54F;
-    text-shadow: 0 0 20px rgba(0,0,0,0.8), 0 0 40px rgba(255,213,79,0.6);
-    pointer-events: none; z-index: 200; font-family: sans-serif;
-  ">3</div>
+    <div id="countdownOverlay">3</div>
 
     <!-- MENU ESC -->
     <div id="pauseMenu">
@@ -276,75 +322,26 @@
         <button id="btnReturnLobby" class="lobbyBtn">Sair para o Lobby</button>
     </div>
 
-    <!-- MINIMAPA -->
-    <div id="minimapContainer"
-        style="position: absolute; bottom: 20px; left: 20px; width: 160px; height: 160px; z-index: 100;">
-        <canvas id="minimapCanvas" width="160" height="160"></canvas>
-    </div>
-
-    <!-- CONTAINER HABILIDADE -->
-    <div id="itemContainer">
-        <div id="itemIcon">❓</div>
-        <span
-            style="color: #38bdf8; font-size: 11px; font-weight: 800; background: rgba(15, 23, 42, 0.85); border: 1px solid #334155; padding: 3px 10px; border-radius: 6px; letter-spacing: 0.5px;">Pressione
-            [E]</span>
-    </div>
-
     <!-- CONTROLES VIRTUAIS PARA DISPOSITIVOS MÓVEIS -->
+    <!-- Nota: A posição 'bottom' foi elevada para não sobrepor o minimapa e o velocímetro nas laterais -->
     <div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;">
 
         <!-- LADO ESQUERDO: FREIO / RÉ E DRIFT -->
         <div
-            style="position: absolute; bottom: 25px; left: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
+            style="position: absolute; bottom: 225px; left: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
             <button id="btnMobileBrake"
-                style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
+                style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 FREIO
             </button>
             <button id="btnMobileDrift"
-                style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
+                style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 DRIFT
             </button>
         </div>
 
         <!-- LADO DIREITO: USAR ITEM E ACELERAR -->
         <div
-            style="position: absolute; bottom: 25px; right: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
-            <button id="btnMobileItem"
-                style="width: 62px; height: 62px; border-radius: 50%; background: rgba(250, 204, 21, 0.9); color: #0f172a; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                ITEM
-            </button>
-            <button id="btnMobileAccel"
-                style="width: 85px; height: 85px; border-radius: 50%; background: rgba(34, 197, 94, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
-                GO!
-            </button>
-        </div>
-
-        <!-- BOTÃO DE ATIVAÇÃO / CALIBRAGEM DO GIROSCÓPIO -->
-        <button id="btnEnableGyro"
-            style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); pointer-events: auto; background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
-            📱 Ativar Giroscópio
-        </button>
-    </div>
-
-    <!-- CONTROLES VIRTUAIS PARA DISPOSITIVOS MÓVEIS -->
-    <div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;">
-
-        <!-- LADO ESQUERDO: FREIO / RÉ E DRIFT -->
-        <div
-            style="position: absolute; bottom: 25px; left: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
-            <button id="btnMobileBrake"
-                style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
-                FREIO
-            </button>
-            <button id="btnMobileDrift"
-                style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); active { transform: scale(0.92); }">
-                DRIFT
-            </button>
-        </div>
-
-        <!-- LADO DIREITO: USAR ITEM E ACELERAR -->
-        <div
-            style="position: absolute; bottom: 25px; right: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
+            style="position: absolute; bottom: 155px; right: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
             <button id="btnMobileItem"
                 style="width: 62px; height: 62px; border-radius: 50%; background: rgba(250, 204, 21, 0.9); color: #0f172a; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 ITEM
