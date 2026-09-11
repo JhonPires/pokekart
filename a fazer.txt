@@ -1,9 +1,7 @@
-- liberar a musica nas outras telas tbm, na de criacao de pista, loja e dentro do 
-- quando utilizo a ré do kart com algum lado está invertida a direção
+
 - criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
 - implementar ranked com base nos trofeus (iniciar uma corrida de desafio busca jogadores na fila que tenha a mesma classificação na ranked e na corrida o jogador que ganhar aumenta seu trofeu para subir na ranked e quem perder a corrida perde trofeu e caindo na ranked)
 - Montar uma logica para classificar as rankeds com base no trofeu e um calculo para rebaixar/qualificar o estagio da ranked
 - Uma tela para mostrar a classificação ranked
 - Criar uma tela de perfil para o jogador, mostrando recordes das corridas, classificao ranked, moedas, titulos
 - novas armadilhas
-- efeitos visuais e sonoros para o momento de cruzar a linha de chegada

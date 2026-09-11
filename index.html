@@ -386,6 +386,10 @@
           <span>⚙️</span> Opções
         </button>
 
+        <button class="sideMenuBtn" id="menuBtnChangelog">
+          <span>📜</span> Notas da Atualização
+        </button>
+
         <div
           style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
           <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;"
@@ -492,6 +496,24 @@
         style="width: 100%; padding: 14px; background: #22c55e; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 12px;">CADASTRAR</button>
 
       <div style="font-size: 14px; color: #94a3b8; cursor: pointer;" id="toggleAuthMode">Já tem uma conta? Entrar</div>
+    </div>
+  </div>
+
+  <!-- MODAL DE CHANGELOG -->
+  <div id="changelogModalOverlay"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCard"
+      style="width: 380px; max-height: 520px; align-items: stretch; justify-content: flex-start; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+
+      <button id="btnCloseChangelog"
+        style="position: absolute; top: 16px; right: 16px; background: #0f172a; border: 1px solid #334155; color: #fff; width: 30px; height: 30px; border-radius: 6px; font-weight: bold; cursor: pointer;">✕</button>
+
+      <h2 style="color: #38bdf8; font-size: 18px; text-align: center; margin-bottom: 16px;">📜 Novidades</h2>
+
+      <div id="changelogContent"
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding-right: 4px;">
+        <div style="text-align: center; color: #94a3b8; font-size: 13px; padding-top: 20px;">Carregando notas...</div>
+      </div>
     </div>
   </div>
 
@@ -1055,6 +1077,58 @@
 
     updateAudioUI();
     updateSliderFill();
+
+    // ------------------------------------------------------------
+    // SISTEMA DE CHANGELOG (NOTAS DA ATUALIZAÇÃO)
+    // ------------------------------------------------------------
+    const changelogModal = document.getElementById('changelogModalOverlay');
+    const btnOpenChangelog = document.getElementById('menuBtnChangelog');
+    const btnCloseChangelog = document.getElementById('btnCloseChangelog');
+
+    if (btnOpenChangelog && btnCloseChangelog) {
+      btnOpenChangelog.addEventListener('click', () => {
+        changelogModal.style.display = 'flex';
+        loadChangelog(); // Puxa os dados apenas quando o jogador abre a tela
+      });
+
+      btnCloseChangelog.addEventListener('click', () => {
+        changelogModal.style.display = 'none';
+      });
+    }
+
+    async function loadChangelog() {
+      const contentDiv = document.getElementById('changelogContent');
+      try {
+        // Tenta ler o arquivo gerado pelo seu script Node
+        const response = await fetch('./changelog.json');
+        if (!response.ok) throw new Error('Arquivo não encontrado');
+
+        const data = await response.json();
+
+        // Monta os bloquinhos de texto para cada versão
+        contentDiv.innerHTML = data.map((entry, index) => {
+          const isLatest = index === 0;
+          const badge = isLatest ? `<span style="background: #22c55e; color: #0f172a; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 8px;">NOVO</span>` : '';
+
+          let changesHTML = entry.changes.map(c => `<li style="margin-bottom: 6px;">• ${c}</li>`).join('');
+
+          return `
+            <div style="background: #0f172a; border: 1px solid ${isLatest ? '#38bdf8' : '#334155'}; border-radius: 8px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+                <span style="color: ${isLatest ? '#facc15' : '#cbd5e1'}; font-weight: bold; font-size: 15px;">v${entry.version} ${badge}</span>
+                <span style="color: #64748b; font-size: 11px;">${entry.date}</span>
+              </div>
+              <ul style="list-style: none; color: #94a3b8; font-size: 13px; margin: 0; padding: 0;">
+                ${changesHTML}
+              </ul>
+            </div>
+          `;
+        }).join('');
+
+      } catch (error) {
+        contentDiv.innerHTML = `<div style="text-align: center; color: #ef4444; font-size: 13px; padding-top: 20px;">Nenhuma atualização registrada ainda.</div>`;
+      }
+    }
 
     document.getElementById('btnJoin').onclick = () => {
       document.getElementById('joinBox').style.display = 'flex';
