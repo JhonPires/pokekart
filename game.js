@@ -4,6 +4,7 @@
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+
 let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
@@ -76,6 +77,7 @@ const KART_DATABASE = [
 ];
 
 const urlParams = new URLSearchParams(window.location.search);
+const aiDifficultyParam = urlParams.get('ai') || 'none';
 const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
 const selectedKartId = urlParams.get('kart') || 'jolteon';
 const roomCodeParam = urlParams.get('room');
@@ -1075,7 +1077,67 @@ function updateRaceTracker(key, position) {
 }
 
 let localFinishNotified = false;
+let finishLeaderboardEl = null;
 async function showFinishOverlay(place) {
+  // Cria o container principal com o mesmo estilo "Glassmorphism" escuro do seu Lobby e HUD
+  const overlay = document.createElement('div');
+  overlay.id = 'finishOverlay';
+  overlay.style.cssText = `
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(11, 19, 41, 0.85); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; z-index: 9999; font-family: 'Segoe UI', Tahoma, sans-serif;
+  `;
+
+  // Estiliza a barra de rolagem customizada via CSS injetado
+  const style = document.createElement('style');
+  style.innerHTML = `
+    #finishOverlay ::-webkit-scrollbar { width: 6px; }
+    #finishOverlay ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+  `;
+  overlay.appendChild(style);
+
+  // Card Central
+  const card = document.createElement('div');
+  card.style.cssText = `
+    background: rgba(30, 41, 59, 0.95); border: 2px solid #38bdf8; border-radius: 16px;
+    padding: 24px; width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  `;
+
+  card.innerHTML = `
+    <h2 style="margin:0; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">🏁 CORRIDA FINALIZADA</h2>
+    
+    <div style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
+       <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Calculando...</span></div>
+       <div id="rewardDisplay" style="font-size:15px; color:#22c55e; font-weight:bold;">Processando recompensas...</div>
+    </div>
+  `;
+
+  // Container onde os corredores vão aparecer e atualizar em tempo real
+  finishLeaderboardEl = document.createElement('div');
+  finishLeaderboardEl.style.cssText = `
+    width: 100%; display: flex; flex-direction: column; gap: 6px; 
+    max-height: 220px; overflow-y: auto; padding-right: 4px;
+  `;
+  card.appendChild(finishLeaderboardEl);
+
+  // Botão de retorno
+  const btnRestart = document.createElement('button');
+  btnRestart.style.cssText = `
+    background: #22c55e; color: #0f172a; border: none; padding: 12px; margin-top: 5px;
+    font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%;
+    box-shadow: 0 4px 0 #16a34a; transition: transform 0.1s;
+  `;
+  btnRestart.innerText = 'Voltar ao Lobby';
+  btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
+  btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';
+  btnRestart.onclick = () => window.location.href = 'index.html';
+
+  card.appendChild(btnRestart);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  // --- RECOMPENSAS E SUPABASE ---
   const rewards = {
     1: { coins: 150, trophies: 25 },
     2: { coins: 90, trophies: 12 },
@@ -1090,71 +1152,33 @@ async function showFinishOverlay(place) {
 
   if (typeof supabaseClient !== 'undefined') {
     try {
-      const { data, error } = await supabaseClient.rpc('grant_race_reward', {
-        p_place: place,
-        p_track_id: customTrackParam || 'default'
-      });
-      if (error) {
-        console.error('[Supabase RPC Error]:', error.message);
-      } else {
-        console.log('[Supabase RPC Success]:', data);
-      }
-    } catch (err) {
-      console.error('[Recompensas] Falha ao atribuir via RPC:', err);
+      await supabaseClient.rpc('grant_race_reward', { p_place: place, p_track_id: customTrackParam || 'default' });
+    } catch (err) { }
+
+    if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+      try {
+        const currentTrackId = customTrackParam || 'default';
+        const { data: existingRecord } = await supabaseClient
+          .from('track_records')
+          .select('*')
+          .eq('user_id', currentUserProfile.id)
+          .eq('track_id', currentTrackId)
+          .single();
+
+        if (!existingRecord) {
+          await supabaseClient.from('track_records').insert({ user_id: currentUserProfile.id, track_id: currentTrackId, best_time_ms: finalTimeMs });
+          isNewRecord = true;
+        } else if (finalTimeMs < existingRecord.best_time_ms) {
+          await supabaseClient.from('track_records').update({ best_time_ms: finalTimeMs, created_at: new Date() }).eq('id', existingRecord.id);
+          isNewRecord = true;
+        }
+      } catch (err) { }
     }
   }
 
-  const currentTrackId = customTrackParam || 'default';
-  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
-    try {
-      const { data: existingRecord } = await supabaseClient
-        .from('track_records')
-        .select('*')
-        .eq('user_id', currentUserProfile.id)
-        .eq('track_id', currentTrackId)
-        .single();
-
-      if (!existingRecord) {
-        await supabaseClient.from('track_records').insert({
-          user_id: currentUserProfile.id,
-          track_id: currentTrackId,
-          best_time_ms: finalTimeMs
-        });
-        isNewRecord = true;
-      } else if (finalTimeMs < existingRecord.best_time_ms) {
-        await supabaseClient.from('track_records').update({
-          best_time_ms: finalTimeMs,
-          created_at: new Date()
-        }).eq('id', existingRecord.id);
-        isNewRecord = true;
-      }
-    } catch (err) {
-      console.warn('Erro ao salvar recorde de tempo:', err);
-    }
-  }
-
-  const overlay = document.createElement('div');
-  overlay.id = 'finishOverlay';
-  overlay.style.cssText = `
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.85); display: flex; flex-direction: column;
-    align-items: center; justify-content: center; z-index: 300; color: #fff;
-  `;
-
-  overlay.innerHTML = `
-    <h1 style="margin:0; color:#FFD54F; font-size:40px;">🏁 Corrida Finalizada!</h1>
-    <div style="font-size:22px; margin: 10px 0;">Sua Posição: <strong>${place}º lugar</strong></div>
-    <div style="font-size:26px; color:#38bdf8; font-weight:bold; margin-bottom: 5px;">
-      Tempo Total: ${formattedTime} ${isNewRecord ? '🔥 <span style="color:#22c55e; font-size:18px;">(NOVO RECORDE!)</span>' : ''}
-    </div>
-    <div style="font-size:18px; color:#4CAF50; margin-bottom: 20px;">
-      Recompensa: +${currentReward.coins} 🪙 | ${currentReward.trophies >= 0 ? '+' : ''}${currentReward.trophies} 🏆
-    </div>
-    <button id="btnRestart" style="background:#FFD54F; color:#0f172a; border:none; padding:12px 24px; font-size:18px; font-weight:bold; border-radius:8px; cursor:pointer;">Continuar</button>
-  `;
-
-  document.body.appendChild(overlay);
-  document.getElementById('btnRestart').onclick = () => window.location.href = 'index.html';
+  // Atualiza as infos do jogador visualmente
+  document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
+  document.getElementById('rewardDisplay').innerHTML = `+${currentReward.coins} 🪙 | ${currentReward.trophies >= 0 ? '+' : ''}${currentReward.trophies} 🏆`;
 }
 
 // ------------------------------------------------------------
@@ -1265,8 +1289,7 @@ function updateItemBoxes(dt) {
     if (!box.active) {
       box.respawnTimer -= dt;
       if (box.respawnTimer <= 0) {
-        box.active = true;
-        box.mesh.visible = true;
+        box.active = true; box.mesh.visible = true;
       }
       return;
     }
@@ -1274,12 +1297,24 @@ function updateItemBoxes(dt) {
     box.mesh.rotation.y += dt * 2.0;
     box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.005) * 0.15;
 
+    // Jogador local pegando caixa
     if (kart && box.mesh.position.distanceTo(kart.position) < 1.6) {
       disableItemBox(box.id);
       sendNetworkEvent({ t: 'take_box', boxId: box.id });
+      if (!currentItem) getItemFromBox();
+      return;
+    }
 
-      if (!currentItem) {
-        getItemFromBox();
+    // Bots pegando caixa
+    for (const [id, bot] of remoteKarts.entries()) {
+      if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.6) {
+        disableItemBox(box.id);
+        if (!bot.currentItem) {
+          const skillKeys = Object.keys(SKILLS);
+          bot.currentItem = SKILLS[skillKeys[Math.floor(Math.random() * skillKeys.length)]];
+          bot.itemUseTimer = 1.0 + Math.random() * 2.0; // Usa entre 1s e 3s após pegar
+        }
+        break;
       }
     }
   });
@@ -1377,23 +1412,35 @@ function updateTraps(dt) {
 
     const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
 
+    // Armadilha bate no Jogador
     if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
       if (trap.type !== 'FUMACA') {
         trap.active = false;
         removeTrapMesh(trap.id);
         sendNetworkEvent({ t: 'destroy_trap', trapId: trap.id });
       }
-
       if (!isShieldActive) {
-        if (trap.type === 'ICE') {
-          physics.speed = 0;
-          physics.spinTimer = 0.8;
-        } else if (trap.type === 'LODO') {
-          isControlInverted = true;
-          controlInvertTimer = 3.0;
-        } else if (trap.type === 'FUMACA') {
-          physics.speed *= 0.85;
+        if (trap.type === 'ICE') { physics.speed = 0; physics.spinTimer = 0.8; }
+        else if (trap.type === 'LODO') { isControlInverted = true; controlInvertTimer = 3.0; }
+        else if (trap.type === 'FUMACA') { physics.speed *= 0.85; }
+      }
+    }
+
+    // Armadilha bate nos Bots
+    for (const [id, bot] of remoteKarts.entries()) {
+      if (!bot.isBot || bot.finished || !trap.active) continue;
+
+      if (trap.mesh.position.distanceTo(bot.obj.group.position) < hitRadius) {
+        if (trap.type !== 'FUMACA') {
+          trap.active = false;
+          removeTrapMesh(trap.id);
         }
+        if (bot.shieldTimer <= 0) {
+          if (trap.type === 'ICE') { bot.speed = 0; bot.spinTimer = 0.8; }
+          else if (trap.type === 'LODO') { bot.speed *= 0.4; } // Lodo reduz a velocidade do bot em vez de inverter controles (eles não tem teclado para inverter)
+          else if (trap.type === 'FUMACA') { bot.speed *= 0.85; }
+        }
+        break;
       }
     }
   });
@@ -1450,7 +1497,17 @@ function castShockAbility() {
   }
 
   if (targetPeerId) {
-    sendNetworkEvent({ t: 'apply_stun', targetId: targetPeerId });
+    const tBot = remoteKarts.get(targetPeerId);
+    // Se o alvo for um Bot e ele não tem escudo ativo, paralisa ele aqui mesmo
+    if (tBot && tBot.isBot) {
+      if (tBot.shieldTimer <= 0) {
+        tBot.stunTimer = 1.0;
+        triggerSparkEffect(tBot.obj.group.position);
+      }
+    } else {
+      // Se for um jogador real, manda pro servidor paralisá-lo
+      sendNetworkEvent({ t: 'apply_stun', targetId: targetPeerId });
+    }
   }
 }
 
@@ -1801,6 +1858,8 @@ function networkTick(dt) {
 
 function updateRemoteKarts(dt) {
   for (const [pid, entry] of remoteKarts.entries()) {
+    // Adicione esta linha para ignorar os bots (eles têm sua própria animação)
+    if (entry.isBot) continue;
     const g = entry.obj.group;
 
     if (Math.abs(entry.target.speed) > 1) {
@@ -1899,6 +1958,29 @@ function updateHUD() {
     if (tr.finished && !localFinishNotified) {
       localFinishNotified = true;
       showFinishOverlay(myRank);
+    }
+
+    // --- MAGIA AQUI: Atualiza o painel final em Tempo Real ---
+    if (finishLeaderboardEl) {
+      finishLeaderboardEl.innerHTML = racers.map((r, index) => {
+        const isMe = r.key === 'local';
+        const bgColor = isMe ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.7)';
+        const borderColor = isMe ? '#38bdf8' : '#334155';
+        const nameColor = isMe ? '#FFD54F' : '#f8fafc';
+
+        const status = r.tr.finished
+          ? '<span style="color:#22c55e;">🏁 Finalizou</span>'
+          : '<span style="color:#94a3b8;">Correndo...</span>';
+
+        return `
+          <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: bold; color: ${nameColor}; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">
+              <span style="color:#cbd5e1; margin-right: 6px;">${index + 1}º</span>${r.name}
+            </div>
+            <div style="font-size: 13px; font-weight: bold;">${status}</div>
+          </div>
+        `;
+      }).join('');
     }
   }
 }
@@ -2057,6 +2139,7 @@ function animate() {
   lastTime = now;
 
   updatePhysics(dt);
+  updateBots(dt);
   updateCamera(dt);
   updateItemBoxes(dt);
   updateTraps(dt);
@@ -2067,4 +2150,201 @@ function animate() {
 
   renderer.render(scene, camera);
 }
+
+// ------------------------------------------------------------
+// INTELIGÊNCIA ARTIFICIAL (BOTS)
+// ------------------------------------------------------------
+function spawnBots() {
+  if (roomCodeParam || aiDifficultyParam === 'none') return;
+
+  const botCount = 3;
+  const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
+  const diffMult = diffSettings[aiDifficultyParam] || 0.90;
+
+  for (let i = 1; i <= botCount; i++) {
+    const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
+    const botId = 'bot-' + i;
+
+    const obj = createKart(0x555555);
+    loadKartTemplate(randomKart, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
+
+    const grid = getGridPosition(i);
+    obj.group.position.copy(grid.pos);
+    obj.group.rotation.y = grid.heading;
+
+    // Limita o desvio para o bot tentar se manter na pista e não na grama
+    const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+
+    remoteKarts.set(botId, {
+      isBot: true,
+      obj: obj,
+      nickname: 'BOT ' + randomKart.name.split(' ')[0].toUpperCase(),
+      kartId: randomKart.id,
+      stats: randomKart.stats,
+      speed: 0,
+      heading: grid.heading,
+      laneOffset: laneOffset,
+      diffMult: diffMult,
+      progress: 0,
+      lapCount: 1,
+      finished: false,
+      target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+      // --- NOVOS STATUS PARA ITENS E ARMADILHAS ---
+      stunTimer: 0,
+      spinTimer: 0,
+      shieldTimer: 0,
+      turboTimer: 0,
+      currentItem: null,
+      itemUseTimer: 0
+    });
+  }
+}
+spawnBots();
+
+function updateBots(dt) {
+  if (!raceStarted) return;
+
+  for (const [id, bot] of remoteKarts.entries()) {
+    if (!bot.isBot || bot.finished) continue;
+
+    // Diminui os timers das habilidades e stuns
+    if (bot.shieldTimer > 0) bot.shieldTimer -= dt;
+    if (bot.turboTimer > 0) bot.turboTimer -= dt;
+
+    // IA usando os itens após pega-los
+    if (bot.itemUseTimer > 0) {
+      bot.itemUseTimer -= dt;
+      if (bot.itemUseTimer <= 0 && bot.currentItem) {
+        useBotSkill(id, bot, bot.currentItem);
+        bot.currentItem = null;
+      }
+    }
+
+    // Bot escorregando ou travado
+    if (bot.spinTimer > 0) {
+      bot.spinTimer -= dt;
+      bot.speed = 0;
+      bot.obj.group.rotation.y += dt * 12;
+      continue;
+    }
+    if (bot.stunTimer > 0) {
+      bot.stunTimer -= dt;
+      bot.speed = 0;
+      continue;
+    }
+
+    // Aceleração da IA baseada na dificuldade e Turbo
+    let maxSpd = bot.stats.maxSpeed * bot.diffMult;
+    if (bot.turboTimer > 0) maxSpd *= 1.4;
+
+    bot.speed += bot.stats.accel * dt;
+
+    // Punição de Grama para o Bot
+    const { sample } = nearestTrackSample(bot.obj.group.position);
+    const offsetVec = new THREE.Vector3().subVectors(bot.obj.group.position, sample.point);
+    const lateral = offsetVec.dot(sample.normal);
+
+    if (Math.abs(lateral) > (trackWidth / 2 + 0.8)) {
+      const maxGrassSpeed = 4.5;
+      maxSpd = Math.min(maxSpd, maxGrassSpeed);
+      if (bot.speed > maxGrassSpeed) {
+        bot.speed = THREE.MathUtils.lerp(bot.speed, maxGrassSpeed, 0.1);
+      }
+    }
+
+    if (bot.speed > maxSpd) bot.speed = maxSpd;
+
+    // --- NOVO CÉREBRO DE DIREÇÃO E CURVAS ---
+
+    // 1. Lookahead menor (de 0.035 para 0.022): Faz o bot não tentar "cortar caminho" nas curvas fechadas
+    let lookAheadT = sample.t + 0.022;
+    if (lookAheadT > 1) lookAheadT -= 1.0;
+
+    const targetPt = trackCurve.getPointAt(lookAheadT);
+    const targetTangent = trackCurve.getTangentAt(lookAheadT).normalize();
+    const targetNormal = new THREE.Vector3(-targetTangent.z, 0, targetTangent.x).normalize();
+
+    // 2. Sistema Anti-Grama: Força o bot a voltar pro meio se chegar perto da beirada
+    let currentTargetOffset = bot.laneOffset;
+    const safeZone = (trackWidth / 2) - 1.8; // Fica a uma margem segura da grama
+
+    if (Math.abs(lateral) > safeZone) {
+      // Puxa a mira do bot de volta para o centro (0)
+      currentTargetOffset = THREE.MathUtils.lerp(bot.laneOffset, 0, 0.9);
+
+      // Dá um "puxão" de emergência no volante para fugir da grama
+      const escapeTurn = dt * 2.5;
+      bot.heading += lateral > 0 ? -escapeTurn : escapeTurn;
+    }
+
+    targetPt.addScaledVector(targetNormal, currentTargetOffset);
+
+    const offset = targetPt.clone().sub(bot.obj.group.position);
+    const desiredHeading = Math.atan2(offset.x, offset.z);
+
+    let diffHeading = desiredHeading - bot.heading;
+    while (diffHeading < -Math.PI) diffHeading += Math.PI * 2;
+    while (diffHeading > Math.PI) diffHeading -= Math.PI * 2;
+
+    // 3. Volante mais rápido: Multiplicador de turnSpeed subiu de 1.5 para 2.4 para evitar sair de frente
+    const turnSpd = bot.stats.turnSpeed * 2.4;
+    bot.heading += Math.sign(diffHeading) * Math.min(Math.abs(diffHeading), turnSpd * dt);
+
+    // Move o Kart do Bot fisicamente
+    const moveDir = new THREE.Vector3(Math.sin(bot.heading), 0, Math.cos(bot.heading));
+    bot.obj.group.position.addScaledVector(moveDir, bot.speed * dt);
+    bot.obj.group.rotation.y = bot.heading;
+
+    // Registra o percurso para ele aparecer na Tabela
+    const tr = updateRaceTracker(id, bot.obj.group.position);
+    bot.progress = tr.progress;
+    bot.lapCount = tr.lapCount;
+    bot.finished = tr.finished;
+  }
+}
+
+function useBotSkill(botId, bot, skill) {
+  switch (skill.id) {
+    case 'TURBO':
+      bot.turboTimer = 2.5 * (bot.stats.turboBonus || 1.0);
+      break;
+    case 'SHIELD':
+      bot.shieldTimer = 5.0;
+      break;
+    case 'ICE':
+    case 'LODO':
+    case 'FUMACA':
+      const backVector = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPos = bot.obj.group.position.clone().add(backVector);
+      createTrapMesh({ id: botId + '-' + Math.random(), x: trapPos.x, z: trapPos.z, type: skill.id });
+      break;
+    case 'CHOQUE':
+      let targetId = null;
+      let bestAheadProgress = Infinity;
+      const myTr = raceTrackers.get('local');
+
+      // Busca quem está imediatamente à frente do bot (Jogador ou outro Bot)
+      if (myTr && myTr.progress > bot.progress && myTr.progress < bestAheadProgress) {
+        bestAheadProgress = myTr.progress; targetId = 'local';
+      }
+      for (const [pid, entry] of remoteKarts.entries()) {
+        if (pid !== botId && entry.progress > bot.progress && entry.progress < bestAheadProgress) {
+          bestAheadProgress = entry.progress; targetId = pid;
+        }
+      }
+
+      if (targetId === 'local' && !isShieldActive) {
+        physics.stunTimer = 1.0;
+        if (kart) triggerSparkEffect(kart.position);
+      } else if (targetId) {
+        const tBot = remoteKarts.get(targetId);
+        if (tBot && tBot.isBot && tBot.shieldTimer <= 0) {
+          tBot.stunTimer = 1.0;
+          triggerSparkEffect(tBot.obj.group.position);
+        }
+      }
+      break;
+  }
+}
+
 animate();

@@ -485,9 +485,17 @@
         </div>
       </div>
 
-      <div style="display: flex; gap: 8px; width: 100%;">
+      <div style="display: flex; gap: 8px; width: 100%; align-items: center;">
         <button id="btnStartRace" type="button" class="lobbyBtn" style="display:none;">Iniciar Corrida 🏁</button>
-        <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="width: 100%;">Jogar Sozinho</button>
+
+        <select id="aiDifficulty"
+          style="background: #0f172a; border: 1px solid #334155; color: #38bdf8; font-weight: bold; border-radius: 8px; padding: 10px; width: 45%;">
+          <option value="easy">Bots: Fácil</option>
+          <option value="normal" selected>Bots: Normal</option>
+          <option value="hard">Bots: Difícil</option>
+        </select>
+
+        <button id="btnPlaySolo" class="lobbyBtn lobbyBtnGhost" style="flex: 1;">Jogar Sozinho</button>
       </div>
     </div>
   </div>
@@ -499,7 +507,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script src="assets.js"></script>
-  <script src="auth.js"></script>
+
 
   <script>
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -915,8 +923,21 @@
     });
 
     document.getElementById('btnPlaySolo').onclick = () => {
-      enableMobileExperience(); // Ativa contexto mobile
+      enableMobileExperience();
+      const diff = document.getElementById('aiDifficulty').value;
+      const targetUrl = `&ai=${diff}`;
+
+      // Salva o estado e aciona o redirecionamento com a dificuldade na URL
       redirectToRace('', 0);
+
+      // O redirectToRace não suporta o parâmetro AI nativamente, 
+      // então reescrevemos o click para forçar a URL correta:
+      const nick = getNickname();
+      const kartId = KART_DATABASE[selectedIndex].id;
+      const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
+      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}`;
+      if (chosenTrack) target += `&customTrack=${chosenTrack}`;
+      window.location.href = target;
     };
 
     window.onload = () => {
@@ -924,6 +945,7 @@
       setupCustomDropdowns();
     };
   </script>
+  <script src="auth.js"></script>
 </body>
 
 </html>
