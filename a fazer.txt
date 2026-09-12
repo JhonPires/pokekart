@@ -1,7 +1,40 @@
-- remover a necessidade de colocar email ao cadastrar um usuario novo
+- colocar os carros que eu tenho disponivel para usar antes dos bloqueados na tela inicial
+- Nomes dos bots serem lideres de ginasio (buscar da API os nomes)
+- Adicionar nivel de dificuldade da pista e conforme as pista for mais dificil a recompensa ser maior
+- Modo torre (Faz varias corridas seguidas e ter que vencer todas e na ultima ser 1x1 contra o lider do gym, ao ganhar vc libera a insignia no seu perfil daquele ginasio)
+- Adicionar no perfil do jogador a area de insignias separada por geração (as insignias ganham no modo torre)
 - criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
 - implementar ranked com base nos trofeus (iniciar uma corrida de desafio busca jogadores na fila que tenha a mesma classificação na ranked e na corrida o jogador que ganhar aumenta seu trofeu para subir na ranked e quem perder a corrida perde trofeu e caindo na ranked)
 - Montar uma logica para classificar as rankeds com base no trofeu e um calculo para rebaixar/qualificar o estagio da ranked
 - Uma tela para mostrar a classificação ranked
 - Criar uma tela de perfil para o jogador, mostrando recordes das corridas, classificao ranked, moedas, titulos
 - novas armadilhas
+- seria legal nas configurações poder selecionar quais músicas vc quer habilitar pra tocar, igual o FIFA
+- Efeitos sonoros (Aceleração, derrapagem, poderes)
+- Poderes devem sumir do mapa depois de um tempo, se não fica muito poluído o mapa nas últimas curvas, pode ter um poder ou outro que seja igual a banana mas aí diminui pq se não se soltar poder um em cada canto não tem como desviar pra sempre
+- Animação visual de uso do boost, escudo e de envenenamento
+- Animação do poderzinho de raio por que ele só eletrocuta quem tá perto mas não tem nenhum indicativo, seria bom até pra tentar usar o escudo
+- O raio não deveria soltar pra trás pra não ficar muito quebrado pro primeiro colocado
+- O drift para de contar se eu soltar a seta pro lado, daí se eu soltar um pouco pra não fechar demais a curva eu perco o boost, devia parar de contar só se eu soltar o espaço
+- Dar um pulinho na hora que apertar espaço igual no Mario Kart e soltar uma fumacinha pra indicar que tá derrapando
+- Barra de carregamento de boost no drift para saber quanto de boost vou pegar ao sair do drift
+- travar menos o carrinho quando cai na grama, por que o bagulho anda a -3km/h na grama
+- Poder ordenar por preço dos karts na loja
+- colocar os Pokemon falando quando começar a corrida
+- remover a necessidade de colocar email ao cadastrar um usuario novo
+
+Menu:
+https://www.youtube.com/watch?v=F-8obN0YwYk&list=RDF-8obN0YwYk&start_radio=1
+https://www.youtube.com/watch?v=0aPosoat6Sg&list=RD0aPosoat6Sg&start_radio=1
+https://www.youtube.com/watch?v=230YvcUjO4I&list=RD230YvcUjO4I&start_radio=1
+https://www.youtube.com/watch?v=SOOP-TA6bOM&list=RDSOOP-TA6bOM&start_radio=1
+https://www.youtube.com/watch?v=zaIcZv56g-E&list=RDzaIcZv56g-E&start_radio=1
+https://www.youtube.com/watch?v=0voiMWcp0MQ&list=RD0voiMWcp0MQ&start_radio=1
+
+Corrida:
+https://www.youtube.com/watch?v=vBrpZrOAPdM
+https://www.youtube.com/watch?v=KQ8Rs1Vssmo
+https://www.youtube.com/watch?v=NRGuLkzXWSk
+https://www.youtube.com/watch?v=my2cyy4VWfg&list=RDmy2cyy4VWfg&start_radio=1
+https://www.youtube.com/watch?v=mtJtS2mMt5M&list=RDmtJtS2mMt5M&start_radio=1
+https://www.youtube.com/watch?v=08xShJ84wtc&list=RD08xShJ84wtc&start_radio=1

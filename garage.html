@@ -673,6 +673,30 @@
 
   <!-- Lógica de Sincronização e Áudio da Interface -->
   <script>
+    // --- SINCRONIZAÇÃO DO NOME DO KART ---
+    document.addEventListener('DOMContentLoaded', () => {
+      const hiddenName = document.getElementById('kartName');
+      const visibleName = document.getElementById('kartNameMirror');
+
+      // Observa mudanças no elemento invisível que o garage.js atualiza
+      const observer = new MutationObserver(() => {
+        if (hiddenName && visibleName) {
+          visibleName.innerText = hiddenName.innerText;
+        }
+      });
+
+      if (hiddenName) {
+        observer.observe(hiddenName, { childList: true, subtree: true, characterData: true });
+
+        // Corrige um bug onde o garage.js as vezes usa innerHTML ou textContent direto no nó
+        const checkInterval = setInterval(() => {
+          if (hiddenName.innerText !== visibleName.innerText && hiddenName.innerText.trim() !== '') {
+            visibleName.innerText = hiddenName.innerText;
+          }
+        }, 300);
+      }
+    });
+
     // --- SISTEMA DE ÁUDIO BLINDADO ---
     window.addEventListener('DOMContentLoaded', () => {
       const btnMusic = document.getElementById('menuBtnMusicToggle');

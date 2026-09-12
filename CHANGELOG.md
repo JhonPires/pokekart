@@ -1,5 +1,9 @@
 # Changelog - PokéKart
 
+## [1.2] - 11/09/2026
+- Correção design tela inicial.
+- Correção nos nomes dos Pokemons dos kart selecionados na Garagem.
+
 ## [1.1] - 11/09/2026
 - Melhoria de design de tela (UI/UX)
 

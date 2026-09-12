@@ -291,7 +291,7 @@
       min-height: 100vh;
       display: grid;
       place-items: center;
-      padding: 100px 45px 45px;
+      padding: 70px 45px 25px;
     }
 
     .content {
@@ -302,11 +302,11 @@
     }
 
     .logo {
-      width: min(360px, 58vw);
+      width: min(340px, 52vw);
       height: auto;
       object-fit: contain;
       filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
-      margin-bottom: 16px;
+      margin-bottom: 12px;
     }
 
     .fallback-logo {
@@ -335,9 +335,9 @@
       background: linear-gradient(145deg, rgba(17, 43, 72, .55), rgba(5, 20, 39, .64));
       box-shadow: 0 35px 80px rgba(0, 0, 0, .48), 0 0 55px rgba(0, 132, 255, .15);
       backdrop-filter: blur(18px) saturate(140%);
-      padding: 20px;
+      padding: 18px 20px;
       position: relative;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .card:before {
@@ -349,14 +349,14 @@
     }
 
     .kart-zone {
-      height: 225px;
+      height: 205px;
       border-radius: 17px;
       border: 1px solid #214665;
       background: radial-gradient(circle at 50% 48%, rgba(0, 182, 255, .18), transparent 32%), linear-gradient(145deg, #09172a, #07101e);
       display: grid;
       place-items: center;
       position: relative;
-      margin-bottom: 13px;
+      margin-bottom: 10px;
       overflow: hidden;
     }
 
@@ -388,13 +388,13 @@
       top: 50%;
       transform: translateY(-50%);
       z-index: 4;
-      width: 50px;
-      height: 50px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       background: #0a1d34;
       border: 1px solid #1765a0;
       color: #58d5ff;
-      font-size: 31px;
+      font-size: 28px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -419,8 +419,8 @@
       text-align: center;
       color: #35caff;
       font-weight: 900;
-      font-size: 18px;
-      margin: 0 0 16px;
+      font-size: 17px;
+      margin: 0 0 12px;
     }
 
     .actions {
@@ -430,7 +430,7 @@
     }
 
     .btn {
-      min-height: 52px;
+      min-height: 48px;
       border-radius: 13px;
       border: 1px solid #128dcc;
       background: rgba(7, 28, 49, .68);
@@ -459,18 +459,11 @@
       color: #91a7be;
       font-weight: 900;
       letter-spacing: .7px;
-      margin: 20px 0 7px;
+      margin: 14px 0 6px;
     }
 
-    .select-row {
-      display: grid;
-      grid-template-columns: 1.1fr 1fr;
-      gap: 10px;
-    }
-
-    .select,
     .customDropdownTrigger {
-      min-height: 48px;
+      min-height: 46px;
       border: 1px solid #275276;
       border-radius: 12px;
       background: #09172a;
@@ -485,14 +478,19 @@
       width: 100%;
     }
 
-    .select .yellow,
     .customDropdownTrigger .yellow {
       color: var(--yellow);
     }
 
-    .select span:last-child,
-    .customDropdownTrigger span:last-child {
-      color: #27c7ff;
+    /* CORREÇÃO AQUI: o ">" garante que apenas a seta seja afetada pela cor azul, e não os spans dentro do texto */
+    .customDropdownTrigger>span:last-child {
+      color: #21c7ff;
+      font-size: 12px;
+      transition: transform 0.2s ease;
+    }
+
+    .customDropdownTrigger.open>span:last-child {
+      transform: rotate(180deg);
     }
 
     .customDropdownWrapper {
@@ -512,10 +510,18 @@
       display: none;
       flex-direction: column;
       gap: 4px;
-      max-height: 180px;
-      overflow-y: auto;
-      z-index: 600;
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.6);
+      max-height: 160px !important;
+      overflow-y: auto !important;
+      z-index: 99999;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
+    }
+
+    #customAiDropdown .customDropdownMenu {
+      top: calc(100% + 6px) !important;
+      bottom: auto !important;
+      max-height: 120px !important;
+      overflow-y: auto !important;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8) !important;
     }
 
     .customDropdownMenu.show {
@@ -541,8 +547,17 @@
     }
 
     .customDropdownOption.selected {
-      background: #128dcc;
-      color: #fff;
+      background: #128dcc !important;
+      color: #fff !important;
+    }
+
+    .customDropdownMenu::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .customDropdownMenu::-webkit-scrollbar-thumb {
+      background: var(--cyan);
+      border-radius: 4px;
     }
 
     .bottom-row {
@@ -557,13 +572,12 @@
     }
 
     .hint {
-      margin-top: 15px;
+      margin-top: 12px;
       color: #71869e;
       font-size: 11px;
       text-align: center;
     }
 
-    /* Modais baseados no estilo antigo mas ajustados */
     .lobbyCardModal {
       background: #1e293b;
       padding: 24px;
@@ -617,19 +631,18 @@
       }
 
       .stage {
-        padding: 85px 18px 25px;
+        padding: 75px 18px 20px;
       }
 
       .logo {
-        width: 300px;
+        width: 280px;
       }
 
       .card {
-        padding: 15px;
+        padding: 14px;
       }
     }
 
-    /* ESTILOS DOS MODAIS MODERNIZADOS */
     .lobbyCardModal {
       width: 90vw;
       max-width: 420px;
@@ -691,7 +704,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Sobrescreve as cores injetadas pelo auth.js e pelo script de Changelog */
     #leaderboardList>div,
     #changelogContent>div {
       background: rgba(10, 24, 42, .62) !important;
@@ -725,7 +737,6 @@
       color: #dcecff !important;
     }
 
-    /* Scrollbars customizados */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -741,7 +752,6 @@
 
   <div class="race-glow"></div>
 
-  <!-- MODALS INVISÍVEIS POR PADRÃO -->
   <div id="sideMenuOverlay"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
   </div>
@@ -814,12 +824,10 @@
       </div>
     </div>
   </div>
-  <!-- FIM DOS MODALS -->
 
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mini">
-
         <strong>POKE<span>KART</span></strong>
       </div>
 
@@ -882,14 +890,12 @@
               <button id="btnJoin" class="btn">🚪 &nbsp; Entrar em Sala</button>
             </div>
 
-            <!-- Caixa de entrada (escondida por padrão) -->
             <div id="joinBox" style="display: none; gap: 10px; margin-top: 12px; grid-template-columns: 2fr 1fr;">
               <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
                 style="text-transform:uppercase;" />
               <button id="btnConnect" class="btn primary">Conectar</button>
             </div>
 
-            <!-- Status do Lobby / Multiplayer -->
             <div style="margin-top: 12px; text-align: center;">
               <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: 900; font-size: 16px;"></div>
               <div id="lobbyStatus" style="color: #91a7be; font-size: 13px; font-weight: bold; min-height: 18px;"></div>
@@ -902,8 +908,8 @@
             </select>
             <div class="customDropdownWrapper" id="customTrackDropdown">
               <div class="customDropdownTrigger" id="dropdownTrigger">
-                <span id="dropdownSelectedLabel">🏁 &nbsp; <span class="yellow">Circuito Oficial
-                    (Padrão)</span></span><span>▾</span>
+                <!-- CORREÇÃO AQUI: removido o span amarelo que estava quebrando o layout -->
+                <span id="dropdownSelectedLabel">🏁 &nbsp; Circuito Oficial (Padrão)</span><span>▼</span>
               </div>
               <div class="customDropdownMenu" id="dropdownMenu">
                 <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial (Padrão)</div>
@@ -911,11 +917,22 @@
             </div>
 
             <div class="bottom-row">
-              <select id="aiDifficulty" class="select">
+              <select id="aiDifficulty" style="display:none;">
                 <option value="easy">🤖 Bots: Fácil</option>
                 <option value="normal" selected>🤖 Bots: Normal</option>
                 <option value="hard">🤖 Bots: Difícil</option>
               </select>
+              <div class="customDropdownWrapper" id="customAiDropdown">
+                <div class="customDropdownTrigger" id="aiDropdownTrigger">
+                  <!-- CORREÇÃO AQUI: mesma estrutura limpa garantindo padrão igual para ambos -->
+                  <span id="aiDropdownSelectedLabel">🤖 &nbsp; Bots: Normal</span><span>▼</span>
+                </div>
+                <div class="customDropdownMenu" id="aiDropdownMenu">
+                  <div class="customDropdownOption" data-value="easy">🤖 Bots: Fácil</div>
+                  <div class="customDropdownOption selected" data-value="normal">🤖 Bots: Normal</div>
+                  <div class="customDropdownOption" data-value="hard">🤖 Bots: Difícil</div>
+                </div>
+              </div>
 
               <button id="btnPlaySolo" class="btn primary play">▶ &nbsp; Jogar Sozinho</button>
               <button id="btnStartRace" type="button" class="btn primary play" style="display:none;">🏁 Iniciar
@@ -929,7 +946,6 @@
     </main>
   </div>
 
-  <!-- DEPENDÊNCIAS DO JOGO -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -938,7 +954,6 @@
   <script src="assets.js"></script>
   <script src="music.js"></script>
 
-  <!-- LÓGICA CENTRAL DO MENU -->
   <script>
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -1189,7 +1204,7 @@
         const option = e.target.closest('.customDropdownOption');
         if (!option) return;
         const val = option.getAttribute('data-value');
-        const label = option.innerHTML; // Puxa o HTML pra manter formatação da UI
+        const label = option.innerHTML;
 
         selectedLabel.innerHTML = label;
         if (nativeSelect) {
@@ -1204,6 +1219,7 @@
 
     function setupCustomDropdowns() {
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
+      bindCustomDropdown('aiDropdownTrigger', 'aiDropdownMenu', 'aiDifficulty', 'aiDropdownSelectedLabel');
       bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel');
     }
 
@@ -1259,7 +1275,6 @@
       });
     };
 
-    // --- ÁUDIO INTEGRADO ---
     let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
     let uiVolume = parseFloat(localStorage.getItem('pkart_music_vol'));
     if (isNaN(uiVolume)) uiVolume = 0.4;
@@ -1313,7 +1328,6 @@
 
     updateAudioUI(); updateSliderFill();
 
-    // --- CHANGELOG MODAL ---
     const changelogModal = document.getElementById('changelogModalOverlay');
     const btnOpenChangelog = document.getElementById('menuBtnChangelog');
     const btnCloseChangelog = document.getElementById('btnCloseChangelog');
@@ -1348,7 +1362,6 @@
       }
     }
 
-    // --- MULTIPLAYER GUEST ---
     document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
 
     document.getElementById('btnConnect').onclick = () => {
@@ -1420,17 +1433,27 @@
         const rankCustomMenu = document.getElementById('rankDropdownMenu');
 
         tracks.forEach(track => {
-          const option = document.createElement('option'); option.value = track.id; option.innerText = `🛠️ ${track.name}`;
+          const option = document.createElement('option');
+          option.value = track.id;
+          option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
-          const customOpt = document.createElement('div'); customOpt.className = 'customDropdownOption';
-          customOpt.setAttribute('data-value', track.id); customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
+
+          const customOpt = document.createElement('div');
+          customOpt.className = 'customDropdownOption';
+          customOpt.setAttribute('data-value', track.id);
+          customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
           if (rankNativeSelect && rankCustomMenu) {
-            const rankOption = document.createElement('option'); rankOption.value = track.id; rankOption.innerText = `🛠️ ${track.name}`;
+            const rankOption = document.createElement('option');
+            rankOption.value = track.id;
+            rankOption.innerText = `🛠️ ${track.name}`;
             rankNativeSelect.appendChild(rankOption);
-            const rankCustomOpt = document.createElement('div'); rankCustomOpt.className = 'customDropdownOption';
-            rankCustomOpt.setAttribute('data-value', track.id); rankCustomOpt.innerText = `🛠️ ${track.name}`;
+
+            const rankCustomOpt = document.createElement('div');
+            rankCustomOpt.className = 'customDropdownOption';
+            rankCustomOpt.setAttribute('data-value', track.id);
+            rankCustomOpt.innerText = `🛠️ ${track.name}`;
             rankCustomMenu.appendChild(rankCustomOpt);
           }
         });
@@ -1444,7 +1467,6 @@
     });
   </script>
 
-  <!-- Sistema de Login Seguro -->
   <script src="auth.js"></script>
 </body>
 
