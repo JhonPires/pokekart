@@ -87,17 +87,6 @@
       margin: 0 4px 25px;
     }
 
-    .menu-toggle {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      border: 1px solid #21415f;
-      background: #102039;
-      color: #fff;
-      font-size: 24px;
-      cursor: pointer;
-    }
-
     .brand-mini strong {
       font-size: 25px;
       letter-spacing: .5px;
@@ -223,6 +212,7 @@
       color: #16385c;
       border: 3px solid #fff;
       font-size: 20px;
+      transition: all 0.3s ease;
     }
 
     .profile strong {
@@ -482,7 +472,6 @@
       color: var(--yellow);
     }
 
-    /* CORREÇÃO AQUI: o ">" garante que apenas a seta seja afetada pela cor azul, e não os spans dentro do texto */
     .customDropdownTrigger>span:last-child {
       color: #21c7ff;
       font-size: 12px;
@@ -704,37 +693,41 @@
       letter-spacing: 0.5px;
     }
 
-    #leaderboardList>div,
-    #changelogContent>div {
-      background: rgba(10, 24, 42, .62) !important;
-      border: 1px solid #21496e !important;
-      border-radius: 14px !important;
-      backdrop-filter: blur(8px) !important;
-      color: var(--text) !important;
-      padding: 14px 16px !important;
-      margin-bottom: 8px !important;
+    /* --- SISTEMA DE ANIMAÇÃO RANQUEADA --- */
+    @keyframes popInPromo {
+      0% {
+        transform: scale(0.8);
+        opacity: 0;
+      }
+
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
     }
 
-    #leaderboardList span[style*="#94a3b8"] {
-      color: var(--muted) !important;
+    @keyframes pulseGlow {
+
+      0%,
+      100% {
+        filter: drop-shadow(0 0 15px currentColor);
+        transform: scale(1);
+      }
+
+      50% {
+        filter: drop-shadow(0 0 35px currentColor);
+        transform: scale(1.15);
+      }
     }
 
-    #leaderboardList span[style*="#f8fafc"] {
-      color: #fff !important;
-      font-weight: 800 !important;
+    .promo-anim {
+      animation: popInPromo 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
     }
 
-    #leaderboardList div[style*="#38bdf8"],
-    #leaderboardList div[style*="#facc15"] {
-      color: var(--yellow) !important;
-    }
-
-    #changelogContent>div>div {
-      border-bottom-color: #1d3857 !important;
-    }
-
-    #changelogContent ul {
-      color: #dcecff !important;
+    .promo-icon-anim {
+      font-size: 80px;
+      margin: 10px 0;
+      animation: pulseGlow 2s infinite;
     }
 
     ::-webkit-scrollbar {
@@ -752,10 +745,31 @@
 
   <div class="race-glow"></div>
 
+  <!-- MODAL DE PROMOÇÃO DE LIGA -->
+  <div id="promotionModalOverlay"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.92); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; z-index: 2000;">
+    <div class="lobbyCardModal promo-anim" style="text-align: center; max-width: 380px; padding: 30px;">
+      <h3 style="color: var(--muted); font-size: 14px; letter-spacing: 2.5px; margin-bottom: 5px; font-weight: 900;">
+        NOVA LIGA ALCANÇADA</h3>
+
+      <!-- O ícone e a cor mudam via JS -->
+      <div id="promoLeagueIcon" class="promo-icon-anim" style="color: #ffd23f;">🥇</div>
+
+      <h2 id="promoLeagueName"
+        style="color: var(--yellow); font-size: 34px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 15px rgba(255,210,63,0.4);">
+        OURO</h2>
+      <p style="color: #dcecff; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">Você conquistou <b
+          id="promoLeaguePoints" style="color: var(--cyan);">1500</b> troféus e avançou para a próxima liga!</p>
+
+      <button id="btnClosePromotion" class="btn primary" style="width: 100%;">RESGATAR RECOMPENSAS</button>
+    </div>
+  </div>
+
   <div id="sideMenuOverlay"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
   </div>
 
+  <!-- MODAL DE RANKINGS -->
   <div id="rankingModalOverlay"
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
     <div class="lobbyCardModal" style="height: 560px;">
@@ -811,20 +825,6 @@
     </div>
   </div>
 
-  <div id="changelogModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
-    <div class="lobbyCardModal" style="height: 560px;">
-      <button id="btnCloseChangelog" class="modal-close-btn">✕</button>
-      <h2 class="modal-title">📜 NOTAS DA ATUALIZAÇÃO</h2>
-      <div id="changelogContent"
-        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; padding-right: 4px; position: relative; z-index: 2; margin-top: 10px;">
-        <div
-          style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px; background: transparent !important; border: none !important;">
-          Carregando notas...</div>
-      </div>
-    </div>
-  </div>
-
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mini">
@@ -835,8 +835,8 @@
         <button id="menuBtnGarage"><span class="icon">🛍️</span>Loja / Garagem</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
-        <button id="menuBtnHowToPlay"><span class="icon">❓</span>Como jogar</button>
-        <button id="menuBtnOptions"><span class="icon">⚙️</span>Opções</button>
+        <!-- <button id="menuBtnHowToPlay"><span class="icon">❓</span>Como jogar</button> -->
+        <!-- <button id="menuBtnOptions"><span class="icon">⚙️</span>Opções</button> -->
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da Atualização</button>
       </nav>
 
@@ -847,8 +847,17 @@
 
       <div class="account">
         <div class="profile">
-          <div class="avatar">🏁</div>
-          <div><strong id="sideMenuNick">Piloto</strong><small>LENDA DAS PISTAS</small></div>
+          <!-- Ícone inicial já com a Pokébola da PokeAPI e a borda vermelha do tier Novato -->
+          <div class="avatar" id="sideLeagueIcon" style="border-color: #ff4b55; background: rgba(0,0,0,0.6);">
+            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+              alt="Pokébola"
+              style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px #ff4b55);">
+          </div>
+          <div>
+            <strong id="sideMenuNick">Piloto</strong>
+            <!-- Texto inicial atualizado para a temática e cor vermelha da Pokébola -->
+            <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">NOVATO (POKÉBOLA)</small>
+          </div>
         </div>
         <button id="btnLogout" class="logout">↪ &nbsp; Sair da conta</button>
       </div>
@@ -859,7 +868,9 @@
         <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
         <div class="stat"><span>🏆</span><b id="playerTrophiesText">0</b></div>
         <div class="stat rank">
-          <div class="avatar" style="width:28px;height:28px;font-size:12px;border-width:2px;">🏁</div>
+          <!-- Ícone Dinâmico no Topbar -->
+          <div class="avatar" id="topbarLeagueIcon" style="width:28px;height:28px;font-size:12px;border-width:2px;">🏁
+          </div>
           <strong id="playerHeaderNick">Piloto</strong>
         </div>
       </div>
@@ -886,8 +897,8 @@
             <div class="kart-name" id="kartName">⚡ Jolteon Kart</div>
 
             <div class="actions">
-              <button id="btnHost" class="btn primary">🏎️ &nbsp; Criar Sala</button>
-              <button id="btnJoin" class="btn">🚪 &nbsp; Entrar em Sala</button>
+              <button id="btnHost" class="btn primary">🏎️ &nbsp; Criar Sala (Ranqueada) </button>
+              <button id="btnJoin" class="btn">🚪 &nbsp; Buscar Sala (Ranqueada)</button>
             </div>
 
             <div id="joinBox" style="display: none; gap: 10px; margin-top: 12px; grid-template-columns: 2fr 1fr;">
@@ -908,7 +919,6 @@
             </select>
             <div class="customDropdownWrapper" id="customTrackDropdown">
               <div class="customDropdownTrigger" id="dropdownTrigger">
-                <!-- CORREÇÃO AQUI: removido o span amarelo que estava quebrando o layout -->
                 <span id="dropdownSelectedLabel">🏁 &nbsp; Circuito Oficial (Padrão)</span><span>▼</span>
               </div>
               <div class="customDropdownMenu" id="dropdownMenu">
@@ -924,7 +934,6 @@
               </select>
               <div class="customDropdownWrapper" id="customAiDropdown">
                 <div class="customDropdownTrigger" id="aiDropdownTrigger">
-                  <!-- CORREÇÃO AQUI: mesma estrutura limpa garantindo padrão igual para ambos -->
                   <span id="aiDropdownSelectedLabel">🤖 &nbsp; Bots: Normal</span><span>▼</span>
                 </div>
                 <div class="customDropdownMenu" id="aiDropdownMenu">
@@ -955,6 +964,112 @@
   <script src="music.js"></script>
 
   <script>
+    // ----------------------------------------------------
+    // SISTEMA RANQUEADO E DE LIGAS (TEMÁTICA POKÉMON / POKÉBOLAS)
+    // ----------------------------------------------------
+    const LEAGUES = [
+      {
+        id: 'pokeball',
+        name: 'POKÉBOLA',
+        min: 0,
+        max: 499,
+        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
+        color: '#ff4b55',
+        title: 'NOVATO'
+      },
+      {
+        id: 'greatball',
+        name: 'SUPER BOLA',
+        min: 500,
+        max: 1499,
+        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',
+        color: '#21c7ff',
+        title: 'EXPERIENTE'
+      },
+      {
+        id: 'ultraball',
+        name: 'ULTRA BOLA',
+        min: 1500,
+        max: 2999,
+        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',
+        color: '#ffd23f',
+        title: 'ELITE'
+      },
+      {
+        id: 'masterball',
+        name: 'MASTER BOLA',
+        min: 3000,
+        max: 99999,
+        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png',
+        color: '#a855f7',
+        title: 'MESTRE KART'
+      }
+    ];
+
+    function getLeagueByTrophies(trophies) {
+      return LEAGUES.find(l => trophies >= l.min && trophies <= l.max) || LEAGUES[0];
+    }
+
+    // Atualiza a interface usando as imagens da PokeAPI nas insígnias
+    function updateLeagueUI(trophies) {
+      const league = getLeagueByTrophies(trophies);
+
+      const topbarIcon = document.getElementById('topbarLeagueIcon');
+      const sideIcon = document.getElementById('sideLeagueIcon');
+      const sideText = document.getElementById('sideMenuLeagueText');
+
+      // Substitui o emoji por tag <img> puxando da PokeAPI
+      const imgHtml = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px ${league.color});">`;
+
+      if (topbarIcon) {
+        topbarIcon.innerHTML = imgHtml;
+        topbarIcon.style.borderColor = league.color;
+        topbarIcon.style.background = `rgba(0,0,0,0.6)`;
+      }
+
+      if (sideIcon) {
+        sideIcon.innerHTML = imgHtml;
+        sideIcon.style.borderColor = league.color;
+        sideIcon.style.background = `rgba(0,0,0,0.6)`;
+      }
+
+      if (sideText) {
+        sideText.innerText = `${league.title} (${league.name})`;
+        sideText.style.color = league.color;
+      }
+    }
+
+    // Modal de Promoção com a Pokébola correspondente da PokeAPI
+    function showPromotionModal(trophies) {
+      const league = getLeagueByTrophies(trophies);
+
+      const modal = document.getElementById('promotionModalOverlay');
+      const iconContainer = document.getElementById('promoLeagueIcon');
+      const name = document.getElementById('promoLeagueName');
+      const points = document.getElementById('promoLeaguePoints');
+
+      iconContainer.innerHTML = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 100px; height: 100px; object-fit: contain;">`;
+
+      name.innerText = league.name;
+      name.style.color = league.color;
+      name.style.textShadow = `0 0 20px ${league.color}80`;
+
+      points.innerText = trophies;
+      modal.style.display = 'flex';
+    }
+
+    document.getElementById('btnClosePromotion').onclick = () => {
+      document.getElementById('promotionModalOverlay').style.display = 'none';
+    };
+
+    // Chamada inicial (você conectará isso ao valor de troféus real do Supabase)
+    // updateLeagueUI(1500);
+    // Para testar a animação visual, digite no console do navegador: showPromotionModal(1500)
+
+    // ----------------------------------------------------
+    // RESTANTE DO CÓDIGO DO LOBBY
+    // ----------------------------------------------------
+
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
     async function enableMobileExperience() {
@@ -1464,6 +1579,24 @@
       initPreview();
       await fetchCustomTracks();
       setupCustomDropdowns();
+      // --- VERIFICA SE HÁ PROMOÇÃO PENDENTE DA CORRIDA ---
+      const pendingPromo = sessionStorage.getItem('pending_promotion');
+      if (pendingPromo) {
+        try {
+          const promoData = JSON.parse(pendingPromo);
+          // Aguarda meio segundo para garantir que o lobby carregou totalmente e exibe o modal
+          setTimeout(() => {
+            if (typeof showPromotionModal === 'function') {
+              showPromotionModal(promoData.trophies);
+              updateLeagueUI(promoData.trophies); // Atualiza a insígnia na barra lateral/topo
+            }
+          }, 500);
+        } catch (e) {
+          console.error("Erro ao ler promoção pendente:", e);
+        }
+        // Limpa para não exibir de novo se atualizar a página
+        sessionStorage.removeItem('pending_promotion');
+      }
     });
   </script>
 

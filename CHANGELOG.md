@@ -1,5 +1,8 @@
 # Changelog - PokéKart
 
+## [1.3] - 11/09/2026
+- Sistema de Ranqueada
+
 ## [1.2] - 11/09/2026
 - Correção design tela inicial.
 - Correção nos nomes dos Pokemons dos kart selecionados na Garagem.

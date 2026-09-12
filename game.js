@@ -1225,7 +1225,9 @@ async function showFinishOverlay(place) {
   document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
 
   // 4. Sistema Ranqueado Seguro (Supabase RPC)
-  if (typeof supabaseClient !== 'undefined') {
+  const isMultiplayerMatch = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '';
+
+  if (typeof supabaseClient !== 'undefined' && isMultiplayerMatch) {
     try {
       const { data, error } = await supabaseClient.rpc('processar_trofeus_partida', {
         posicao_final: place
@@ -1233,13 +1235,23 @@ async function showFinishOverlay(place) {
 
       if (error) throw error;
 
-      const resultado = data[0];
-      const ganho = resultado.delta_trofeus > 0 ? `+${resultado.delta_trofeus}` : resultado.delta_trofeus;
-      const corRank = resultado.delta_trofeus >= 0 ? '#22c55e' : '#ef4444';
+      // Como a função agora retorna um objeto JSON direto com 'success': true
+      if (data && data.success) {
+        const ganho = data.delta_trofeus > 0 ? `+${data.delta_trofeus}` : data.delta_trofeus;
+        const corRank = data.delta_trofeus >= 0 ? '#22c55e' : '#ef4444';
 
-      document.getElementById('rewardDisplay').innerHTML = `<span style="color:${corRank}">${ganho} 🏆</span> <span style="color:#94a3b8; font-size: 12px;">(Total: ${resultado.novos_trofeus})</span>`;
+        document.getElementById('rewardDisplay').innerHTML = `<span style="color:${corRank}">${ganho} 🏆</span> <span style="color:#94a3b8; font-size: 12px;">(Total: ${data.new_trophies})</span>`;
 
-      // (Opcional) Mantém a chamada legada para moedas se o seu banco ainda exigir
+        // SE O BANCO DE DADOS CONFIRMAR A PROMOÇÃO DE LIGA:
+        if (data.promoted) {
+          sessionStorage.setItem('pending_promotion', JSON.stringify({
+            trophies: data.new_trophies,
+            league: data.league
+          }));
+        }
+      }
+
+      // (Opcional) Mantém a chamada para moedas se houver
       try { await supabaseClient.rpc('grant_race_reward', { p_place: place, p_track_id: customTrackParam || 'default' }); } catch (e) { }
 
     } catch (err) {

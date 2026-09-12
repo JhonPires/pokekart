@@ -144,7 +144,11 @@ async function updateLobbyUI() {
     if (headerNick) headerNick.innerText = profile.nickname || 'Piloto';
     if (coinsText) coinsText.innerText = profile.coins || 0;
     if (trophiesText) trophiesText.innerText = profile.trophies || 0; // Correção aqui (usando 'profile' em vez de 'profileData')
-
+    // --- ADICIONE ESTA LINHA AQUI ---
+    // Atualiza dinamicamente as insígnias e o texto da liga (ex: Novato, Super Bola, etc) na sidebar e topbar
+    if (typeof updateLeagueUI === 'function') {
+      updateLeagueUI(profile.trophies || 0);
+    }
     // Sincroniza o seletor de kart do lobby com o kart equipado no perfil do jogador
     if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {
       const equippedIndex = KART_DATABASE.findIndex(k => k.id === profile.selected_kart);
