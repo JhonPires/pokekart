@@ -657,7 +657,8 @@
 
     .customDropdownMenu {
       position: absolute;
-      bottom: calc(100% + 6px);
+      top: calc(100% + 6px);
+      /* Faz o menu abrir para baixo do botão */
       left: 0;
       width: 100%;
       background: #09172a;
@@ -667,10 +668,11 @@
       display: none;
       flex-direction: column;
       gap: 4px;
-      max-height: 150px !important;
+      max-height: 160px !important;
       overflow-y: auto !important;
-      z-index: 99999;
-      box-shadow: 0 -15px 35px rgba(0, 0, 0, 0.8);
+      z-index: 999999;
+      /* Garante que fique acima de qualquer modal */
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9);
     }
 
     .customDropdownMenu.show {
