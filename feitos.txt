@@ -1,0 +1,8 @@
+- Corrida multiplayer é considerada somente quando tiver 4 jogadores caso contrario a corrida vira casual.
+- Ao atualizar a pagina sendo o HOST a corrida é finalizada. Obs: Existe punição para corridas ranqueadas.
+- Nomes dos bots agora tem os nomes dos lideres de ginasio.
+- Adicionar nivel de dificuldade da pista e conforme as pista for mais dificil a recompensa ser maior.
+- Administrador agora consegue alterar a dificuldade da pista.
+- Karts disponiveis para correr agora aparecem primeiro na lista de seleção na tela inicial.
+- Adicionado novas musicas e o controlador (Voltar/Avançar e Pause/Play).
+- Corrigido Notas de Atualização.

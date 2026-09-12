@@ -1,5 +1,18 @@
 # Changelog - PokéKart
 
+## [1.4] - 12/09/2026
+- Corridas Multiplayer agora são consideradas competitivas somente quando houver 4 jogadores.
+- Caso a corrida tenha menos de 4 jogadores, ela será automaticamente classificada como Corrida Casual.
+- Ao atualizar a página enquanto você for o HOST, a corrida será automaticamente finalizada. (Atenção: em corridas ranqueadas, essa ação poderá resultar em punição.)
+- Os bots agora utilizam os nomes dos Líderes de Ginásio, deixando as corridas mais temáticas e divertidas.
+- Adicionado um sistema de nível de dificuldade das pistas.
+- Quanto maior a dificuldade da pista, maior será a recompensa obtida ao concluir a corrida.
+- Administradores agora podem alterar a dificuldade de cada pista.
+- Os karts disponíveis para corrida agora aparecem primeiro na lista de seleção da tela inicial.
+- Adicionadas novas músicas ao jogo.
+- Adicionado controlador de reprodução.
+- Corrigido o sistema de Notas de Atualização, garantindo que as informações das novas versões sejam exibidas corretamente.
+
 ## [1.3] - 11/09/2026
 - Sistema de Ranqueada
 

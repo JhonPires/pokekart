@@ -742,7 +742,27 @@
 </head>
 
 <body>
+  <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
+  <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
+  <div id="changelogModalOverlay"
+    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+    <div class="lobbyCardModal" style="height: 560px; width: 420px; display: flex; flex-direction: column;">
 
+      <!-- Botão de Fechar -->
+      <button id="btnCloseChangelog" class="modal-close-btn">✕</button>
+
+      <!-- Título Principal com os ícones nas pontas (correto) -->
+      <h2 class="modal-title" style="text-align: center;">📜 NOTAS DA ATUALIZAÇÃO</h2>
+
+      <!-- Container das atualizações -->
+      <div id="changelogContent"
+        style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-top: 10px;">
+        <div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Carregando
+          atualizações...</div>
+      </div>
+
+    </div>
+  </div>
   <div class="race-glow"></div>
 
   <!-- MODAL DE PROMOÇÃO DE LIGA -->
@@ -797,10 +817,7 @@
         </div>
       </div>
 
-      <div
-        style="display: flex; justify-content: space-between; padding: 0 16px; font-size: 11px; color: var(--muted); font-weight: 900; letter-spacing: 1px; margin-top: 8px;">
-        <span>POS. JOGADOR</span><span id="leaderboardColumnTitle">TROFÉUS</span>
-      </div>
+
 
       <div id="leaderboardList"
         style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; position: relative; z-index: 2;">
@@ -840,10 +857,28 @@
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da Atualização</button>
       </nav>
 
-      <div class="music">
+      <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
         <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
-        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
+          style="margin-top: 0;">
+
+        <!-- Botões espalhados de ponta a ponta -->
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
+          <button id="btnMusicPrev" class="btn"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            title="Música Anterior">⏮</button>
+          <button id="btnMusicPlayPause" class="btn"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            title="Pausar / Reproduzir">⏸</button>
+          <button id="btnMusicNext" class="btn"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            title="Próxima Música">⏭</button>
+        </div>
       </div>
+
+      <!-- Controlador de Músicas -->
+
+
 
       <div class="account">
         <div class="profile">
@@ -1130,6 +1165,8 @@
     let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
     if (selectedIndex === -1) selectedIndex = 0;
 
+
+
     let previewScene, previewCamera, previewRenderer, currentModel;
     let previewRequestId = 0;
 
@@ -1251,6 +1288,40 @@
     }
     updateDailyFreeKarts();
 
+    // --- REORDENAÇÃO DOS KARTS: DISPONÍVEIS PRIMEIRO ---
+    function sortKartsByAvailability() {
+      const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
+      let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
+
+      if (profile && profile.unlocked_karts) {
+        unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
+      }
+
+      // Separa em dois grupos: disponíveis e bloqueados
+      const availableGroup = [];
+      const lockedGroup = [];
+
+      KART_DATABASE.forEach(kart => {
+        if (unlockedKarts.includes(kart.id)) {
+          availableGroup.push(kart);
+        } else {
+          lockedGroup.push(kart);
+        }
+      });
+
+      // Reconstrói o array principal com os liberados na frente
+      KART_DATABASE.length = 0;
+      KART_DATABASE.push(...availableGroup, ...lockedGroup);
+
+      // Atualiza o índice selecionado caso o kart salvo tenha mudado de posição
+      const currentSelectedId = sessionStorage.getItem('pkart_selected_kart');
+      selectedIndex = KART_DATABASE.findIndex(k => k.id === currentSelectedId);
+      if (selectedIndex === -1) selectedIndex = 0;
+    }
+
+    // Executa a ordenação logo após definir os karts grátis do dia
+    sortKartsByAvailability();
+
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon'];
@@ -1350,14 +1421,22 @@
 
     const peerConfig = { debug: 2, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } };
 
-    function redirectToRace(room = '', slot = 0, trackId = '') {
+    function redirectToRace(room = '', slot = 0, trackId = '', totalPlayers = 1) {
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = typeof room === 'string' ? room.trim().toLowerCase() : '';
       const chosenTrack = trackId || (document.getElementById('trackSelectDropdown')?.value || '');
-      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}`;
+
+      // Captura o atributo de dificuldade direto da opção selecionada no dropdown/select nativo
+      const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
+      const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
+
+      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}`;
+
       if (cleanRoom !== '') target += `&room=${cleanRoom}`;
       if (chosenTrack !== '') target += `&customTrack=${chosenTrack}`;
+      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`; // Envia a dificuldade correta do banco para o jogo
+
       window.location.href = target;
     }
 
@@ -1388,6 +1467,81 @@
           document.getElementById('lobbyStatus').textContent = `${guestConnections.size + 1}/4 Jogadores na sala!`;
         });
       });
+    };
+
+    document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
+
+    document.getElementById('btnConnect').onclick = () => {
+      const code = document.getElementById('joinCode').value.trim().toLowerCase();
+      if (!code) return;
+      document.getElementById('lobbyStatus').textContent = 'Conectando ao Host...';
+      if (peer) peer.destroy();
+      peer = new Peer(peerConfig);
+
+      peer.on('open', (myId) => {
+        const targetHostId = 'pkart-lobby-' + code;
+        hostLobbyConn = peer.connect(targetHostId, { reliable: true });
+        hostLobbyConn.on('open', () => {
+          document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o Host iniciar...';
+        });
+        hostLobbyConn.on('data', (data) => {
+          if (data.t === 'assign_slot') myAssignedSlot = data.slot;
+          if (data.t === 'start') {
+            document.getElementById('lobbyStatus').textContent = 'Iniciando corrida...';
+            // Convidado lê o total de jogadores enviado pelo Host
+            redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+          }
+        });
+      });
+    };
+
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'btnStartRace') {
+        e.preventDefault(); enableMobileExperience();
+        const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
+        document.getElementById('lobbyStatus').textContent = 'Enviando sinal de início...';
+
+        // Host calcula o total de jogadores reais (Ele + Convidados)
+        const totalPlayers = guestConnections.size + 1;
+
+        for (const [peerId, conn] of guestConnections.entries()) {
+          // Host avisa convidados passando o totalPlayers
+          if (conn && conn.open) conn.send({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers });
+        }
+        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, time: Date.now() }));
+
+        // Host entra na corrida
+        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 1200);
+      }
+    });
+
+    window.addEventListener('storage', (e) => {
+      if (e.key && e.key.startsWith('pkart_start_signal_') && myAssignedSlot > 0) {
+        const data = JSON.parse(e.newValue || '{}');
+        if (data.t === 'start') {
+          const roomFromKey = e.key.replace('pkart_start_signal_', '');
+          redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+        }
+      }
+    });
+
+    document.getElementById('btnPlaySolo').onclick = () => {
+      enableMobileExperience();
+      const diff = document.getElementById('aiDifficulty').value;
+      const nick = getNickname();
+      const kartId = KART_DATABASE[selectedIndex].id;
+      const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
+
+      // Captura a dificuldade salva no banco para a pista escolhida
+      const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
+      const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
+
+      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}&players=1`;
+
+      if (chosenTrack) target += `&customTrack=${chosenTrack}`;
+      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`; // Repassa o multiplicador correto para o modo solo
+
+      window.location.href = target;
     };
 
     let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
@@ -1477,69 +1631,12 @@
       }
     }
 
-    document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
-
-    document.getElementById('btnConnect').onclick = () => {
-      const code = document.getElementById('joinCode').value.trim().toLowerCase();
-      if (!code) return;
-      document.getElementById('lobbyStatus').textContent = 'Conectando ao Host...';
-      if (peer) peer.destroy();
-      peer = new Peer(peerConfig);
-
-      peer.on('open', (myId) => {
-        const targetHostId = 'pkart-lobby-' + code;
-        hostLobbyConn = peer.connect(targetHostId, { reliable: true });
-        hostLobbyConn.on('open', () => {
-          document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o Host iniciar...';
-        });
-        hostLobbyConn.on('data', (data) => {
-          if (data.t === 'assign_slot') myAssignedSlot = data.slot;
-          if (data.t === 'start') {
-            document.getElementById('lobbyStatus').textContent = 'Iniciando corrida...';
-            redirectToRace(code, myAssignedSlot, data.trackId || '');
-          }
-        });
-      });
-    };
-
-    document.addEventListener('click', (e) => {
-      if (e.target && e.target.id === 'btnStartRace') {
-        e.preventDefault(); enableMobileExperience();
-        const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
-        document.getElementById('lobbyStatus').textContent = 'Enviando sinal de início...';
-        for (const [peerId, conn] of guestConnections.entries()) {
-          if (conn && conn.open) conn.send({ t: 'start', trackId: chosenTrack });
-        }
-        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, time: Date.now() }));
-        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack); }, 1200);
-      }
-    });
-
-    window.addEventListener('storage', (e) => {
-      if (e.key && e.key.startsWith('pkart_start_signal_') && myAssignedSlot > 0) {
-        const data = JSON.parse(e.newValue || '{}');
-        if (data.t === 'start') {
-          const roomFromKey = e.key.replace('pkart_start_signal_', '');
-          redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '');
-        }
-      }
-    });
-
-    document.getElementById('btnPlaySolo').onclick = () => {
-      enableMobileExperience();
-      const diff = document.getElementById('aiDifficulty').value;
-      const nick = getNickname();
-      const kartId = KART_DATABASE[selectedIndex].id;
-      const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
-      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}`;
-      if (chosenTrack) target += `&customTrack=${chosenTrack}`;
-      window.location.href = target;
-    };
 
     async function fetchCustomTracks() {
       if (typeof supabaseClient === 'undefined') return;
       try {
-        const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name');
+        // Agora busca também a coluna 'difficulty' junto com o id e o nome
+        const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name, difficulty');
         if (error || !tracks) return;
 
         const nativeSelect = document.getElementById('trackSelectDropdown');
@@ -1548,14 +1645,18 @@
         const rankCustomMenu = document.getElementById('rankDropdownMenu');
 
         tracks.forEach(track => {
+          const trackDiff = track.difficulty || 'easy';
+
           const option = document.createElement('option');
           option.value = track.id;
+          option.setAttribute('data-difficulty', trackDiff); // Armazena a dificuldade no select nativo
           option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
 
           const customOpt = document.createElement('div');
           customOpt.className = 'customDropdownOption';
           customOpt.setAttribute('data-value', track.id);
+          customOpt.setAttribute('data-difficulty', trackDiff); // Armazena a dificuldade no elemento do dropdown customizado
           customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
@@ -1576,6 +1677,43 @@
     }
 
     window.addEventListener('DOMContentLoaded', async () => {
+      const btnPrev = document.getElementById('btnMusicPrev');
+      const btnPlayPause = document.getElementById('btnMusicPlayPause');
+      const btnNext = document.getElementById('btnMusicNext');
+
+      if (btnPrev) {
+        btnPrev.onclick = () => {
+          if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic();
+        };
+      }
+
+      if (btnPlayPause) {
+        // Atualiza o ícone inicial correto caso já esteja tocando ou pausado
+        if (window.globalMusic && window.globalMusic.paused) {
+          btnPlayPause.innerText = '▶';
+        } else {
+          btnPlayPause.innerText = '⏸';
+        }
+
+        btnPlayPause.onclick = () => {
+          if (typeof window.togglePlayPauseGlobalMusic === 'function') {
+            window.togglePlayPauseGlobalMusic();
+            // Atualiza o ícone do botão com base no estado atual
+            setTimeout(() => {
+              if (window.globalMusic) {
+                btnPlayPause.innerText = window.globalMusic.paused ? '▶' : '⏸';
+              }
+            }, 50);
+          }
+        };
+      }
+
+      if (btnNext) {
+        btnNext.onclick = () => {
+          if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic();
+        };
+      }
+
       initPreview();
       await fetchCustomTracks();
       setupCustomDropdowns();

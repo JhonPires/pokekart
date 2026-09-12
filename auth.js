@@ -44,9 +44,26 @@ async function loginPlayer(email, password) {
 
 // Carregar Perfil do Jogador Logado
 async function fetchPlayerProfile() {
-  const { data: { user } } = await supabaseClient.auth.getUser();
-  if (!user) return null;
+  // 1. Verifica se existe uma sessão local básica antes de tentar a rede
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return null;
 
+  // 2. Tenta validar o usuário no servidor do Supabase
+  const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+
+  // SE DER ERRO 403 (Ou qualquer outro erro de autenticação):
+  if (authError || !user) {
+    console.warn('Sessão de login expirada ou inválida. Limpando dados...');
+    await supabaseClient.auth.signOut(); // Força o logout e limpa o token quebrado
+
+    // Se estiver na tela do jogo, manda de volta pro lobby para logar de novo
+    if (window.location.pathname.includes('game.html')) {
+      window.location.href = 'index.html';
+    }
+    return null;
+  }
+
+  // 3. Busca o perfil no banco de dados
   const { data, error } = await supabaseClient
     .from('profiles')
     .select('*')
@@ -61,7 +78,6 @@ async function fetchPlayerProfile() {
   currentUserProfile = data;
 
   // --- NOVA VERIFICAÇÃO DE KART EXPIRADO ---
-  // Se o kart equipado no banco não for permanente e não estiver na rotação de hoje, volta para o Jolteon
   if (currentUserProfile.selected_kart) {
     const currentKart = currentUserProfile.selected_kart;
     const isBase = currentKart === 'jolteon' || currentKart === 'charizard';
@@ -76,7 +92,7 @@ async function fetchPlayerProfile() {
   }
   // -----------------------------------------
 
-  // Atualiza o nickname no Menu Lateral
+  // Atualiza o nickname no Menu Lateral se ele existir na página
   const sideNickEl = document.getElementById('sideMenuNick');
   if (sideNickEl && data.nickname) {
     sideNickEl.innerText = data.nickname;
@@ -159,17 +175,16 @@ async function updateLobbyUI() {
     }
   }
 
-  // 2. Configura os Botões do Lobby (Respeitando o Multiplayer)
+  // 2. Configura os Botões do Lobby (Respeitando o Multiplayer)  
   const btnStartRace = document.getElementById('btnStartRace');
   if (btnStartRace) {
-    // Removemos o .onclick direto daqui para deixar o gerenciador global do index.html funcionar,
-    // mas garantimos que se clicar sem sala, ele joga solo com o kart e nick corretos do perfil.
     btnStartRace.addEventListener('click', (e) => {
       if (typeof roomCode === 'undefined' || !roomCode) {
         e.preventDefault();
         const selectedKart = profile ? (profile.selected_kart || 'jolteon') : 'jolteon';
         const nickname = profile ? profile.nickname : 'JOGADOR';
-        window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}&slot=0`;
+        // Adicionado o &players=1 para o modo solo:
+        window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}&slot=0&players=1`;
       }
     });
   }

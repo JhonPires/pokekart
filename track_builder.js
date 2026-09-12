@@ -758,7 +758,7 @@ async function loadModerationList() {
   const tbody = document.getElementById('moderationListBody');
   if (!tbody) return;
 
-  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Carregando...</td></tr>';
 
   try {
     const { data: tracks, error } = await supabaseClient
@@ -769,11 +769,13 @@ async function loadModerationList() {
     if (error) throw error;
 
     if (!tracks || tracks.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Nenhuma pista enviada ainda.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Nenhuma pista enviada ainda.</td></tr>';
       return;
     }
 
     tbody.innerHTML = '';
+    const diffLabels = { easy: 'Fácil (1.0x)', normal: 'Normal (1.5x)', hard: 'Difícil (2.5x)' };
+
     tracks.forEach(tr => {
       const trEl = document.createElement('tr');
 
@@ -781,18 +783,35 @@ async function loadModerationList() {
       if (tr.status === 'approved' || tr.is_approved) statusBadge = `<span class="status-badge status-approved">Aprovada</span>`;
       if (tr.status === 'rejected') statusBadge = `<span class="status-badge status-rejected">Rejeitada</span>`;
 
+      const currentDiff = tr.difficulty ? tr.difficulty.toLowerCase() : 'easy';
+
       trEl.innerHTML = `
-        <td>
-          <div style="font-weight: bold; color: #facc15;">${escapeHtml(tr.name)}</div>
-          <div style="font-size: 11px; color: #94a3b8;">${escapeHtml(tr.description || 'Sem descrição')}</div>
+        <td style="vertical-align: middle; padding: 14px 12px 14px 16px;">
+          <div style="font-weight: bold; color: #facc15; font-size: 14px;">${escapeHtml(tr.name)}</div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">${escapeHtml(tr.description || 'Sem descrição')}</div>
         </td>
-        <td>${escapeHtml(tr.creator_name || 'Anônimo')}</td>
-        <td>${statusBadge}</td>
-        <td style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-          <button class="btn-builder" style="padding: 4px 8px; font-size: 11px;" onclick="testTrackById('${tr.id}')">🎮 Testar</button>
-          <button class="btn-builder btn-primary" style="padding: 4px 8px; font-size: 11px;" onclick="moderateTrack('${tr.id}', true)">Aprovar ✅</button>
-          <button class="btn-builder" style="background:#ef4444; border-color:#ef4444; padding: 4px 8px; font-size: 11px;" onclick="moderateTrack('${tr.id}', false)">Rejeitar ❌</button>
-          <button class="btn-builder" style="background:#64748b; border-color:#64748b; padding: 4px 8px; font-size: 11px;" onclick="deleteTrack('${tr.id}')">🗑️</button>
+        <td style="vertical-align: middle; padding: 14px 12px; font-weight: 600;">${escapeHtml(tr.creator_name || 'Anônimo')}</td>
+        <td style="vertical-align: middle; padding: 14px 12px;">
+          <div style="position: relative; display: inline-block;" id="dropdown-container-${tr.id}">
+            <button class="btn-builder" style="padding: 0 12px; font-size: 12px; font-weight: 700; background: #09172a; color: #f4f8ff; border: 1px solid #275276; border-radius: 12px; height: 38px; width: 145px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 6px; outline: none;" onclick="toggleCustomDropdown('${tr.id}')">
+              <span id="label-diff-${tr.id}">${diffLabels[currentDiff] || 'Normal (1.5x)'}</span>
+              <span style="font-size: 10px; color: var(--cyan);">▼</span>
+            </button>
+            <div id="dropdown-menu-${tr.id}" style="display: none; position: absolute; top: 42px; left: 0; width: 145px; background: #0b192c; border: 1px solid #23557c; border-radius: 12px; box-shadow: 0 15px 35px rgba(0,0,0,0.8); z-index: 99999; overflow: hidden; padding: 4px;">
+              <div style="padding: 9px 12px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; border-radius: 8px; transition: 0.15s;" onmouseover="this.style.background='#102a48'" onmouseout="this.style.background='transparent'" onclick="selectTrackDifficulty('${tr.id}', 'easy', 'Fácil (1.0x)')">Fácil (1.0x)</div>
+              <div style="padding: 9px 12px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; border-radius: 8px; transition: 0.15s;" onmouseover="this.style.background='#102a48'" onmouseout="this.style.background='transparent'" onclick="selectTrackDifficulty('${tr.id}', 'normal', 'Normal (1.5x)')">Normal (1.5x)</div>
+              <div style="padding: 9px 12px; font-size: 12px; font-weight: 700; color: #fff; cursor: pointer; border-radius: 8px; transition: 0.15s;" onmouseover="this.style.background='#102a48'" onmouseout="this.style.background='transparent'" onclick="selectTrackDifficulty('${tr.id}', 'hard', 'Difícil (2.5x)')">Difícil (2.5x)</div>
+            </div>
+          </div>
+        </td>
+        <td style="vertical-align: middle; padding: 14px 12px;">${statusBadge}</td>
+        <td style="vertical-align: middle; padding: 14px 16px 14px 12px; text-align: right;">
+          <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+            <button class="btn-builder" style="padding: 0 14px; height: 38px; font-size: 12px;" onclick="testTrackById('${tr.id}')">🎮 Testar</button>
+            <button class="btn-builder btn-primary" style="padding: 0 14px; height: 38px; font-size: 12px;" onclick="moderateTrack('${tr.id}', true)">Aprovar</button>
+            <button class="btn-builder" style="background:#ef4444; border-color:#ef4444; padding: 0 14px; height: 38px; font-size: 12px;" onclick="moderateTrack('${tr.id}', false)">Rejeitar</button>
+            <button class="btn-builder" style="background:#64748b; border-color:#64748b; padding: 0 12px; height: 38px; font-size: 12px;" onclick="deleteTrack('${tr.id}')">🗑️</button>
+          </div>
         </td>
       `;
       tbody.appendChild(trEl);
@@ -800,14 +819,69 @@ async function loadModerationList() {
 
   } catch (err) {
     console.error('Erro ao listar pistas na moderação:', err);
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#ef4444;">Erro: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444;">Erro: ${err.message}</td></tr>`;
   }
 }
 
-window.testTrackById = (trackId) => {
-  const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
-  const nick = (sessionStorage.getItem('pkart_nickname') || 'ADMIN').toUpperCase();
-  window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=${trackId}`;
+window.toggleCustomDropdown = (trackId) => {
+  // Fecha todos os outros abertos
+  document.querySelectorAll('[id^="dropdown-menu-"]').forEach(menu => {
+    if (menu.id !== `dropdown-menu-${trackId}`) menu.style.display = 'none';
+  });
+
+  const menu = document.getElementById(`dropdown-menu-${trackId}`);
+  if (menu) {
+    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+  }
+};
+
+window.selectTrackDifficulty = async (trackId, value, labelText) => {
+  const label = document.getElementById(`label-diff-${trackId}`);
+  if (label) label.innerText = labelText;
+
+  const menu = document.getElementById(`dropdown-menu-${trackId}`);
+  if (menu) menu.style.display = 'none';
+
+  try {
+    const { error } = await supabaseClient
+      .from('custom_tracks')
+      .update({ difficulty: value })
+      .eq('id', trackId);
+
+    if (error) throw error;
+  } catch (err) {
+    alert('Erro ao atualizar dificuldade: ' + err.message);
+  }
+};
+
+window.addEventListener('click', (e) => {
+  if (!e.target.closest('[id^="dropdown-container-"]')) {
+    document.querySelectorAll('[id^="dropdown-menu-"]').forEach(menu => {
+      menu.style.display = 'none';
+    });
+  }
+});
+
+window.testTrackById = async (trackId) => {
+  try {
+    // Busca a pista e a dificuldade real direto do Supabase
+    const { data: trackRecord, error } = await supabaseClient
+      .from('custom_tracks')
+      .select('difficulty')
+      .eq('id', trackId)
+      .single();
+
+    if (error) throw error;
+
+    const trackDifficulty = trackRecord && trackRecord.difficulty ? trackRecord.difficulty : 'easy';
+    const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+    const nick = (sessionStorage.getItem('pkart_nickname') || 'ADMIN').toUpperCase();
+
+    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=${trackId}&difficulty=${trackDifficulty}`;
+  } catch (err) {
+    console.error('Erro ao buscar dificuldade da pista:', err);
+    window.location.href = `game.html?customTrack=${trackId}`;
+  }
 };
 
 window.moderateTrack = async (trackId, approve) => {

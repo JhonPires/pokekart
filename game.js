@@ -75,7 +75,6 @@ const KART_DATABASE = [
   { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
   { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
   { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-  // --- NOVOS KARTS AQUI ---
   { id: 'ninetales', name: 'Ninetales Kart', modelUrl: getKartUrl('ninetales.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
   { id: 'arcanine', name: 'Arcanine Kart', modelUrl: getKartUrl('arcanine.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.2, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
   { id: 'lucario', name: 'Lucario Kart', modelUrl: getKartUrl('lucario.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
@@ -88,6 +87,8 @@ const KART_DATABASE = [
   { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } }
 ];
 
+const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
+
 const urlParams = new URLSearchParams(window.location.search);
 const aiDifficultyParam = urlParams.get('ai') || 'none';
 const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
@@ -95,9 +96,13 @@ const selectedKartId = urlParams.get('kart') || 'jolteon';
 const roomCodeParam = urlParams.get('room');
 const customTrackParam = urlParams.get('customTrack');
 const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
-
+const totalPlayersParam = parseInt(urlParams.get('players') || '1', 10);
 let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
 if (selectedKartIndex === -1) selectedKartIndex = 0;
+
+// Variáveis para controle de punição e estado ativo da partida
+let corridaAtivaParaPunicao = true;
+let lastSnapshotReceivedTime = Date.now();
 
 // ------------------------------------------------------------
 // PISTA E OBSTÁCULOS
@@ -566,7 +571,6 @@ async function loadCustomTrack(trackParam) {
     spawnItemBoxes(trackData.items);
     respawnTreesForTrack();
 
-    // Reposiciona o jogador local
     if (kart) {
       const grid = getGridPosition(playerSlotParam);
       kart.position.copy(grid.pos);
@@ -575,7 +579,6 @@ async function loadCustomTrack(trackParam) {
       physics.speed = 0;
     }
 
-    // --- CORREÇÃO: Reposiciona os bots na nova pista ---
     let botIndex = 1;
     for (const [id, bot] of remoteKarts.entries()) {
       if (bot.isBot) {
@@ -586,14 +589,10 @@ async function loadCustomTrack(trackParam) {
         bot.speed = 0;
         bot.progress = 0;
         bot.lapCount = 1;
-
-        // Recalcula o distanciamento da grama para se adaptar à largura da nova pista
         bot.laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
-
         botIndex++;
       }
     }
-    // ---------------------------------------------------
   }
 }
 
@@ -678,9 +677,7 @@ async function loadKartTemplate(kartEntry, callback) {
       try {
         const cache = await caches.open(targetCacheName);
         cache.put(kartEntry.modelUrl, response.clone());
-      } catch (e) {
-        console.warn('[Game] Falha ao salvar no cache:', e);
-      }
+      } catch (e) { }
     }
 
     const arrayBuffer = await response.arrayBuffer();
@@ -794,7 +791,10 @@ window.addEventListener('keydown', (e) => {
 });
 
 if (btnReturnLobbyEl) {
-  btnReturnLobbyEl.onclick = () => { window.location.href = 'index.html'; };
+  btnReturnLobbyEl.onclick = () => {
+    corridaAtivaParaPunicao = false;
+    window.location.href = 'index.html';
+  };
 }
 
 const keys = {};
@@ -882,7 +882,6 @@ async function enableMobileExperience() {
   }
 }
 
-// Intercepta a primeira interação para carregar permissões visuais de tela no celular no momento da corrida (Garante Fullscreen no Load)
 if (isMobile) {
   const startOverlay = document.createElement('div');
   startOverlay.id = 'mobileStartOverlay';
@@ -896,7 +895,6 @@ if (isMobile) {
     startOverlay.remove();
   }, { once: true });
 }
-// -------------------------------------------------------------
 
 const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
@@ -963,7 +961,6 @@ function updatePhysics(dt) {
 
   const raceOver = raceTrackers.get('local')?.finished;
 
-  // Integramos entradas físicas com Mobile e PC
   const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
   const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
 
@@ -991,16 +988,13 @@ function updatePhysics(dt) {
 
   let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
 
-  // --- CORREÇÃO: INVERTER VOLANTE NA RÉ ---
   if (physics.speed < -0.1) {
     turnInput *= -1;
   }
 
-  // Sobrescreve pelo giroscópio no Mobile com zona morta
   if (isMobile) {
     if (Math.abs(gyroTurnInput) > 0.1) {
       turnInput = gyroTurnInput;
-      // Inverte também no giroscópio se estiver de ré
       if (physics.speed < -0.1) turnInput *= -1;
     } else {
       turnInput = 0;
@@ -1092,10 +1086,7 @@ function updateRaceTracker(key, position) {
   const rawT = nearestTrackSample(position).sample.t;
 
   if (!tr) {
-    // CORREÇÃO: Se nascer no grid (ex: 0.98), o progresso inicial será -0.02.
-    // Assim o kart é obrigado a cruzar o 0.0 (Linha de chegada visual) para fechar a volta.
     let initialProgress = rawT > 0.5 ? rawT - 1.0 : rawT;
-
     tr = { lapCount: 1, lastRawT: rawT, progress: initialProgress, finished: false, finishTime: Infinity };
     raceTrackers.set(key, tr);
     return tr;
@@ -1105,23 +1096,17 @@ function updateRaceTracker(key, position) {
 
   let deltaT = rawT - tr.lastRawT;
 
-  // Lida com o momento de cruzar a linha de chegada (passar de 0.99 para 0.01)
   if (deltaT < -0.5) deltaT += 1.0;
   else if (deltaT > 0.5) deltaT -= 1.0;
 
-  // ANTI-CHEAT / ANTI-BUG: Impede que karts ganhem progresso se cortarem 
-  // caminho pulando entre partes da pista que estão muito próximas
   if (Math.abs(deltaT) > 0.25) {
     deltaT = 0;
   }
 
   tr.lastRawT = rawT;
   tr.progress += deltaT;
-
-  // A volta atual é o piso do progresso + 1. (Math.max impede que mostre Volta 0 na largada)
   tr.lapCount = Math.max(1, Math.floor(tr.progress) + 1);
 
-  // A corrida finaliza quando ultrapassar as 3 voltas na linha de chegada exata
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
     tr.finishTime = Date.now();
@@ -1135,7 +1120,8 @@ let localFinishNotified = false;
 let finishLeaderboardEl = null;
 
 async function showFinishOverlay(place) {
-  // 1. Efeitos Visuais e Sonoros
+  corridaAtivaParaPunicao = false; // Desativa punição ao terminar corretamente
+
   victorySound.play().catch(e => console.warn('Bloqueio de autoplay de áudio:', e));
   if (typeof confetti === 'function') {
     confetti({
@@ -1144,7 +1130,6 @@ async function showFinishOverlay(place) {
     });
   }
 
-  // 2. Criação da Interface (DOM)
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
   overlay.style.cssText = `
@@ -1171,7 +1156,7 @@ async function showFinishOverlay(place) {
     <h2 style="margin:0; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">🏁 CORRIDA FINALIZADA</h2>
     <div style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
        <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
-       <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Rank...</div>
+       <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Recompensas...</div>
     </div>
   `;
 
@@ -1197,7 +1182,6 @@ async function showFinishOverlay(place) {
   overlay.appendChild(card);
   document.body.appendChild(overlay);
 
-  // 3. Processamento de Recordes de Tempo
   const finalTimeMs = Math.round(totalRaceTimeMs);
   const formattedTime = formatTime(finalTimeMs);
   let isNewRecord = false;
@@ -1224,10 +1208,26 @@ async function showFinishOverlay(place) {
 
   document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
 
-  // 4. Sistema Ranqueado Seguro (Supabase RPC)
-  const isMultiplayerMatch = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '';
+  // --- CÁLCULO DE MOEDAS COM MULTIPLICADOR DE DIFICULDADE DA PISTA ---
+  const currentTrackDifficulty = urlParams.get('difficulty') || 'easy'; // 'easy', 'normal', 'hard'
+  const TRACK_DIFFICULTY_MULTIPLIERS = {
+    easy: 1.0,
+    normal: 1.5,
+    hard: 2.5
+  };
+  const trackMultiplier = TRACK_DIFFICULTY_MULTIPLIERS[currentTrackDifficulty] || 1.0;
 
-  if (typeof supabaseClient !== 'undefined' && isMultiplayerMatch) {
+  const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
+  const baseCoins = baseCoinsByPosition[place] || 20;
+  const totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
+
+  // Monta o HTML base com as moedas ganhas e o bônus da pista
+  let rewardHTML = `<div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>`;
+
+  // REQUISITO ATUALIZADO: Apenas ranca/ganha troféus se for sala multiplayer COM EXATAMENTE 4 JOGADORES REAIS (sem bots)
+  const isRankedMatch = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '' && totalPlayersParam === 4;
+
+  if (typeof supabaseClient !== 'undefined' && isRankedMatch) {
     try {
       const { data, error } = await supabaseClient.rpc('processar_trofeus_partida', {
         posicao_final: place
@@ -1235,14 +1235,13 @@ async function showFinishOverlay(place) {
 
       if (error) throw error;
 
-      // Como a função agora retorna um objeto JSON direto com 'success': true
       if (data && data.success) {
-        const ganho = data.delta_trofeus > 0 ? `+${data.delta_trofeus}` : data.delta_trofeus;
+        const ganhoTrofeus = data.delta_trofeus > 0 ? `+${data.delta_trofeus}` : data.delta_trofeus;
         const corRank = data.delta_trofeus >= 0 ? '#22c55e' : '#ef4444';
 
-        document.getElementById('rewardDisplay').innerHTML = `<span style="color:${corRank}">${ganho} 🏆</span> <span style="color:#94a3b8; font-size: 12px;">(Total: ${data.new_trophies})</span>`;
+        // Adiciona os troféus ao painel de recompensas
+        rewardHTML += `<div style="margin-top: 4px;"><span style="color:${corRank}">${ganhoTrofeus} 🏆</span> <span style="color:#94a3b8; font-size: 11px;">(Rank Total: ${data.new_trophies})</span></div>`;
 
-        // SE O BANCO DE DADOS CONFIRMAR A PROMOÇÃO DE LIGA:
         if (data.promoted) {
           sessionStorage.setItem('pending_promotion', JSON.stringify({
             trophies: data.new_trophies,
@@ -1250,16 +1249,12 @@ async function showFinishOverlay(place) {
           }));
         }
       }
-
-      // (Opcional) Mantém a chamada para moedas se houver
-      try { await supabaseClient.rpc('grant_race_reward', { p_place: place, p_track_id: customTrackParam || 'default' }); } catch (e) { }
-
     } catch (err) {
       console.error('Erro ao processar troféus:', err);
-      document.getElementById('rewardDisplay').innerText = 'Erro ao salvar pontuação.';
-      document.getElementById('rewardDisplay').style.color = '#ef4444';
     }
   }
+
+  document.getElementById('rewardDisplay').innerHTML = rewardHTML;
 }
 
 // ------------------------------------------------------------
@@ -1378,7 +1373,6 @@ function updateItemBoxes(dt) {
     box.mesh.rotation.y += dt * 2.0;
     box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.005) * 0.15;
 
-    // Jogador local pegando caixa
     if (kart && box.mesh.position.distanceTo(kart.position) < 1.6) {
       disableItemBox(box.id);
       sendNetworkEvent({ t: 'take_box', boxId: box.id });
@@ -1386,14 +1380,13 @@ function updateItemBoxes(dt) {
       return;
     }
 
-    // Bots pegando caixa
     for (const [id, bot] of remoteKarts.entries()) {
       if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.6) {
         disableItemBox(box.id);
         if (!bot.currentItem) {
           const skillKeys = Object.keys(SKILLS);
           bot.currentItem = SKILLS[skillKeys[Math.floor(Math.random() * skillKeys.length)]];
-          bot.itemUseTimer = 1.0 + Math.random() * 2.0; // Usa entre 1s e 3s após pegar
+          bot.itemUseTimer = 1.0 + Math.random() * 2.0;
         }
         break;
       }
@@ -1493,7 +1486,6 @@ function updateTraps(dt) {
 
     const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
 
-    // Armadilha bate no Jogador
     if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
       if (trap.type !== 'FUMACA') {
         trap.active = false;
@@ -1507,7 +1499,6 @@ function updateTraps(dt) {
       }
     }
 
-    // Armadilha bate nos Bots
     for (const [id, bot] of remoteKarts.entries()) {
       if (!bot.isBot || bot.finished || !trap.active) continue;
 
@@ -1518,7 +1509,7 @@ function updateTraps(dt) {
         }
         if (bot.shieldTimer <= 0) {
           if (trap.type === 'ICE') { bot.speed = 0; bot.spinTimer = 0.8; }
-          else if (trap.type === 'LODO') { bot.speed *= 0.4; } // Lodo reduz a velocidade do bot em vez de inverter controles (eles não tem teclado para inverter)
+          else if (trap.type === 'LODO') { bot.speed *= 0.4; }
           else if (trap.type === 'FUMACA') { bot.speed *= 0.85; }
         }
         break;
@@ -1561,7 +1552,6 @@ function castShockAbility() {
 
   let bestAheadProgress = Infinity;
   for (const [pid, entry] of remoteKarts.entries()) {
-    // Ignora quem já finalizou a corrida
     if (!entry.finished && entry.progress > myProgress && entry.progress < bestAheadProgress) {
       bestAheadProgress = entry.progress;
       targetPeerId = pid;
@@ -1571,7 +1561,6 @@ function castShockAbility() {
   if (!targetPeerId) {
     let bestBehindProgress = -1;
     for (const [pid, entry] of remoteKarts.entries()) {
-      // Ignora quem já finalizou a corrida
       if (!entry.finished && entry.progress < myProgress && entry.progress > bestBehindProgress) {
         bestBehindProgress = entry.progress;
         targetPeerId = pid;
@@ -1750,7 +1739,6 @@ function removeRemoteKart(peerId) {
 
 function initRaceMultiplayer() {
   if (!_roomParam) {
-    console.log('[Multiplayer] Modo Solo ativado (sem código de sala).');
     setTimeout(startCountdown, 500);
     return;
   }
@@ -1769,24 +1757,15 @@ function initRaceMultiplayer() {
   };
 
   if (isHost) {
-    console.log('[Multiplayer HOST] Registrando Host da corrida com ID:', racePeerId);
     if (racePeer) racePeer.destroy();
-
     racePeer = new Peer(racePeerId, peerOpts);
 
-    racePeer.on('open', (id) => {
-      console.log('[Multiplayer HOST] Servidor de corrida ativo e escutando conexões no ID:', id);
-    });
+    racePeer.on('open', (id) => { });
 
     racePeer.on('connection', (conn) => {
-      console.log('[Multiplayer HOST] Convidado conectou no jogo:', conn.peer);
-
       conn.on('open', () => {
         activeGuestConns.set(conn.peer, conn);
-        console.log(`[Multiplayer HOST] Jogadores conectados na pista: ${activeGuestConns.size + 1}`);
-
         setTimeout(() => {
-          console.log('[Multiplayer HOST] Disparando contagem regressiva unificada!');
           broadcastEvent({ t: 'start_countdown' });
           if (!raceStarted && !countdownInProgress) {
             startCountdown();
@@ -1806,26 +1785,16 @@ function initRaceMultiplayer() {
       conn.on('error', () => removeRemoteKart(conn.peer));
     });
 
-    racePeer.on('error', (err) => {
-      console.error('[Multiplayer HOST ERROR]', err);
-    });
-
   } else {
-    console.log('[Multiplayer GUEST] Inicializando Convidado no Slot:', _slotParam);
     if (racePeer) racePeer.destroy();
-
     racePeer = new Peer(peerOpts);
 
     racePeer.on('open', (myId) => {
-      console.log('[Multiplayer GUEST] ID local criado:', myId);
-
       let attemptCount = 0;
       const maxAttempts = 25;
 
       function tryConnectToHost() {
         attemptCount++;
-        console.log(`[Multiplayer GUEST] Tentando conectar ao Host (${attemptCount}/${maxAttempts})...`);
-
         if (hostConn) {
           try { hostConn.close(); } catch (e) { }
         }
@@ -1833,7 +1802,7 @@ function initRaceMultiplayer() {
         hostConn = racePeer.connect(racePeerId, { reliable: true });
 
         hostConn.on('open', () => {
-          console.log('[Multiplayer GUEST] CONECTADO AO HOST DA CORRIDA COM SUCESSO!');
+          lastSnapshotReceivedTime = Date.now(); // Reseta o timer de watchdog
 
           setInterval(() => {
             if (kart && hostConn && hostConn.open) {
@@ -1857,12 +1826,18 @@ function initRaceMultiplayer() {
         });
 
         hostConn.on('data', (data) => {
-          if (data.t === 'start_countdown') {
-            console.log('[Multiplayer GUEST] Recebeu ordem do Host para disparar contagem!');
+          // Removemos a exigência de "raceStarted" e usamos window para evitar erros de escopo
+          if (data.t === 'host_disconnected' && !window.jaSurgiuAlertaDeQueda) {
+            window.jaSurgiuAlertaDeQueda = true;
+            corridaAtivaParaPunicao = false;
+            alert("⚠️ O Host encerrou a sala.");
+            window.location.href = 'index.html';
+          } else if (data.t === 'start_countdown') {
             if (!raceStarted && !countdownInProgress) {
               startCountdown();
             }
           } else if (data.t === 'snapshot' && data.karts) {
+            lastSnapshotReceivedTime = Date.now();
             for (const [peerId, state] of Object.entries(data.karts)) {
               if (racePeer && peerId !== racePeer.id) {
                 handleRemoteKartState(peerId, state);
@@ -1877,13 +1852,8 @@ function initRaceMultiplayer() {
       setTimeout(tryConnectToHost, 1000);
 
       racePeer.on('error', (err) => {
-        if (err.type === 'peer-unavailable') {
-          console.warn('[Multiplayer GUEST] Host ainda não abriu a sala 3D. Tentando novamente em 1.5s...');
-          if (attemptCount < maxAttempts) {
-            setTimeout(tryConnectToHost, 1500);
-          }
-        } else {
-          console.error('[Multiplayer GUEST PEER ERROR]', err);
+        if (err.type === 'peer-unavailable' && attemptCount < maxAttempts) {
+          setTimeout(tryConnectToHost, 1500);
         }
       });
     });
@@ -1892,6 +1862,16 @@ function initRaceMultiplayer() {
 
 let netTimer = 0;
 function networkTick(dt) {
+  // Watchdog para convidados: se o host cair, expulsa para o lobby sem punição
+  if (!isHost && typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+    if (Date.now() - lastSnapshotReceivedTime > 4000) {
+      corridaAtivaParaPunicao = false; // Impede punição por queda de internet do host
+      alert("⚠️ A conexão com o Host foi perdida. A corrida foi encerrada.");
+      window.location.href = 'index.html';
+      return;
+    }
+  }
+
   if (!isHost || !racePeer) return;
 
   netTimer += dt;
@@ -1917,11 +1897,11 @@ function networkTick(dt) {
 
   for (const [pid, entry] of remoteKarts.entries()) {
     snapshot[pid] = {
-      x: entry.target.pos.x,
-      y: entry.target.pos.y,
-      z: entry.target.pos.z,
-      ry: entry.target.ry,
-      speed: entry.target.speed,
+      x: entry.isBot ? entry.obj.group.position.x : entry.target.pos.x,
+      y: entry.isBot ? entry.obj.group.position.y : entry.target.pos.y,
+      z: entry.isBot ? entry.obj.group.position.z : entry.target.pos.z,
+      ry: entry.isBot ? entry.heading : entry.target.ry,
+      speed: entry.isBot ? entry.speed : entry.target.speed,
       nick: entry.nickname,
       kartId: entry.kartId,
       progress: entry.progress,
@@ -1939,7 +1919,6 @@ function networkTick(dt) {
 
 function updateRemoteKarts(dt) {
   for (const [pid, entry] of remoteKarts.entries()) {
-    // Adicione esta linha para ignorar os bots (eles têm sua própria animação)
     if (entry.isBot) continue;
     const g = entry.obj.group;
 
@@ -1966,7 +1945,7 @@ function updateRemoteKarts(dt) {
 initRaceMultiplayer();
 
 // ------------------------------------------------------------
-// CLASSIFICAÇÃO DA HUD (TOTALMENTE REESCRITA E ROBUSTA)
+// CLASSIFICAÇÃO DA HUD
 // ------------------------------------------------------------
 function updateStandings() {
   const standingsEl = document.getElementById('standingsList');
@@ -2033,13 +2012,11 @@ function updateHUD() {
     if (speedEl) speedEl.innerText = currentSpeedKmH;
 
     if (speedFillEl) {
-      // Calcula a porcentagem real baseada na velocidade máxima do kart atual
       const maxPossibleSpeed = physics.maxSpeed * (physics.turboTimer > 0 ? 1.4 : 1.0) * 3.6;
       const speedPercent = Math.min(100, (currentSpeedKmH / maxPossibleSpeed) * 100);
 
       speedFillEl.style.width = `${speedPercent}%`;
 
-      // Se passar de 85% da velocidade máxima, muda o brilho/cor para indicar que está no talo (vermelho)
       if (speedPercent > 85) {
         speedFillEl.style.boxShadow = '0 0 12px rgba(255, 75, 85, 0.8)';
       } else {
@@ -2057,7 +2034,6 @@ function updateHUD() {
       showFinishOverlay(myRank);
     }
 
-    // --- MAGIA AQUI: Atualiza o painel final em Tempo Real ---
     if (finishLeaderboardEl) {
       finishLeaderboardEl.innerHTML = racers.map((r, index) => {
         const isMe = r.key === 'local';
@@ -2072,7 +2048,7 @@ function updateHUD() {
         return `
           <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
             <div style="font-weight: bold; color: ${nameColor}; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">
-              <span style="color:#cbd5e1; margin-right: 6px;">${index + 1}º</span>${r.name}
+              <span style="color:#cbd5e1; margin-right: 10px; display: inline-block;">${index + 1}º</span>${r.name}
             </div>
             <div style="font-size: 13px; font-weight: bold;">${status}</div>
           </div>
@@ -2083,7 +2059,7 @@ function updateHUD() {
 }
 
 // ------------------------------------------------------------
-// CÁLCULO E DESENHO DINÂMICO DO MINIMAPA
+// MINIMAPA
 // ------------------------------------------------------------
 function getTrackBounds(trackPoints) {
   let minX = Infinity, maxX = -Infinity;
@@ -2129,14 +2105,6 @@ function drawMinimap() {
   ctx.fillStyle = bgGrad;
   ctx.fillRect(0, 0, width, height);
 
-  ctx.strokeStyle = 'rgba(56, 189, 248, 0.08)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(radius, 0); ctx.lineTo(radius, height);
-  ctx.moveTo(0, radius); ctx.lineTo(width, radius);
-  ctx.arc(radius, radius, radius * 0.5, 0, Math.PI * 2);
-  ctx.stroke();
-
   const bounds = getTrackBounds(currentTrackPoints);
   const mapSize = Math.min(width, height);
   const scale = mapSize / Math.max(bounds.width, bounds.height);
@@ -2163,9 +2131,6 @@ function drawMinimap() {
   ctx.closePath();
   ctx.stroke();
 
-  ctx.save();
-  ctx.shadowColor = '#38bdf8';
-  ctx.shadowBlur = 6;
   ctx.beginPath();
   ctx.strokeStyle = '#ffffff';
   ctx.lineWidth = 3.5;
@@ -2176,17 +2141,12 @@ function drawMinimap() {
   });
   ctx.closePath();
   ctx.stroke();
-  ctx.restore();
 
-  const startPos = worldToMinimap(currentTrackPoints[0].x, currentTrackPoints[0].z);
-  ctx.fillStyle = '#facc15';
-  ctx.beginPath();
-  ctx.arc(startPos.x, startPos.y, 3, 0, Math.PI * 2);
-  ctx.fill();
-
+  // Renderiza karts remotos e BOTS no minimapa corretamente (usando group.position se for bot)
   for (const entry of remoteKarts.values()) {
-    if (entry.obj && entry.obj.group) {
-      const pos = worldToMinimap(entry.obj.group.position.x, entry.obj.group.position.z);
+    const posReal = entry.isBot ? entry.obj.group.position : entry.target.pos;
+    if (posReal) {
+      const pos = worldToMinimap(posReal.x, posReal.z);
 
       ctx.fillStyle = '#ef4444';
       ctx.strokeStyle = '#ffffff';
@@ -2200,13 +2160,6 @@ function drawMinimap() {
 
   if (kart) {
     const pos = worldToMinimap(kart.position.x, kart.position.z);
-    const pulseRadius = 5 + Math.sin(performance.now() * 0.008) * 1.5;
-
-    ctx.fillStyle = 'rgba(250, 204, 21, 0.35)';
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, pulseRadius + 3, 0, Math.PI * 2);
-    ctx.fill();
-
     ctx.fillStyle = '#facc15';
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -2226,56 +2179,38 @@ function drawMinimap() {
 }
 
 // ------------------------------------------------------------
-// LOOP PRINCIPAL
-// ------------------------------------------------------------
-let lastTime = performance.now();
-function animate() {
-  requestAnimationFrame(animate);
-  const now = performance.now();
-  const dt = Math.min(0.05, (now - lastTime) / 1000);
-  lastTime = now;
-
-  updatePhysics(dt);
-  updateBots(dt);
-  updateCamera(dt);
-  updateItemBoxes(dt);
-  updateTraps(dt);
-  networkTick(dt);
-  updateRemoteKarts(dt);
-  updateHUD();
-  drawMinimap();
-
-  renderer.render(scene, camera);
-}
-
-// ------------------------------------------------------------
 // INTELIGÊNCIA ARTIFICIAL (BOTS)
 // ------------------------------------------------------------
 function spawnBots() {
-  if (roomCodeParam || aiDifficultyParam === 'none') return;
+  if (roomCodeParam && !isHost) return;
+  if (!roomCodeParam && aiDifficultyParam === 'none') return;
 
-  const botCount = 3;
+  const maxSlots = 4;
+  const botCount = maxSlots - totalPlayersParam;
+
+  if (botCount <= 0) return;
+
   const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
   const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
-  for (let i = 1; i <= botCount; i++) {
+  for (let i = 0; i < botCount; i++) {
     const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
-    const botId = 'bot-' + i;
+    const botSlot = totalPlayersParam + i;
+    const botId = 'bot-' + botSlot;
 
     const obj = createKart(0x555555);
     loadKartTemplate(randomKart, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
 
-    const grid = getGridPosition(i);
+    const grid = getGridPosition(botSlot);
     obj.group.position.copy(grid.pos);
     obj.group.rotation.y = grid.heading;
 
-    // Limita o desvio para o bot tentar se manter na pista e não na grama
     const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
-
+    const randomLeaderName = GYM_LEADERS[Math.floor(Math.random() * GYM_LEADERS.length)];
     remoteKarts.set(botId, {
       isBot: true,
       obj: obj,
-      nickname: 'BOT ' + randomKart.name.split(' ')[0].toUpperCase(),
+      nickname: randomLeaderName,//+ ' ' + randomKart.name.split(' ')[0].toUpperCase(),
       kartId: randomKart.id,
       stats: randomKart.stats,
       speed: 0,
@@ -2286,13 +2221,8 @@ function spawnBots() {
       lapCount: 1,
       finished: false,
       target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-      // --- NOVOS STATUS PARA ITENS E ARMADILHAS ---
-      stunTimer: 0,
-      spinTimer: 0,
-      shieldTimer: 0,
-      turboTimer: 0,
-      currentItem: null,
-      itemUseTimer: 0
+      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
+      currentItem: null, itemUseTimer: 0
     });
   }
 }
@@ -2350,9 +2280,7 @@ function updateBots(dt) {
     const grassStart = halfWidth + 0.8;
     const wallStart = grassStart + 3.0;
 
-    // --- CORREÇÃO DA TREMEDEIRA (SUAVIZAÇÃO) ---
     if (Math.abs(lateral) > safeZone) {
-      // O bot desliza o volante suavemente de volta para o centro (0) em vez de pular instantaneamente
       bot.laneOffset = THREE.MathUtils.lerp(bot.laneOffset, 0, dt * 3.0);
 
       if (Math.abs(lateral) > grassStart) {
@@ -2372,7 +2300,6 @@ function updateBots(dt) {
 
     if (bot.speed > maxSpd) bot.speed = maxSpd;
 
-    // O alvo final usa o laneOffset unificado e suavizado
     targetPt.addScaledVector(targetNormal, bot.laneOffset);
 
     const offset = targetPt.clone().sub(bot.obj.group.position);
@@ -2386,7 +2313,6 @@ function updateBots(dt) {
       bot.speed *= 0.95;
     }
 
-    // O multiplicador de giro foi levemente reduzido para evitar solavancos na malha
     const panicTurnMult = Math.abs(lateral) > safeZone ? 3.5 : 2.0;
     const turnSpd = bot.stats.turnSpeed * panicTurnMult;
 
@@ -2423,19 +2349,16 @@ function useBotSkill(botId, bot, skill) {
       let bestAheadProgress = Infinity;
       const myTr = raceTrackers.get('local');
 
-      // Busca jogador real à frente que NÃO finalizou
       if (myTr && !myTr.finished && myTr.progress > bot.progress && myTr.progress < bestAheadProgress) {
         bestAheadProgress = myTr.progress; targetId = 'local';
       }
 
-      // Busca bots remotos à frente que NÃO finalizaram
       for (const [pid, entry] of remoteKarts.entries()) {
         if (pid !== botId && !entry.finished && entry.progress > bot.progress && entry.progress < bestAheadProgress) {
           bestAheadProgress = entry.progress; targetId = pid;
         }
       }
 
-      // Se ninguém válido estiver à frente, tenta atingir quem está logo atrás
       if (!targetId) {
         let bestBehindProgress = -1;
         if (myTr && !myTr.finished && myTr.progress < bot.progress && myTr.progress > bestBehindProgress) {
@@ -2460,6 +2383,98 @@ function useBotSkill(botId, bot, skill) {
       }
       break;
   }
+}
+
+// ------------------------------------------------------------
+// SISTEMA ANTI-ABANDONO E SAÍDA DA SALA
+// ------------------------------------------------------------
+const isRankedMatchGlobal = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '' && totalPlayersParam === 4;
+let isLeavingRoom = false;
+
+function executarSaidaDaSala() {
+  if (isLeavingRoom) return;
+  isLeavingRoom = true;
+
+  // 1. Se for o Host, avisa os convidados independentemente de ser ranqueada ou não
+  if (isHost && typeof activeGuestConns !== 'undefined') {
+    for (const conn of activeGuestConns.values()) {
+      if (conn.open) conn.send({ t: 'host_disconnected' });
+    }
+  }
+
+  // 2. Só aplica a punição de troféus se for ranqueada E a corrida estiver ativa
+  if (isRankedMatchGlobal && corridaAtivaParaPunicao && navigator.onLine) {
+    aplicarPunicaoAbandonoSincrona();
+  }
+}
+
+// Intercepta F5 para qualquer sala multiplayer (para não abandonar os convidados no limbo)
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'F5' && typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+    e.preventDefault();
+    executarSaidaDaSala();
+    corridaAtivaParaPunicao = false;
+    setTimeout(() => { window.location.href = 'index.html'; }, 50);
+  }
+});
+
+// Garante o fechamento limpo se fechar a aba no "X"
+window.addEventListener('pagehide', () => {
+  if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+    executarSaidaDaSala();
+  }
+});
+
+function aplicarPunicaoAbandonoSincrona() {
+  if (typeof supabaseClient === 'undefined') return;
+  const supabaseUrl = supabaseClient.supabaseUrl;
+  const supabaseKey = supabaseClient.supabaseKey;
+
+  supabaseClient.auth.getSession().then(({ data }) => {
+    const token = data?.session?.access_token;
+    if (token) {
+      const endpoint = `${supabaseUrl}/rest/v1/rpc/punir_abandono_partida`;
+      const payload = JSON.stringify({});
+
+      if (navigator.sendBeacon) {
+        const blob = new Blob([payload], { type: 'application/json' });
+        navigator.sendBeacon(endpoint, blob);
+      } else {
+        fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            'apikey': supabaseKey
+          },
+          keepalive: true
+        }).catch(() => { });
+      }
+    }
+  });
+}
+
+// ------------------------------------------------------------
+// LOOP PRINCIPAL
+// ------------------------------------------------------------
+let lastTime = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+
+  updatePhysics(dt);
+  updateBots(dt);
+  updateCamera(dt);
+  updateItemBoxes(dt);
+  updateTraps(dt);
+  networkTick(dt);
+  updateRemoteKarts(dt);
+  updateHUD();
+  drawMinimap();
+
+  renderer.render(scene, camera);
 }
 
 animate();

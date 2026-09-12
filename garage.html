@@ -584,9 +584,31 @@
           Pistas</button>
       </nav>
 
-      <div class="music">
+      <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
         <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
-        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
+          style="margin-top: 0;">
+
+        <!-- Bloco padronizado com o estilo exato e idêntico ao do print da index -->
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
+          <button id="btnMusicPrev"
+            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
+            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
+            title="Música Anterior">⏮</button>
+
+          <button id="btnMusicPlayPause"
+            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
+            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
+            title="Pausar / Reproduzir">⏸</button>
+
+          <button id="btnMusicNext"
+            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
+            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
+            title="Próxima Música">⏭</button>
+        </div>
       </div>
     </aside>
 
@@ -675,6 +697,40 @@
   <script>
     // --- SINCRONIZAÇÃO DO NOME DO KART ---
     document.addEventListener('DOMContentLoaded', () => {
+      const btnPrev = document.getElementById('btnMusicPrev');
+      const btnPlayPause = document.getElementById('btnMusicPlayPause');
+      const btnNext = document.getElementById('btnMusicNext');
+
+      if (btnPrev) {
+        btnPrev.onclick = () => {
+          if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic();
+        };
+      }
+
+      if (btnPlayPause) {
+        if (window.globalMusic && window.globalMusic.paused) {
+          btnPlayPause.innerText = '▶';
+        } else {
+          btnPlayPause.innerText = '⏸';
+        }
+
+        btnPlayPause.onclick = () => {
+          if (typeof window.togglePlayPauseGlobalMusic === 'function') {
+            window.togglePlayPauseGlobalMusic();
+            setTimeout(() => {
+              if (window.globalMusic) {
+                btnPlayPause.innerText = window.globalMusic.paused ? '▶' : '⏸';
+              }
+            }, 50);
+          }
+        };
+      }
+
+      if (btnNext) {
+        btnNext.onclick = () => {
+          if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic();
+        };
+      }
       const hiddenName = document.getElementById('kartName');
       const visibleName = document.getElementById('kartNameMirror');
 
