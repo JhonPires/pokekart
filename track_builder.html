@@ -50,7 +50,6 @@
       z-index: 0;
     }
 
-    /* --- SIDEBAR IDÊNTICA À GARAGEM --- */
     .sidebar {
       width: 315px;
       padding: 22px 18px;
@@ -72,17 +71,6 @@
       align-items: center;
       gap: 13px;
       margin: 0 4px 20px;
-    }
-
-    .menu-toggle {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      border: 1px solid #21415f;
-      background: #102039;
-      color: #fff;
-      font-size: 24px;
-      cursor: pointer;
     }
 
     .brand-mini strong {
@@ -145,7 +133,6 @@
       letter-spacing: .7px;
     }
 
-    /* --- BLOCO DE MÚSICA IDÊNTICO À GARAGEM --- */
     .music {
       margin-top: 9px;
       padding: 15px;
@@ -192,7 +179,6 @@
       transform: scale(1.2);
     }
 
-    /* --- ÁREA PRINCIPAL --- */
     main {
       margin-left: 315px;
       width: calc(100vw - 315px);
@@ -274,7 +260,6 @@
       padding: 0 16px !important;
     }
 
-    /* --- WORKSPACE CENTRALIZADO A ~70% --- */
     .workspace-container {
       flex: 1;
       padding: 20px;
@@ -316,7 +301,6 @@
       cursor: crosshair;
     }
 
-    /* --- BARRA DE INFORMAÇÕES COM ESTILO NEON E VIDRO --- */
     .info-bar {
       position: absolute;
       left: 50%;
@@ -331,7 +315,6 @@
       justify-content: center;
       gap: 0;
       z-index: 15;
-      /* Borda brilhante neon azul idêntica à do workspace */
       border: 2px solid #00c3ff;
       background: rgba(3, 15, 35, 0.9);
       box-shadow: 0 0 35px rgba(0, 170, 255, 0.4), inset 0 0 30px rgba(0, 150, 255, 0.15);
@@ -356,7 +339,6 @@
       text-shadow: 0 0 8px rgba(33, 199, 255, 0.5);
     }
 
-    /* Modais */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -474,7 +456,6 @@
 
 <body>
 
-  <!-- MENU LATERAL -->
   <aside class="sidebar" id="sidebar">
     <div class="brand-mini">
       <strong>POKE<span>KART</span></strong>
@@ -499,39 +480,26 @@
       <button id="btnBack"><span class="icon">🏠</span><span>Voltar ao Lobby</span></button>
     </nav>
 
-    <!-- Bloco de Música Idêntico à Garagem -->
     <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
       <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
       <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
         style="margin-top: 0;">
 
-      <!-- Bloco padronizado com o estilo exato e idêntico ao do print da index -->
       <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
-        <button id="btnMusicPrev"
+        <button id="btnMusicPrev" class="btn"
           style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-          onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
           title="Música Anterior">⏮</button>
-
-        <button id="btnMusicPlayPause"
+        <button id="btnMusicPlayPause" class="btn"
           style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-          onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
           title="Pausar / Reproduzir">⏸</button>
-
-        <button id="btnMusicNext"
+        <button id="btnMusicNext" class="btn"
           style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-          onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-          onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
           title="Próxima Música">⏭</button>
       </div>
     </div>
-
   </aside>
 
-  <!-- CONTEÚDO PRINCIPAL -->
   <main>
-    <!-- Topbar -->
     <header>
       <div class="topbar-title">🎨 CRIADOR DE PISTAS</div>
       <div class="topbar-right">
@@ -543,69 +511,52 @@
       </div>
     </header>
 
-    <!-- Workspace com Canvas -->
     <div class="workspace-container">
       <section class="workspace" id="workspace">
         <canvas id="trackCanvas"></canvas>
       </section>
 
-      <!-- Barra de Informações Inferior -->
       <div class="info-bar">
         <div class="info-item">📍 Pontos: <span id="infoPoints" class="info-val">0</span></div>
         <div class="info-item">🔗 Circuito: <span id="infoClosed" class="info-val" style="color: #ef4444;">Aberto</span>
         </div>
         <div class="info-item">↗ Extensão: <span id="infoLength" class="info-val">0m</span></div>
         <div class="info-item">🏁 Itens: <span id="infoItems" class="info-val">0</span></div>
-
       </div>
     </div>
   </main>
 
-  <!-- Modal Salvar -->
   <div class="modal-overlay" id="saveModal" style="display: none;">
     <div class="modal-card">
       <div class="modal-header">
         <h2>💾 Salvar e Publicar Pista</h2>
         <button class="modal-close" id="btnCloseSaveModal">&times;</button>
       </div>
-
       <div class="form-group">
         <label for="trackNameInput">Nome da Pista *</label>
         <input type="text" id="trackNameInput" placeholder="Ex: Rota do Charizard..." maxlength="40" />
       </div>
-
       <div class="form-group">
         <label for="trackDescInput">Descrição (Opcional)</label>
         <textarea id="trackDescInput" rows="3" placeholder="Conte mais sobre o traçado..."></textarea>
       </div>
-
       <div id="saveStatus" style="font-size: 13px; color: #94a3b8; min-height: 18px;"></div>
-
       <button class="btn-builder btn-primary" id="btnConfirmSave"
-        style="padding: 12px; font-size: 15px; justify-content: center; width: 100%; border: none;">
-        PUBLICAR PARA AVALIAÇÃO
-      </button>
+        style="padding: 12px; font-size: 15px; justify-content: center; width: 100%; border: none;">PUBLICAR PARA
+        AVALIAÇÃO</button>
     </div>
   </div>
 
-  <!-- Modal Moderação -->
-  <!-- Modal Moderação -->
   <div class="modal-overlay" id="adminModal" style="display: none;">
-    <!-- 1. Aumente a largura para 840px -->
     <div class="modal-card" style="width: 840px; padding-bottom: 30px;">
       <div class="modal-header">
         <h2>🛡️ Painel de Moderação de Pistas</h2>
         <button class="modal-close" id="btnCloseAdminModal">&times;</button>
       </div>
-
-      <div style="font-size: 13px; color: #94a3b8;">
-        Gerencie as pistas enviadas pela comunidade.
-      </div>
-
+      <div style="font-size: 13px; color: #94a3b8;">Gerencie as pistas enviadas pela comunidade.</div>
       <div style="width: 100%;">
         <table class="moderation-table">
           <thead>
-            <!-- 2. Deixe os THs limpos e naturais -->
             <tr>
               <th>Pista</th>
               <th>Criador</th>
@@ -624,19 +575,30 @@
     </div>
   </div>
 
-  <!-- Dependências -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script src="music.js"></script>
   <script src="track_builder.js"></script>
 
-  <!-- Sincronização de Áudio Idêntica à Garagem -->
+  <!-- Sincronização de Áudio Unificada e Limpa -->
   <script>
     window.addEventListener('DOMContentLoaded', () => {
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');
       const btnNext = document.getElementById('btnMusicNext');
+      const btnMusicToggle = document.getElementById('menuBtnMusicToggle');
+      const slider = document.getElementById('musicVolumeSlider');
+      const statusText = document.getElementById('musicStatusText');
+
+      function updatePlayPauseUI() {
+        if (!btnPlayPause) return;
+        if (window.globalMusic && window.globalMusic.paused) {
+          btnPlayPause.innerText = '▶';
+        } else {
+          btnPlayPause.innerText = '⏸';
+        }
+      }
 
       if (btnPrev) {
         btnPrev.onclick = () => {
@@ -645,20 +607,18 @@
       }
 
       if (btnPlayPause) {
-        if (window.globalMusic && window.globalMusic.paused) {
-          btnPlayPause.innerText = '▶';
-        } else {
-          btnPlayPause.innerText = '⏸';
-        }
-
         btnPlayPause.onclick = () => {
-          if (typeof window.togglePlayPauseGlobalMusic === 'function') {
-            window.togglePlayPauseGlobalMusic();
-            setTimeout(() => {
-              if (window.globalMusic) {
-                btnPlayPause.innerText = window.globalMusic.paused ? '▶' : '⏸';
-              }
-            }, 50);
+          if (window.globalMusic) {
+            if (window.globalMusic.paused) {
+              window.globalMusic.play().catch(() => { });
+              isMusicEnabled = true;
+            } else {
+              window.globalMusic.pause();
+              isMusicEnabled = false;
+            }
+            localStorage.setItem('pkart_music', isMusicEnabled);
+            localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
+            updateAudioUI();
           }
         };
       }
@@ -669,11 +629,7 @@
         };
       }
 
-      const btnMusic = document.getElementById('menuBtnMusicToggle');
-      const slider = document.getElementById('musicVolumeSlider');
-      const statusText = document.getElementById('musicStatusText');
-
-      let isEnabled = localStorage.getItem('pkart_music') !== 'false';
+      let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
       let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
       if (isNaN(vol)) vol = 0.4;
 
@@ -682,30 +638,28 @@
 
       function updateAudioUI() {
         if (statusText) {
-          statusText.innerText = isEnabled ? 'LIGADA' : 'DESLIGADA';
-          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55';
+          statusText.innerText = isMusicEnabled ? 'LIGADA' : 'DESLIGADA';
+          statusText.style.color = isMusicEnabled ? '#21c7ff' : '#ff4b55';
         }
         if (slider) {
           const percent = (slider.value / 1) * 100;
           slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
         }
         if (window.globalMusic) {
-          if (isEnabled) window.globalMusic.play().catch(() => { });
-          else window.globalMusic.pause();
+          if (isMusicEnabled) {
+            window.globalMusic.play().catch(() => { });
+          } else {
+            window.globalMusic.pause();
+          }
         }
+        updatePlayPauseUI();
       }
 
-      if (btnMusic) {
-        btnMusic.onclick = () => {
-          isEnabled = !isEnabled;
-          localStorage.setItem('pkart_music', isEnabled);
-          if (isEnabled && slider && parseFloat(slider.value) === 0) {
-            slider.value = 0.4;
-            if (window.globalMusic) window.globalMusic.volume = 0.4;
-            localStorage.setItem('pkart_music_vol', 0.4);
-          } else if (!isEnabled && slider) {
-            slider.value = 0;
-          }
+      if (btnMusicToggle) {
+        btnMusicToggle.onclick = () => {
+          isMusicEnabled = !isMusicEnabled;
+          localStorage.setItem('pkart_music', isMusicEnabled);
+          localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
           updateAudioUI();
         };
       }
@@ -715,17 +669,28 @@
           const v = parseFloat(e.target.value);
           if (window.globalMusic) window.globalMusic.volume = v;
           localStorage.setItem('pkart_music_vol', v);
-          if (v === 0 && isEnabled) {
-            isEnabled = false;
+
+          if (v === 0 && isMusicEnabled) {
+            isMusicEnabled = false;
             localStorage.setItem('pkart_music', false);
-          } else if (v > 0 && !isEnabled) {
-            isEnabled = true;
+          } else if (v > 0 && !isMusicEnabled) {
+            isMusicEnabled = true;
             localStorage.setItem('pkart_music', true);
           }
           updateAudioUI();
         });
       }
+
       updateAudioUI();
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'pkart_music_playing' || e.key === 'pkart_music_vol' || e.key === 'pkart_music') {
+          isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
+          const newVol = parseFloat(localStorage.getItem('pkart_music_vol'));
+          if (!isNaN(newVol) && window.globalMusic) window.globalMusic.volume = newVol;
+          updateAudioUI();
+        }
+      });
     });
   </script>
 </body>

@@ -1122,6 +1122,14 @@ let finishLeaderboardEl = null;
 async function showFinishOverlay(place) {
   corridaAtivaParaPunicao = false; // Desativa punição ao terminar corretamente
 
+  // --- COLOQUE ESTE BLOCO LOGO AQUI ---
+  const modeParam = urlParams.get('mode');
+  if (modeParam === 'tower') {
+    // Se ficou em 1º lugar, ele ganha. Se não, perde o andar.
+    localStorage.setItem('pkart_tower_result', place === 1 ? 'win' : 'lose');
+  }
+  // -------------------------------------
+
   victorySound.play().catch(e => console.warn('Bloqueio de autoplay de áudio:', e));
   if (typeof confetti === 'function') {
     confetti({
@@ -1220,6 +1228,24 @@ async function showFinishOverlay(place) {
   const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
   const baseCoins = baseCoinsByPosition[place] || 20;
   const totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
+
+  // SALVA AS MOEDAS NO BANCO DE DADOS (SUPABASE)
+  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    try {
+      const novoSaldoCoins = (currentUserProfile.coins || 0) + totalCoinsEarned;
+
+      const { error: coinErr } = await supabaseClient
+        .from('profiles') // ou a tabela onde fica o saldo de moedas do usuário
+        .update({ coins: novoSaldoCoins })
+        .eq('id', currentUserProfile.id);
+
+      if (!coinErr) {
+        currentUserProfile.coins = novoSaldoCoins; // Atualiza localmente
+      }
+    } catch (err) {
+      console.error('Erro ao salvar moedas:', err);
+    }
+  }
 
   // Monta o HTML base com as moedas ganhas e o bônus da pista
   let rewardHTML = `<div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>`;
@@ -2183,7 +2209,42 @@ function drawMinimap() {
 // ------------------------------------------------------------
 function spawnBots() {
   if (roomCodeParam && !isHost) return;
-  if (!roomCodeParam && aiDifficultyParam === 'none') return;
+  const modeParam = urlParams.get('mode');
+  if (!roomCodeParam && aiDifficultyParam === 'none' && modeParam !== 'tower') return;
+  // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder
+  if (modeParam === 'tower') {
+    const leaderName = decodeURIComponent(urlParams.get('leader') || 'LÍDER DE GINÁSIO');
+    const leaderKartId = urlParams.get('leaderkart') || 'jolteon';
+    const leaderKartData = KART_DATABASE.find(k => k.id === leaderKartId) || KART_DATABASE[0];
+    const botSlot = 1; // Slot 1 para o bot na torre
+    const obj = createKart(0x555555);
+
+    loadKartTemplate(randomKart, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
+
+    const grid = getGridPosition(botSlot);
+    obj.group.position.copy(grid.pos);
+    obj.group.rotation.y = grid.heading;
+
+    const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+    remoteKarts.set('bot-leader', {
+      isBot: true,
+      obj: obj,
+      nickname: leaderName,
+      kartId: leaderKartData.id,
+      stats: leaderKartData.stats,
+      speed: 0,
+      heading: grid.heading,
+      laneOffset: laneOffset,
+      diffMult: diffMult,
+      progress: 0,
+      lapCount: 1,
+      finished: false,
+      target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
+      currentItem: null, itemUseTimer: 0
+    });
+    return;
+  }
 
   const maxSlots = 4;
   const botCount = maxSlots - totalPlayersParam;

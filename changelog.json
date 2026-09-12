@@ -1,5 +1,17 @@
 [
     {
+        "version": "1.5",
+        "date": "12/09/2026",
+        "changes": [
+            "Corrigido os botoes controlador das musicas.",
+            "Corrigido o ganho das moedas ao finalizar uma corrida.",
+            "Modo torre - Vença varias corridas seguidas para ter a chance do desafio ao líder do Ginasio.",
+            "Atualização do design da tela inicial.",
+            "Adicionado as insignias ao perfil do jogador.",
+            "Adicionado ao perfil do jogador a liga atual (Ranqueada)."
+        ]
+    },
+    {
         "version": "1.4",
         "date": "12/09/2026",
         "changes": [

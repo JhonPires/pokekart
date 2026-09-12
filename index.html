@@ -198,6 +198,12 @@
       background: rgba(12, 31, 53, .62);
       backdrop-filter: blur(12px);
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .profile-top {
+      display: flex;
       gap: 12px;
       align-items: center;
     }
@@ -226,6 +232,25 @@
     .profile small {
       color: var(--cyan);
       font-weight: 850;
+    }
+
+    .badges-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(67, 181, 255, 0.15);
+    }
+
+    .tower-badge {
+      font-size: 16px;
+      filter: grayscale(1) opacity(0.3);
+      transition: 0.3s;
+    }
+
+    .tower-badge.unlocked {
+      filter: grayscale(0) opacity(1);
+      filter: drop-shadow(0 0 4px rgba(255, 210, 63, 0.8));
     }
 
     .logout {
@@ -277,35 +302,49 @@
       padding-right: 20px;
     }
 
+    .rank-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      background: var(--yellow);
+    }
+
     .stage {
       min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 70px 45px 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 30px;
     }
 
     .content {
-      width: min(760px, 100%);
+      width: min(1110px, 100%);
       display: flex;
       flex-direction: column;
       align-items: center;
     }
 
     .logo {
-      width: min(340px, 52vw);
+      width: min(280px, 42vw);
       height: auto;
       object-fit: contain;
       filter: drop-shadow(0 10px 22px rgba(0, 0, 0, .5));
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .fallback-logo {
       font-style: italic;
       font-weight: 1000;
-      font-size: 60px;
+      font-size: 50px;
       letter-spacing: -5px;
       text-shadow: 0 4px 0 #000, 0 0 25px rgba(0, 187, 255, .4);
-      margin-bottom: 20px;
+      margin-bottom: 10px;
     }
 
     .fallback-logo i {
@@ -318,142 +357,270 @@
       font-style: normal;
     }
 
-    .card {
-      width: min(670px, 100%);
-      border: 1px solid #23557c;
-      border-radius: 24px;
-      background: linear-gradient(145deg, rgba(17, 43, 72, .55), rgba(5, 20, 39, .64));
-      box-shadow: 0 35px 80px rgba(0, 0, 0, .48), 0 0 55px rgba(0, 132, 255, .15);
-      backdrop-filter: blur(18px) saturate(140%);
-      padding: 18px 20px;
+    .mode-title {
+      margin: 20px 0 22px;
+      padding: 8px 30px;
       position: relative;
-      overflow: visible;
+      border: 1px solid var(--cyan);
+      border-radius: 28px;
+      background: rgba(5, 28, 58, .82);
+      color: #eaf8ff;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 950;
+      letter-spacing: .5px;
+      box-shadow: 0 0 22px rgba(0, 190, 255, .16);
     }
 
-    .card:before {
+    .modes {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .mode {
+      position: relative;
+      min-height: 460px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      overflow: hidden;
+      border: 2px solid var(--accent);
+      border-radius: 24px;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      box-shadow:
+        0 0 24px var(--glow),
+        inset 0 0 45px rgba(255, 255, 255, .025);
+      transition: transform .25s, box-shadow .25s;
+    }
+
+    .mode.solo {
+      --accent: #15c9ff;
+      --glow: rgba(0, 195, 255, .34);
+      background-image: linear-gradient(to bottom, rgba(3, 16, 37, 0.4), rgba(3, 16, 37, 0.95)), url('img/solo.png');
+    }
+
+    .mode.multi {
+      --accent: #8757ff;
+      --glow: rgba(129, 75, 255, .35);
+      background-image: linear-gradient(to bottom, rgba(3, 16, 37, 0.4), rgba(3, 16, 37, 0.95)), url('img/multi.png');
+    }
+
+    .mode.tower {
+      --accent: #ffd21c;
+      --glow: rgba(255, 190, 0, .30);
+      background-image: linear-gradient(to bottom, rgba(3, 16, 37, 0.4), rgba(3, 16, 37, 0.95)), url('img/torre.png');
+    }
+
+    .mode:hover {
+      transform: translateY(-6px);
+      box-shadow:
+        0 0 38px var(--glow),
+        0 18px 35px rgba(0, 0, 0, .35);
+    }
+
+    .mode::before {
       content: "";
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, rgba(0, 190, 255, .08), transparent 35%);
+      background: linear-gradient(180deg, transparent 30%, rgba(2, 9, 21, .1) 48%, rgba(2, 9, 21, .94) 80%);
       pointer-events: none;
     }
 
-    .kart-zone {
-      height: 205px;
-      border-radius: 17px;
-      border: 1px solid #214665;
-      background: radial-gradient(circle at 50% 48%, rgba(0, 182, 255, .18), transparent 32%), linear-gradient(145deg, #09172a, #07101e);
+    .mode-art {
+      position: absolute;
+      inset: 15px 15px auto;
+      height: 170px;
       display: grid;
       place-items: center;
+      z-index: 1;
+    }
+
+    .art-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, .20), var(--glow), transparent 70%);
+      filter: blur(2px);
+    }
+
+    .mode-content {
       position: relative;
-      margin-bottom: 10px;
-      overflow: hidden;
-    }
-
-    .kart-zone:after {
-      content: "";
-      position: absolute;
-      bottom: 28px;
-      width: 260px;
-      height: 20px;
-      border-radius: 50%;
-      background: rgba(0, 174, 255, .35);
-      filter: blur(13px);
-      pointer-events: none;
-    }
-
-    #previewContainer {
-      width: 100%;
-      height: 100%;
-      position: absolute;
-      inset: 0;
       z-index: 2;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .arrow {
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 4;
-      width: 46px;
-      height: 46px;
-      border-radius: 50%;
-      background: #0a1d34;
-      border: 1px solid #1765a0;
-      color: #58d5ff;
-      font-size: 28px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding-bottom: 4px;
-    }
-
-    .arrow:hover {
-      background: #0d3152;
-      box-shadow: 0 0 20px rgba(0, 190, 255, .3);
-    }
-
-    .arrow.left {
-      left: 18px;
-    }
-
-    .arrow.right {
-      right: 18px;
-    }
-
-    .kart-name {
       text-align: center;
-      color: #35caff;
-      font-weight: 900;
-      font-size: 17px;
-      margin: 0 0 12px;
     }
 
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .mode h2 {
+      font-size: 22px;
+      font-style: italic;
+      font-weight: 1000;
+      margin-bottom: 5px;
     }
 
-    .btn {
-      min-height: 48px;
-      border-radius: 13px;
-      border: 1px solid #128dcc;
-      background: rgba(7, 28, 49, .68);
-      color: #5bd5ff;
-      backdrop-filter: blur(8px);
-      font-size: 15px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: .18s;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 170, 255, .15);
-    }
-
-    .btn.primary {
-      background: linear-gradient(135deg, #27c8ff, #078be8);
-      border-color: #52d6ff;
-      color: #031525;
-      box-shadow: 0 7px 24px rgba(0, 164, 255, .24);
-    }
-
-    .section-label {
+    .mode p {
+      max-width: 270px;
+      min-height: 38px;
+      margin: auto;
+      color: #b8c9df;
       font-size: 12px;
-      color: #91a7be;
+      line-height: 1.4;
+    }
+
+    .mode-btn {
+      height: 44px;
+      margin-top: 12px;
+      width: 100%;
+      border: 1px solid var(--accent);
+      border-radius: 13px;
+      background: linear-gradient(90deg, var(--accent), #0867d8);
+      color: white;
+      font-size: 13px;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 5px 18px var(--glow);
+      transition: .2s;
+    }
+
+    .mode.tower .mode-btn {
+      color: #171000;
+      background: linear-gradient(90deg, #ffe56a, #ffb900);
+    }
+
+    .mode-btn:hover {
+      filter: brightness(1.13);
+      transform: scale(1.015);
+    }
+
+    /* MUDANÇAS ESTRUTURAIS PARA OS PAINÉIS */
+    .mode.config-open {
+      justify-content: flex-start !important;
+      padding-top: 20px;
+    }
+
+    .mode.config-open .mode-content {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mode.config-open .mode-divider-badge,
+    .mode.config-open .mode-content>h2,
+    .mode.config-open .mode-content>p,
+    .mode.config-open>.mode-content>.mode-btn {
+      display: none !important;
+    }
+
+    .mode-config-panel {
+      display: none;
+      flex: 1;
+      flex-direction: column;
+      gap: 8px;
+      animation: fadeInPanel 0.25s ease;
+      position: relative;
+      z-index: 3;
+    }
+
+    @keyframes fadeInPanel {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .back-mode-btn {
+      background: rgba(7, 24, 48, 0.85);
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-size: 12px;
       font-weight: 900;
-      letter-spacing: .7px;
-      margin: 14px 0 6px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: fit-content;
+      box-shadow: 0 0 10px rgba(0, 190, 255, 0.2);
+      transition: .2s;
+    }
+
+    .back-mode-btn:hover {
+      background: var(--cyan);
+      color: #050b16;
+      border-color: #fff;
+    }
+
+    /* ESTILO PARA AS ABAS DO MULTIPLAYER */
+    .tab-btn {
+      flex: 1;
+      background: #09172a;
+      border: 1px solid #1d3857;
+      color: #91a7be;
+      border-radius: 12px;
+      min-height: 42px;
+      font-weight: 800;
+      font-size: 13px;
+      cursor: pointer;
+      transition: .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      background: #122845;
+      color: #fff;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(90deg, var(--accent), #0867d8);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 15px var(--glow);
+    }
+
+    /* ESTILO PARA A LISTA DE JOGADORES (LOBBY) */
+    .lobby-slots {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
+    }
+
+    .player-slot {
+      background: rgba(9, 23, 42, 0.7);
+      border: 1px solid #1d3857;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #91a7be;
+      text-align: left;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .player-slot.filled {
+      background: rgba(21, 201, 255, 0.15);
+      border-color: #21c7ff;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(21, 201, 255, 0.1);
     }
 
     .customDropdownTrigger {
-      min-height: 46px;
+      min-height: 42px;
       border: 1px solid #275276;
       border-radius: 12px;
       background: #09172a;
@@ -461,8 +628,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 14px;
+      padding: 0 12px;
       font-weight: 800;
+      font-size: 13px;
       cursor: pointer;
       outline: none;
       width: 100%;
@@ -474,7 +642,7 @@
 
     .customDropdownTrigger>span:last-child {
       color: #21c7ff;
-      font-size: 12px;
+      font-size: 11px;
       transition: transform 0.2s ease;
     }
 
@@ -489,7 +657,7 @@
 
     .customDropdownMenu {
       position: absolute;
-      top: calc(100% + 6px);
+      bottom: calc(100% + 6px);
       left: 0;
       width: 100%;
       background: #09172a;
@@ -499,18 +667,10 @@
       display: none;
       flex-direction: column;
       gap: 4px;
-      max-height: 160px !important;
+      max-height: 150px !important;
       overflow-y: auto !important;
       z-index: 99999;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8);
-    }
-
-    #customAiDropdown .customDropdownMenu {
-      top: calc(100% + 6px) !important;
-      bottom: auto !important;
-      max-height: 120px !important;
-      overflow-y: auto !important;
-      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8) !important;
+      box-shadow: 0 -15px 35px rgba(0, 0, 0, 0.8);
     }
 
     .customDropdownMenu.show {
@@ -518,11 +678,11 @@
     }
 
     .customDropdownOption {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-radius: 8px;
       color: #dcecff;
       font-weight: 700;
-      font-size: 13px;
+      font-size: 12px;
       cursor: pointer;
       transition: background 0.15s ease;
       display: flex;
@@ -540,98 +700,6 @@
       color: #fff !important;
     }
 
-    .customDropdownMenu::-webkit-scrollbar {
-      width: 6px;
-    }
-
-    .customDropdownMenu::-webkit-scrollbar-thumb {
-      background: var(--cyan);
-      border-radius: 4px;
-    }
-
-    .bottom-row {
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: 1fr 1.35fr;
-      gap: 10px;
-    }
-
-    .play {
-      font-size: 16px;
-    }
-
-    .hint {
-      margin-top: 12px;
-      color: #71869e;
-      font-size: 11px;
-      text-align: center;
-    }
-
-    .lobbyCardModal {
-      background: #1e293b;
-      padding: 24px;
-      border-radius: 16px;
-      border: 1px solid #334155;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-      box-sizing: border-box;
-    }
-
-    input.game-input {
-      background: #09172a;
-      border: 1px solid #275276;
-      color: #fff;
-      border-radius: 12px;
-      padding: 0 14px;
-      font-weight: 800;
-      min-height: 48px;
-      width: 100%;
-      outline: none;
-    }
-
-    @media(max-width:850px) {
-      .sidebar {
-        width: 270px;
-      }
-
-      .sidebar.closed {
-        transform: translateX(-100%);
-      }
-
-      main {
-        margin-left: 0;
-      }
-
-      .topbar {
-        right: 12px;
-        top: 12px;
-      }
-
-      .stat {
-        height: 44px;
-        padding: 0 11px;
-      }
-
-      .stat.rank strong {
-        display: none;
-      }
-
-      .stage {
-        padding: 75px 18px 20px;
-      }
-
-      .logo {
-        width: 280px;
-      }
-
-      .card {
-        padding: 14px;
-      }
-    }
-
     .lobbyCardModal {
       width: 90vw;
       max-width: 420px;
@@ -647,13 +715,17 @@
       gap: 16px;
     }
 
-    .lobbyCardModal:before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: 24px;
-      background: linear-gradient(135deg, rgba(0, 190, 255, .08), transparent 45%);
-      pointer-events: none;
+    input.game-input {
+      background: #09172a;
+      border: 1px solid #275276;
+      color: #fff;
+      border-radius: 12px;
+      padding: 0 14px;
+      font-weight: 800;
+      min-height: 44px;
+      width: 100%;
+      outline: none;
+      font-size: 13px;
     }
 
     .modal-close-btn {
@@ -690,10 +762,126 @@
       text-align: center;
       margin: 0 0 5px 0;
       text-shadow: 0 2px 10px rgba(0, 190, 255, 0.3);
-      letter-spacing: 0.5px;
     }
 
-    /* --- SISTEMA DE ANIMAÇÃO RANQUEADA --- */
+    .overlay-general {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(3, 9, 20, 0.85);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2500;
+    }
+
+    .mode-divider-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin: 10px 0 14px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .divider-line {
+      flex: 1;
+      height: 2px;
+    }
+
+    .divider-line.blue-left {
+      background: linear-gradient(90deg, transparent, rgba(21, 201, 255, 0.8));
+    }
+
+    .divider-line.blue-right {
+      background: linear-gradient(270deg, transparent, rgba(21, 201, 255, 0.8));
+    }
+
+    .divider-line.purple-left {
+      background: linear-gradient(90deg, transparent, rgba(135, 87, 255, 0.8));
+    }
+
+    .divider-line.purple-right {
+      background: linear-gradient(270deg, transparent, rgba(135, 87, 255, 0.8));
+    }
+
+    .divider-line.yellow-left {
+      background: linear-gradient(90deg, transparent, rgba(255, 210, 28, 0.8));
+    }
+
+    .divider-line.yellow-right {
+      background: linear-gradient(270deg, transparent, rgba(255, 210, 28, 0.8));
+    }
+
+    .badge-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(13, 41, 78, 0.95) 40%, rgba(5, 15, 30, 0.95) 100%);
+      border: 2px solid var(--accent);
+      box-shadow: 0 0 18px var(--glow), inset 0 0 10px rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      margin: 0 12px;
+      font-size: 20px;
+      color: #fff;
+    }
+
+    .section-label {
+      font-size: 11px !important;
+      color: #eaf8ff !important;
+      font-weight: 900 !important;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+      margin: 4px 0 2px 2px !important;
+    }
+
+    @media(max-width: 1050px) {
+      .sidebar {
+        width: 220px;
+      }
+
+      main {
+        margin-left: 220px;
+      }
+
+      .modes {
+        grid-template-columns: 1fr;
+        max-width: 425px;
+        margin: auto;
+      }
+    }
+
+    @media(max-width: 850px) {
+      .sidebar {
+        display: none;
+      }
+
+      main {
+        margin-left: 0;
+        padding: 20px 15px;
+      }
+
+      .topbar {
+        right: 12px;
+        top: 12px;
+      }
+
+      .stat {
+        height: 44px;
+        padding: 0 11px;
+      }
+
+      .stat.rank strong {
+        display: none;
+      }
+    }
+
     @keyframes popInPromo {
       0% {
         transform: scale(0.8);
@@ -743,63 +931,49 @@
 
 <body>
   <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
-  <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
-  <div id="changelogModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+  <div id="changelogModalOverlay" class="overlay-general" style="z-index: 1000;">
     <div class="lobbyCardModal" style="height: 560px; width: 420px; display: flex; flex-direction: column;">
-
-      <!-- Botão de Fechar -->
       <button id="btnCloseChangelog" class="modal-close-btn">✕</button>
-
-      <!-- Título Principal com os ícones nas pontas (correto) -->
       <h2 class="modal-title" style="text-align: center;">📜 NOTAS DA ATUALIZAÇÃO</h2>
-
-      <!-- Container das atualizações -->
       <div id="changelogContent"
         style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-top: 10px;">
         <div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Carregando
           atualizações...</div>
       </div>
-
     </div>
   </div>
+
   <div class="race-glow"></div>
 
   <!-- MODAL DE PROMOÇÃO DE LIGA -->
-  <div id="promotionModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.92); backdrop-filter: blur(12px); display: none; align-items: center; justify-content: center; z-index: 2000;">
+  <div id="promotionModalOverlay" class="overlay-general" style="background: rgba(3, 9, 20, 0.92); z-index: 3000;">
     <div class="lobbyCardModal promo-anim" style="text-align: center; max-width: 380px; padding: 30px;">
       <h3 style="color: var(--muted); font-size: 14px; letter-spacing: 2.5px; margin-bottom: 5px; font-weight: 900;">
         NOVA LIGA ALCANÇADA</h3>
-
-      <!-- O ícone e a cor mudam via JS -->
       <div id="promoLeagueIcon" class="promo-icon-anim" style="color: #ffd23f;">🥇</div>
-
       <h2 id="promoLeagueName"
         style="color: var(--yellow); font-size: 34px; font-weight: 900; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 0 15px rgba(255,210,63,0.4);">
         OURO</h2>
       <p style="color: #dcecff; font-size: 14px; margin-bottom: 25px; line-height: 1.5;">Você conquistou <b
           id="promoLeaguePoints" style="color: var(--cyan);">1500</b> troféus e avançou para a próxima liga!</p>
-
-      <button id="btnClosePromotion" class="btn primary" style="width: 100%;">RESGATAR RECOMPENSAS</button>
+      <button id="btnClosePromotion" class="btn primary"
+        style="width: 100%; min-height: 45px; border-radius: 12px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">RESGATAR
+        RECOMPENSAS</button>
     </div>
   </div>
 
-  <div id="sideMenuOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.6); backdrop-filter: blur(4px); display: none; z-index: 800;">
-  </div>
-
   <!-- MODAL DE RANKINGS -->
-  <div id="rankingModalOverlay"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.85); backdrop-filter: blur(6px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+  <div id="rankingModalOverlay" class="overlay-general" style="z-index: 1000;">
     <div class="lobbyCardModal" style="height: 560px;">
       <button id="btnCloseRankingModal" class="modal-close-btn">✕</button>
       <h2 class="modal-title">🏆 RANKINGS GLOBAIS</h2>
 
       <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 4px; position: relative; z-index: 5;">
         <button id="tabLeaderboardTrophies" class="btn primary"
-          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px;">🏆 Troféus</button>
-        <button id="tabLeaderboardTracks" class="btn" style="flex: 1; padding: 0; min-height: 42px; font-size: 13px;">⏱️
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px; border-radius: 10px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">🏆
+          Troféus</button>
+        <button id="tabLeaderboardTracks" class="btn"
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;">⏱️
           Recordes</button>
       </div>
 
@@ -817,8 +991,6 @@
         </div>
       </div>
 
-
-
       <div id="leaderboardList"
         style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; padding-right: 4px; position: relative; z-index: 2;">
         <div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Carregando ranking...
@@ -827,18 +999,30 @@
     </div>
   </div>
 
-  <div id="authModal"
-    style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(3, 9, 20, 0.9); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000;">
+  <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
     <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
       <h2 id="authTitle" class="modal-title" style="font-size: 24px; margin-bottom: 20px;">CRIAR CONTA</h2>
       <input type="text" id="authNick" class="game-input" placeholder="Seu Nickname" style="margin-bottom: 12px;" />
       <input type="email" id="authEmail" class="game-input" placeholder="Seu E-mail" style="margin-bottom: 12px;" />
       <input type="password" id="authPassword" class="game-input" placeholder="Sua Senha"
         style="margin-bottom: 20px;" />
-      <button id="btnAuthSubmit" class="btn primary" style="width: 100%; margin-bottom: 16px;">CADASTRAR</button>
+      <button id="btnAuthSubmit" class="btn primary"
+        style="width: 100%; margin-bottom: 16px; min-height: 45px; border-radius: 12px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">CADASTRAR</button>
       <div style="font-size: 13px; color: var(--muted); cursor: pointer; font-weight: 800; transition: color 0.2s;"
         onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--muted)'" id="toggleAuthMode">Já
         tem uma conta? Entrar</div>
+    </div>
+  </div>
+
+  <!-- MODAL DE RESULTADO DA TORRE -->
+  <div id="resultModalOverlay" class="overlay-general" style="z-index: 2600;">
+    <div class="lobbyCardModal" style="text-align: center; max-width: 380px; padding: 30px;">
+      <div id="resultIcon" style="font-size: 80px; margin: 10px 0;">🎉</div>
+      <h2 id="resultTitle" style="color: var(--yellow); font-size: 26px; font-weight: 900; margin-bottom: 10px;">
+        INSÍGNIA CONQUISTADA!</h2>
+      <p id="resultText" style="color: #dcecff; font-size: 14px; margin-bottom: 25px;"></p>
+      <button id="btnCloseResult" class="btn primary"
+        style="width: 100%; min-height: 45px; border-radius: 12px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">CONTINUAR</button>
     </div>
   </div>
 
@@ -852,8 +1036,6 @@
         <button id="menuBtnGarage"><span class="icon">🛍️</span>Loja / Garagem</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
-        <!-- <button id="menuBtnHowToPlay"><span class="icon">❓</span>Como jogar</button> -->
-        <!-- <button id="menuBtnOptions"><span class="icon">⚙️</span>Opções</button> -->
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da Atualização</button>
       </nav>
 
@@ -862,39 +1044,37 @@
         <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
           style="margin-top: 0;">
 
-        <!-- Botões espalhados de ponta a ponta -->
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
           <button id="btnMusicPrev" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
             title="Música Anterior">⏮</button>
           <button id="btnMusicPlayPause" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
             title="Pausar / Reproduzir">⏸</button>
           <button id="btnMusicNext" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px;"
+            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
             title="Próxima Música">⏭</button>
         </div>
       </div>
 
-      <!-- Controlador de Músicas -->
-
-
-
       <div class="account">
         <div class="profile">
-          <!-- Ícone inicial já com a Pokébola da PokeAPI e a borda vermelha do tier Novato -->
-          <div class="avatar" id="sideLeagueIcon" style="border-color: #ff4b55; background: rgba(0,0,0,0.6);">
-            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
-              alt="Pokébola"
-              style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px #ff4b55);">
+          <div class="profile-top">
+            <div class="avatar" id="sideLeagueIcon" style="border-color: #ff4b55; background: rgba(0,0,0,0.6);">
+              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+                alt="Pokébola"
+                style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px #ff4b55);">
+            </div>
+            <div>
+              <strong id="sideMenuNick">Piloto</strong>
+              <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">NOVATO (POKÉBOLA)</small>
+            </div>
           </div>
-          <div>
-            <strong id="sideMenuNick">Piloto</strong>
-            <!-- Texto inicial atualizado para a temática e cor vermelha da Pokébola -->
-            <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">NOVATO (POKÉBOLA)</small>
-          </div>
+          <div class="badges-container" id="sideMenuBadges"></div>
         </div>
-        <button id="btnLogout" class="logout">↪ &nbsp; Sair da conta</button>
+        <button id="btnLogout" class="logout"
+          style="border: 1px solid #1e3a57; background: rgba(12, 28, 48, .72); color: #edf5ff; border-radius: 13px; font-weight: 750; cursor: pointer;">↪
+          &nbsp; Sair da conta</button>
       </div>
     </aside>
 
@@ -903,10 +1083,19 @@
         <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
         <div class="stat"><span>🏆</span><b id="playerTrophiesText">0</b></div>
         <div class="stat rank">
-          <!-- Ícone Dinâmico no Topbar -->
-          <div class="avatar" id="topbarLeagueIcon" style="width:28px;height:28px;font-size:12px;border-width:2px;">🏁
-          </div>
+          <div class="rank-avatar" id="topbarLeagueIcon">🏁</div>
           <strong id="playerHeaderNick">Piloto</strong>
+        </div>
+        <div class="stat" style="padding: 0 14px; gap: 10px; display: flex; align-items: center;">
+          <div id="previewContainer"
+            style="width: 38px; height: 38px; position: relative; display: flex; align-items: center; justify-content: center;">
+            <div id="previewSpinner"
+              style="display: none; position: absolute; color: #5bd5ff; font-size: 9px; font-weight: bold; z-index: 3;">
+              Carregando...</div>
+          </div>
+          <b class="kart-name" id="kartName"
+            style="font-size: 13px; color: #35caff; font-weight: 900; margin-top: 0; white-space: nowrap;">⚡ Jolteon
+            Kart</b>
         </div>
       </div>
 
@@ -916,75 +1105,195 @@
             onerror="this.style.display='none';document.querySelector('.fallback-logo').style.display='block'">
           <div class="fallback-logo" style="display:none"><i>POKE</i><em>KART</em></div>
 
-          <div class="card">
-            <div class="kart-zone">
-              <button id="btnPrevKart" class="arrow left">‹</button>
+          <div class="mode-title">🎮 &nbsp; ESCOLHA UM MODO DE JOGO</div>
 
-              <div id="previewContainer">
-                <div id="previewSpinner"
-                  style="display: none; position: absolute; color: #5bd5ff; font-size: 12px; font-weight: bold; z-index: 3;">
-                  Carregando...</div>
+          <section class="modes">
+
+            <!-- MODO SOLO -->
+            <article class="mode solo" id="cardSolo">
+              <div class="mode-art">
+                <div class="art-circle"></div>
               </div>
-
-              <button id="btnNextKart" class="arrow right">›</button>
-            </div>
-
-            <div class="kart-name" id="kartName">⚡ Jolteon Kart</div>
-
-            <div class="actions">
-              <button id="btnHost" class="btn primary">🏎️ &nbsp; Criar Sala (Ranqueada) </button>
-              <button id="btnJoin" class="btn">🚪 &nbsp; Buscar Sala (Ranqueada)</button>
-            </div>
-
-            <div id="joinBox" style="display: none; gap: 10px; margin-top: 12px; grid-template-columns: 2fr 1fr;">
-              <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
-                style="text-transform:uppercase;" />
-              <button id="btnConnect" class="btn primary">Conectar</button>
-            </div>
-
-            <div style="margin-top: 12px; text-align: center;">
-              <div id="roomCodeDisplay" style="display:none; color: #22c55e; font-weight: 900; font-size: 16px;"></div>
-              <div id="lobbyStatus" style="color: #91a7be; font-size: 13px; font-weight: bold; min-height: 18px;"></div>
-            </div>
-
-            <div class="section-label" style="margin-top: 5px;">ESCOLHA A PISTA</div>
-
-            <select id="trackSelectDropdown" style="display:none;">
-              <option value="">🏁 Circuito Oficial</option>
-            </select>
-            <div class="customDropdownWrapper" id="customTrackDropdown">
-              <div class="customDropdownTrigger" id="dropdownTrigger">
-                <span id="dropdownSelectedLabel">🏁 &nbsp; Circuito Oficial (Padrão)</span><span>▼</span>
-              </div>
-              <div class="customDropdownMenu" id="dropdownMenu">
-                <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial (Padrão)</div>
-              </div>
-            </div>
-
-            <div class="bottom-row">
-              <select id="aiDifficulty" style="display:none;">
-                <option value="easy">🤖 Bots: Fácil</option>
-                <option value="normal" selected>🤖 Bots: Normal</option>
-                <option value="hard">🤖 Bots: Difícil</option>
-              </select>
-              <div class="customDropdownWrapper" id="customAiDropdown">
-                <div class="customDropdownTrigger" id="aiDropdownTrigger">
-                  <span id="aiDropdownSelectedLabel">🤖 &nbsp; Bots: Normal</span><span>▼</span>
+              <div class="mode-content">
+                <div class="mode-divider-badge">
+                  <div class="divider-line blue-left"></div>
+                  <div class="badge-circle" style="--accent: #15c9ff; --glow: rgba(0,195,255,0.5);"><img
+                      src="svg/person_solo.svg" alt="Play"
+                      style="width: 22px; height: 22px; object-fit: contain; opacity: 0.4;" /></div>
+                  <div class="divider-line blue-right"></div>
                 </div>
-                <div class="customDropdownMenu" id="aiDropdownMenu">
-                  <div class="customDropdownOption" data-value="easy">🤖 Bots: Fácil</div>
-                  <div class="customDropdownOption selected" data-value="normal">🤖 Bots: Normal</div>
-                  <div class="customDropdownOption" data-value="hard">🤖 Bots: Difícil</div>
+                <h2>MODO SOLO</h2>
+                <p>Enfrente a IA, treine suas habilidades e evolua seu kart.</p>
+
+                <button class="mode-btn" id="btnOpenSoloConfig"
+                  style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <img src="svg/play.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <span>JOGAR AGORA</span>
+                  <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                </button>
+
+                <div class="mode-config-panel" id="panelSoloConfig" style="justify-content: space-between;">
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button class="back-mode-btn" id="btnCloseSoloConfig" style="margin-bottom: 12px;">‹ Voltar</button>
+
+                    <div class="section-label"
+                      style="font-size: 10px; color: #91a7be; text-align: left; margin: 0 0 2px;">PISTA:</div>
+                    <select id="trackSelectDropdown" style="display:none;">
+                      <option value="">🏁 Circuito Oficial</option>
+                    </select>
+                    <div class="customDropdownWrapper" id="customTrackDropdown">
+                      <div class="customDropdownTrigger" id="dropdownTrigger">
+                        <span id="dropdownSelectedLabel">🏁 Circuito Oficial</span><span>▼</span>
+                      </div>
+                      <div class="customDropdownMenu" id="dropdownMenu">
+                        <div class="customDropdownOption selected" data-value="">🏁 Circuito Oficial</div>
+                      </div>
+                    </div>
+
+                    <div class="section-label"
+                      style="font-size: 10px; color: #91a7be; text-align: left; margin: 2px 0 2px;">BOTS:</div>
+                    <select id="aiDifficulty" style="display:none;">
+                      <option value="easy">🤖 Fácil</option>
+                      <option value="normal" selected>🤖 Normal</option>
+                      <option value="hard">🤖 Difícil</option>
+                    </select>
+                    <div class="customDropdownWrapper" id="customAiDropdown">
+                      <div class="customDropdownTrigger" id="aiDropdownTrigger">
+                        <span id="aiDropdownSelectedLabel">🤖 Bots: Normal</span><span>▼</span>
+                      </div>
+                      <div class="customDropdownMenu" id="aiDropdownMenu">
+                        <div class="customDropdownOption" data-value="easy">🤖 Bots: Fácil</div>
+                        <div class="customDropdownOption selected" data-value="normal">🤖 Bots: Normal</div>
+                        <div class="customDropdownOption" data-value="hard">🤖 Bots: Difícil</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <button id="btnPlaySolo" class="mode-btn"
+                      style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: linear-gradient(90deg, #15c9ff, #0867d8); margin: 0;">
+                      <span
+                        style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;">
+                        <img src="svg/play.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                      </span>
+                      <span style="flex: 1; text-align: center;">INICIAR CORRIDA</span>
+                      <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                    </button>
+                  </div>
                 </div>
               </div>
+            </article>
 
-              <button id="btnPlaySolo" class="btn primary play">▶ &nbsp; Jogar Sozinho</button>
-              <button id="btnStartRace" type="button" class="btn primary play" style="display:none;">🏁 Iniciar
-                Sala</button>
-            </div>
+            <!-- MULTIPLAYER -->
+            <article class="mode multi" id="cardMulti">
+              <div class="mode-art">
+                <div class="art-circle"></div>
+              </div>
+              <div class="mode-content">
+                <div class="mode-divider-badge">
+                  <div class="divider-line purple-left"></div>
+                  <div class="badge-circle" style="--accent: #8757ff; --glow: rgba(129,75,255,0.5);"> <img
+                      src="svg/person_multi.svg" alt="Play"
+                      style="width: 28px; height: 28px; object-fit: contain; opacity: 0.6;" /></div>
+                  <div class="divider-line purple-right"></div>
+                </div>
+                <h2>MULTIPLAYER</h2>
+                <p>Jogue com seus amigos ou com jogadores do mundo todo.</p>
+                <button class="mode-btn" id="btnOpenMultiConfig"
+                  style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <img src="svg/multi.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <span>ENTRAR</span>
+                  <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                </button>
 
-            <div class="hint">Escolha seu kart, pista e modo de jogo para começar a corrida.</div>
-          </div>
+                <!-- PAINEL COM ABAS E SLOTS VISUAIS -->
+                <div class="mode-config-panel" id="panelMultiConfig" style="justify-content: space-between;">
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="back-mode-btn" id="btnCloseMultiConfig" style="margin: 0;">‹ Voltar</button>
+                    <div style="display: flex; gap: 8px;">
+                      <button id="btnTabHost" class="tab-btn active">🏎️ Criar Sala</button>
+                      <button id="btnTabJoin" class="tab-btn">🚪 Buscar</button>
+                    </div>
+                  </div>
+
+                  <div
+                    style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; margin: 12px 0;">
+                    <!-- HOST CONTENT -->
+                    <div id="contentHost" style="display: flex; flex-direction: column; width: 100%; gap: 10px;">
+                      <div style="text-align: center;">
+                        <div id="roomCodeDisplay"
+                          style="display:none; color: #22c55e; font-weight: 900; font-size: 16px; text-transform: uppercase; letter-spacing: 2px;">
+                        </div>
+                        <div id="lobbyStatusHost"
+                          style="color: #91a7be; font-size: 11px; font-weight: bold; margin-top: 4px; min-height: 14px;">
+                        </div>
+                      </div>
+                      <div id="lobbyPlayersHost" class="lobby-slots"></div>
+                    </div>
+
+                    <!-- JOIN CONTENT -->
+                    <div id="contentJoin" style="display: none; flex-direction: column; width: 100%; gap: 10px;">
+                      <div id="joinInputArea" style="display: flex; gap: 8px; width: 100%;">
+                        <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
+                          style="text-transform:uppercase; flex: 1; min-height: 42px; font-size: 13px; text-align: center; letter-spacing: 2px;" />
+                        <button id="btnConnect" class="mode-btn"
+                          style="margin-top:0; min-height: 42px; width: auto; padding: 0 16px; font-size: 12px;">Conectar</button>
+                      </div>
+                      <div style="text-align: center;">
+                        <div id="lobbyStatusJoin"
+                          style="color: #91a7be; font-size: 11px; font-weight: bold; min-height: 14px;"></div>
+                      </div>
+                      <div id="lobbyPlayersJoin" class="lobby-slots" style="display:none;"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <button id="btnStartRace" type="button" class="mode-btn"
+                      style="display:none; background: #22c55e; color: #0f172a; margin: 0;">🏁 Iniciar Sala</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- MODO TORRE -->
+            <article class="mode tower" id="cardTower">
+              <div class="mode-art">
+                <div class="art-circle"></div>
+              </div>
+              <div class="mode-content">
+                <div class="mode-divider-badge">
+                  <div class="divider-line yellow-left"></div>
+                  <div class="badge-circle" style="--accent: #ffd21c; --glow: rgba(255,190,0,0.5);">
+                    <img src="svg/badge.svg" alt="Play"
+                      style="width: 30px; height: 30px; object-fit: contain; opacity: 0.8;" />
+                  </div>
+                  <div class="divider-line yellow-right"></div>
+                </div>
+                <h2>MODO TORRE</h2>
+                <p>Suba os andares, enfrente desafios e conquiste grandes recompensas.</p>
+                <button class="mode-btn" id="btnOpenTowerConfig"
+                  style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <img src="svg/torre.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <span>VER TORRE</span>
+                  <img src="svg/right2.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                </button>
+
+                <!-- NOVO PAINEL INLINE DA TORRE -->
+                <div class="mode-config-panel" id="panelTowerConfig" style="justify-content: space-between;">
+                  <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="back-mode-btn" id="btnCloseTowerConfig" style="margin: 0;">‹ Voltar</button>
+                  </div>
+
+                  <div id="towerContent"
+                    style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; margin: 12px 0;">
+                    <!-- Conteúdo injetado via JS (Gym, Floor, Botões) -->
+                  </div>
+                </div>
+
+              </div>
+            </article>
+
+          </section>
         </div>
       </section>
     </main>
@@ -999,96 +1308,51 @@
   <script src="music.js"></script>
 
   <script>
-    // ----------------------------------------------------
-    // SISTEMA RANQUEADO E DE LIGAS (TEMÁTICA POKÉMON / POKÉBOLAS)
-    // ----------------------------------------------------
+    const GYM_TOWERS = [
+      { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', maxFloors: 5, kartId: 'golem' },
+      { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', maxFloors: 5, kartId: 'oshawott' },
+      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', maxFloors: 6, kartId: 'jolteon' },
+      { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', maxFloors: 6, kartId: 'tangela' },
+      { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', maxFloors: 7, kartId: 'gengar' },
+      { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', maxFloors: 7, kartId: 'espeon' },
+      { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', maxFloors: 8, kartId: 'charizard' },
+      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', maxFloors: 8, kartId: 'dialga' }
+    ];
+
     const LEAGUES = [
-      {
-        id: 'pokeball',
-        name: 'POKÉBOLA',
-        min: 0,
-        max: 499,
-        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png',
-        color: '#ff4b55',
-        title: 'NOVATO'
-      },
-      {
-        id: 'greatball',
-        name: 'SUPER BOLA',
-        min: 500,
-        max: 1499,
-        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png',
-        color: '#21c7ff',
-        title: 'EXPERIENTE'
-      },
-      {
-        id: 'ultraball',
-        name: 'ULTRA BOLA',
-        min: 1500,
-        max: 2999,
-        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png',
-        color: '#ffd23f',
-        title: 'ELITE'
-      },
-      {
-        id: 'masterball',
-        name: 'MASTER BOLA',
-        min: 3000,
-        max: 99999,
-        iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png',
-        color: '#a855f7',
-        title: 'MESTRE KART'
-      }
+      { id: 'pokeball', name: 'POKÉBOLA', min: 0, max: 499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png', color: '#ff4b55', title: 'NOVATO' },
+      { id: 'greatball', name: 'SUPER BOLA', min: 500, max: 1499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png', color: '#21c7ff', title: 'EXPERIENTE' },
+      { id: 'ultraball', name: 'ULTRA BOLA', min: 1500, max: 2999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png', color: '#ffd23f', title: 'ELITE' },
+      { id: 'masterball', name: 'MASTER BOLA', min: 3000, max: 99999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', color: '#a855f7', title: 'MESTRE KART' }
     ];
 
     function getLeagueByTrophies(trophies) {
       return LEAGUES.find(l => trophies >= l.min && trophies <= l.max) || LEAGUES[0];
     }
 
-    // Atualiza a interface usando as imagens da PokeAPI nas insígnias
     function updateLeagueUI(trophies) {
       const league = getLeagueByTrophies(trophies);
-
       const topbarIcon = document.getElementById('topbarLeagueIcon');
       const sideIcon = document.getElementById('sideLeagueIcon');
       const sideText = document.getElementById('sideMenuLeagueText');
-
-      // Substitui o emoji por tag <img> puxando da PokeAPI
       const imgHtml = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px ${league.color});">`;
 
-      if (topbarIcon) {
-        topbarIcon.innerHTML = imgHtml;
-        topbarIcon.style.borderColor = league.color;
-        topbarIcon.style.background = `rgba(0,0,0,0.6)`;
-      }
-
-      if (sideIcon) {
-        sideIcon.innerHTML = imgHtml;
-        sideIcon.style.borderColor = league.color;
-        sideIcon.style.background = `rgba(0,0,0,0.6)`;
-      }
-
-      if (sideText) {
-        sideText.innerText = `${league.title} (${league.name})`;
-        sideText.style.color = league.color;
-      }
+      if (topbarIcon) { topbarIcon.innerHTML = imgHtml; topbarIcon.style.borderColor = league.color; topbarIcon.style.background = `rgba(0,0,0,0.6)`; }
+      if (sideIcon) { sideIcon.innerHTML = imgHtml; sideIcon.style.borderColor = league.color; sideIcon.style.background = `rgba(0,0,0,0.6)`; }
+      if (sideText) { sideText.innerText = `${league.title} (${league.name})`; sideText.style.color = league.color; }
     }
 
-    // Modal de Promoção com a Pokébola correspondente da PokeAPI
     function showPromotionModal(trophies) {
       const league = getLeagueByTrophies(trophies);
-
       const modal = document.getElementById('promotionModalOverlay');
       const iconContainer = document.getElementById('promoLeagueIcon');
       const name = document.getElementById('promoLeagueName');
       const points = document.getElementById('promoLeaguePoints');
 
       iconContainer.innerHTML = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 100px; height: 100px; object-fit: contain;">`;
-
       name.innerText = league.name;
       name.style.color = league.color;
       name.style.textShadow = `0 0 20px ${league.color}80`;
-
       points.innerText = trophies;
       modal.style.display = 'flex';
     }
@@ -1096,14 +1360,6 @@
     document.getElementById('btnClosePromotion').onclick = () => {
       document.getElementById('promotionModalOverlay').style.display = 'none';
     };
-
-    // Chamada inicial (você conectará isso ao valor de troféus real do Supabase)
-    // updateLeagueUI(1500);
-    // Para testar a animação visual, digite no console do navegador: showPromotionModal(1500)
-
-    // ----------------------------------------------------
-    // RESTANTE DO CÓDIGO DO LOBBY
-    // ----------------------------------------------------
 
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -1165,8 +1421,6 @@
     let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
     if (selectedIndex === -1) selectedIndex = 0;
 
-
-
     let previewScene, previewCamera, previewRenderer, currentModel;
     let previewRequestId = 0;
 
@@ -1207,6 +1461,11 @@
       const kartNameEl = document.getElementById('kartName');
       const spinnerEl = document.getElementById('previewSpinner');
 
+      const topbarKartName = document.getElementById('topbarKartName');
+      if (topbarKartName) {
+        topbarKartName.innerText = item.name.replace(/^[^\w\s]+/, '').trim();
+      }
+
       sessionStorage.setItem('pkart_selected_kart', item.id);
       const requestId = ++previewRequestId;
 
@@ -1220,7 +1479,7 @@
       const displayModel = (modelScene) => {
         if (requestId !== previewRequestId) return;
         currentModel = modelScene.clone(true);
-        currentModel.scale.setScalar(2.2);
+        currentModel.scale.setScalar(1.6);
         previewScene.add(currentModel);
         if (spinnerEl) spinnerEl.style.display = 'none';
       };
@@ -1288,7 +1547,6 @@
     }
     updateDailyFreeKarts();
 
-    // --- REORDENAÇÃO DOS KARTS: DISPONÍVEIS PRIMEIRO ---
     function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
@@ -1297,7 +1555,6 @@
         unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
       }
 
-      // Separa em dois grupos: disponíveis e bloqueados
       const availableGroup = [];
       const lockedGroup = [];
 
@@ -1309,17 +1566,13 @@
         }
       });
 
-      // Reconstrói o array principal com os liberados na frente
       KART_DATABASE.length = 0;
       KART_DATABASE.push(...availableGroup, ...lockedGroup);
 
-      // Atualiza o índice selecionado caso o kart salvo tenha mudado de posição
       const currentSelectedId = sessionStorage.getItem('pkart_selected_kart');
       selectedIndex = KART_DATABASE.findIndex(k => k.id === currentSelectedId);
       if (selectedIndex === -1) selectedIndex = 0;
     }
-
-    // Executa a ordenação logo após definir os karts grátis do dia
     sortKartsByAvailability();
 
     function checkKartLockStatus(kartId) {
@@ -1334,17 +1587,26 @@
       const isUnlocked = unlockedKarts.includes(kartId);
       const isFreeRotation = dailyFreeKarts.includes(kartId) && !(profile && profile.unlocked_karts && profile.unlocked_karts.includes(kartId));
 
-      const btnStartRace = document.getElementById('btnStartRace');
       const btnPlaySolo = document.getElementById('btnPlaySolo');
-      const btnHost = document.getElementById('btnHost');
+      const btnStartRace = document.getElementById('btnStartRace');
+      const btnConnect = document.getElementById('btnConnect');
       const kartNameEl = document.getElementById('kartName');
+
+      const btnTabHost = document.getElementById('btnTabHost');
+      const btnTabJoin = document.getElementById('btnTabJoin');
+
+      const btnEnterTowerFloor = document.getElementById('btnEnterTowerFloor');
+
       const currentItem = KART_DATABASE[selectedIndex];
 
       if (!isUnlocked) {
         if (kartNameEl) kartNameEl.innerText = `${currentItem.name} 🔒 (BLOQUEADO)`;
         if (btnPlaySolo) { btnPlaySolo.disabled = true; btnPlaySolo.style.opacity = '0.5'; btnPlaySolo.style.cursor = 'not-allowed'; }
-        if (btnHost) { btnHost.disabled = true; btnHost.style.opacity = '0.5'; btnHost.style.cursor = 'not-allowed'; }
         if (btnStartRace) { btnStartRace.disabled = true; btnStartRace.style.opacity = '0.5'; btnStartRace.style.cursor = 'not-allowed'; }
+        if (btnConnect) { btnConnect.disabled = true; btnConnect.style.opacity = '0.5'; btnConnect.style.cursor = 'not-allowed'; }
+        if (btnTabHost) { btnTabHost.disabled = true; btnTabHost.style.opacity = '0.5'; btnTabHost.style.cursor = 'not-allowed'; }
+        if (btnTabJoin) { btnTabJoin.disabled = true; btnTabJoin.style.opacity = '0.5'; btnTabJoin.style.cursor = 'not-allowed'; }
+        if (btnEnterTowerFloor) { btnEnterTowerFloor.disabled = true; btnEnterTowerFloor.style.opacity = '0.5'; btnEnterTowerFloor.style.cursor = 'not-allowed'; }
       } else {
         if (isFreeRotation) {
           if (kartNameEl) kartNameEl.innerHTML = `${currentItem.name} <span style="color:#22c55e; font-size:11px; margin-left:4px;">(GRÁTIS HOJE)</span>`;
@@ -1353,19 +1615,13 @@
         }
 
         if (btnPlaySolo) { btnPlaySolo.disabled = false; btnPlaySolo.style.opacity = '1'; btnPlaySolo.style.cursor = 'pointer'; }
-        if (btnHost) { btnHost.disabled = false; btnHost.style.opacity = '1'; btnHost.style.cursor = 'pointer'; }
         if (btnStartRace) { btnStartRace.disabled = false; btnStartRace.style.opacity = '1'; btnStartRace.style.cursor = 'pointer'; }
+        if (btnConnect) { btnConnect.disabled = false; btnConnect.style.opacity = '1'; btnConnect.style.cursor = 'pointer'; }
+        if (btnTabHost) { btnTabHost.disabled = false; btnTabHost.style.opacity = '1'; btnTabHost.style.cursor = 'pointer'; }
+        if (btnTabJoin) { btnTabJoin.disabled = false; btnTabJoin.style.opacity = '1'; btnTabJoin.style.cursor = 'pointer'; }
+        if (btnEnterTowerFloor) { btnEnterTowerFloor.disabled = false; btnEnterTowerFloor.style.opacity = '1'; btnEnterTowerFloor.style.cursor = 'pointer'; }
       }
     }
-
-    document.getElementById('btnPrevKart').onclick = () => {
-      selectedIndex = (selectedIndex - 1 + KART_DATABASE.length) % KART_DATABASE.length;
-      updatePreview();
-    };
-    document.getElementById('btnNextKart').onclick = () => {
-      selectedIndex = (selectedIndex + 1) % KART_DATABASE.length;
-      updatePreview();
-    };
 
     function bindCustomDropdown(triggerId, menuId, nativeSelectId, labelId, onChangeCallback) {
       const trigger = document.getElementById(triggerId);
@@ -1409,9 +1665,159 @@
       bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel');
     }
 
-    let peer = null, roomCode = '', myAssignedSlot = 0;
-    const guestConnections = new Map();
+    // --- Lógica de Expansão dos Cards de Modo ---
+    const cardSolo = document.getElementById('cardSolo');
+    const btnOpenSoloConfig = document.getElementById('btnOpenSoloConfig');
+    const btnCloseSoloConfig = document.getElementById('btnCloseSoloConfig');
+    const panelSoloConfig = document.getElementById('panelSoloConfig');
+
+    const cardMulti = document.getElementById('cardMulti');
+    const btnOpenMultiConfig = document.getElementById('btnOpenMultiConfig');
+    const btnCloseMultiConfig = document.getElementById('btnCloseMultiConfig');
+    const panelMultiConfig = document.getElementById('panelMultiConfig');
+
+    const cardTower = document.getElementById('cardTower');
+    const btnOpenTowerConfig = document.getElementById('btnOpenTowerConfig');
+    const btnCloseTowerConfig = document.getElementById('btnCloseTowerConfig');
+    const panelTowerConfig = document.getElementById('panelTowerConfig');
+
+    btnOpenSoloConfig.onclick = () => {
+      cardSolo.classList.add('config-open'); panelSoloConfig.style.display = 'flex';
+      cardMulti.classList.remove('config-open'); panelMultiConfig.style.display = 'none';
+      cardTower.classList.remove('config-open'); panelTowerConfig.style.display = 'none';
+    };
+    btnCloseSoloConfig.onclick = () => {
+      cardSolo.classList.remove('config-open'); panelSoloConfig.style.display = 'none';
+    };
+
+    // --- TABS MULTIPLAYER LOGIC ---
+    let peer = null, roomCode = '';
+    let lobbyPlayers = [];
+    let myAssignedSlot = 0;
+    const guestConns = [];
     let hostLobbyConn = null;
+    const peerConfig = { debug: 2, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } };
+
+    const btnTabHost = document.getElementById('btnTabHost');
+    const btnTabJoin = document.getElementById('btnTabJoin');
+    const contentHost = document.getElementById('contentHost');
+    const contentJoin = document.getElementById('contentJoin');
+
+    function renderLobbySlots(containerId, players) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      container.style.display = 'flex';
+
+      for (let i = 0; i < 4; i++) {
+        const slot = document.createElement('div');
+        if (players[i]) {
+          slot.className = 'player-slot filled';
+          slot.innerHTML = `<span style="font-size:16px;">👤</span> ${players[i]}`;
+        } else {
+          slot.className = 'player-slot';
+          slot.innerHTML = `<span style="font-size:16px;">⏳</span> Aguardando...`;
+        }
+        container.appendChild(slot);
+      }
+    }
+
+    function initHost() {
+      document.getElementById('lobbyStatusHost').textContent = 'Criando sala...';
+      roomCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+      if (peer) peer.destroy();
+      guestConns.length = 0;
+      lobbyPlayers = [getNickname()];
+
+      renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
+
+      peer = new Peer('pkart-lobby-' + roomCode, peerConfig);
+
+      peer.on('open', (id) => {
+        const codeDisplay = document.getElementById('roomCodeDisplay');
+        codeDisplay.style.display = 'block';
+        codeDisplay.textContent = 'CÓDIGO: ' + roomCode.toUpperCase();
+        document.getElementById('btnStartRace').style.display = 'block';
+        document.getElementById('lobbyStatusHost').textContent = 'Aguardando jogadores...';
+      });
+
+      peer.on('connection', (conn) => {
+        conn.on('data', (data) => {
+          if (data.t === 'join_req') {
+            if (lobbyPlayers.length >= 4) {
+              conn.send({ t: 'error', msg: 'Sala cheia' });
+              return;
+            }
+            const slotIndex = lobbyPlayers.length;
+            lobbyPlayers.push(data.nick);
+            guestConns.push({ peer: conn.peer, conn: conn, nick: data.nick });
+
+            conn.send({ t: 'assign_slot', slot: slotIndex, players: lobbyPlayers });
+            broadcastLobby();
+            renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
+          }
+        });
+
+        conn.on('close', () => {
+          const idx = guestConns.findIndex(g => g.peer === conn.peer);
+          if (idx !== -1) {
+            guestConns.splice(idx, 1);
+            lobbyPlayers = [getNickname(), ...guestConns.map(g => g.nick)];
+            broadcastLobby();
+            renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
+          }
+        });
+      });
+    }
+
+    function broadcastLobby() {
+      guestConns.forEach(g => {
+        if (g.conn && g.conn.open) g.conn.send({ t: 'update_lobby', players: lobbyPlayers });
+      });
+    }
+
+    function switchMultiTab(tab) {
+      if (tab === 'host') {
+        btnTabHost.classList.add('active');
+        btnTabJoin.classList.remove('active');
+        contentHost.style.display = 'flex';
+        contentJoin.style.display = 'none';
+
+        if (!roomCode || peer === null) {
+          initHost();
+        }
+      } else {
+        btnTabJoin.classList.add('active');
+        btnTabHost.classList.remove('active');
+        contentHost.style.display = 'none';
+        contentJoin.style.display = 'flex';
+
+        if (roomCode) {
+          if (peer) peer.destroy();
+          peer = null;
+          roomCode = '';
+          document.getElementById('btnStartRace').style.display = 'none';
+          document.getElementById('roomCodeDisplay').style.display = 'none';
+        }
+
+        document.getElementById('joinInputArea').style.display = 'flex';
+        document.getElementById('lobbyPlayersJoin').style.display = 'none';
+        document.getElementById('lobbyStatusJoin').textContent = '';
+      }
+    }
+
+    if (btnTabHost) btnTabHost.onclick = () => switchMultiTab('host');
+    if (btnTabJoin) btnTabJoin.onclick = () => switchMultiTab('join');
+
+    btnOpenMultiConfig.onclick = () => {
+      cardMulti.classList.add('config-open'); panelMultiConfig.style.display = 'flex';
+      cardSolo.classList.remove('config-open'); panelSoloConfig.style.display = 'none';
+      cardTower.classList.remove('config-open'); panelTowerConfig.style.display = 'none';
+      switchMultiTab('host');
+    };
+
+    btnCloseMultiConfig.onclick = () => {
+      cardMulti.classList.remove('config-open'); panelMultiConfig.style.display = 'none';
+    };
 
     function getNickname() {
       const nickHeader = document.getElementById('playerHeaderNick');
@@ -1419,77 +1825,53 @@
       sessionStorage.setItem('pkart_nickname', nick); return nick;
     }
 
-    const peerConfig = { debug: 2, config: { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }] } };
-
     function redirectToRace(room = '', slot = 0, trackId = '', totalPlayers = 1) {
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = typeof room === 'string' ? room.trim().toLowerCase() : '';
       const chosenTrack = trackId || (document.getElementById('trackSelectDropdown')?.value || '');
-
-      // Captura o atributo de dificuldade direto da opção selecionada no dropdown/select nativo
       const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
       const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
 
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}`;
-
       if (cleanRoom !== '') target += `&room=${cleanRoom}`;
       if (chosenTrack !== '') target += `&customTrack=${chosenTrack}`;
-      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`; // Envia a dificuldade correta do banco para o jogo
+      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`;
 
       window.location.href = target;
     }
 
-    document.getElementById('btnHost').onclick = () => {
-      document.getElementById('lobbyStatus').textContent = 'Criando sala...';
-      roomCode = Math.random().toString(36).substring(2, 7).toLowerCase();
-      if (peer) peer.destroy();
-      guestConnections.clear();
-      peer = new Peer('pkart-lobby-' + roomCode, peerConfig);
-
-      peer.on('open', (id) => {
-        document.getElementById('roomCodeDisplay').style.display = 'block';
-        document.getElementById('roomCodeDisplay').textContent = 'CÓDIGO: ' + roomCode.toUpperCase();
-        document.getElementById('btnStartRace').style.display = 'inline-block';
-        document.getElementById('btnPlaySolo').style.display = 'none';
-        document.getElementById('lobbyStatus').textContent = 'Sala criada! Aguardando jogadores...';
-      });
-
-      peer.on('connection', (conn) => {
-        conn.on('open', () => {
-          const assignedSlot = guestConnections.size + 1;
-          guestConnections.set(conn.peer, conn);
-          conn.send({ t: 'assign_slot', slot: assignedSlot });
-          document.getElementById('lobbyStatus').textContent = `${guestConnections.size + 1}/4 Jogadores na sala!`;
-        });
-        conn.on('close', () => {
-          guestConnections.delete(conn.peer);
-          document.getElementById('lobbyStatus').textContent = `${guestConnections.size + 1}/4 Jogadores na sala!`;
-        });
-      });
-    };
-
-    document.getElementById('btnJoin').onclick = () => { document.getElementById('joinBox').style.display = 'flex'; };
-
     document.getElementById('btnConnect').onclick = () => {
       const code = document.getElementById('joinCode').value.trim().toLowerCase();
       if (!code) return;
-      document.getElementById('lobbyStatus').textContent = 'Conectando ao Host...';
+      document.getElementById('lobbyStatusJoin').textContent = 'Conectando ao Host...';
       if (peer) peer.destroy();
       peer = new Peer(peerConfig);
 
       peer.on('open', (myId) => {
         const targetHostId = 'pkart-lobby-' + code;
         hostLobbyConn = peer.connect(targetHostId, { reliable: true });
+
         hostLobbyConn.on('open', () => {
-          document.getElementById('lobbyStatus').textContent = 'Conectado! Aguardando o Host iniciar...';
+          hostLobbyConn.send({ t: 'join_req', nick: getNickname() });
         });
+
         hostLobbyConn.on('data', (data) => {
-          if (data.t === 'assign_slot') myAssignedSlot = data.slot;
+          if (data.t === 'assign_slot') {
+            myAssignedSlot = data.slot;
+            document.getElementById('lobbyStatusJoin').textContent = 'Conectado à sala!';
+            document.getElementById('joinInputArea').style.display = 'none';
+            renderLobbySlots('lobbyPlayersJoin', data.players);
+          }
+          if (data.t === 'update_lobby') {
+            renderLobbySlots('lobbyPlayersJoin', data.players);
+          }
           if (data.t === 'start') {
-            document.getElementById('lobbyStatus').textContent = 'Iniciando corrida...';
-            // Convidado lê o total de jogadores enviado pelo Host
+            document.getElementById('lobbyStatusJoin').textContent = 'Iniciando corrida...';
             redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+          }
+          if (data.t === 'error') {
+            document.getElementById('lobbyStatusJoin').textContent = data.msg;
           }
         });
       });
@@ -1499,18 +1881,14 @@
       if (e.target && e.target.id === 'btnStartRace') {
         e.preventDefault(); enableMobileExperience();
         const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
-        document.getElementById('lobbyStatus').textContent = 'Enviando sinal de início...';
+        document.getElementById('lobbyStatusHost').textContent = 'Enviando sinal de início...';
+        const totalPlayers = lobbyPlayers.length;
 
-        // Host calcula o total de jogadores reais (Ele + Convidados)
-        const totalPlayers = guestConnections.size + 1;
+        guestConns.forEach(g => {
+          if (g.conn && g.conn.open) g.conn.send({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers });
+        });
 
-        for (const [peerId, conn] of guestConnections.entries()) {
-          // Host avisa convidados passando o totalPlayers
-          if (conn && conn.open) conn.send({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers });
-        }
         localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, time: Date.now() }));
-
-        // Host entra na corrida
         setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 1200);
       }
     });
@@ -1531,71 +1909,15 @@
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
-
-      // Captura a dificuldade salva no banco para a pista escolhida
       const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
       const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
 
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}&players=1`;
-
       if (chosenTrack) target += `&customTrack=${chosenTrack}`;
-      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`; // Repassa o multiplicador correto para o modo solo
+      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`;
 
       window.location.href = target;
     };
-
-    let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
-    let uiVolume = parseFloat(localStorage.getItem('pkart_music_vol'));
-    if (isNaN(uiVolume)) uiVolume = 0.4;
-    if (window.globalMusic) window.globalMusic.volume = uiVolume;
-
-    const musicStatusText = document.getElementById('musicStatusText');
-    const musicVolumeSlider = document.getElementById('musicVolumeSlider');
-
-    if (musicVolumeSlider) musicVolumeSlider.value = uiVolume;
-
-    function updateSliderFill() {
-      if (!musicVolumeSlider) return;
-      const val = (musicVolumeSlider.value / 1) * 100;
-      musicVolumeSlider.style.background = `linear-gradient(to right, var(--cyan) ${val}%, #213a54 ${val}%)`;
-    }
-
-    function updateAudioUI() {
-      if (musicStatusText) {
-        musicStatusText.innerText = isMusicEnabled ? 'LIGADA' : 'DESLIGADA';
-        musicStatusText.style.color = isMusicEnabled ? 'var(--cyan)' : 'var(--danger)';
-      }
-      if (window.globalMusic) {
-        if (isMusicEnabled) window.globalMusic.play().catch(() => { });
-        else window.globalMusic.pause();
-      }
-    }
-
-    if (musicVolumeSlider) {
-      musicVolumeSlider.addEventListener('input', (e) => {
-        const vol = parseFloat(e.target.value);
-        if (window.globalMusic) window.globalMusic.volume = vol;
-        localStorage.setItem('pkart_music_vol', vol);
-        updateSliderFill();
-        if (vol === 0 && isMusicEnabled) { isMusicEnabled = false; localStorage.setItem('pkart_music', false); updateAudioUI(); }
-        else if (vol > 0 && !isMusicEnabled) { isMusicEnabled = true; localStorage.setItem('pkart_music', true); updateAudioUI(); }
-      });
-    }
-
-    if (document.getElementById('menuBtnMusicToggle')) {
-      document.getElementById('menuBtnMusicToggle').onclick = () => {
-        isMusicEnabled = !isMusicEnabled;
-        localStorage.setItem('pkart_music', isMusicEnabled);
-        if (window.globalMusic) {
-          if (isMusicEnabled && window.globalMusic.volume === 0) { window.globalMusic.volume = 0.4; if (musicVolumeSlider) musicVolumeSlider.value = 0.4; localStorage.setItem('pkart_music_vol', 0.4); }
-          else if (!isMusicEnabled) { if (musicVolumeSlider) musicVolumeSlider.value = 0; }
-          else { if (musicVolumeSlider) musicVolumeSlider.value = window.globalMusic.volume; }
-        }
-        updateSliderFill(); updateAudioUI();
-      };
-    }
-
-    updateAudioUI(); updateSliderFill();
 
     const changelogModal = document.getElementById('changelogModalOverlay');
     const btnOpenChangelog = document.getElementById('menuBtnChangelog');
@@ -1631,11 +1953,9 @@
       }
     }
 
-
     async function fetchCustomTracks() {
       if (typeof supabaseClient === 'undefined') return;
       try {
-        // Agora busca também a coluna 'difficulty' junto com o id e o nome
         const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name, difficulty');
         if (error || !tracks) return;
 
@@ -1649,14 +1969,14 @@
 
           const option = document.createElement('option');
           option.value = track.id;
-          option.setAttribute('data-difficulty', trackDiff); // Armazena a dificuldade no select nativo
+          option.setAttribute('data-difficulty', trackDiff);
           option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
 
           const customOpt = document.createElement('div');
           customOpt.className = 'customDropdownOption';
           customOpt.setAttribute('data-value', track.id);
-          customOpt.setAttribute('data-difficulty', trackDiff); // Armazena a dificuldade no elemento do dropdown customizado
+          customOpt.setAttribute('data-difficulty', trackDiff);
           customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
@@ -1680,59 +2000,261 @@
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');
       const btnNext = document.getElementById('btnMusicNext');
+      const btnMusicToggle = document.getElementById('menuBtnMusicToggle');
+      const slider = document.getElementById('musicVolumeSlider');
+      const statusText = document.getElementById('musicStatusText');
 
-      if (btnPrev) {
-        btnPrev.onclick = () => {
-          if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic();
-        };
-      }
-
-      if (btnPlayPause) {
-        // Atualiza o ícone inicial correto caso já esteja tocando ou pausado
+      function updatePlayPauseUI() {
+        if (!btnPlayPause) return;
         if (window.globalMusic && window.globalMusic.paused) {
           btnPlayPause.innerText = '▶';
         } else {
           btnPlayPause.innerText = '⏸';
         }
+      }
 
+      if (btnPrev) {
+        btnPrev.onclick = () => { if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic(); };
+      }
+
+      if (btnPlayPause) {
         btnPlayPause.onclick = () => {
-          if (typeof window.togglePlayPauseGlobalMusic === 'function') {
-            window.togglePlayPauseGlobalMusic();
-            // Atualiza o ícone do botão com base no estado atual
-            setTimeout(() => {
-              if (window.globalMusic) {
-                btnPlayPause.innerText = window.globalMusic.paused ? '▶' : '⏸';
-              }
-            }, 50);
+          if (window.globalMusic) {
+            if (window.globalMusic.paused) {
+              window.globalMusic.play().catch(() => { });
+              isMusicEnabled = true;
+            } else {
+              window.globalMusic.pause();
+              isMusicEnabled = false;
+            }
+            localStorage.setItem('pkart_music', isMusicEnabled);
+            localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
+            updateAudioUI();
           }
         };
       }
 
       if (btnNext) {
-        btnNext.onclick = () => {
-          if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic();
+        btnNext.onclick = () => { if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic(); };
+      }
+
+      let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
+      let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
+      if (isNaN(vol)) vol = 0.4;
+
+      if (slider) slider.value = vol;
+      if (window.globalMusic) window.globalMusic.volume = vol;
+
+      function updateAudioUI() {
+        if (statusText) {
+          statusText.innerText = isMusicEnabled ? 'LIGADA' : 'DESLIGADA';
+          statusText.style.color = isMusicEnabled ? '#21c7ff' : '#ff4b55';
+        }
+        if (slider) {
+          const percent = (slider.value / 1) * 100;
+          slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
+        }
+        if (window.globalMusic) {
+          if (isMusicEnabled) window.globalMusic.play().catch(() => { });
+          else window.globalMusic.pause();
+        }
+        updatePlayPauseUI();
+      }
+
+      if (btnMusicToggle) {
+        btnMusicToggle.onclick = () => {
+          isMusicEnabled = !isMusicEnabled;
+          localStorage.setItem('pkart_music', isMusicEnabled);
+          localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
+          updateAudioUI();
         };
       }
+
+      if (slider) {
+        slider.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          if (window.globalMusic) window.globalMusic.volume = v;
+          localStorage.setItem('pkart_music_vol', v);
+
+          if (v === 0 && isMusicEnabled) {
+            isMusicEnabled = false;
+            localStorage.setItem('pkart_music', false);
+          } else if (v > 0 && !isMusicEnabled) {
+            isMusicEnabled = true;
+            localStorage.setItem('pkart_music', true);
+          }
+          updateAudioUI();
+        });
+      }
+
+      updateAudioUI();
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'pkart_music_playing' || e.key === 'pkart_music_vol' || e.key === 'pkart_music') {
+          isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
+          const newVol = parseFloat(localStorage.getItem('pkart_music_vol'));
+          if (!isNaN(newVol) && window.globalMusic) window.globalMusic.volume = newVol;
+          updateAudioUI();
+        }
+      });
 
       initPreview();
       await fetchCustomTracks();
       setupCustomDropdowns();
-      // --- VERIFICA SE HÁ PROMOÇÃO PENDENTE DA CORRIDA ---
+
+      // -- MODO TORRE & SIDEBAR BADGES --
+      const towerContent = document.getElementById('towerContent');
+
+      function renderBadgesSidebar() {
+        const badgesContainer = document.getElementById('sideMenuBadges');
+        if (!badgesContainer) return;
+
+        const unlockedBadges = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_badges)
+          ? currentUserProfile.unlocked_badges
+          : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+
+        badgesContainer.innerHTML = GYM_TOWERS.map(gym => `<span class="tower-badge ${unlockedBadges.includes(gym.id) ? 'unlocked' : ''}" title="${gym.name}">${gym.badge}</span>`).join('');
+      }
+
+      async function renderTowerPanel() {
+        const unlockedBadges = JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+        let towerState = null;
+        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+          towerState = currentUserProfile.tower_state;
+        } else {
+          towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
+        }
+
+        let currentGym = GYM_TOWERS.find(g => !unlockedBadges.includes(g.id));
+
+        if (!currentGym) {
+          towerContent.innerHTML = `<div style="font-size: 60px; margin: 20px 0;">👑</div><h3 style="color: #22c55e; margin-bottom: 5px;">CAMPEÃO DA LIGA</h3><p style="color: #dcecff; font-size: 14px;">Você já derrotou todos os Líderes de Ginásio e conquistou todas as insígnias!</p>`;
+          return;
+        }
+
+        if (!towerState || towerState.gymId !== currentGym.id) {
+          towerState = { gymId: currentGym.id, floor: 1, maxFloors: currentGym.maxFloors };
+          await saveTowerStateToDB(towerState);
+        }
+
+        const isBoss = towerState.floor === towerState.maxFloors;
+
+        towerContent.innerHTML = `
+          <div style="text-align: center; margin-bottom: 15px;">
+            <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">${currentGym.badge}</div>
+            <h3 style="color: #fff; font-size: 18px; margin-bottom: 2px;">${currentGym.name}</h3>
+            <p style="color: #ffffff; font-size: 12px; font-weight: bold;">Líder: <b style="color: var(--yellow);">${currentGym.leader}</b></p>
+          </div>
+          
+          <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
+            <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
+          </div>
+          
+          <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+            <button id="btnEnterTowerFloor" class="mode-btn" style="margin: 0; background: ${isBoss ? 'linear-gradient(90deg, #ef4444, #b91c1c)' : '#f1f5f9'}; color: ${isBoss ? '#fff' : '#0f172a'}; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              ${isBoss ? 'DESAFIAR LÍDER' : 'CORRER ANDAR'}
+            </button>
+            <button id="btnResetTower" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
+              Abandonar Torre
+            </button>
+          </div>
+        `;
+
+        document.getElementById('btnEnterTowerFloor').onclick = () => window.location.href = `game.html?nick=${getNickname()}&kart=${KART_DATABASE[selectedIndex].id}&slot=0&ai=hard&players=1&mode=tower&floor=${towerState.floor}&gym=${currentGym.id}&leader=${encodeURIComponent(currentGym.leader)}&leaderkart=${currentGym.kartId}`;
+        document.getElementById('btnResetTower').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
+      }
+
+      async function saveTowerStateToDB(state) {
+        localStorage.setItem('pkart_tower_state', JSON.stringify(state));
+        if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+          currentUserProfile.tower_state = state;
+          await supabaseClient.from('profiles').update({ tower_state: state }).eq('id', currentUserProfile.id);
+        }
+      }
+
+      btnOpenTowerConfig.addEventListener('click', () => {
+        cardTower.classList.add('config-open'); panelTowerConfig.style.display = 'flex';
+        cardSolo.classList.remove('config-open'); panelSoloConfig.style.display = 'none';
+        cardMulti.classList.remove('config-open'); panelMultiConfig.style.display = 'none';
+        renderTowerPanel();
+      });
+
+      btnCloseTowerConfig.addEventListener('click', () => {
+        cardTower.classList.remove('config-open'); panelTowerConfig.style.display = 'none';
+      });
+
+
+      async function processTowerResult() {
+        const result = localStorage.getItem('pkart_tower_result');
+        if (!result) return;
+        localStorage.removeItem('pkart_tower_result');
+
+        let towerState = null;
+        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+          towerState = currentUserProfile.tower_state;
+        }
+        if (!towerState) {
+          towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
+        }
+        if (!towerState) return;
+        const gym = GYM_TOWERS.find(g => g.id === towerState.gymId);
+
+        if (result === 'win') {
+          if (towerState.floor >= towerState.maxFloors) {
+            let unlockedBadges = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_badges)
+              ? [...currentUserProfile.unlocked_badges]
+              : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+
+            if (!unlockedBadges.includes(towerState.gymId)) {
+              unlockedBadges.push(towerState.gymId);
+              localStorage.setItem('pkart_unlocked_badges', JSON.stringify(unlockedBadges));
+              if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+                currentUserProfile.unlocked_badges = unlockedBadges;
+                await supabaseClient.from('profiles').update({ unlocked_badges: unlockedBadges }).eq('id', currentUserProfile.id);
+              }
+            }
+            await saveTowerStateToDB(null);
+            showResultModal('badge', 'INSÍGNIA CONQUISTADA!', `Incrível! Você derrotou ${gym.leader} e conquistou a Insígnia ${gym.badge}!`);
+          } else {
+            towerState.floor++;
+            await saveTowerStateToDB(towerState);
+            showResultModal('win', 'ANDAR CONCLUÍDO!', `Você avançou para o Andar ${towerState.floor} da Torre.`);
+          }
+        } else {
+          await saveTowerStateToDB(null);
+          showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+        }
+        renderBadgesSidebar();
+      }
+
+      function showResultModal(type, title, text) {
+        const overlay = document.getElementById('resultModalOverlay');
+        const iconEl = document.getElementById('resultIcon'), titleEl = document.getElementById('resultTitle'), textEl = document.getElementById('resultText');
+        if (type === 'win') { iconEl.innerText = '🏆'; titleEl.style.color = '#22c55e'; }
+        else if (type === 'badge') { iconEl.innerText = '🏅'; titleEl.style.color = '#facc15'; }
+        else { iconEl.innerText = '❌'; titleEl.style.color = '#ef4444'; }
+        titleEl.innerText = title; textEl.innerText = text;
+        overlay.style.display = 'flex';
+        document.getElementById('btnCloseResult').onclick = () => overlay.style.display = 'none';
+      }
+
+      renderBadgesSidebar();
+      setTimeout(processTowerResult, 500);
+
       const pendingPromo = sessionStorage.getItem('pending_promotion');
       if (pendingPromo) {
         try {
           const promoData = JSON.parse(pendingPromo);
-          // Aguarda meio segundo para garantir que o lobby carregou totalmente e exibe o modal
           setTimeout(() => {
             if (typeof showPromotionModal === 'function') {
               showPromotionModal(promoData.trophies);
-              updateLeagueUI(promoData.trophies); // Atualiza a insígnia na barra lateral/topo
+              updateLeagueUI(promoData.trophies);
             }
           }, 500);
         } catch (e) {
           console.error("Erro ao ler promoção pendente:", e);
         }
-        // Limpa para não exibir de novo se atualizar a página
         sessionStorage.removeItem('pending_promotion');
       }
     });

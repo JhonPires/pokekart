@@ -1,5 +1,13 @@
 # Changelog - PokéKart
 
+## [1.5] - 12/09/2026
+- Corrigido os botoes controlador das musicas.
+- Corrigido o ganho das moedas ao finalizar uma corrida.
+- Modo torre - Vença varias corridas seguidas para ter a chance do desafio ao líder do Ginasio.
+- Atualização do design da tela inicial.
+- Adicionado as insignias ao perfil do jogador.
+- Adicionado ao perfil do jogador a liga atual (Ranqueada).
+
 ## [1.4] - 12/09/2026
 - Corridas Multiplayer agora são consideradas competitivas somente quando houver 4 jogadores.
 - Caso a corrida tenha menos de 4 jogadores, ela será automaticamente classificada como Corrida Casual.

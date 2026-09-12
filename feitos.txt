@@ -1,3 +1,14 @@
+Versao 1.5
+- Corrigido os botoes controlador das musicas.
+- Corrigido o ganho das moedas ao finalizar uma corrida.
+- Modo torre - Vença varias corridas seguidas para ter a chance do desafio ao líder do Ginasio.
+- Atualização do design da tela inicial.
+- Adicionado as insignias ao perfil do jogador.
+- Adicionado ao perfil do jogador a liga atual (Ranqueada).
+
+
+
+Versao 1.4
 - Corrida multiplayer é considerada somente quando tiver 4 jogadores caso contrario a corrida vira casual.
 - Ao atualizar a pagina sendo o HOST a corrida é finalizada. Obs: Existe punição para corridas ranqueadas.
 - Nomes dos bots agora tem os nomes dos lideres de ginasio.

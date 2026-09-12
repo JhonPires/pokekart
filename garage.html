@@ -693,13 +693,25 @@
   <script src="auth.js"></script>
   <script src="garage.js"></script>
 
-  <!-- Lógica de Sincronização e Áudio da Interface -->
+  <!-- Lógica de Sincronização, Nome do Kart e Áudio -->
   <script>
-    // --- SINCRONIZAÇÃO DO NOME DO KART ---
     document.addEventListener('DOMContentLoaded', () => {
+      // --- 1. CONTROLE DE MÚSICA & PLAY/PAUSE ---
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');
       const btnNext = document.getElementById('btnMusicNext');
+      const btnMusic = document.getElementById('menuBtnMusicToggle');
+      const slider = document.getElementById('musicVolumeSlider');
+      const statusText = document.getElementById('musicStatusText');
+
+      function updatePlayPauseUI() {
+        if (!btnPlayPause) return;
+        if (window.globalMusic && window.globalMusic.paused) {
+          btnPlayPause.innerText = '▶';
+        } else {
+          btnPlayPause.innerText = '⏸';
+        }
+      }
 
       if (btnPrev) {
         btnPrev.onclick = () => {
@@ -708,20 +720,18 @@
       }
 
       if (btnPlayPause) {
-        if (window.globalMusic && window.globalMusic.paused) {
-          btnPlayPause.innerText = '▶';
-        } else {
-          btnPlayPause.innerText = '⏸';
-        }
-
         btnPlayPause.onclick = () => {
-          if (typeof window.togglePlayPauseGlobalMusic === 'function') {
-            window.togglePlayPauseGlobalMusic();
-            setTimeout(() => {
-              if (window.globalMusic) {
-                btnPlayPause.innerText = window.globalMusic.paused ? '▶' : '⏸';
-              }
-            }, 50);
+          if (window.globalMusic) {
+            if (window.globalMusic.paused) {
+              window.globalMusic.play().catch(() => { });
+              isEnabled = true;
+            } else {
+              window.globalMusic.pause();
+              isEnabled = false;
+            }
+            localStorage.setItem('pkart_music', isEnabled);
+            localStorage.setItem('pkart_music_playing', isEnabled ? 'true' : 'false');
+            updateAudioUI();
           }
         };
       }
@@ -731,35 +741,20 @@
           if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic();
         };
       }
-      const hiddenName = document.getElementById('kartName');
-      const visibleName = document.getElementById('kartNameMirror');
 
-      // Observa mudanças no elemento invisível que o garage.js atualiza
-      const observer = new MutationObserver(() => {
-        if (hiddenName && visibleName) {
-          visibleName.innerText = hiddenName.innerText;
+      // Sincroniza o play/pause caso mude em outra tela
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'pkart_music_playing') {
+          const shouldPlay = e.newValue === 'true';
+          if (window.globalMusic) {
+            if (shouldPlay) window.globalMusic.play().catch(() => { });
+            else window.globalMusic.pause();
+          }
+          updatePlayPauseUI();
         }
       });
 
-      if (hiddenName) {
-        observer.observe(hiddenName, { childList: true, subtree: true, characterData: true });
-
-        // Corrige um bug onde o garage.js as vezes usa innerHTML ou textContent direto no nó
-        const checkInterval = setInterval(() => {
-          if (hiddenName.innerText !== visibleName.innerText && hiddenName.innerText.trim() !== '') {
-            visibleName.innerText = hiddenName.innerText;
-          }
-        }, 300);
-      }
-    });
-
-    // --- SISTEMA DE ÁUDIO BLINDADO ---
-    window.addEventListener('DOMContentLoaded', () => {
-      const btnMusic = document.getElementById('menuBtnMusicToggle');
-      const slider = document.getElementById('musicVolumeSlider');
-      const statusText = document.getElementById('musicStatusText');
-
-      // Puxa as preferências salvas
+      // --- 2. CONFIGURAÇÃO DE VOLUME E BOTÃO LIGAR/DESLIGAR ---
       let isEnabled = localStorage.getItem('pkart_music') !== 'false';
       let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
       if (isNaN(vol)) vol = 0.4;
@@ -767,11 +762,10 @@
       if (slider) slider.value = vol;
       if (window.globalMusic) window.globalMusic.volume = vol;
 
-      // Função que pinta o botão e a barra de progresso
       function updateAudioUI() {
         if (statusText) {
           statusText.innerText = isEnabled ? 'LIGADA' : 'DESLIGADA';
-          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55'; // Cyan e Danger diretos
+          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55';
         }
         if (slider) {
           const percent = (slider.value / 1) * 100;
@@ -781,26 +775,18 @@
           if (isEnabled) window.globalMusic.play().catch(() => console.warn('Aguardando clique para tocar.'));
           else window.globalMusic.pause();
         }
+        updatePlayPauseUI();
       }
 
-      // Evento de Clique no botão Ligar/Desligar
       if (btnMusic) {
         btnMusic.onclick = () => {
           isEnabled = !isEnabled;
           localStorage.setItem('pkart_music', isEnabled);
-
-          if (isEnabled && slider && parseFloat(slider.value) === 0) {
-            slider.value = 0.4;
-            if (window.globalMusic) window.globalMusic.volume = 0.4;
-            localStorage.setItem('pkart_music_vol', 0.4);
-          } else if (!isEnabled && slider) {
-            slider.value = 0;
-          }
+          localStorage.setItem('pkart_music_playing', isEnabled ? 'true' : 'false');
           updateAudioUI();
         };
       }
 
-      // Evento de arrastar a barra de progresso (Slider)
       if (slider) {
         slider.addEventListener('input', (e) => {
           const v = parseFloat(e.target.value);
@@ -818,8 +804,27 @@
         });
       }
 
-      // Dispara a atualização visual logo que a página carrega
       updateAudioUI();
+
+      // --- 3. SINCRONIZAÇÃO DO NOME DO KART ---
+      const hiddenName = document.getElementById('kartName');
+      const visibleName = document.getElementById('kartNameMirror');
+
+      const observer = new MutationObserver(() => {
+        if (hiddenName && visibleName) {
+          visibleName.innerText = hiddenName.innerText;
+        }
+      });
+
+      if (hiddenName) {
+        observer.observe(hiddenName, { childList: true, subtree: true, characterData: true });
+
+        setInterval(() => {
+          if (hiddenName.innerText !== visibleName.innerText && hiddenName.innerText.trim() !== '') {
+            visibleName.innerText = hiddenName.innerText;
+          }
+        }, 300);
+      }
     });
   </script>
 </body>
