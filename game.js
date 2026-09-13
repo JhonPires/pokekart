@@ -1153,7 +1153,7 @@ if (isMobile) {
   }, { once: true });
 }
 
-const ZOOM_LEVELS = [20, 50];
+const ZOOM_LEVELS = [20];
 let currentZoomIndex = 0;
 window.addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'c') {
@@ -1704,14 +1704,23 @@ const pokeballMat = new THREE.MeshStandardMaterial({
   metalness: 0.1
 });
 
-const iceTrapMat = new THREE.MeshStandardMaterial({ color: 0x80deea, transparent: true, opacity: 0.8, roughness: 0.1 });
-const lodoTrapMat = new THREE.MeshStandardMaterial({ color: 0x4a148c, transparent: true, opacity: 0.85, roughness: 0.9 });
-const fumacaTrapMat = new THREE.MeshStandardMaterial({
-  color: 0x2a2a2a,
+const iceTrapMat = new THREE.MeshStandardMaterial({
+  map: createIceTexture(), transparent: true, roughness: 0.15, depthWrite: false, side: THREE.DoubleSide,
+  polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+});
+const lodoTrapMat = new THREE.MeshStandardMaterial({
+  map: createMudTexture(), transparent: true, roughness: 0.85, depthWrite: false, side: THREE.DoubleSide,
+  polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+});
+const smokeHazeMat = new THREE.MeshBasicMaterial({
+  map: createSmokeHazeTexture(),
   transparent: true,
-  opacity: 0.7,
-  roughness: 1.0,
-  depthWrite: false
+  opacity: 0.99, // Aumentado para dar mais destaque
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  polygonOffset: true,
+  polygonOffsetFactor: -4,
+  polygonOffsetUnits: -4
 });
 
 const fumacaCoreMat = new THREE.MeshStandardMaterial({
@@ -1821,44 +1830,108 @@ let trapNextId = 0;
 function createTrapMesh(trapData) {
   if (trapData.type === 'FUMACA') {
     const group = new THREE.Group();
-
-    const outerGeo = new THREE.CylinderGeometry(1.8, 1.8, 1.2, 16);
-    const outerMesh = new THREE.Mesh(outerGeo, fumacaTrapMat);
-    outerMesh.position.y = 0.6;
-    group.add(outerMesh);
-
-    const innerGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.9, 12);
-    const innerMesh = new THREE.Mesh(innerGeo, fumacaCoreMat);
-    innerMesh.position.y = 0.5;
-    group.add(innerMesh);
-
     group.position.set(trapData.x, 0, trapData.z);
     scene.add(group);
+
+    // Gera a nuvem volumétrica forçando a cor escura em todas as partículas
+    for (let p = 0; p < 20; p++) {
+      spawnAmbientPuff(new THREE.Vector3(trapData.x, 0.2, trapData.z), {
+        color: 0x222225,       // Cor cinza-escura firme
+        opacity: 0.4,         // Altamente opaca para não esbranquiçar
+        scale: 3.5,            // Bem volumosa
+        scaleVariance: 1.2,
+        riseSpeed: 0.12,
+        riseVariance: 0.15,
+        growth: 0.5,
+        life: 2.8,             // Tempo de duração prolongado
+        spread: 2.4            // Bem distribuída
+      });
+    }
 
     placedTraps.push({
       id: trapData.id,
       mesh: group,
-      outerMesh: outerMesh,
-      innerMesh: innerMesh,
       type: trapData.type,
-      active: true
+      active: true,
+      puffTimer: 0
     });
     return;
-
   } else {
-    const geo = new THREE.CylinderGeometry(1.8, 1.8, 0.05, 16);
-    const mat = trapData.type === 'ICE' ? iceTrapMat : lodoTrapMat;
+    // Se for LODO
+    if (trapData.type === 'LODO') {
+      const group = new THREE.Group();
+      const count = 6;
 
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.set(trapData.x, 0.03, trapData.z);
-    scene.add(mesh);
+      for (let i = 0; i < count; i++) {
+        const radius = i === 0 ? 0.55 : (0.18 + Math.random() * 0.28);
+        const geo = new THREE.CircleGeometry(radius, 24);
+        geo.rotateX(-Math.PI / 2);
 
-    placedTraps.push({
-      id: trapData.id,
-      mesh: mesh,
-      type: trapData.type,
-      active: true
-    });
+        const mat = lodoTrapMat.clone();
+        mat.opacity = 0.95;
+
+        const mesh = new THREE.Mesh(geo, mat);
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist = i === 0 ? 0 : 0.5 + Math.random() * 1.4;
+        const offsetX = i === 0 ? 0 : Math.cos(angle) * dist;
+        const offsetZ = i === 0 ? 0 : Math.sin(angle) * dist;
+
+        mesh.position.set(offsetX, 0.04, offsetZ);
+        mesh.renderOrder = 1;
+        group.add(mesh);
+      }
+
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        puffTimer: 0
+      });
+      return;
+    }
+
+    // Se for GELO (ICE) - agora com o mesmo estilo de placas espalhadas
+    if (trapData.type === 'ICE') {
+      const group = new THREE.Group();
+      const count = 5;
+
+      for (let i = 0; i < count; i++) {
+        const radius = i === 0 ? 0.6 : (0.2 + Math.random() * 0.3);
+        const geo = new THREE.CircleGeometry(radius, 24);
+        geo.rotateX(-Math.PI / 2);
+
+        const mat = iceTrapMat.clone();
+        mat.opacity = 0.85;
+
+        const mesh = new THREE.Mesh(geo, mat);
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist = i === 0 ? 0 : 0.4 + Math.random() * 1.2;
+        const offsetX = i === 0 ? 0 : Math.cos(angle) * dist;
+        const offsetZ = i === 0 ? 0 : Math.sin(angle) * dist;
+
+        mesh.position.set(offsetX, 0.04, offsetZ);
+        mesh.renderOrder = 1;
+        group.add(mesh);
+      }
+
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        puffTimer: 0
+      });
+      return;
+    }
   }
 }
 
@@ -1891,9 +1964,26 @@ function updateTraps(dt) {
   placedTraps.forEach((trap) => {
     if (!trap.active) return;
 
-    if (trap.type === 'FUMACA' && trap.outerMesh) {
-      trap.outerMesh.rotation.y += dt * 0.4;
-      trap.innerMesh.rotation.y -= dt * 0.8;
+    if (trap.type === 'FUMACA') {
+      trap.puffTimer += dt;
+      if (trap.puffTimer > 0.32) {
+        trap.puffTimer = 0;
+        spawnAmbientPuff(trap.mesh.position.clone().setY(0.15), {
+          color: 0xaaaaaa, opacity: 0.5, scale: 0.9, scaleVariance: 0.5,
+          riseSpeed: 0.4, riseVariance: 0.25, growth: 0.5, growthVariance: 0.4,
+          life: 1.6, lifeVariance: 0.6, spread: 1.9
+        });
+      }
+    } else if (trap.type === 'LODO') {
+      trap.puffTimer += dt;
+      if (trap.puffTimer > 0.9) {
+        trap.puffTimer = 0;
+        spawnAmbientPuff(trap.mesh.position.clone().setY(0.06), {
+          color: 0xcfa8ff, opacity: 0.4, scale: 0.16, scaleVariance: 0.1,
+          riseSpeed: 0.15, riseVariance: 0.1, growth: 0.05, growthVariance: 0.05,
+          life: 0.7, lifeVariance: 0.3, spread: 1.2
+        });
+      }
     }
 
     const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
@@ -2833,6 +2923,199 @@ function useBotSkill(botId, bot, skill) {
 }
 
 // ------------------------------------------------------------
+// TEXTURAS E GEOMETRIA ORGÂNICA DAS ARMADILHAS (decals planos)
+// ------------------------------------------------------------
+function createBlobShape(radius, points, irregularity) {
+  const shape = new THREE.Shape();
+  const angleStep = (Math.PI * 2) / points;
+  for (let i = 0; i <= points; i++) {
+    const angle = i * angleStep;
+    const r = radius * (1 - irregularity / 2 + Math.random() * irregularity);
+    const x = Math.cos(angle) * r;
+    const y = Math.sin(angle) * r;
+    if (i === 0) shape.moveTo(x, y); else shape.lineTo(x, y);
+  }
+  shape.closePath();
+  return shape;
+}
+
+function createTrapDecalGeometry(radius, points, irregularity) {
+  const shape = createBlobShape(radius, points, irregularity);
+  const geo = new THREE.ShapeGeometry(shape, 1);
+  geo.rotateX(-Math.PI / 2);
+  return geo;
+}
+
+function createIceTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size * 0.5);
+  grad.addColorStop(0, 'rgba(200,240,250,0.95)');
+  grad.addColorStop(0.7, 'rgba(140,215,235,0.85)');
+  grad.addColorStop(1, 'rgba(140,215,235,0.55)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 7; i++) {
+    let x = size / 2 + (Math.random() - 0.5) * size * 0.3;
+    let y = size / 2 + (Math.random() - 0.5) * size * 0.3;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    const segs = 3 + Math.floor(Math.random() * 3);
+    for (let s = 0; s < segs; s++) {
+      x += (Math.random() - 0.5) * 60;
+      y += (Math.random() - 0.5) * 60;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  for (let i = 0; i < 10; i++) {
+    const x = size / 2 + (Math.random() - 0.5) * size * 0.6;
+    const y = size / 2 + (Math.random() - 0.5) * size * 0.6;
+    ctx.beginPath();
+    ctx.arc(x, y, 1.5 + Math.random() * 2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createMudTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createRadialGradient(size / 2, size / 2, size * 0.05, size / 2, size / 2, size * 0.5);
+  grad.addColorStop(0, 'rgba(74,20,140,0.95)');
+  grad.addColorStop(0.75, 'rgba(50,10,95,0.9)');
+  grad.addColorStop(1, 'rgba(50,10,95,0.6)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+
+  for (let i = 0; i < 18; i++) {
+    const x = size / 2 + (Math.random() - 0.5) * size * 0.6;
+    const y = size / 2 + (Math.random() - 0.5) * size * 0.6;
+    const r = 8 + Math.random() * 22;
+    ctx.fillStyle = `rgba(30,5,60,${0.2 + Math.random() * 0.25})`;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.6, Math.random() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.strokeStyle = 'rgba(200,150,255,0.5)';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 8; i++) {
+    const x = size / 2 + (Math.random() - 0.5) * size * 0.5;
+    const y = size / 2 + (Math.random() - 0.5) * size * 0.5;
+    ctx.beginPath();
+    ctx.arc(x, y, 3 + Math.random() * 4, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createSmokeHazeTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.5);
+  grad.addColorStop(0, 'rgba(45, 45, 50, 1.0)'); // Centro bem denso
+  grad.addColorStop(0.5, 'rgba(55, 55, 60, 0.95)');
+  grad.addColorStop(1, 'rgba(35, 35, 40, 0)');
+
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
+function createPuffTexture() {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.5);
+  grad.addColorStop(0, 'rgba(255,255,255,0.6)');
+  grad.addColorStop(0.5, 'rgba(255,255,255,0.32)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return new THREE.CanvasTexture(canvas);
+}
+
+
+const puffTexture = createPuffTexture();
+
+const trapParticles = [];
+
+function spawnAmbientPuff(position, options = {}) {
+  const {
+    color = 0xffffff,
+    opacity = 0.5,
+    scale = 0.9,
+    scaleVariance = 0.5,
+    riseSpeed = 0.35,
+    riseVariance = 0.25,
+    growth = 0.5,
+    growthVariance = 0.4,
+    life = 1.6,
+    lifeVariance = 0.6,
+    spread = 1.6
+  } = options;
+
+  const mat = new THREE.SpriteMaterial({ map: puffTexture, color, transparent: true, opacity, depthWrite: false, blending: THREE.NormalBlending });
+  const sprite = new THREE.Sprite(mat);
+  const s = scale + Math.random() * scaleVariance;
+  sprite.scale.set(s, s, 1);
+  sprite.position.copy(position);
+  sprite.position.x += (Math.random() - 0.5) * spread;
+  sprite.position.z += (Math.random() - 0.5) * spread;
+  scene.add(sprite);
+
+  trapParticles.push({
+    sprite,
+    age: 0,
+    life: life + Math.random() * lifeVariance,
+    riseSpeed: riseSpeed + Math.random() * riseVariance,
+    growth: growth + Math.random() * growthVariance,
+    baseOpacity: opacity
+  });
+}
+
+function updateTrapParticles(dt) {
+  for (let i = trapParticles.length - 1; i >= 0; i--) {
+    const p = trapParticles[i];
+    p.age += dt;
+    p.sprite.position.y += p.riseSpeed * dt;
+    p.sprite.scale.x += p.growth * dt;
+    p.sprite.scale.y += p.growth * dt;
+
+    // Mantém a fumaça com a densidade máxima estável e escurecida por quase todo o ciclo,
+    // evitando que ela fique com aquela aparência esbranquiçada e translúcida no meio do processo.
+    const progress = p.age / p.life;
+    p.sprite.material.opacity = progress > 0.8
+      ? Math.max(0, p.baseOpacity * (1 - (progress - 0.8) / 0.2))
+      : p.baseOpacity;
+
+    if (p.age >= p.life) {
+      scene.remove(p.sprite);
+      p.sprite.material.dispose();
+      trapParticles.splice(i, 1);
+    }
+  }
+}
+
+// ------------------------------------------------------------
 // SISTEMA ANTI-ABANDONO E SAÍDA DA SALA
 // ------------------------------------------------------------
 const isRankedMatchGlobal = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '' && totalPlayersParam === 4;
@@ -2918,6 +3201,7 @@ function animate() {
   updateCamera(dt);
   updateItemBoxes(dt);
   updateTraps(dt);
+  // updateTrapParticles(dt);
   networkTick(dt);
   updateRemoteKarts(dt);
   updateHUD();
