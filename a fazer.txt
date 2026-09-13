@@ -1,25 +1,24 @@
+- Poder ordenar por preço dos karts na loja
+- Efeitos sonoros (Aceleração, derrapagem, poderes)
+- novas armadilhas
 - criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
 - Uma tela para mostrar a classificação ranked
 - Criar uma tela de perfil para o jogador, mostrando recordes das corridas, classificao ranked, moedas, titulos
-- novas armadilhas
 - seria legal nas configurações poder selecionar quais músicas vc quer habilitar pra tocar, igual o FIFA
-- Efeitos sonoros (Aceleração, derrapagem, poderes)
-- Poderes devem sumir do mapa depois de um tempo, se não fica muito poluído o mapa nas últimas curvas, pode ter um poder ou outro que seja igual a banana mas aí diminui pq se não se soltar poder um em cada canto não tem como desviar pra sempre
-- Animação visual de uso do boost, escudo e de envenenamento
 - Animação do poderzinho de raio por que ele só eletrocuta quem tá perto mas não tem nenhum indicativo, seria bom até pra tentar usar o escudo
 - O raio não deveria soltar pra trás pra não ficar muito quebrado pro primeiro colocado
 - O drift para de contar se eu soltar a seta pro lado, daí se eu soltar um pouco pra não fechar demais a curva eu perco o boost, devia parar de contar só se eu soltar o espaço
 - Dar um pulinho na hora que apertar espaço igual no Mario Kart e soltar uma fumacinha pra indicar que tá derrapando
-- Barra de carregamento de boost no drift para saber quanto de boost vou pegar ao sair do drift
-- travar menos o carrinho quando cai na grama, por que o bagulho anda a -3km/h na grama
-- Poder ordenar por preço dos karts na loja
 - colocar os Pokemon falando quando começar a corrida
 - remover a necessidade de colocar email ao cadastrar um usuario novo
 - Ao iniciar a corrida acontece 3x aleatoriamente de ao dar o GO e começar a correr o carro voltar para o inicio como se tivesse resetado
+- Mobile
 
 
 
 proximos 3d:
+Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D
+
 Onix
 Starmie
 Raichu

@@ -22,6 +22,14 @@ composer.addPass(renderPass);
 const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.15, 0.4, 0.95);
 composer.addPass(bloomPass);
 
+// --- CRIAÇÃO DA BARRA DE DRIFT NA TELA ---
+const driftBarContainer = document.createElement('div');
+driftBarContainer.style.cssText = 'position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); width: 180px; height: 10px; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.8); border-radius: 8px; display: none; z-index: 100; overflow: hidden;';
+const driftBarFill = document.createElement('div');
+driftBarFill.style.cssText = 'width: 0%; height: 100%; background: #facc15; transition: width 0.1s, background-color 0.2s; box-shadow: 0 0 8px #facc15;';
+driftBarContainer.appendChild(driftBarFill);
+document.body.appendChild(driftBarContainer);
+
 let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
@@ -951,7 +959,13 @@ async function loadKartTemplate(kartEntry, callback) {
 }
 
 function applyModelToGroup(group, templateScene, chassisColor) {
-  while (group.children.length) group.remove(group.children[0]);
+  // Limpa os modelos 3D antigos, mas PRESERVA os efeitos visuais
+  for (let i = group.children.length - 1; i >= 0; i--) {
+    if (!group.children[i].userData.isEffect) {
+      group.remove(group.children[i]);
+    }
+  }
+
   if (templateScene) {
     const instance = templateScene.clone(true);
     instance.scale.setScalar(KART_MODEL_SCALE);
@@ -967,10 +981,72 @@ function applyModelToGroup(group, templateScene, chassisColor) {
   }
 }
 
+// --- FUNÇÕES DE EFEITOS VISUAIS ---
+function createShieldEffect() {
+  const geo = new THREE.SphereGeometry(1.5, 32, 32);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x00bfff, transparent: true, opacity: 0.4, depthWrite: false, blending: THREE.AdditiveBlending });
+  const shield = new THREE.Mesh(geo, mat);
+  shield.visible = false;
+  return shield;
+}
+
+function createPoisonEffect() {
+  const group = new THREE.Group();
+  const particleCount = 6;
+  const geo = new THREE.SphereGeometry(0.2, 8, 8);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0xaa44ff,
+    transparent: true,
+    opacity: 0.75
+  });
+
+  const particles = [];
+  for (let i = 0; i < particleCount; i++) {
+    const mesh = new THREE.Mesh(geo, mat.clone());
+    const angle = (i / particleCount) * Math.PI * 2;
+    mesh.position.set(Math.cos(angle) * 1.0, 0.4, Math.sin(angle) * 1.0);
+    group.add(mesh);
+    particles.push({ mesh, angle, radius: 1.0 + Math.random() * 0.3 });
+  }
+
+  group.userData.particles = particles;
+  group.visible = false;
+  return group;
+}
+
+function createBoostEffect() {
+  const group = new THREE.Group();
+  const geo = new THREE.ConeGeometry(0.25, 1.2, 8);
+  geo.rotateX(-Math.PI / 2);
+  const mat = new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.9 });
+
+  const flameLeft = new THREE.Mesh(geo, mat);
+  flameLeft.position.set(-0.4, 0.3, -1.2);
+  const flameRight = new THREE.Mesh(geo, mat);
+  flameRight.position.set(0.4, 0.3, -1.2);
+
+  group.add(flameLeft, flameRight);
+  group.visible = false;
+  return group;
+}
+
+// --- ATUALIZE SUA FUNÇÃO CREATEKART ---
 function createKart(chassisColor) {
   const group = new THREE.Group();
   scene.add(group);
-  return { group, wheels: [] };
+
+  const shieldMesh = createShieldEffect();
+  const poisonMesh = createPoisonEffect();
+  const boostMesh = createBoostEffect();
+
+  // Etiqueta os efeitos para o sistema saber que não deve deletá-los
+  shieldMesh.userData.isEffect = true;
+  poisonMesh.userData.isEffect = true;
+  boostMesh.userData.isEffect = true;
+
+  group.add(shieldMesh, poisonMesh, boostMesh);
+
+  return { group, wheels: [], shieldMesh, poisonMesh, boostMesh };
 }
 
 let localKartObj, kart, wheels;
@@ -1309,9 +1385,9 @@ function enforceTrackBoundary() {
   const grassStart = halfWidth + kerbWidth;
 
   if (Math.abs(lateral) > grassStart && Math.abs(lateral) <= (grassStart + 3.2)) {
-    const maxGrassSpeed = 4.5;
+    const maxGrassSpeed = 10;
     if (physics.speed > maxGrassSpeed) {
-      physics.speed = THREE.MathUtils.lerp(physics.speed, maxGrassSpeed, 0.1);
+      physics.speed = THREE.MathUtils.lerp(physics.speed, maxGrassSpeed, 0.07);
     }
   }
 
@@ -1853,7 +1929,8 @@ function createTrapMesh(trapData) {
       mesh: group,
       type: trapData.type,
       active: true,
-      puffTimer: 0
+      puffTimer: 0,
+      life: 12.0
     });
     return;
   } else {
@@ -1963,15 +2040,24 @@ function removeTrapMesh(trapId) {
 function updateTraps(dt) {
   placedTraps.forEach((trap) => {
     if (!trap.active) return;
+    // Faz a fumaça (ou armadilha com tempo) sumir após expirar
+    if (trap.life !== undefined) {
+      trap.life -= dt;
+      if (trap.life <= 0) {
+        trap.active = false;
+        removeTrapMesh(trap.id);
+        return; // Sai do loop para essa armadilha
+      }
+    }
 
     if (trap.type === 'FUMACA') {
       trap.puffTimer += dt;
       if (trap.puffTimer > 0.32) {
         trap.puffTimer = 0;
         spawnAmbientPuff(trap.mesh.position.clone().setY(0.15), {
-          color: 0xaaaaaa, opacity: 0.5, scale: 0.9, scaleVariance: 0.5,
-          riseSpeed: 0.4, riseVariance: 0.25, growth: 0.5, growthVariance: 0.4,
-          life: 1.6, lifeVariance: 0.6, spread: 1.9
+          color: 0x222225, opacity: 1, scale: 0.9, scaleVariance: 0.8,
+          riseSpeed: 0.4, riseVariance: 0.25, growth: 0.8, growthVariance: 0.8,
+          life: 1.6, lifeVariance: 0.9, spread: 1.9
         });
       }
     } else if (trap.type === 'LODO') {
@@ -2220,6 +2306,9 @@ function handleRemoteKartState(peerId, data) {
   entry.progress = typeof data.progress === 'number' ? data.progress : 0;
   entry.lapCount = data.lapCount || 1;
   entry.finished = Boolean(data.finished);
+  entry.isPoisoned = Boolean(data.poisoned);
+  entry.isShieldActive = Boolean(data.shield);
+  entry.isTurboActive = Boolean(data.turbo);
 
   raceTrackers.set(peerId, {
     progress: entry.progress,
@@ -2393,7 +2482,10 @@ function networkTick(dt) {
       slot: playerSlotParam,
       progress: myTracker ? myTracker.progress : 0,
       lapCount: myTracker ? myTracker.lapCount : 1,
-      finished: myTracker ? myTracker.finished : false
+      finished: myTracker ? myTracker.finished : false,
+      poisoned: isControlInverted,
+      shield: isShieldActive,
+      turbo: physics.turboTimer > 0
     }
   };
 
@@ -2524,6 +2616,29 @@ function updateHUD() {
       } else {
         speedFillEl.style.boxShadow = '0 0 10px rgba(39, 200, 255, 0.6)';
       }
+    }
+
+    // Lógica da Barra de Drift
+    if (physics.isDrifting && physics.driftCharge > 0) {
+      driftBarContainer.style.display = 'block';
+      const maxCharge = 0.8; // Valor exato que ativa o turbo no seu código
+      let percent = Math.min(100, (physics.driftCharge / maxCharge) * 100);
+      driftBarFill.style.width = percent + '%';
+
+      // Muda a cor da barra dependendo do nível de carga
+      if (percent >= 100) {
+        driftBarFill.style.background = '#22c55e'; // Verde brilhante quando o turbo tá pronto
+        driftBarFill.style.boxShadow = '0 0 12px #22c55e';
+      } else if (percent > 50) {
+        driftBarFill.style.background = '#f97316'; // Laranja na metade
+        driftBarFill.style.boxShadow = '0 0 10px #f97316';
+      } else {
+        driftBarFill.style.background = '#facc15'; // Amarelo no início
+        driftBarFill.style.boxShadow = '0 0 8px #facc15';
+      }
+    } else {
+      driftBarContainer.style.display = 'none';
+      driftBarFill.style.width = '0%';
     }
 
     if (raceStarted && !tr.finished) {
@@ -3096,17 +3211,16 @@ function updateTrapParticles(dt) {
   for (let i = trapParticles.length - 1; i >= 0; i--) {
     const p = trapParticles[i];
     p.age += dt;
+
+    // A fumaça continua subindo e crescendo normalmente
     p.sprite.position.y += p.riseSpeed * dt;
     p.sprite.scale.x += p.growth * dt;
     p.sprite.scale.y += p.growth * dt;
 
-    // Mantém a fumaça com a densidade máxima estável e escurecida por quase todo o ciclo,
-    // evitando que ela fique com aquela aparência esbranquiçada e translúcida no meio do processo.
-    const progress = p.age / p.life;
-    p.sprite.material.opacity = progress > 0.8
-      ? Math.max(0, p.baseOpacity * (1 - (progress - 0.8) / 0.2))
-      : p.baseOpacity;
+    // TRAVA A OPACIDADE NO MÁXIMO (Evita qualquer tom branco ou translúcido)
+    p.sprite.material.opacity = p.baseOpacity;
 
+    // Remove a fumaça subitamente assim que o tempo acaba
     if (p.age >= p.life) {
       scene.remove(p.sprite);
       p.sprite.material.dispose();
@@ -3184,6 +3298,81 @@ function aplicarPunicaoAbandonoSincrona() {
   });
 }
 
+function updateKartEffects(dt) {
+  const time = performance.now();
+
+  // 1. Atualiza o jogador local
+  if (localKartObj) {
+    if (isShieldActive) {
+      localKartObj.shieldMesh.visible = true;
+      localKartObj.shieldMesh.rotation.y += 2 * dt;
+      localKartObj.shieldMesh.rotation.z += 1 * dt;
+    } else {
+      localKartObj.shieldMesh.visible = false;
+    }
+
+    // O Lodo ativa a inversão de controle localmente
+    if (isControlInverted) {
+      localKartObj.poisonMesh.visible = true;
+      const timeSec = performance.now() * 0.003;
+      localKartObj.poisonMesh.userData.particles.forEach((p, idx) => {
+        p.mesh.position.x = Math.cos(timeSec + idx) * p.radius;
+        p.mesh.position.z = Math.sin(timeSec + idx) * p.radius;
+        p.mesh.position.y = 0.3 + Math.sin(timeSec * 2 + idx) * 0.2;
+      });
+    } else {
+      localKartObj.poisonMesh.visible = false;
+    }
+
+    if (physics.turboTimer > 0) {
+      localKartObj.boostMesh.visible = true;
+      localKartObj.boostMesh.scale.z = 0.8 + Math.random() * 0.5;
+    } else {
+      localKartObj.boostMesh.visible = false;
+    }
+  }
+
+  // 2. Atualiza bots e jogadores remotos
+  for (const [id, bot] of remoteKarts.entries()) {
+    if (!bot.obj) continue;
+
+    // Verifica se é um bot local (com timers) ou jogador remoto (com flags booleanas)
+    const hasShield = bot.shieldTimer > 0 || bot.isShieldActive;
+    const hasTurbo = bot.turboTimer > 0 || bot.isTurboActive;
+    const hasPoison = (bot.isBot && bot.stunTimer > 0) || bot.isPoisoned;
+
+    // Escudo
+    if (hasShield) {
+      bot.obj.shieldMesh.visible = true;
+      bot.obj.shieldMesh.rotation.y += 2 * dt;
+      bot.obj.shieldMesh.rotation.z += 1 * dt;
+    } else {
+      bot.obj.shieldMesh.visible = false;
+    }
+
+    // Boost (Chamas)
+    if (hasTurbo) {
+      bot.obj.boostMesh.visible = true;
+      bot.obj.boostMesh.scale.z = 0.8 + Math.random() * 0.5;
+    } else {
+      bot.obj.boostMesh.visible = false;
+    }
+
+    // Veneno (Bolinhas roxas)
+    if (hasPoison) {
+      bot.obj.poisonMesh.visible = true;
+      const timeSec = performance.now() * 0.003;
+      bot.obj.poisonMesh.userData.particles.forEach((p, idx) => {
+        p.mesh.position.x = Math.cos(timeSec + idx) * p.radius;
+        p.mesh.position.z = Math.sin(timeSec + idx) * p.radius;
+        p.mesh.position.y = 0.3 + Math.sin(timeSec * 2 + idx) * 0.2;
+      });
+    } else {
+      bot.obj.poisonMesh.visible = false;
+    }
+  }
+}
+
 // ------------------------------------------------------------
 // LOOP PRINCIPAL
 // ------------------------------------------------------------
@@ -3201,9 +3390,10 @@ function animate() {
   updateCamera(dt);
   updateItemBoxes(dt);
   updateTraps(dt);
-  // updateTrapParticles(dt);
+  updateTrapParticles(dt);
   networkTick(dt);
   updateRemoteKarts(dt);
+  updateKartEffects(dt);
   updateHUD();
   drawMinimap();
 

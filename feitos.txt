@@ -1,3 +1,12 @@
+Versão 1.6
+- Atualização visual na gameplay.;
+- Adicionado animações nas habilidades.;
+- Kart perdendo menos velocidade ao entrar na grama.;
+- Habilidade de Fumaça somente após um tempo na pista.;
+- Barra de carregamento do drift (Boost).
+
+
+
 Versao 1.5
 - Corrigido os botoes controlador das musicas.
 - Corrigido o ganho das moedas ao finalizar uma corrida.

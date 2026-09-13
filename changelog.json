@@ -1,5 +1,16 @@
 [
     {
+        "version": "1.6",
+        "date": "13/09/2026",
+        "changes": [
+            "Atualização visual na gameplay.",
+            "Adicionado animações nas habilidades.",
+            "Kart perdendo menos velocidade ao entrar na grama.",
+            "Habilidade de Fumaça somente após um tempo na pista.",
+            "Barra de carregamento do drift (Boost)."
+        ]
+    },
+    {
         "version": "1.5",
         "date": "12/09/2026",
         "changes": [
