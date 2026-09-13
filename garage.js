@@ -15,9 +15,10 @@ const KART_POKEMON_IDS = {
   'sudowoodo': 185, 'sylveon': 700, 'umbreon': 197, 'pikachu': 25, 'gliscor': 472,
   'mewtwo': 150, 'zekrom': 644, 'swampert': 260, 'rayquaza': 384, 'espeon': 196,
   'tatsugiri': 978, 'scyther': 123,
-  // Novos Karts
   'ninetales': 38, 'arcanine': 59, 'lucario': 448, 'dialga': 483, 'zapdos': 145,
-  'luxray': 405, 'staraptor': 398, 'dragonite': 149, 'tangela': 114, 'sneasel': 215
+  'luxray': 405, 'staraptor': 398, 'dragonite': 149, 'tangela': 114, 'sneasel': 215,
+  // Novos 3D Adicionados
+  'darkrai': 491, 'moltres': 146, 'weezing': 110, 'swellow': 277, 'articuno': 144
 };
 
 // Catálogo Completo (32 Karts)
@@ -44,7 +45,6 @@ const KART_CATALOG = [
   { id: 'espeon', name: 'Espeon Kart', price: 3100, conceptImg: 'img/espeon.png', stats: { speed: 86, accel: 88, handling: 88 } },
   { id: 'tatsugiri', name: 'Tatsugiri Kart', price: 2100, conceptImg: 'img/tatsugiri.png', stats: { speed: 76, accel: 92, handling: 92 } },
   { id: 'scyther', name: 'Scyther Kart', price: 2500, conceptImg: 'img/scyther.png', stats: { speed: 88, accel: 82, handling: 84 } },
-  // Novos Karts
   { id: 'ninetales', name: 'Ninetales Kart', price: 1600, conceptImg: 'img/ninetales.png', stats: { speed: 84, accel: 82, handling: 85 } },
   { id: 'arcanine', name: 'Arcanine Kart', price: 2100, conceptImg: 'img/arcanine.png', stats: { speed: 88, accel: 85, handling: 80 } },
   { id: 'lucario', name: 'Lucario Kart', price: 2700, conceptImg: 'img/lucario.png', stats: { speed: 86, accel: 84, handling: 86 } },
@@ -54,7 +54,12 @@ const KART_CATALOG = [
   { id: 'staraptor', name: 'Staraptor Kart', price: 1800, conceptImg: 'img/staraptor.png', stats: { speed: 85, accel: 88, handling: 84 } },
   { id: 'dragonite', name: 'Dragonite Kart', price: 3800, conceptImg: 'img/dragonite.png', stats: { speed: 94, accel: 75, handling: 82 } },
   { id: 'tangela', name: 'Tangela Kart', price: 900, conceptImg: 'img/tangela.png', stats: { speed: 70, accel: 80, handling: 95 } },
-  { id: 'sneasel', name: 'Sneasel Kart', price: 1400, conceptImg: 'img/sneasel.png', stats: { speed: 80, accel: 90, handling: 88 } }
+  { id: 'sneasel', name: 'Sneasel Kart', price: 1400, conceptImg: 'img/sneasel.png', stats: { speed: 80, accel: 90, handling: 88 } },
+  { id: 'darkrai', name: 'Darkrai Kart', price: 4800, conceptImg: 'img/darkrai.png', stats: { speed: 95, accel: 88, handling: 82 } },
+  { id: 'moltres', name: 'Moltres Kart', price: 4200, conceptImg: 'img/moltres.png', stats: { speed: 92, accel: 85, handling: 80 } },
+  { id: 'weezing', name: 'Weezing Kart', price: 1500, conceptImg: 'img/weezing.png', stats: { speed: 75, accel: 80, handling: 85 } },
+  { id: 'swellow', name: 'Swellow Kart', price: 2000, conceptImg: 'img/swellow.png', stats: { speed: 82, accel: 90, handling: 88 } },
+  { id: 'articuno', name: 'Articuno Kart', price: 4200, conceptImg: 'img/articuno.png', stats: { speed: 92, accel: 85, handling: 83 } }
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -3,9 +3,9 @@ window.KART_ASSETS = {};
 
 const ASSET_LIST = [
   { id: 'jolteon', url: './models/jolteon.glb' },
-  { id: 'charizard', url: './models/charizard.glb' },
   { id: 'zoroark', url: './models/zoroark.glb' },
   { id: 'togetic', url: './models/togetic.glb' },
+  { id: 'charizard', url: './models/charizard.glb' },
   { id: 'flygon', url: './models/flygon.glb' },
   { id: 'gengar', url: './models/gengar.glb' },
   { id: 'oshawott', url: './models/oshawott.glb' },
@@ -23,7 +23,22 @@ const ASSET_LIST = [
   { id: 'rayquaza', url: './models/rayquaza.glb' },
   { id: 'espeon', url: './models/espeon.glb' },
   { id: 'tatsugiri', url: './models/tatsugiri.glb' },
-  { id: 'scyther', url: './models/scyther.glb' }
+  { id: 'scyther', url: './models/scyther.glb' },
+  { id: 'ninetales', url: './models/ninetales.glb' },
+  { id: 'arcanine', url: './models/arcanine.glb' },
+  { id: 'lucario', url: './models/lucario.glb' },
+  { id: 'dialga', url: './models/dialga.glb' },
+  { id: 'zapdos', url: './models/zapdos.glb' },
+  { id: 'luxray', url: './models/luxray.glb' },
+  { id: 'staraptor', url: './models/staraptor.glb' },
+  { id: 'dragonite', url: './models/dragonite.glb' },
+  { id: 'tangela', url: './models/tangela.glb' },
+  { id: 'sneasel', url: './models/sneasel.glb' },
+  { id: 'darkrai', url: './models/darkrai.glb' },
+  { id: 'moltres', url: './models/moltres.glb' },
+  { id: 'weezing', url: './models/weezing.glb' },
+  { id: 'swellow', url: './models/swellow.glb' },
+  { id: 'articuno', url: './models/articuno.glb' }
 ];
 
 const CACHE_NAME = 'pkart-3d-models-v2';

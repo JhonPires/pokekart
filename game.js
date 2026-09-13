@@ -4,20 +4,34 @@
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const victorySound = new Audio('sounds/victory.mp3');
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+
+// Renderizador normal (sem toneMapping agressivo)
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+document.body.appendChild(renderer.domElement);
+
+// Setup de Pós-Processamento (Bloom Suave)
+const composer = new THREE.EffectComposer(renderer);
+const renderPass = new THREE.RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+// CORREÇÃO: Força menor (0.15) e Threshold alto (0.95)
+// Isso impede que o asfalto cinza brilhe, aplicando brilho apenas no que for muito claro
+const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.15, 0.4, 0.95);
+composer.addPass(bloomPass);
 
 let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
 let currentTreeGroup = null;
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-document.body.appendChild(renderer.domElement);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 function formatTime(ms) {
@@ -27,10 +41,64 @@ function formatTime(ms) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
 }
 
+function createCloudSkyTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  grad.addColorStop(0, '#4fa3e0');
+  grad.addColorStop(0.55, '#9bd4f4');
+  grad.addColorStop(1, '#d9f0ff');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  function drawCloud(cx, cy, scale, alpha) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    const blobs = [[0, 0, 55], [48, 8, 40], [-48, 8, 40], [22, -14, 34], [-22, -14, 34]];
+    blobs.forEach(([bx, by, r]) => {
+      ctx.beginPath();
+      ctx.arc(bx, by, r, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  for (let i = 0; i < 16; i++) {
+    const cx = Math.random() * canvas.width;
+    const cy = 40 + Math.random() * (canvas.height * 0.42);
+    const scale = 0.5 + Math.random() * 0.85;
+    drawCloud(cx, cy, scale, 0.75 + Math.random() * 0.2);
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  return texture;
+}
+
 function setupEnhancedEnvironment(scene) {
-  const skyColor = 0x87CEEB;
-  scene.background = new THREE.Color(skyColor);
-  scene.fog = new THREE.FogExp2(skyColor, 0.0035);
+  // Gera um céu com gradiente
+  function createSkyTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 512);
+    grad.addColorStop(0.0, '#1a4a76'); // Topo do céu (azul profundo)
+    grad.addColorStop(0.5, '#5cb8ff'); // Meio do céu
+    grad.addColorStop(1.0, '#aaddff'); // Horizonte (quase branco)
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 2, 512);
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  scene.background = createSkyTexture();
+  scene.fog = new THREE.Fog(0xaaddff, 60, 280); // Substitui a neblina antiga pela nova
 
   scene.add(new THREE.AmbientLight(0xffffff, 0.75));
 
@@ -43,6 +111,149 @@ function setupEnhancedEnvironment(scene) {
   scene.add(sun);
 
   respawnTreesForTrack();
+
+  // Adiciona as nuvens e pedras ao redor da pista
+  spawnClouds(scene);
+  // spawnRocks(scene);
+}
+
+// function spawnRocks(targetScene) {
+//   const rockGeo = new THREE.DodecahedronGeometry(1.2, 0);
+//   const rockMat = new THREE.MeshStandardMaterial({
+//     color: 0x6e7a85,
+//     roughness: 0.9,
+//     flatShading: true
+//   });
+
+//   const pointsSource = (typeof trackCheckpoints !== 'undefined' && trackCheckpoints.length > 0) ? trackCheckpoints : [];
+//   if (pointsSource.length === 0) return;
+
+//   // Percorre o traçado e posiciona as pedras nas laterais exatas usando vetores perpendiculares
+//   for (let i = 0; i < pointsSource.length; i += 2) {
+//     const p1 = pointsSource[i];
+//     const p2 = pointsSource[(i + 1) % pointsSource.length];
+
+//     // Direção do segmento da pista
+//     const dirX = p2.x - p1.x;
+//     const dirZ = (p2.z || p2.y) - (p1.z || p1.y);
+//     const len = Math.hypot(dirX, dirZ);
+//     if (len === 0) continue;
+
+//     // Normalização
+//     const nx = dirX / len;
+//     const nz = dirZ / len;
+
+//     // Vetor perpendicular (joga para a lateral da pista)
+//     const perpX = -nz;
+//     const perpZ = nx;
+
+//     // Escolhe o lado (esquerdo ou direito) e uma distância segura na grama (entre 48 e 75 unidades para fora)
+//     const side = Math.random() > 0.5 ? 1 : -1;
+//     const distance = 48 + Math.random() * 27;
+
+//     const rx = p1.x + perpX * (side * distance);
+//     const rz = (p1.z || p1.y) + perpZ * (side * distance);
+
+//     const rock = new THREE.Mesh(rockGeo, rockMat);
+//     rock.position.set(rx, 0, rz);
+
+//     const s = 0.6 + Math.random() * 1.2;
+//     rock.scale.set(s, s * 0.6, s);
+//     rock.rotation.y = Math.random() * Math.PI;
+//     rock.castShadow = true;
+//     rock.receiveShadow = true;
+
+//     targetScene.add(rock);
+//   }
+// }
+
+const maxDustParticles = 40;
+
+function spawnDustParticle(x, y, z) {
+  if (dustParticles.length >= maxDustParticles) {
+    const old = dustParticles.shift();
+    if (old) {
+      scene.remove(old.mesh);
+      old.mesh.geometry.dispose();
+      old.mesh.material.dispose();
+    }
+  }
+
+  // Geometria menor (raio 0.12 em vez de 0.2)
+  const geo = new THREE.DodecahedronGeometry(0.12, 0);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xc5c5c5,
+    roughness: 1.0,
+    transparent: true,
+    opacity: 0.45,
+    flatShading: true
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+
+  const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+  const localOffset = new THREE.Vector3((Math.random() - 0.5) * 0.5, 0.03, -0.85).applyQuaternion(headingQuat);
+
+  mesh.position.set(x + localOffset.x, y + localOffset.y, z + localOffset.z);
+
+  scene.add(mesh);
+  dustParticles.push({
+    mesh: mesh,
+    scaleSpeed: 0.008 + Math.random() * 0.01, // Crescimento mais lento e discreto
+    life: 0.45 // Some mais rápido
+  });
+}
+
+function updateDustParticles() {
+  for (let i = dustParticles.length - 1; i >= 0; i--) {
+    const p = dustParticles[i];
+    if (!p || !p.mesh || !p.mesh.material) continue;
+
+    p.life -= 0.04;
+    p.mesh.scale.addScalar(p.scaleSpeed);
+    p.mesh.material.opacity = Math.max(0, p.life * 0.5);
+
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+      dustParticles.splice(i, 1);
+    }
+  }
+}
+
+function spawnClouds(targetScene) {
+  const cloudGeo = new THREE.DodecahedronGeometry(6, 0); // Estilo Low-Poly
+  const cloudMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 1,
+    flatShading: true // Dá aquele visual facetado e estiloso
+  });
+
+  for (let i = 0; i < 40; i++) {
+    const cloudGroup = new THREE.Group();
+    const clumpCount = 3 + Math.floor(Math.random() * 4);
+
+    for (let j = 0; j < clumpCount; j++) {
+      const mesh = new THREE.Mesh(cloudGeo, cloudMat);
+      mesh.position.set(
+        (Math.random() - 0.5) * 12,
+        (Math.random() - 0.5) * 5,
+        (Math.random() - 0.5) * 12
+      );
+      const scale = 0.5 + Math.random() * 0.8;
+      mesh.scale.set(scale, scale, scale);
+      mesh.rotation.set(Math.random(), Math.random(), Math.random());
+      cloudGroup.add(mesh);
+    }
+
+    cloudGroup.position.set(
+      (Math.random() - 0.5) * 500,
+      45 + Math.random() * 50, // Altura das nuvens
+      (Math.random() - 0.5) * 500
+    );
+    targetScene.add(cloudGroup);
+  }
 }
 
 // ------------------------------------------------------------
@@ -84,7 +295,12 @@ const KART_DATABASE = [
   { id: 'staraptor', name: 'Staraptor Kart', modelUrl: getKartUrl('staraptor.glb'), stats: { accel: 34, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
   { id: 'dragonite', name: 'Dragonite Kart', modelUrl: getKartUrl('dragonite.glb'), stats: { accel: 28, maxSpeed: 36, turnSpeed: 3.1, turboBonus: 1.7, driftRate: 1.1, driftControl: 1.1, grip: 0.85 } },
   { id: 'tangela', name: 'Tangela Kart', modelUrl: getKartUrl('tangela.glb'), stats: { accel: 30, maxSpeed: 29, turnSpeed: 3.8, turboBonus: 1.1, driftRate: 1.5, driftControl: 1.3, grip: 0.95 } },
-  { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } }
+  { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } },
+  { id: 'darkrai', name: '🌑 Darkrai Kart', modelUrl: getKartUrl('darkrai.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.5, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
+  { id: 'moltres', name: '🔥 Moltres Kart', modelUrl: getKartUrl('moltres.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.4, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.1, grip: 0.78 } },
+  { id: 'weezing', name: '☠️ Weezing Kart', modelUrl: getKartUrl('weezing.glb'), stats: { accel: 24, maxSpeed: 30, turnSpeed: 3.1, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.1, grip: 0.88 } },
+  { id: 'swellow', name: '🦅 Swellow Kart', modelUrl: getKartUrl('swellow.glb'), stats: { accel: 35, maxSpeed: 33, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.4, grip: 0.72 } },
+  { id: 'articuno', name: '❄️ Articuno Kart', modelUrl: getKartUrl('articuno.glb'), stats: { accel: 32, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.5, driftRate: 1.4, driftControl: 1.2, grip: 0.82 } },
 ];
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
@@ -210,21 +426,41 @@ function buildTrackMesh() {
 }
 
 const trackTexCanvas = document.createElement('canvas');
-trackTexCanvas.width = 64; trackTexCanvas.height = 256;
+trackTexCanvas.width = 256;
+trackTexCanvas.height = 512;
 const tctx = trackTexCanvas.getContext('2d');
-tctx.fillStyle = '#4a4a52'; tctx.fillRect(0, 0, 64, 256);
-tctx.strokeStyle = 'rgba(255,255,255,0.55)';
-tctx.lineWidth = 2; tctx.setLineDash([14, 14]);
-tctx.beginPath(); tctx.moveTo(32, 0); tctx.lineTo(32, 256); tctx.stroke();
-tctx.strokeStyle = 'rgba(255,255,255,0.9)'; tctx.setLineDash([]);
-tctx.lineWidth = 1;
+
+// Fundo do asfalto
+tctx.fillStyle = '#3a3a40';
+tctx.fillRect(0, 0, 256, 512);
+
+// Gerador de ruído processual (pedregulhos do asfalto)
+for (let i = 0; i < 40000; i++) {
+  tctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
+  tctx.fillRect(Math.random() * 256, Math.random() * 512, 1, 1);
+}
+
+// Faixa central tracejada
+tctx.strokeStyle = 'rgba(255,255,255,0.7)';
+tctx.lineWidth = 4;
+tctx.setLineDash([30, 30]);
 tctx.beginPath();
-tctx.moveTo(2, 0); tctx.lineTo(2, 256);
-tctx.moveTo(62, 0); tctx.lineTo(62, 256);
+tctx.moveTo(128, 0);
+tctx.lineTo(128, 512);
+tctx.stroke();
+
+// Faixas laterais contínuas
+tctx.strokeStyle = 'rgba(255,255,255,0.85)';
+tctx.setLineDash([]);
+tctx.lineWidth = 3;
+tctx.beginPath();
+tctx.moveTo(8, 0); tctx.lineTo(8, 512);
+tctx.moveTo(248, 0); tctx.lineTo(248, 512);
 tctx.stroke();
 
 const trackTexture = new THREE.CanvasTexture(trackTexCanvas);
-trackTexture.wrapS = THREE.RepeatWrapping; trackTexture.wrapT = THREE.RepeatWrapping;
+trackTexture.wrapS = THREE.RepeatWrapping;
+trackTexture.wrapT = THREE.RepeatWrapping;
 trackTexture.repeat.set(1, 10);
 trackTexture.needsUpdate = true;
 
@@ -232,7 +468,12 @@ let trackMesh = null;
 function buildAndAddTrackMesh() {
   trackMesh = new THREE.Mesh(
     buildTrackMesh(),
-    new THREE.MeshStandardMaterial({ map: trackTexture, roughness: 0.9, side: THREE.DoubleSide })
+    new THREE.MeshStandardMaterial({
+      map: trackTexture,
+      roughness: 0.75, // Permite refletir levemente o sol
+      metalness: 0.1,  // Tira o aspecto fosco
+      side: THREE.DoubleSide
+    })
   );
   trackMesh.receiveShadow = true;
   trackElementsGroup.add(trackMesh);
@@ -240,14 +481,20 @@ function buildAndAddTrackMesh() {
 
 function createKerbTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 128;
+  canvas.width = 256;
+  canvas.height = 256;
   const ctx = canvas.getContext('2d');
 
-  const stripeWidth = 32;
-  for (let i = 0; i < 128; i += stripeWidth) {
-    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? '#e53935' : '#ffffff';
-    ctx.fillRect(i, 0, stripeWidth, 128);
+  const stripeWidth = 64;
+  for (let i = 0; i < 256; i += stripeWidth) {
+    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? '#d32f2f' : '#f5f5f5';
+    ctx.fillRect(i, 0, stripeWidth, 256);
+  }
+
+  // Adiciona sujeira de pneu nas zebras
+  for (let i = 0; i < 15000; i++) {
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
   }
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -259,7 +506,8 @@ function createKerbTexture() {
 
 const kerbMaterial = new THREE.MeshStandardMaterial({
   map: createKerbTexture(),
-  roughness: 0.6
+  roughness: 0.7,
+  metalness: 0.1
 });
 
 function addTrackKerbs() {
@@ -323,24 +571,33 @@ function addTrackKerbs() {
 
 function createStripedGrassTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
+  canvas.width = 512;
+  canvas.height = 512;
   const ctx = canvas.getContext('2d');
-  const stripeHeight = 32;
-  for (let i = 0; i < 256; i += stripeHeight) {
-    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#43a047' : '#2e7d32';
-    ctx.fillRect(0, i, 256, stripeHeight);
+
+  const stripeHeight = 64;
+  for (let i = 0; i < 512; i += stripeHeight) {
+    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#3b8940' : '#2d6a31';
+    ctx.fillRect(0, i, 512, stripeHeight);
   }
+
+  // Ruído vertical para simular fios de grama
+  for (let i = 0; i < 90000; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.04)';
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 3);
+  }
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(50, 50);
+  texture.repeat.set(60, 60);
   return texture;
 }
 
 const grassMat = new THREE.MeshStandardMaterial({
-  color: 0x388e3c,
   map: createStripedGrassTexture(),
-  roughness: 0.9
+  roughness: 0.95, // Grama absorve luz
+  metalness: 0.0
 });
 
 const grass = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), grassMat);
@@ -847,7 +1104,7 @@ function setupMobileControls() {
       useEquippedSkill(currentItem);
       currentItem = null;
       const iconEl = document.getElementById('itemIcon');
-      if (iconEl) iconEl.innerText = '❓';
+      if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
     }
   });
 }
@@ -896,7 +1153,7 @@ if (isMobile) {
   }, { once: true });
 }
 
-const ZOOM_LEVELS = [20];
+const ZOOM_LEVELS = [20, 50];
 let currentZoomIndex = 0;
 window.addEventListener('keydown', (event) => {
   if (event.key.toLowerCase() === 'c') {
@@ -1073,6 +1330,115 @@ function updateCamera(dt) {
   desired.y = kart.position.y + 5;
   camera.position.lerp(desired, Math.min(1, dt * 4));
   camera.lookAt(kart.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+}
+
+// ------------------------------------------------------------
+// RASTRO DE DERRAPAGEM (marcas de pneu) E POEIRA DO DRIFT
+// ------------------------------------------------------------
+const skidMarks = [];
+const dustParticles = [];
+let skidSpawnTimer = 0;
+const SKID_MARK_MAX = 240;
+
+function spawnSkidMarkPair() {
+  if (!kart) return;
+  const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+  const rearOffset = new THREE.Vector3(0, 0, -1.05);
+  const laterals = [-0.55, 0.55];
+
+  laterals.forEach((lateralX) => {
+    const localPos = rearOffset.clone().add(new THREE.Vector3(lateralX, 0, 0));
+    localPos.applyQuaternion(headingQuat);
+    const worldPos = kart.position.clone().add(localPos);
+    worldPos.y = 0.035;
+
+    const geo = new THREE.PlaneGeometry(0.22, 0.85);
+    const mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.rotation.z = -physics.heading;
+    mesh.position.copy(worldPos);
+    mesh.renderOrder = 1;
+    scene.add(mesh);
+    skidMarks.push({ mesh, life: 3.5, maxLife: 3.5 });
+  });
+
+  while (skidMarks.length > SKID_MARK_MAX) {
+    const old = skidMarks.shift();
+    scene.remove(old.mesh);
+    old.mesh.geometry.dispose();
+    old.mesh.material.dispose();
+  }
+}
+
+function spawnDustPuff() {
+  if (!kart) return;
+  const count = 6;
+  const positions = new Float32Array(count * 3);
+  const velocities = [];
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 0.4;
+    positions[i * 3 + 1] = Math.random() * 0.15;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 0.4;
+    velocities.push(new THREE.Vector3((Math.random() - 0.5) * 0.7, 0.5 + Math.random() * 0.6, (Math.random() - 0.5) * 0.7));
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const mat = new THREE.PointsMaterial({ color: 0xcbb98f, size: 0.26, transparent: true, opacity: 0.5, depthWrite: false });
+  const points = new THREE.Points(geo, mat);
+
+  const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+  const localPos = new THREE.Vector3(0, 0.15, -1.1).applyQuaternion(headingQuat);
+  points.position.copy(kart.position.clone().add(localPos));
+
+  scene.add(points);
+  dustParticles.push({ points, velocities, age: 0, life: 0.9 });
+}
+
+function updateDriftEffects(dt) {
+  if (kart && physics.isDrifting && Math.abs(physics.speed) > 5) {
+    skidSpawnTimer += dt;
+    if (skidSpawnTimer > 0.045) {
+      spawnSkidMarkPair();
+      spawnDustPuff();
+      skidSpawnTimer = 0;
+    }
+  }
+
+  for (let i = skidMarks.length - 1; i >= 0; i--) {
+    const sm = skidMarks[i];
+    if (!sm || !sm.mesh || !sm.mesh.material) continue; // SEGURANÇA
+    sm.life -= dt;
+    sm.mesh.material.opacity = Math.max(0, (sm.life / sm.maxLife) * 0.32);
+    if (sm.life <= 0) {
+      scene.remove(sm.mesh);
+      if (sm.mesh.geometry) sm.mesh.geometry.dispose();
+      if (sm.mesh.material) sm.mesh.material.dispose();
+      skidMarks.splice(i, 1);
+    }
+  }
+
+  for (let i = dustParticles.length - 1; i >= 0; i--) {
+    const d = dustParticles[i];
+    if (!d || !d.points || !d.points.geometry || !d.points.material) continue; // SEGURANÇA
+    d.age += dt;
+    const posAttr = d.points.geometry.attributes.position;
+    if (posAttr) {
+      for (let j = 0; j < d.velocities.length; j++) {
+        posAttr.array[j * 3] += d.velocities[j].x * dt;
+        posAttr.array[j * 3 + 1] += d.velocities[j].y * dt;
+        posAttr.array[j * 3 + 2] += d.velocities[j].z * dt;
+      }
+      posAttr.needsUpdate = true;
+    }
+    d.points.material.opacity = Math.max(0, 0.5 * (1 - d.age / d.life));
+    if (d.age >= d.life) {
+      scene.remove(d.points);
+      if (d.points.geometry) d.points.geometry.dispose();
+      if (d.points.material) d.points.material.dispose();
+      dustParticles.splice(i, 1);
+    }
+  }
 }
 
 // ------------------------------------------------------------
@@ -1286,13 +1652,33 @@ async function showFinishOverlay(place) {
 // ------------------------------------------------------------
 // POKÉBOLAS, ARMADILHAS E HABILIDADES NO (E)
 // ------------------------------------------------------------
+const ITEM_ICON_DEFAULT = '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="10" fill="none" stroke="#3a5a78" stroke-width="1.6"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="#8da5bd" font-family="Arial, sans-serif">?</text></svg>';
+
 const SKILLS = {
-  TURBO: { id: 'TURBO', name: 'Aceleração de Fogo', icon: '🔥' },
-  ICE: { id: 'ICE', name: 'Gelo na Pista', icon: '❄️' },
-  LODO: { id: 'LODO', name: 'Lodo Obscuro', icon: '💩' },
-  SHIELD: { id: 'SHIELD', name: 'Proteção', icon: '🛡️' },
-  CHOQUE: { id: 'CHOQUE', name: 'Trovoada Elétrica', icon: '⚡' },
-  FUMACA: { id: 'FUMACA', name: 'Cortina de Fumaça', icon: '💨' }
+  TURBO: {
+    id: 'TURBO', name: 'Aceleração de Fogo',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 36px; line-height: 1;">🔥</div>'
+  },
+  ICE: {
+    id: 'ICE', name: 'Gelo na Pista',
+    icon: '<svg viewBox="0 0 24 24" width="34" height="34" stroke="#8fe3ff" stroke-width="1.8" fill="none" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4" y1="7" x2="20" y2="17"/><line x1="20" y1="7" x2="4" y2="17"/></svg>'
+  },
+  LODO: {
+    id: 'LODO', name: 'Lodo Obscuro',
+    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 2c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z" fill="#6a2fa0"/></svg>'
+  },
+  SHIELD: {
+    id: 'SHIELD', name: 'Proteção',
+    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z" fill="rgba(40,201,255,0.25)" stroke="#28c9ff" stroke-width="1.8"/></svg>'
+  },
+  CHOQUE: {
+    id: 'CHOQUE', name: 'Trovoada Elétrica',
+    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><polygon points="13,2 4,14 11,14 9,22 20,9 12,9" fill="#ffd43b"/></svg>'
+  },
+  FUMACA: {
+    id: 'FUMACA', name: 'Cortina de Fumaça',
+    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><circle cx="7" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/><circle cx="12" cy="12" r="4" fill="#9aa7b3" opacity="0.85"/><circle cx="17" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/></svg>'
+  }
 };
 
 let currentItem = null;
@@ -1426,7 +1812,7 @@ function getItemFromBox() {
   currentItem = SKILLS[randomKey];
 
   const iconEl = document.getElementById('itemIcon');
-  if (iconEl) iconEl.innerText = currentItem.icon;
+  if (iconEl) iconEl.innerHTML = currentItem.icon;
 }
 
 const placedTraps = [];
@@ -1613,7 +1999,7 @@ window.addEventListener('keydown', (e) => {
     currentItem = null;
 
     const iconEl = document.getElementById('itemIcon');
-    if (iconEl) iconEl.innerText = '❓';
+    if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
   }
 });
 
@@ -2521,11 +2907,13 @@ function aplicarPunicaoAbandonoSincrona() {
 let lastTime = performance.now();
 function animate() {
   requestAnimationFrame(animate);
+
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
 
   updatePhysics(dt);
+  updateDriftEffects(dt);
   updateBots(dt);
   updateCamera(dt);
   updateItemBoxes(dt);
@@ -2535,7 +2923,17 @@ function animate() {
   updateHUD();
   drawMinimap();
 
-  renderer.render(scene, camera);
+  // --- ATUALIZAÇÃO E CRIAÇÃO DAS PARTÍCULAS DE POEIRA ---
+  updateDustParticles();
+  if (kart && Math.abs(physics.speed) > 15) {
+    // Reduzido para soltar menos partículas por segundo
+    if (Math.random() < 0.25) {
+      spawnDustParticle(kart.position.x, kart.position.y, kart.position.z);
+    }
+  }
+  // -----------------------------------------------------
+
+  composer.render();
 }
 
 animate();
