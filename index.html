@@ -1221,6 +1221,24 @@
                   <div
                     style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; margin: 12px 0;">
                     <!-- HOST CONTENT -->
+                    <div style="margin-bottom: 12px; text-align: left; width: 100%;">
+                      <label class="section-label"
+                        style="font-size: 10px; color: #91a7be; text-align: left; margin: 0 0 2px; display: block;">PISTA:</label>
+
+                      <!-- Select nativo vazio -->
+                      <select id="trackSelect" style="display:none;"></select>
+
+                      <!-- Dropdown Customizado com largura total -->
+                      <div class="customDropdownWrapper" id="customMultiTrackDropdown" style="width: 100%;">
+                        <div class="customDropdownTrigger" id="multiTrackDropdownTrigger"
+                          style="min-height: 42px; width: 100%; box-sizing: border-box;">
+                          <span id="multiTrackDropdownSelectedLabel">Carregando pistas...</span><span>▼</span>
+                        </div>
+                        <div class="customDropdownMenu" id="multiTrackDropdownMenu"
+                          style="width: 100%; box-sizing: border-box;"></div>
+                      </div>
+                    </div>
+
                     <div id="contentHost" style="display: flex; flex-direction: column; width: 100%; gap: 10px;">
                       <div style="text-align: center;">
                         <div id="roomCodeDisplay"
@@ -1536,22 +1554,29 @@
 
     let dailyFreeKarts = [];
     function updateDailyFreeKarts() {
-      const todayDate = new Date().toDateString();
-      const savedDate = localStorage.getItem('pkart_free_date');
+      const today = new Date();
+      // Cria uma semente matemática única para o dia de hoje (Ex: 20260913)
+      const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
 
-      if (savedDate === todayDate) {
-        dailyFreeKarts = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
-      } else {
-        const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
-        for (let i = availableKarts.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
-        }
-        dailyFreeKarts = availableKarts.slice(0, 4);
-        localStorage.setItem('pkart_free_date', todayDate);
-        localStorage.setItem('pkart_free_karts', JSON.stringify(dailyFreeKarts));
+      // Gerador pseudoaleatório atrelado à semente da data
+      let s = dateSeed;
+      function seededRandom() {
+        s = Math.sin(s) * 10000;
+        return s - Math.floor(s);
       }
+
+      const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
+
+      // Embaralha a lista usando o gerador baseado na data no lugar do Math.random()
+      for (let i = availableKarts.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom() * (i + 1));
+        [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
+      }
+
+      // Seleciona os 4 primeiros karts da lista embaralhada
+      dailyFreeKarts = availableKarts.slice(0, 4);
     }
+
     updateDailyFreeKarts();
 
     function sortKartsByAvailability() {
@@ -1670,6 +1695,7 @@
       bindCustomDropdown('dropdownTrigger', 'dropdownMenu', 'trackSelectDropdown', 'dropdownSelectedLabel');
       bindCustomDropdown('aiDropdownTrigger', 'aiDropdownMenu', 'aiDifficulty', 'aiDropdownSelectedLabel');
       bindCustomDropdown('rankDropdownTrigger', 'rankDropdownMenu', 'leaderboardTrackSelect', 'rankDropdownSelectedLabel');
+      bindCustomDropdown('multiTrackDropdownTrigger', 'multiTrackDropdownMenu', 'trackSelect', 'multiTrackDropdownSelectedLabel');
     }
 
     // --- Lógica de Expansão dos Cards de Modo ---
@@ -1728,9 +1754,9 @@
       }
     }
 
-    function initHost() {
+    function initHost(forcedCode = null) {
       document.getElementById('lobbyStatusHost').textContent = 'Criando sala...';
-      roomCode = Math.random().toString(36).substring(2, 7).toLowerCase();
+      roomCode = forcedCode || Math.random().toString(36).substring(2, 7).toLowerCase();
       if (peer) peer.destroy();
       guestConns.length = 0;
       lobbyPlayers = [getNickname()];
@@ -1782,7 +1808,7 @@
       });
     }
 
-    function switchMultiTab(tab) {
+    function switchMultiTab(tab, forcedCode = null) {
       if (tab === 'host') {
         btnTabHost.classList.add('active');
         btnTabJoin.classList.remove('active');
@@ -1790,7 +1816,7 @@
         contentJoin.style.display = 'none';
 
         if (!roomCode || peer === null) {
-          initHost();
+          initHost(forcedCode); // Repassa o código para a criação
         }
       } else {
         btnTabJoin.classList.add('active');
@@ -1836,14 +1862,21 @@
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = typeof room === 'string' ? room.trim().toLowerCase() : '';
-      const chosenTrack = trackId || (document.getElementById('trackSelectDropdown')?.value || '');
-      const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
-      const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
+
+      const trackSelectEl = document.getElementById('trackSelect');
+      const chosenTrack = trackId || (trackSelectEl ? trackSelectEl.value : 'circuitoE');
 
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}`;
       if (cleanRoom !== '') target += `&room=${cleanRoom}`;
-      if (chosenTrack !== '') target += `&customTrack=${chosenTrack}`;
-      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`;
+
+      if (chosenTrack) {
+        // Se for um dos circuitos padrão, envia &track=. Se for customizado do Supabase, envia &customTrack=
+        if (['circuitoE', 'circuitoOval', 'circuitoZigueZague'].includes(chosenTrack)) {
+          target += `&track=${chosenTrack}`;
+        } else {
+          target += `&customTrack=${chosenTrack}`;
+        }
+      }
 
       window.location.href = target;
     }
@@ -1887,7 +1920,9 @@
     document.addEventListener('click', (e) => {
       if (e.target && e.target.id === 'btnStartRace') {
         e.preventDefault(); enableMobileExperience();
-        const chosenTrack = document.getElementById('trackSelectDropdown')?.value || '';
+        const trackSelectEl = document.getElementById('trackSelect');
+        const chosenTrack = trackSelectEl ? trackSelectEl.value : 'circuitoE';
+
         document.getElementById('lobbyStatusHost').textContent = 'Enviando sinal de início...';
         const totalPlayers = lobbyPlayers.length;
 
@@ -1968,12 +2003,18 @@
 
         const nativeSelect = document.getElementById('trackSelectDropdown');
         const customMenu = document.getElementById('dropdownMenu');
+
+        // Elementos do Multiplayer (Native e Menu Customizado)
+        const multiNativeSelect = document.getElementById('trackSelect');
+        const multiCustomMenu = document.getElementById('multiTrackDropdownMenu');
+
         const rankNativeSelect = document.getElementById('leaderboardTrackSelect');
         const rankCustomMenu = document.getElementById('rankDropdownMenu');
 
         tracks.forEach(track => {
           const trackDiff = track.difficulty || 'easy';
 
+          // 1. Adiciona no Modo Solo
           const option = document.createElement('option');
           option.value = track.id;
           option.setAttribute('data-difficulty', trackDiff);
@@ -1987,6 +2028,32 @@
           customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
+          // 2. Adiciona no Multiplayer (Select nativo e Opções do Menu Customizado)
+          if (multiNativeSelect && multiCustomMenu) {
+            const multiOption = document.createElement('option');
+            multiOption.value = track.id;
+            multiOption.setAttribute('data-difficulty', trackDiff);
+            multiOption.innerText = `🛠️ ${track.name}`;
+            multiNativeSelect.appendChild(multiOption);
+
+            const multiCustomOpt = document.createElement('div');
+            multiCustomOpt.className = 'customDropdownOption';
+            multiCustomOpt.setAttribute('data-value', track.id);
+            multiCustomOpt.setAttribute('data-difficulty', trackDiff);
+            multiCustomOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
+
+            // Se for a primeira pista carregada, deixa ela selecionada por padrão
+            if (multiNativeSelect.children.length === 1) {
+              multiOption.selected = true;
+              multiCustomOpt.classList.add('selected');
+              document.getElementById('multiTrackDropdownSelectedLabel').innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
+              multiNativeSelect.value = track.id;
+            }
+
+            multiCustomMenu.appendChild(multiCustomOpt);
+          }
+
+          // 3. Adiciona nos Rankings
           if (rankNativeSelect && rankCustomMenu) {
             const rankOption = document.createElement('option');
             rankOption.value = track.id;
@@ -2231,6 +2298,33 @@
         } else {
           await saveTowerStateToDB(null);
           showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+        }
+        // LÓGICA DE RETORNO DO MULTIPLAYER CORRIGIDA (Rematch)
+        const urlParamsMenu = new URLSearchParams(window.location.search);
+        const rejoinRoom = urlParamsMenu.get('rejoin');
+        const isHostRejoin = urlParamsMenu.get('host') === 'true';
+
+        if (rejoinRoom) {
+          // Abre o painel do multiplayer diretamente sem conflitar com cliques automáticos
+          cardMulti.classList.add('config-open');
+          panelMultiConfig.style.display = 'flex';
+          cardSolo.classList.remove('config-open');
+          panelSoloConfig.style.display = 'none';
+          cardTower.classList.remove('config-open');
+          panelTowerConfig.style.display = 'none';
+
+          if (isHostRejoin) {
+            // Recria o lobby para o Host forçando o código antigo da sala
+            switchMultiTab('host', rejoinRoom);
+          } else {
+            // Insere o código e clica em Conectar para os convidados
+            switchMultiTab('join');
+            document.getElementById('joinCode').value = rejoinRoom.toUpperCase();
+            setTimeout(() => document.getElementById('btnConnect').click(), 800);
+          }
+
+          // Limpa a URL para evitar reconexões indesejadas ao apertar F5
+          window.history.replaceState({}, document.title, window.location.pathname);
         }
         renderBadgesSidebar();
       }

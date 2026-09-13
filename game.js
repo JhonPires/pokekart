@@ -343,11 +343,36 @@ const TRACK_PRESETS = {
     new THREE.Vector3(-70, 0, 30),
     new THREE.Vector3(-30, 0, -30),
     new THREE.Vector3(-60, 0, -100)
+  ],
+  circuitoOval: [
+    new THREE.Vector3(0, 0, -120),
+    new THREE.Vector3(80, 0, -120),
+    new THREE.Vector3(120, 0, -80),
+    new THREE.Vector3(120, 0, 80),
+    new THREE.Vector3(80, 0, 120),
+    new THREE.Vector3(-80, 0, 120),
+    new THREE.Vector3(-120, 0, 80),
+    new THREE.Vector3(-120, 0, -80),
+    new THREE.Vector3(-80, 0, -120)
+  ],
+  circuitoZigueZague: [
+    new THREE.Vector3(0, 0, -120),
+    new THREE.Vector3(80, 0, -120),
+    new THREE.Vector3(80, 0, -40),
+    new THREE.Vector3(-80, 0, 0),
+    new THREE.Vector3(-80, 0, 80),
+    new THREE.Vector3(80, 0, 120),
+    new THREE.Vector3(0, 0, 120),
+    new THREE.Vector3(-120, 0, 0)
   ]
 };
 
+// Captura a pista escolhida na URL. Se não houver, usa o circuitoE por padrão.
+const selectedTrackParam = urlParams.get('track') || 'circuitoE';
+
 function getTrackCurve() {
-  return new THREE.CatmullRomCurve3(TRACK_PRESETS.circuitoE, true, 'centripetal', 0.5);
+  const trackPoints = TRACK_PRESETS[selectedTrackParam] || TRACK_PRESETS.circuitoE;
+  return new THREE.CatmullRomCurve3(trackPoints, true, 'centripetal', 0.5);
 }
 
 let trackCurve = getTrackCurve();
@@ -1617,18 +1642,46 @@ async function showFinishOverlay(place) {
   `;
   card.appendChild(finishLeaderboardEl);
 
-  const btnRestart = document.createElement('button');
-  btnRestart.style.cssText = `
-    background: #22c55e; color: #0f172a; border: none; padding: 12px; margin-top: 5px;
-    font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%;
-    box-shadow: 0 4px 0 #16a34a; transition: transform 0.1s;
-  `;
-  btnRestart.innerText = 'Voltar ao Lobby';
-  btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
-  btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';
-  btnRestart.onclick = () => window.location.href = 'index.html';
+  const buttonsContainer = document.createElement('div');
+  buttonsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;';
 
-  card.appendChild(btnRestart);
+  const baseBtnStyle = `border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: transform 0.1s;`;
+
+  // Se for corrida Multiplayer
+  if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+    const btnKeep = document.createElement('button');
+    btnKeep.style.cssText = baseBtnStyle + 'background: #22c55e; color: #0f172a; box-shadow: 0 4px 0 #16a34a;';
+    btnKeep.innerText = isHost ? 'Manter Sala e Voltar' : 'Voltar para a Sala';
+    btnKeep.onmousedown = () => btnKeep.style.transform = 'translateY(4px)';
+    btnKeep.onmouseup = () => btnKeep.style.transform = 'translateY(0)';
+    // Envia o código da sala de volta pela URL para reconectar no index.html
+    btnKeep.onclick = () => window.location.href = `index.html?rejoin=${roomCodeParam}&host=${isHost}`;
+
+    const btnLeave = document.createElement('button');
+    btnLeave.style.cssText = baseBtnStyle + 'background: #ef4444; color: #fff; box-shadow: 0 4px 0 #b91c1c;';
+    btnLeave.innerText = isHost ? 'Fechar Sala' : 'Sair da Sala';
+    btnLeave.onmousedown = () => btnLeave.style.transform = 'translateY(4px)';
+    btnLeave.onmouseup = () => btnLeave.style.transform = 'translateY(0)';
+    btnLeave.onclick = () => {
+      // Se o Host fechar a sala, avisa os convidados antes de sair
+      if (isHost && typeof executarSaidaDaSala === 'function') executarSaidaDaSala();
+      window.location.href = 'index.html';
+    };
+
+    buttonsContainer.appendChild(btnKeep);
+    buttonsContainer.appendChild(btnLeave);
+  } else {
+    // Modo Solo / Torre mantém apenas o botão de Voltar
+    const btnRestart = document.createElement('button');
+    btnRestart.style.cssText = baseBtnStyle + 'background: #22c55e; color: #0f172a; box-shadow: 0 4px 0 #16a34a;';
+    btnRestart.innerText = 'Voltar ao Lobby';
+    btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
+    btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';
+    btnRestart.onclick = () => window.location.href = 'index.html';
+    buttonsContainer.appendChild(btnRestart);
+  }
+
+  card.appendChild(buttonsContainer);
   overlay.appendChild(card);
   document.body.appendChild(overlay);
 
@@ -2410,7 +2463,10 @@ function initRaceMultiplayer() {
                 slot: _slotParam,
                 progress: myTracker ? myTracker.progress : 0,
                 lapCount: myTracker ? myTracker.lapCount : 1,
-                finished: myTracker ? myTracker.finished : false
+                finished: myTracker ? myTracker.finished : false,
+                poisoned: isControlInverted,
+                shield: isShieldActive,
+                turbo: physics.turboTimer > 0
               });
             }
           }, 1000 / 30);
@@ -2419,6 +2475,9 @@ function initRaceMultiplayer() {
         hostConn.on('data', (data) => {
           // Removemos a exigência de "raceStarted" e usamos window para evitar erros de escopo
           if (data.t === 'host_disconnected' && !window.jaSurgiuAlertaDeQueda) {
+            const myTracker = raceTrackers.get('local');
+            if (myTracker && myTracker.finished) return; // Sai sem dar o alerta
+
             window.jaSurgiuAlertaDeQueda = true;
             corridaAtivaParaPunicao = false;
             alert("⚠️ O Host encerrou a sala.");
@@ -2456,6 +2515,9 @@ function networkTick(dt) {
   // Watchdog para convidados: se o host cair, expulsa para o lobby sem punição
   if (!isHost && typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     if (Date.now() - lastSnapshotReceivedTime > 4000) {
+      const myTracker = raceTrackers.get('local');
+      if (myTracker && myTracker.finished) return;
+
       corridaAtivaParaPunicao = false; // Impede punição por queda de internet do host
       alert("⚠️ A conexão com o Host foi perdida. A corrida foi encerrada.");
       window.location.href = 'index.html';
@@ -2483,6 +2545,7 @@ function networkTick(dt) {
       progress: myTracker ? myTracker.progress : 0,
       lapCount: myTracker ? myTracker.lapCount : 1,
       finished: myTracker ? myTracker.finished : false,
+      finishTime: myTracker ? myTracker.finishTime : Infinity,
       poisoned: isControlInverted,
       shield: isShieldActive,
       turbo: physics.turboTimer > 0
@@ -2490,6 +2553,7 @@ function networkTick(dt) {
   };
 
   for (const [pid, entry] of remoteKarts.entries()) {
+    const remoteTracker = raceTrackers.get(pid);
     snapshot[pid] = {
       x: entry.isBot ? entry.obj.group.position.x : entry.target.pos.x,
       y: entry.isBot ? entry.obj.group.position.y : entry.target.pos.y,
@@ -2500,7 +2564,11 @@ function networkTick(dt) {
       kartId: entry.kartId,
       progress: entry.progress,
       lapCount: entry.lapCount,
-      finished: entry.finished
+      finished: entry.finished,
+      poisoned: entry.isBot ? (entry.stunTimer > 0) : Boolean(entry.isPoisoned),
+      shield: entry.isBot ? (entry.shieldTimer > 0) : Boolean(entry.isShieldActive),
+      turbo: entry.isBot ? (entry.turboTimer > 0) : Boolean(entry.isTurboActive),
+      finishTime: remoteTracker ? remoteTracker.finishTime : Infinity
     };
   }
 
@@ -2565,10 +2633,15 @@ function updateStandings() {
   });
 
   racers.sort((a, b) => {
-    if (a.tr.finished && b.tr.finished) return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
+    // Se ambos finalizaram, quem tem o menor finishTime (chegou primeiro) fica na frente
+    if (a.tr.finished && b.tr.finished) {
+      return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
+    }
+    // Quem já finalizou tem prioridade absoluta sobre quem ainda está correndo
     if (a.tr.finished) return -1;
     if (b.tr.finished) return 1;
 
+    // Se ninguém finalizou, ordena pelo progresso na pista
     const progA = typeof a.tr.progress === 'number' ? a.tr.progress : 0;
     const progB = typeof b.tr.progress === 'number' ? b.tr.progress : 0;
 
@@ -2802,15 +2875,67 @@ function spawnBots() {
   if (roomCodeParam && !isHost) return;
   const modeParam = urlParams.get('mode');
   if (!roomCodeParam && aiDifficultyParam === 'none' && modeParam !== 'tower') return;
+
+  const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
+  const diffMult = diffSettings[aiDifficultyParam] || 0.90;
+
   // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder
   if (modeParam === 'tower') {
+    const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
+    const totalFloors = parseInt(urlParams.get('totalFloors') || '10', 10);
+
+    // Se NÃO for o último andar, fazemos o fluxo normal (vários bots)
+    if (currentFloor !== totalFloors) {
+      const maxSlots = 4;
+      const botCount = maxSlots - totalPlayersParam;
+
+      const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
+      const diffMult = diffSettings[aiDifficultyParam] || 0.90;
+
+      for (let i = 0; i < botCount; i++) {
+        const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
+        const botSlot = totalPlayersParam + i;
+        const botId = 'bot-' + botSlot;
+
+        const obj = createKart(0x555555);
+        loadKartTemplate(randomKart, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
+
+        const grid = getGridPosition(botSlot);
+        obj.group.position.copy(grid.pos);
+        obj.group.rotation.y = grid.heading;
+
+        const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+        const randomLeaderName = GYM_LEADERS[Math.floor(Math.random() * GYM_LEADERS.length)];
+
+        remoteKarts.set(botId, {
+          isBot: true,
+          obj: obj,
+          nickname: randomLeaderName,
+          kartId: randomKart.id,
+          stats: randomKart.stats,
+          speed: 0,
+          heading: grid.heading,
+          laneOffset: laneOffset,
+          diffMult: diffMult,
+          progress: 0,
+          lapCount: 1,
+          finished: false,
+          target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+          stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
+          currentItem: null, itemUseTimer: 0
+        });
+      }
+      return; // Sai da função para não duplicar os bots da torre
+    }
+
+    // Se FOR o último andar, spawna apenas o Líder de Ginásio exclusivo
     const leaderName = decodeURIComponent(urlParams.get('leader') || 'LÍDER DE GINÁSIO');
     const leaderKartId = urlParams.get('leaderkart') || 'jolteon';
     const leaderKartData = KART_DATABASE.find(k => k.id === leaderKartId) || KART_DATABASE[0];
     const botSlot = 1; // Slot 1 para o bot na torre
     const obj = createKart(0x555555);
 
-    loadKartTemplate(randomKart, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
+    loadKartTemplate(leaderKartData, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
 
     const grid = getGridPosition(botSlot);
     obj.group.position.copy(grid.pos);
@@ -2841,9 +2966,6 @@ function spawnBots() {
   const botCount = maxSlots - totalPlayersParam;
 
   if (botCount <= 0) return;
-
-  const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
-  const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
   for (let i = 0; i < botCount; i++) {
     const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];

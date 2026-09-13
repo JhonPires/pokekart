@@ -7,12 +7,13 @@
 - seria legal nas configurações poder selecionar quais músicas vc quer habilitar pra tocar, igual o FIFA
 - Animação do poderzinho de raio por que ele só eletrocuta quem tá perto mas não tem nenhum indicativo, seria bom até pra tentar usar o escudo
 - O raio não deveria soltar pra trás pra não ficar muito quebrado pro primeiro colocado
-- O drift para de contar se eu soltar a seta pro lado, daí se eu soltar um pouco pra não fechar demais a curva eu perco o boost, devia parar de contar só se eu soltar o espaço
-- Dar um pulinho na hora que apertar espaço igual no Mario Kart e soltar uma fumacinha pra indicar que tá derrapando
+- Dar um pulinho na hora que apertar espaço igual no Mario Kart
 - colocar os Pokemon falando quando começar a corrida
-- remover a necessidade de colocar email ao cadastrar um usuario novo
-- Ao iniciar a corrida acontece 3x aleatoriamente de ao dar o GO e começar a correr o carro voltar para o inicio como se tivesse resetado
+- Ao iniciar a corrida aconteceu 3x aleatoriamente de ao dar o GO e começar a correr o carro voltar para o inicio como se tivesse resetado
 - Mobile
+- Boost ignorar o travamento da grama
+- Enquanto ta no drift e apertar o mouse ta ficando travado o drift
+- Ver a possibilidade de escolher para onde jogar a habilidade
 
 
 

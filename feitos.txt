@@ -1,3 +1,15 @@
+Versão 1.7
+- Opção para escolher a pista no multiplayer.;
+- Corrigido as corridas no modo Torre.;
+- Corrigido o botão de moderação que estava aparecendo para todos os jogadores.;
+- Rotação diaria dos karts agora é igual pra todos os jogadores.;
+- Corrigido as habilidades Escudo e o Veneno que não estava aparecendo pra os outros jogadores no multiplayer.;
+- Não enviando os jogadores convidados para fora da sala após terminar a corrida e o host sair da sala.;
+- Opção para voltar a mesma sala criada anteriormente para as corridas multiplayer.;
+- Corrigido a classificação após a finalização da corrida multiplayer.;
+- 
+
+
 Versão 1.6
 - Atualização visual na gameplay.;
 - Adicionado animações nas habilidades.;
@@ -17,7 +29,7 @@ Versao 1.5
 
 
 
-Versao 1.4
+Versão 1.4
 - Corrida multiplayer é considerada somente quando tiver 4 jogadores caso contrario a corrida vira casual.
 - Ao atualizar a pagina sendo o HOST a corrida é finalizada. Obs: Existe punição para corridas ranqueadas.
 - Nomes dos bots agora tem os nomes dos lideres de ginasio.

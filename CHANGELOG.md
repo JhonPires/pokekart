@@ -1,5 +1,15 @@
 # Changelog - PokéKart
 
+## [1.7] - 13/09/2026
+- Opção para escolher a pista no multiplayer.
+- Corrigido as corridas no modo Torre.
+- Corrigido o botão de moderação que estava aparecendo para todos os jogadores.
+- Rotação diaria dos karts agora é igual pra todos os jogadores.
+- Corrigido as habilidades Escudo e o Veneno que não estava aparecendo pra os outros jogadores no multiplayer.
+- Não enviando os jogadores convidados para fora da sala após terminar a corrida e o host sair da sala.
+- Opção para voltar a mesma sala criada anteriormente para as corridas multiplayer.
+- Corrigido a classificação após a finalização da corrida multiplayer.
+
 ## [1.6] - 13/09/2026
 - Atualização visual na gameplay.
 - Adicionado animações nas habilidades.
