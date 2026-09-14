@@ -2150,7 +2150,7 @@ function updateTraps(dt) {
         }
         if (bot.shieldTimer <= 0) {
           if (trap.type === 'ICE') { bot.speed = 0; bot.spinTimer = 0.8; }
-          else if (trap.type === 'LODO') { bot.speed *= 0.4; }
+          else if (trap.type === 'LODO') { bot.speed *= 0.4; bot.poisonTimer = 3.0; }
           else if (trap.type === 'FUMACA') { bot.speed *= 0.85; }
         }
         break;
@@ -2921,7 +2921,7 @@ function spawnBots() {
           lapCount: 1,
           finished: false,
           target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-          stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
+          stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
           currentItem: null, itemUseTimer: 0
         });
       }
@@ -2956,7 +2956,7 @@ function spawnBots() {
       lapCount: 1,
       finished: false,
       target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
+      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
       currentItem: null, itemUseTimer: 0
     });
     return;
@@ -2995,8 +2995,13 @@ function spawnBots() {
       lapCount: 1,
       finished: false,
       target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0,
-      currentItem: null, itemUseTimer: 0
+      stunTimer: 0,
+      spinTimer: 0,
+      shieldTimer: 0,
+      turboTimer: 0,
+      poisonTimer: 0,
+      currentItem: null,
+      itemUseTimer: 0
     });
   }
 }
@@ -3012,6 +3017,7 @@ function updateBots(dt) {
 
     if (bot.shieldTimer > 0) bot.shieldTimer -= dt;
     if (bot.turboTimer > 0) bot.turboTimer -= dt;
+    if (bot.poisonTimer > 0) bot.poisonTimer -= dt;
 
     if (bot.itemUseTimer > 0) {
       bot.itemUseTimer -= dt;
@@ -3458,10 +3464,11 @@ function updateKartEffects(dt) {
   for (const [id, bot] of remoteKarts.entries()) {
     if (!bot.obj) continue;
 
-    // Verifica se é um bot local (com timers) ou jogador remoto (com flags booleanas)
     const hasShield = bot.shieldTimer > 0 || bot.isShieldActive;
     const hasTurbo = bot.turboTimer > 0 || bot.isTurboActive;
-    const hasPoison = (bot.isBot && bot.stunTimer > 0) || bot.isPoisoned;
+
+    // CORREÇÃO: O veneno agora usa exclusivamente o poisonTimer para bots e isPoisoned para remotos
+    const hasPoison = (bot.isBot && bot.poisonTimer > 0) || Boolean(bot.isPoisoned);
 
     // Escudo
     if (hasShield) {

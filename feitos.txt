@@ -1,3 +1,11 @@
+
+Versão 1.8
+- Correção dos efeitos das habilidades.;
+- Adicionado a opção para selecionar a pista na criação da tela multiplayer.;
+
+
+
+
 Versão 1.7
 - Opção para escolher a pista no multiplayer.;
 - Corrigido as corridas no modo Torre.;
@@ -7,7 +15,6 @@ Versão 1.7
 - Não enviando os jogadores convidados para fora da sala após terminar a corrida e o host sair da sala.;
 - Opção para voltar a mesma sala criada anteriormente para as corridas multiplayer.;
 - Corrigido a classificação após a finalização da corrida multiplayer.;
-- 
 
 
 Versão 1.6

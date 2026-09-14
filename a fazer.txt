@@ -1,3 +1,6 @@
+- Abandonar uma corrida na torre deve considerar derrota e resetar o andar(F5, voltar ao lobby, perda de rede).
+- Quando acabar uma corrida na torre e ganhar, dar a opção para ir para o proximo andar ou voltar para o lobby.
+- Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 - Poder ordenar por preço dos karts na loja
 - Efeitos sonoros (Aceleração, derrapagem, poderes)
 - novas armadilhas
@@ -14,7 +17,6 @@
 - Boost ignorar o travamento da grama
 - Enquanto ta no drift e apertar o mouse ta ficando travado o drift
 - Ver a possibilidade de escolher para onde jogar a habilidade
-
 
 
 proximos 3d:

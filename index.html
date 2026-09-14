@@ -381,7 +381,7 @@
 
     .mode {
       position: relative;
-      min-height: 460px;
+      min-height: 580px;
       padding: 18px;
       display: flex;
       flex-direction: column;
@@ -1136,7 +1136,7 @@
 
                 <div class="mode-config-panel" id="panelSoloConfig" style="justify-content: space-between;">
                   <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="back-mode-btn" id="btnCloseSoloConfig" style="margin-bottom: 12px;">‹ Voltar</button>
+                    <button class="back-mode-btn" id="btnCloseSoloConfig" style="margin-bottom: 12px;">Voltar</button>
 
                     <div class="section-label"
                       style="font-size: 10px; color: #91a7be; text-align: left; margin: 0 0 2px;">PISTA:</div>
@@ -1211,7 +1211,7 @@
                 <!-- PAINEL COM ABAS E SLOTS VISUAIS -->
                 <div class="mode-config-panel" id="panelMultiConfig" style="justify-content: space-between;">
                   <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="back-mode-btn" id="btnCloseMultiConfig" style="margin: 0;">‹ Voltar</button>
+                    <button class="back-mode-btn" id="btnCloseMultiConfig" style="margin: 0;">Voltar</button>
                     <div style="display: flex; gap: 8px;">
                       <button id="btnTabHost" class="tab-btn active">🏎️ Criar Sala</button>
                       <button id="btnTabJoin" class="tab-btn">🚪 Buscar</button>
@@ -1221,7 +1221,8 @@
                   <div
                     style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; margin: 12px 0;">
                     <!-- HOST CONTENT -->
-                    <div style="margin-bottom: 12px; text-align: left; width: 100%;">
+                    <div id="hostTrackContainer"
+                      style="display: none; margin-bottom: 12px; text-align: left; width: 100%;">
                       <label class="section-label"
                         style="font-size: 10px; color: #91a7be; text-align: left; margin: 0 0 2px; display: block;">PISTA:</label>
 
@@ -1248,7 +1249,7 @@
                           style="color: #91a7be; font-size: 11px; font-weight: bold; margin-top: 4px; min-height: 14px;">
                         </div>
                       </div>
-                      <div id="lobbyPlayersHost" class="lobby-slots"></div>
+                      <div id="lobbyPlayersHost" class="lobby-slots" style="width: 100%; min-height: 220px;"></div>
                     </div>
 
                     <!-- JOIN CONTENT -->
@@ -1263,13 +1264,19 @@
                         <div id="lobbyStatusJoin"
                           style="color: #91a7be; font-size: 11px; font-weight: bold; min-height: 14px;"></div>
                       </div>
-                      <div id="lobbyPlayersJoin" class="lobby-slots" style="display:none;"></div>
+                      <div id="lobbyPlayersJoin" class="lobby-slots"
+                        style="width: 100%; min-height: 220px; display: none;"></div>
                     </div>
                   </div>
 
                   <div>
                     <button id="btnStartRace" type="button" class="mode-btn"
-                      style="display:none; background: #22c55e; color: #0f172a; margin: 0;">🏁 Iniciar Sala</button>
+                      style="display: none; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(90deg, var(--accent), #0867d8); border: 1px solid var(--accent); color: #fff; margin: 0; box-shadow: 0 5px 18px var(--glow);">
+                      <span style="font-size: 16px;">🏁</span>
+                      <span style="font-weight: 950; letter-spacing: 0.5px; color: #fff;">INICIAR SALA</span>
+                      <img src="svg/right.svg" alt="Arrow"
+                        style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-top: -1px;" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1301,7 +1308,7 @@
                 <!-- NOVO PAINEL INLINE DA TORRE -->
                 <div class="mode-config-panel" id="panelTowerConfig" style="justify-content: space-between;">
                   <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <button class="back-mode-btn" id="btnCloseTowerConfig" style="margin: 0;">‹ Voltar</button>
+                    <button class="back-mode-btn" id="btnCloseTowerConfig" style="margin: 0;">Voltar</button>
                   </div>
 
                   <div id="towerContent"
@@ -1610,13 +1617,13 @@
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon'];
-      unlockedKarts = [...unlockedKarts, ...dailyFreeKarts];
+      unlockedKarts = [...unlockedKarts, ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
       if (profile && profile.unlocked_karts) {
         unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
       }
-
-      const isUnlocked = unlockedKarts.includes(kartId);
+      const isSessionSelected = sessionStorage.getItem('pkart_selected_kart') === kartId;
+      const isUnlocked = unlockedKarts.includes(kartId) || isSessionSelected;
       const isFreeRotation = dailyFreeKarts.includes(kartId) && !(profile && profile.unlocked_karts && profile.unlocked_karts.includes(kartId));
 
       const btnPlaySolo = document.getElementById('btnPlaySolo');
@@ -1809,20 +1816,29 @@
     }
 
     function switchMultiTab(tab, forcedCode = null) {
+      // 1. Declara a variável com segurança
+      const trackContainer = document.getElementById('hostTrackContainer');
+
       if (tab === 'host') {
         btnTabHost.classList.add('active');
         btnTabJoin.classList.remove('active');
         contentHost.style.display = 'flex';
         contentJoin.style.display = 'none';
 
+        // 👈 Mostra o seletor de pistas apenas na aba de Criar Sala
+        if (trackContainer) trackContainer.style.display = 'block';
+
         if (!roomCode || peer === null) {
-          initHost(forcedCode); // Repassa o código para a criação
+          initHost(forcedCode);
         }
       } else {
         btnTabJoin.classList.add('active');
         btnTabHost.classList.remove('active');
         contentHost.style.display = 'none';
         contentJoin.style.display = 'flex';
+
+        // 👈 Esconde o seletor de pistas na aba de Buscar
+        if (trackContainer) trackContainer.style.display = 'none';
 
         if (roomCode) {
           if (peer) peer.destroy();
