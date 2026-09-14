@@ -1151,6 +1151,7 @@ window.addEventListener('keydown', (e) => {
 if (btnReturnLobbyEl) {
   btnReturnLobbyEl.onclick = () => {
     corridaAtivaParaPunicao = false;
+    localStorage.removeItem('pkart_tower_result');
     window.location.href = 'index.html';
   };
 }
@@ -1592,8 +1593,30 @@ async function showFinishOverlay(place) {
   // --- COLOQUE ESTE BLOCO LOGO AQUI ---
   const modeParam = urlParams.get('mode');
   if (modeParam === 'tower') {
-    // Se ficou em 1º lugar, ele ganha. Se não, perde o andar.
-    localStorage.setItem('pkart_tower_result', place === 1 ? 'win' : 'lose');
+    const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
+    const currentGymId = urlParams.get('gym') || '';
+    const maxFloorsVal = parseInt(urlParams.get('maxFloors') || '5', 10);
+    const leader = urlParams.get('leader') || '';
+    const leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || '';
+
+    if (place === 1) {
+      localStorage.setItem('pkart_tower_result', 'win');
+
+      const nextFloor = currentFloor + 1;
+      const towerState = { gymId: currentGymId, floor: nextFloor, maxFloors: maxFloorsVal };
+
+      // 🛡️ Salva local e cria a "encomenda" garantida para o Lobby enviar ao Supabase
+      localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
+      localStorage.setItem('pkart_pending_tower_save', JSON.stringify(towerState));
+
+      if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+        currentUserProfile.tower_state = towerState;
+        supabaseClient.from('profiles').update({ tower_state: towerState }).eq('id', currentUserProfile.id);
+      }
+    } else {
+      localStorage.setItem('pkart_tower_result', 'lose');
+      localStorage.removeItem('pkart_tower_state');
+    }
   }
   // -------------------------------------
 
@@ -1654,7 +1677,6 @@ async function showFinishOverlay(place) {
     btnKeep.innerText = isHost ? 'Manter Sala e Voltar' : 'Voltar para a Sala';
     btnKeep.onmousedown = () => btnKeep.style.transform = 'translateY(4px)';
     btnKeep.onmouseup = () => btnKeep.style.transform = 'translateY(0)';
-    // Envia o código da sala de volta pela URL para reconectar no index.html
     btnKeep.onclick = () => window.location.href = `index.html?rejoin=${roomCodeParam}&host=${isHost}`;
 
     const btnLeave = document.createElement('button');
@@ -1663,7 +1685,6 @@ async function showFinishOverlay(place) {
     btnLeave.onmousedown = () => btnLeave.style.transform = 'translateY(4px)';
     btnLeave.onmouseup = () => btnLeave.style.transform = 'translateY(0)';
     btnLeave.onclick = () => {
-      // Se o Host fechar a sala, avisa os convidados antes de sair
       if (isHost && typeof executarSaidaDaSala === 'function') executarSaidaDaSala();
       window.location.href = 'index.html';
     };
@@ -1671,9 +1692,34 @@ async function showFinishOverlay(place) {
     buttonsContainer.appendChild(btnKeep);
     buttonsContainer.appendChild(btnLeave);
   } else {
-    // Modo Solo / Torre mantém apenas o botão de Voltar
+    // --- MODO SOLO / TORRE ---
+    const isTower = modeParam === 'tower';
+
+    // 🛡️ CORREÇÃO: Usa diretamente a variável "place === 1", ignorando delay do localStorage
+    if (isTower && place === 1) {
+      const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
+      const gymId = urlParams.get('gym') || '';
+      const leader = urlParams.get('leader') || '';
+      // Correção do case-sensitive para pegar o kart do líder corretamente
+      const leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || '';
+      const maxFloorsVal = parseInt(urlParams.get('maxFloors') || '5', 10);
+
+      const btnNextFloor = document.createElement('button');
+      btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
+      btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
+      btnNextFloor.onmousedown = () => btnNextFloor.style.transform = 'translateY(4px)';
+      btnNextFloor.onmouseup = () => btnNextFloor.style.transform = 'translateY(0)';
+
+      btnNextFloor.onclick = () => {
+        // Envia direto para o andar +1
+        const targetFloor = currentFloor + 1;
+        window.location.href = `game.html?nick=${urlParams.get('nick')}&kart=${urlParams.get('kart')}&slot=0&ai=hard&players=1&mode=tower&floor=${targetFloor}&gym=${gymId}&maxFloors=${maxFloorsVal}&leader=${encodeURIComponent(leader)}&leaderkart=${leaderKart}`;
+      };
+      buttonsContainer.appendChild(btnNextFloor);
+    }
+
     const btnRestart = document.createElement('button');
-    btnRestart.style.cssText = baseBtnStyle + 'background: #22c55e; color: #0f172a; box-shadow: 0 4px 0 #16a34a;';
+    btnRestart.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
     btnRestart.innerText = 'Voltar ao Lobby';
     btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
     btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';

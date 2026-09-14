@@ -2208,11 +2208,17 @@
 
       async function renderTowerPanel() {
         const unlockedBadges = JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+
+        // 🛡️ SINCRONIZAÇÃO INTELIGENTE: Pega o andar mais alto entre o Local e o Banco
+        let localState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
+        let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+        let dbState = dbProfile ? dbProfile.tower_state : null;
+
         let towerState = null;
-        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-          towerState = currentUserProfile.tower_state;
+        if (localState && dbState && localState.gymId === dbState.gymId) {
+          towerState = localState.floor > dbState.floor ? localState : dbState;
         } else {
-          towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
+          towerState = localState || dbState;
         }
 
         let currentGym = GYM_TOWERS.find(g => !unlockedBadges.includes(g.id));
@@ -2225,6 +2231,16 @@
         if (!towerState || towerState.gymId !== currentGym.id) {
           towerState = { gymId: currentGym.id, floor: 1, maxFloors: currentGym.maxFloors };
           await saveTowerStateToDB(towerState);
+        } else {
+          if (!towerState.maxFloors) {
+            towerState.maxFloors = currentGym.maxFloors;
+          }
+          if (!towerState.floor || towerState.floor < 1) {
+            towerState.floor = 1;
+          }
+          // Garante que o navegador e o perfil local assumam o andar correto e mais alto
+          localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
+          if (dbProfile) dbProfile.tower_state = towerState;
         }
 
         const isBoss = towerState.floor === towerState.maxFloors;
@@ -2251,7 +2267,7 @@
           </div>
         `;
 
-        document.getElementById('btnEnterTowerFloor').onclick = () => window.location.href = `game.html?nick=${getNickname()}&kart=${KART_DATABASE[selectedIndex].id}&slot=0&ai=hard&players=1&mode=tower&floor=${towerState.floor}&gym=${currentGym.id}&leader=${encodeURIComponent(currentGym.leader)}&leaderkart=${currentGym.kartId}`;
+        document.getElementById('btnEnterTowerFloor').onclick = () => window.location.href = `game.html?nick=${getNickname()}&kart=${KART_DATABASE[selectedIndex].id}&slot=0&ai=hard&players=1&mode=tower&floor=${towerState.floor}&gym=${currentGym.id}&leader=${encodeURIComponent(currentGym.leader)}&leaderkart=${currentGym.kartId}&maxFloors=${towerState.maxFloors}`;
         document.getElementById('btnResetTower').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
       }
 
@@ -2277,51 +2293,56 @@
 
       async function processTowerResult() {
         const result = localStorage.getItem('pkart_tower_result');
+        const pendingStateRaw = localStorage.getItem('pkart_pending_tower_save'); // 🛡️ Intercepta a encomenda
+
         if (!result) return;
         localStorage.removeItem('pkart_tower_result');
 
         let towerState = null;
-        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-          towerState = currentUserProfile.tower_state;
+
+        // SE O JOGO MANDOU UM ESTADO NOVO, ELE É A VERDADE ABSOLUTA
+        if (pendingStateRaw) {
+          towerState = JSON.parse(pendingStateRaw);
+          localStorage.removeItem('pkart_pending_tower_save');
+          await saveTowerStateToDB(towerState); // Força o envio pro Supabase a partir do Lobby
+        } else {
+          // Fallback caso não tenha corrida recente pendente
+          let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+          towerState = dbProfile && dbProfile.tower_state ? dbProfile.tower_state : JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
         }
-        if (!towerState) {
-          towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
-        }
+
         if (!towerState) return;
         const gym = GYM_TOWERS.find(g => g.id === towerState.gymId);
 
         if (result === 'win') {
-          if (towerState.floor >= towerState.maxFloors) {
-            let unlockedBadges = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_badges)
-              ? [...currentUserProfile.unlocked_badges]
-              : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+          if (towerState.floor > towerState.maxFloors) {
+            let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+            let unlockedBadges = dbProfile && dbProfile.unlocked_badges ? [...dbProfile.unlocked_badges] : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
 
             if (!unlockedBadges.includes(towerState.gymId)) {
               unlockedBadges.push(towerState.gymId);
               localStorage.setItem('pkart_unlocked_badges', JSON.stringify(unlockedBadges));
-              if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-                currentUserProfile.unlocked_badges = unlockedBadges;
-                await supabaseClient.from('profiles').update({ unlocked_badges: unlockedBadges }).eq('id', currentUserProfile.id);
+              if (typeof supabaseClient !== 'undefined' && dbProfile) {
+                dbProfile.unlocked_badges = unlockedBadges;
+                await supabaseClient.from('profiles').update({ unlocked_badges: unlockedBadges }).eq('id', dbProfile.id);
               }
             }
             await saveTowerStateToDB(null);
             showResultModal('badge', 'INSÍGNIA CONQUISTADA!', `Incrível! Você derrotou ${gym.leader} e conquistou a Insígnia ${gym.badge}!`);
           } else {
-            towerState.floor++;
-            await saveTowerStateToDB(towerState);
             showResultModal('win', 'ANDAR CONCLUÍDO!', `Você avançou para o Andar ${towerState.floor} da Torre.`);
           }
         } else {
           await saveTowerStateToDB(null);
           showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
         }
-        // LÓGICA DE RETORNO DO MULTIPLAYER CORRIGIDA (Rematch)
+
+        // LÓGICA DE RETORNO DO MULTIPLAYER (Rematch)
         const urlParamsMenu = new URLSearchParams(window.location.search);
         const rejoinRoom = urlParamsMenu.get('rejoin');
         const isHostRejoin = urlParamsMenu.get('host') === 'true';
 
         if (rejoinRoom) {
-          // Abre o painel do multiplayer diretamente sem conflitar com cliques automáticos
           cardMulti.classList.add('config-open');
           panelMultiConfig.style.display = 'flex';
           cardSolo.classList.remove('config-open');
@@ -2330,18 +2351,16 @@
           panelTowerConfig.style.display = 'none';
 
           if (isHostRejoin) {
-            // Recria o lobby para o Host forçando o código antigo da sala
             switchMultiTab('host', rejoinRoom);
           } else {
-            // Insere o código e clica em Conectar para os convidados
             switchMultiTab('join');
             document.getElementById('joinCode').value = rejoinRoom.toUpperCase();
             setTimeout(() => document.getElementById('btnConnect').click(), 800);
           }
 
-          // Limpa a URL para evitar reconexões indesejadas ao apertar F5
           window.history.replaceState({}, document.title, window.location.pathname);
         }
+
         renderBadgesSidebar();
       }
 
