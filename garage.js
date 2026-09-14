@@ -4,9 +4,6 @@ let scene, camera, renderer, currentMesh, controls;
 let selectedKartId = 'jolteon';
 let garageRequestId = 0;
 
-// Recupera a lista de karts gratuitos do dia salvos no localStorage pelo index.html
-const dailyFreeKarts = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
-
 const POKEAPI_SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 
 const KART_POKEMON_IDS = {
@@ -61,6 +58,31 @@ const KART_CATALOG = [
   { id: 'swellow', name: 'Swellow Kart', price: 2000, conceptImg: 'img/swellow.png', stats: { speed: 82, accel: 90, handling: 88 } },
   { id: 'articuno', name: 'Articuno Kart', price: 4200, conceptImg: 'img/articuno.png', stats: { speed: 92, accel: 85, handling: 83 } }
 ];
+
+let dailyFreeKarts = [];
+
+function updateDailyFreeKarts() {
+  const now = new Date();
+  const dateSeed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+
+  let s = dateSeed;
+  function seededRandom() {
+    s = (s * 9301 + 49297) % 233280;
+    return s / 233280;
+  }
+
+  const availableKarts = KART_CATALOG.map(k => k.id).filter(id => id !== 'jolteon');
+  availableKarts.sort();
+
+  for (let i = availableKarts.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
+  }
+
+  dailyFreeKarts = availableKarts.slice(0, 4);
+}
+// Calcula os karts imediatamente ao carregar o arquivo
+updateDailyFreeKarts();
 
 document.addEventListener('DOMContentLoaded', async () => {
   init3DViewport();
@@ -225,26 +247,35 @@ function renderKartGrid() {
   if (!gridEl) return;
   gridEl.innerHTML = '';
 
-  let unlockedList = (currentUserProfile && Array.isArray(currentUserProfile.unlocked_karts))
-    ? currentUserProfile.unlocked_karts
-    : ['jolteon', 'charizard'];
+  // 🛡️ TRAVA DE SEGURANÇA DO BANCO DE DADOS
+  let userKarts = ['jolteon', 'charizard'];
+  if (currentUserProfile && currentUserProfile.unlocked_karts) {
+    if (Array.isArray(currentUserProfile.unlocked_karts)) {
+      userKarts = currentUserProfile.unlocked_karts;
+    } else {
+      try {
+        userKarts = JSON.parse(currentUserProfile.unlocked_karts);
+        if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
+      } catch (e) {
+        userKarts = [currentUserProfile.unlocked_karts];
+      }
+    }
+  }
 
   // Mistura os Karts do Jogador com a Rotação Diária
-  unlockedList = Array.from(new Set([...unlockedList, ...dailyFreeKarts]));
+  let unlockedList = Array.from(new Set([...userKarts, ...dailyFreeKarts]));
 
   KART_CATALOG.forEach((kart) => {
     const isUnlocked = unlockedList.includes(kart.id);
     const pokemonId = KART_POKEMON_IDS[kart.id];
     const thumbSrc = pokemonId ? `${POKEAPI_SPRITE_BASE}${pokemonId}.png` : 'img/jolteon.png';
 
-    // Verifica se o kart está liberado APENAS pela rotação gratuita (e não porque o jogador comprou)
-    const isFreeRotation = dailyFreeKarts.includes(kart.id) && !(currentUserProfile && currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(kart.id));
+    const isFreeRotation = dailyFreeKarts.includes(kart.id) && !userKarts.includes(kart.id);
 
     const card = document.createElement('div');
     card.className = `kart-card ${isUnlocked ? '' : 'locked'}`;
     card.dataset.kartId = kart.id;
 
-    // Injeta a label verde de GRÁTIS HOJE se for da rotação, senão exibe o preço ou OK
     let priceLabelHtml = '';
     if (isFreeRotation) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#22c55e;">GRÁTIS HOJE</div>`;
@@ -281,8 +312,23 @@ function selectKart(kartId) {
   if (kartData) {
     const nameEl = document.getElementById('kartName');
 
-    // Lógica para adicionar o texto GRÁTIS HOJE no título do Painel Lateral
-    const isFreeRotation = dailyFreeKarts.includes(kartData.id) && !(currentUserProfile && currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(kartData.id));
+    // 🛡️ TRAVA DE SEGURANÇA
+    let userKarts = ['jolteon', 'charizard'];
+    if (currentUserProfile && currentUserProfile.unlocked_karts) {
+      if (Array.isArray(currentUserProfile.unlocked_karts)) {
+        userKarts = currentUserProfile.unlocked_karts;
+      } else {
+        try {
+          userKarts = JSON.parse(currentUserProfile.unlocked_karts);
+          if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
+        } catch (e) {
+          userKarts = [currentUserProfile.unlocked_karts];
+        }
+      }
+    }
+
+    const isFreeRotation = dailyFreeKarts.includes(kartData.id) && !userKarts.includes(kartData.id);
+
     if (nameEl) {
       nameEl.innerHTML = isFreeRotation ? `${kartData.name} <span style="color:#22c55e; font-size:12px;">(GRÁTIS)</span>` : kartData.name;
     }
@@ -309,13 +355,22 @@ function updateActionButton(kartData, isFreeRotation) {
   const btnAction = document.getElementById('btnAction');
   if (!btnAction) return;
 
-  const unlockedList = (currentUserProfile && Array.isArray(currentUserProfile.unlocked_karts))
-    ? currentUserProfile.unlocked_karts
-    : ['jolteon', 'charizard'];
+  // 🛡️ TRAVA DE SEGURANÇA
+  let userKarts = ['jolteon', 'charizard'];
+  if (currentUserProfile && currentUserProfile.unlocked_karts) {
+    if (Array.isArray(currentUserProfile.unlocked_karts)) {
+      userKarts = currentUserProfile.unlocked_karts;
+    } else {
+      try {
+        userKarts = JSON.parse(currentUserProfile.unlocked_karts);
+        if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
+      } catch (e) {
+        userKarts = [currentUserProfile.unlocked_karts];
+      }
+    }
+  }
 
-  // Considera como "Destravado" se ele estiver na lista de compras OU na rotação gratuita
-  const isUnlocked = unlockedList.includes(kartData.id) || isFreeRotation;
-
+  const isUnlocked = userKarts.includes(kartData.id) || isFreeRotation;
   const equippedKartId = currentUserProfile ? currentUserProfile.selected_kart : sessionStorage.getItem('pkart_selected_kart');
   const isEquipped = equippedKartId === kartData.id;
 

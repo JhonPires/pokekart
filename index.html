@@ -1561,38 +1561,54 @@
 
     let dailyFreeKarts = [];
     function updateDailyFreeKarts() {
-      const today = new Date();
-      // Cria uma semente matemática única para o dia de hoje (Ex: 20260913)
-      const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+      // 1. Usa a data Universal (UTC) para o dia virar no mesmo exato segundo para todos os jogadores
+      const now = new Date();
+      const dateSeed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
 
-      // Gerador pseudoaleatório atrelado à semente da data
+      // 2. Gerador LCG (Linear Congruential Generator): 100% determinístico, imune a diferenças de navegador/processador
       let s = dateSeed;
       function seededRandom() {
-        s = Math.sin(s) * 10000;
-        return s - Math.floor(s);
+        s = (s * 9301 + 49297) % 233280;
+        return s / 233280;
       }
 
       const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
 
-      // Embaralha a lista usando o gerador baseado na data no lugar do Math.random()
+      // 3. Ordem alfabética estrita antes de embaralhar, garantindo a mesma base inicial sempre
+      availableKarts.sort();
+
+      // 4. Embaralha a lista com a semente fixa
       for (let i = availableKarts.length - 1; i > 0; i--) {
         const j = Math.floor(seededRandom() * (i + 1));
         [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
       }
 
-      // Seleciona os 4 primeiros karts da lista embaralhada
+      // Seleciona os 4 primeiros
       dailyFreeKarts = availableKarts.slice(0, 4);
     }
 
     updateDailyFreeKarts();
-
+    // Adicione esta linha temporariamente para o teste:
+    console.log("Karts Sorteados Hoje:", dailyFreeKarts);
     function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
+      let userKarts = [];
       if (profile && profile.unlocked_karts) {
-        unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
+        if (Array.isArray(profile.unlocked_karts)) {
+          userKarts = profile.unlocked_karts;
+        } else {
+          try {
+            userKarts = JSON.parse(profile.unlocked_karts);
+            if (!Array.isArray(userKarts)) userKarts = [profile.unlocked_karts];
+          } catch (e) {
+            userKarts = [profile.unlocked_karts];
+          }
+        }
       }
+
+      unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
 
       const availableGroup = [];
       const lockedGroup = [];
@@ -1619,12 +1635,26 @@
       let unlockedKarts = ['jolteon'];
       unlockedKarts = [...unlockedKarts, ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
+      // 🛡️ TRAVA DE SEGURANÇA REPLICADA AQUI
+      let userKarts = [];
       if (profile && profile.unlocked_karts) {
-        unlockedKarts = Array.from(new Set([...unlockedKarts, ...profile.unlocked_karts]));
+        if (Array.isArray(profile.unlocked_karts)) {
+          userKarts = profile.unlocked_karts;
+        } else {
+          try {
+            userKarts = JSON.parse(profile.unlocked_karts);
+            if (!Array.isArray(userKarts)) userKarts = [profile.unlocked_karts];
+          } catch (e) {
+            userKarts = [profile.unlocked_karts];
+          }
+        }
       }
+
+      unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
+
       const isSessionSelected = sessionStorage.getItem('pkart_selected_kart') === kartId;
       const isUnlocked = unlockedKarts.includes(kartId) || isSessionSelected;
-      const isFreeRotation = dailyFreeKarts.includes(kartId) && !(profile && profile.unlocked_karts && profile.unlocked_karts.includes(kartId));
+      const isFreeRotation = dailyFreeKarts.includes(kartId) && !userKarts.includes(kartId);
 
       const btnPlaySolo = document.getElementById('btnPlaySolo');
       const btnStartRace = document.getElementById('btnStartRace');
