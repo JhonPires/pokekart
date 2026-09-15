@@ -1596,7 +1596,7 @@
     updateDailyFreeKarts();
     // Adicione esta linha temporariamente para o teste:
     console.log("Karts Sorteados Hoje:", dailyFreeKarts);
-    function sortKartsByAvailability() {
+        function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
@@ -1614,7 +1614,14 @@
         }
       }
 
+      // Soma os karts do dia com os karts que o jogador já comprou
       unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
+
+      // 🛡️ TRAVA DE EXPIRAÇÃO AUTOMÁTICA
+      const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
+      if (currentEquipped && !unlockedKarts.includes(currentEquipped)) {
+        sessionStorage.setItem('pkart_selected_kart', 'jolteon');
+      }
 
       const availableGroup = [];
       const lockedGroup = [];
@@ -1634,6 +1641,7 @@
       selectedIndex = KART_DATABASE.findIndex(k => k.id === currentSelectedId);
       if (selectedIndex === -1) selectedIndex = 0;
     }
+    
     sortKartsByAvailability();
 
     function checkKartLockStatus(kartId) {
