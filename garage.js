@@ -254,23 +254,31 @@ function renderKartGrid() {
   if (!gridEl) return;
   gridEl.innerHTML = '';
 
-  // 🛡️ TRAVA DE SEGURANÇA DO BANCO DE DADOS
+  // 1. Trava de segurança para ler os karts do banco de dados
   let userKarts = ['jolteon', 'charizard'];
-  if (currentUserProfile && currentUserProfile.unlocked_karts) {
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
       userKarts = currentUserProfile.unlocked_karts;
     } else {
       try {
         userKarts = JSON.parse(currentUserProfile.unlocked_karts);
         if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
-      } catch (e) {
+      } catch(e) {
         userKarts = [currentUserProfile.unlocked_karts];
       }
     }
   }
 
-  // Mistura os Karts do Jogador com a Rotação Diária
+  // 2. Mistura os Karts do Jogador com a Rotação Diária
   let unlockedList = Array.from(new Set([...userKarts, ...dailyFreeKarts]));
+
+  // 🛡️ 3. TRAVA DE EXPIRAÇÃO AUTOMÁTICA
+  // Se o kart equipado não estiver nem na lista de comprados e nem nos gratuitos de hoje, ele expirou!
+  const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
+  if (currentEquipped && !unlockedList.includes(currentEquipped)) {
+    sessionStorage.setItem('pkart_selected_kart', 'jolteon');
+    selectedKartId = 'jolteon';
+  }
 
   KART_CATALOG.forEach((kart) => {
     const isUnlocked = unlockedList.includes(kart.id);
@@ -406,9 +414,8 @@ function updateActionButton(kartData, isFreeRotation) {
 }
 
 async function equipKart(kartId) {
-  // 1. Pega os karts permanentes do usuário com segurança
   let userKarts = ['jolteon', 'charizard'];
-  if (currentUserProfile && currentUserProfile.unlocked_karts) {
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
       userKarts = currentUserProfile.unlocked_karts;
     } else {
@@ -421,41 +428,38 @@ async function equipKart(kartId) {
     }
   }
 
-  // 2. Verifica se é um kart da rotação gratuita de hoje
   const isFreeRotation = dailyFreeKarts.includes(kartId) && !userKarts.includes(kartId);
   const isPermanentlyUnlocked = userKarts.includes(kartId);
 
-  // 3. Trava de segurança caso tentem equipar algo totalmente bloqueado
   if (!isPermanentlyUnlocked && !isFreeRotation) {
     alert('Este kart está bloqueado!');
     return;
   }
 
-  // 4. Atualiza o perfil local e salva diretamente no Supabase o kart selecionado
-  if (currentUserProfile) {
+  // Salva obrigatoriamente na sessão do navegador (Garante o uso imediato)
+  sessionStorage.setItem('pkart_selected_kart', kartId);
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
     currentUserProfile.selected_kart = kartId;
-    
-    if (typeof supabaseClient !== 'undefined') {
-      const { error } = await supabaseClient
-        .from('profiles')
-        .update({ 
-          selected_kart: kartId,
-          updated_at: new Date()
-        })
-        .eq('id', currentUserProfile.id);
+  }
 
-      if (error) {
-        console.warn('Erro ao salvar kart selecionado no banco:', error.message);
-      }
+  // Só atualiza o Supabase se for um kart permanente (Evita forçar um kart temporário no banco)
+  if (isPermanentlyUnlocked && typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({ 
+        selected_kart: kartId,
+        updated_at: new Date()
+      })
+      .eq('id', currentUserProfile.id);
+
+    if (error) {
+      console.warn('Erro ao salvar kart selecionado no banco:', error.message);
     }
   }
 
-  // 5. Atualiza a sessão e a interface da garagem
-  sessionStorage.setItem('pkart_selected_kart', kartId);
   selectKart(kartId);
   renderKartGrid();
 }
-
 
 async function buyKart(kartId, price) {
   if (!currentUserProfile) {
