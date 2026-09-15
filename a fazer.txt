@@ -1,3 +1,6 @@
+- Botão da moderação está dando para ativar via console (inspecionar)
+- Roleta com premiações diarias (1 giro por dia) e para ganhar mais giros ter que assistir um anuncio.
+- Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Abandonar uma corrida na torre deve considerar derrota e resetar o andar(F5, voltar ao lobby, perda de rede).
 - Quando acabar uma corrida na torre e ganhar, dar a opção para ir para o proximo andar ou voltar para o lobby.
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual

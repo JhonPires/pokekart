@@ -2,6 +2,9 @@
 Versão 1.8
 - Correção dos efeitos das habilidades.;
 - Adicionado a opção para selecionar a pista na criação da tela multiplayer.;
+- Corrigido o sorteio dos karts diários.;
+- Adicionado 6 novos Karts (Victreebel, Rhydon, Persian, Starmie, Onix e Alakazam).;
+- 
 
 
 

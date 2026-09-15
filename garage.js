@@ -15,7 +15,8 @@ const KART_POKEMON_IDS = {
   'ninetales': 38, 'arcanine': 59, 'lucario': 448, 'dialga': 483, 'zapdos': 145,
   'luxray': 405, 'staraptor': 398, 'dragonite': 149, 'tangela': 114, 'sneasel': 215,
   // Novos 3D Adicionados
-  'darkrai': 491, 'moltres': 146, 'weezing': 110, 'swellow': 277, 'articuno': 144
+  'darkrai': 491, 'moltres': 146, 'weezing': 110, 'swellow': 277, 'articuno': 144,
+  'alakazam': 65, 'onix': 95, 'starmie': 121, 'victreebel': 71, 'rhydon': 112, 'persian': 53,
 };
 
 // Catálogo Completo (32 Karts)
@@ -56,7 +57,13 @@ const KART_CATALOG = [
   { id: 'moltres', name: 'Moltres Kart', price: 4200, conceptImg: 'img/moltres.png', stats: { speed: 92, accel: 85, handling: 80 } },
   { id: 'weezing', name: 'Weezing Kart', price: 1500, conceptImg: 'img/weezing.png', stats: { speed: 75, accel: 80, handling: 85 } },
   { id: 'swellow', name: 'Swellow Kart', price: 2000, conceptImg: 'img/swellow.png', stats: { speed: 82, accel: 90, handling: 88 } },
-  { id: 'articuno', name: 'Articuno Kart', price: 4200, conceptImg: 'img/articuno.png', stats: { speed: 92, accel: 85, handling: 83 } }
+  { id: 'articuno', name: 'Articuno Kart', price: 4200, conceptImg: 'img/articuno.png', stats: { speed: 92, accel: 85, handling: 83 } },
+  { id: 'alakazam', name: 'Alakazam Kart', price: 3400, conceptImg: 'img/alakazam.png', stats: { speed: 90, accel: 85, handling: 88 } },
+  { id: 'onix', name: 'Onix Kart', price: 2900, conceptImg: 'img/onix.png', stats: { speed: 85, accel: 65, handling: 70 } },
+  { id: 'starmie', name: 'Starmie Kart', price: 2700, conceptImg: 'img/starmie.png', stats: { speed: 86, accel: 88, handling: 89 } },
+  { id: 'victreebel', name: 'Victreebel Kart', price: 1900, conceptImg: 'img/victreebel.png', stats: { speed: 78, accel: 79, handling: 80 } },
+  { id: 'rhydon', name: 'Rhydon Kart', price: 2600, conceptImg: 'img/rhydon.png', stats: { speed: 88, accel: 72, handling: 74 } },
+  { id: 'persian', name: 'Persian Kart', price: 1600, conceptImg: 'img/persian.png', stats: { speed: 84, accel: 90, handling: 87 } },
 ];
 
 let dailyFreeKarts = [];
