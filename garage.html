@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PokéKart — Garagem & Loja</title>
+  <title>PokéKart — Garagem</title>
   <link rel="icon" type="image/png" href="img/favicon.png">
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -578,7 +578,7 @@
       </div>
 
       <nav class="nav">
-        <button class="active"><span class="icon">🛍️</span>Loja / Garagem</button>
+        <button class="active"><span class="icon">🛍️</span>Garagem</button>
         <button onclick="window.location.href='index.html'"><span class="icon">🏠</span>Voltar ao Lobby</button>
         <button onclick="window.location.href='track_builder.html'"><span class="icon">🗺️</span>Criador de
           Pistas</button>
@@ -642,14 +642,26 @@
         <div class="garage-panel">
 
           <div class="card" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div class="section-label" style="margin-top: 0;">MODELOS DISPONÍVEIS</div>
+
+            <!-- CABEÇALHO DA LISTA COM O FILTRO DE ORDENAÇÃO -->
+            <div
+              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 0;">
+              <div class="section-label" style="margin: 0;">MODELOS DISPONÍVEIS</div>
+              <select id="garageSortSelect" onchange="renderKartGrid()"
+                style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
+                <option value="default">Ordem Padrão</option>
+                <option value="owned">Ativos Primeiro</option>
+                <option value="price_asc">Menor Preço</option>
+                <option value="price_desc">Maior Preço</option>
+              </select>
+            </div>
+
             <div class="kart-grid-container">
               <div class="kart-grid" id="kartList">
                 <!-- O JS preenche a lista de karts aqui -->
               </div>
             </div>
           </div>
-
           <div class="card">
             <h2 id="kartNamePanel" style="color: var(--cyan); font-size: 16px; margin-bottom: 12px; font-weight: 900;">
               Selecione um Kart</h2>

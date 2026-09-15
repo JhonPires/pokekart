@@ -1148,10 +1148,27 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// --- NOVA FUNÇÃO DE PUNIÇÃO DA TORRE ---
+function registrarDerrotaTorre() {
+  const modeLocal = urlParams.get('mode');
+  // Só pune se estiver no modo torre e a corrida ainda não tiver acabado legitimamente
+  if (modeLocal === 'tower' && corridaAtivaParaPunicao) {
+    localStorage.setItem('pkart_tower_result', 'lose');
+    localStorage.removeItem('pkart_tower_state');
+    localStorage.removeItem('pkart_pending_tower_save');
+
+    // Tenta avisar o banco de dados antes da tela fechar
+    if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+      currentUserProfile.tower_state = null;
+      supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
+    }
+  }
+}
+
 if (btnReturnLobbyEl) {
   btnReturnLobbyEl.onclick = () => {
+    registrarDerrotaTorre(); // Aplica a derrota antes de sair
     corridaAtivaParaPunicao = false;
-    localStorage.removeItem('pkart_tower_result');
     window.location.href = 'index.html';
   };
 }
@@ -1788,6 +1805,40 @@ async function showFinishOverlay(place) {
     }
   }
 
+  // --- SISTEMA DE MISSÕES DIÁRIAS (GATILHOS) ---
+  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.daily_missions) {
+    try {
+      let missionsModified = false;
+      const modeLocalParam = urlParams.get('mode');
+
+      currentUserProfile.daily_missions.list.forEach(mission => {
+        if (mission.claimed) return; // Se já resgatou, ignora
+
+        let fezProgresso = false;
+
+        // Regras de cada missão
+        if (mission.id === 'm_play') fezProgresso = true; // Terminou qualquer corrida
+        if (mission.id === 'm_win' && place === 1) fezProgresso = true; // Chegou em 1º
+        if (mission.id === 'm_solo' && modeLocalParam !== 'tower' && !roomCodeParam) fezProgresso = true; // Modo Solo
+        if (mission.id === 'm_multi' && roomCodeParam) fezProgresso = true; // Modo Multiplayer
+        if (mission.id === 'm_tower' && modeLocalParam === 'tower' && place === 1) fezProgresso = true; // Venceu andar da Torre
+
+        if (fezProgresso) {
+          mission.progress += 1;
+          missionsModified = true;
+        }
+      });
+
+      if (missionsModified) {
+        // Envia o progresso silenciosamente para o banco de dados
+        supabaseClient.from('profiles')
+          .update({ daily_missions: currentUserProfile.daily_missions })
+          .eq('id', currentUserProfile.id);
+      }
+    } catch (err) {
+      console.warn('Erro ao atualizar missões diárias:', err);
+    }
+  }
   // Monta o HTML base com as moedas ganhas e o bônus da pista
   let rewardHTML = `<div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>`;
 
@@ -3426,20 +3477,28 @@ function executarSaidaDaSala() {
   }
 }
 
-// Intercepta F5 para qualquer sala multiplayer (para não abandonar os convidados no limbo)
+// Intercepta F5 para evitar abandono sem punição
 window.addEventListener('keydown', (e) => {
-  if (e.code === 'F5' && typeof roomCodeParam !== 'undefined' && roomCodeParam) {
-    e.preventDefault();
-    executarSaidaDaSala();
-    corridaAtivaParaPunicao = false;
-    setTimeout(() => { window.location.href = 'index.html'; }, 50);
+  if (e.code === 'F5') {
+    if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+      e.preventDefault();
+      executarSaidaDaSala();
+      corridaAtivaParaPunicao = false;
+      setTimeout(() => { window.location.href = 'index.html'; }, 50);
+    } else if (urlParams.get('mode') === 'tower') {
+      registrarDerrotaTorre(); // Reseta a torre ao dar F5
+      corridaAtivaParaPunicao = false;
+    }
   }
 });
 
-// Garante o fechamento limpo se fechar a aba no "X"
+// Garante o fechamento limpo se fechar a aba no "X", trocar de URL ou a conexão cair e matar a página
 window.addEventListener('pagehide', () => {
   if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     executarSaidaDaSala();
+  }
+  if (urlParams.get('mode') === 'tower') {
+    registrarDerrotaTorre(); // Reseta a torre ao fechar o navegador
   }
 });
 

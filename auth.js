@@ -77,20 +77,10 @@ async function fetchPlayerProfile() {
 
   currentUserProfile = data;
 
-  // --- NOVA VERIFICAÇÃO DE KART EXPIRADO ---
+  // Garante que a sessão do navegador saiba qual é o kart atual do banco de dados
   if (currentUserProfile.selected_kart) {
-    const currentKart = currentUserProfile.selected_kart;
-    const isBase = currentKart === 'jolteon' || currentKart === 'charizard';
-    const isPermanent = currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(currentKart);
-    const dailyFree = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
-    const isTemporary = dailyFree.includes(currentKart);
-
-    if (!isBase && !isPermanent && !isTemporary) {
-      console.warn('[Sistema] Kart expirado detectado. Revertendo para kart padrão.');
-      await updateSelectedKart('jolteon');
-    }
+    sessionStorage.setItem('pkart_selected_kart', currentUserProfile.selected_kart);
   }
-  // -----------------------------------------
 
   // Atualiza o nickname no Menu Lateral se ele existir na página
   const sideNickEl = document.getElementById('sideMenuNick');

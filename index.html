@@ -843,6 +843,193 @@
       margin: 4px 0 2px 2px !important;
     }
 
+    /* ESTILOS DA ROLETA */
+    .roulette-wheel {
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      border: 4px solid var(--cyan);
+      box-shadow: 0 0 30px rgba(0, 190, 255, 0.4);
+      background: conic-gradient(#ffd23f 0deg 60deg, #ff4b55 60deg 120deg,
+          #21c7ff 120deg 180deg, #8757ff 180deg 240deg,
+          #22c55e 240deg 300deg, #facc15 300deg 360deg);
+      transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
+      position: relative;
+    }
+
+    .roulette-pointer {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 30px solid #fff;
+      z-index: 10;
+      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+    }
+
+    /* SISTEMA DE LOGIN DIÁRIO */
+    .daily-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .daily-card {
+      background: rgba(12, 28, 48, .72);
+      border: 1px solid #1e3a57;
+      border-radius: 12px;
+      padding: 10px 5px;
+      text-align: center;
+      opacity: 0.6;
+      transition: 0.2s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 85px;
+    }
+
+    .daily-card.active {
+      opacity: 1;
+      border-color: var(--cyan);
+      background: rgba(21, 201, 255, 0.15);
+      box-shadow: 0 0 15px rgba(0, 190, 255, 0.3);
+      transform: scale(1.05);
+      z-index: 2;
+    }
+
+    .daily-card.claimed {
+      opacity: 0.8;
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .daily-card.claimed::after {
+      content: "✔️";
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      font-size: 12px;
+    }
+
+    .daily-day-text {
+      font-size: 10px;
+      color: #91a7be;
+      font-weight: 900;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+
+    .daily-prize-text {
+      font-size: 14px;
+      color: var(--yellow);
+      font-weight: 900;
+    }
+
+    .daily-card.day-7 {
+      grid-column: span 2;
+      background: linear-gradient(135deg, rgba(255, 210, 63, 0.2), rgba(255, 75, 85, 0.2));
+      border-color: var(--yellow);
+    }
+
+    .daily-card.day-7.active {
+      box-shadow: 0 0 20px rgba(255, 210, 63, 0.4);
+    }
+
+    /* --- MISSÕES DIÁRIAS --- */
+    .mission-card {
+      background: rgba(12, 28, 48, .72);
+      border: 1px solid #1e3a57;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: 0.2s;
+    }
+
+    .mission-card.completed {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .mission-info {
+      flex: 1;
+      padding-right: 15px;
+    }
+
+    .mission-info h4 {
+      color: #fff;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .mission-info p {
+      color: #91a7be;
+      font-size: 11px;
+    }
+
+    .mission-progress-bg {
+      width: 100px;
+      height: 8px;
+      background: #0b1c30;
+      border-radius: 4px;
+      margin-top: 8px;
+      overflow: hidden;
+      border: 1px solid #1e3a57;
+    }
+
+    .mission-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #27c8ff, #078be8);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .mission-card.completed .mission-progress-fill {
+      background: #22c55e;
+    }
+
+    .mission-reward {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      min-width: 90px;
+    }
+
+    .mission-reward span {
+      color: var(--yellow);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .btn-claim-mission {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      border: 1px solid #4ade80;
+      color: #022c22;
+      font-weight: 900;
+      font-size: 11px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .btn-claim-mission:disabled {
+      background: #1e3a57;
+      border-color: #2a5078;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
     @media(max-width: 1050px) {
       .sidebar {
         width: 220px;
@@ -1001,6 +1188,7 @@
     </div>
   </div>
 
+
   <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
     <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
       <h2 id="authTitle" class="modal-title" style="font-size: 24px; margin-bottom: 20px;">CRIAR CONTA</h2>
@@ -1028,6 +1216,67 @@
     </div>
   </div>
 
+
+
+  <!-- Modal da Roleta -->
+  <div id="rouletteModalOverlay" class="overlay-general" style="z-index: 3000;">
+    <div class="lobbyCardModal" style="text-align: center; max-width: 380px; padding: 30px;">
+      <button id="btnCloseRoulette" class="modal-close-btn">✕</button>
+      <h2 class="modal-title" style="margin-bottom: 20px;">🎡 GIRO DIÁRIO</h2>
+
+      <div style="position: relative; margin: 0 auto 30px; width: 280px;">
+        <div class="roulette-pointer"></div>
+        <div id="rouletteWheel" class="roulette-wheel"></div>
+      </div>
+
+      <p id="rouletteStatus" style="color: #dcecff; font-size: 13px; font-weight: bold; margin-bottom: 20px;">Tente a
+        sorte e ganhe prêmios todos os dias!</p>
+
+      <button id="btnSpinRoulette" class="btn primary"
+        style="width: 100%; min-height: 45px; border-radius: 12px; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">GIRAR
+        AGORA</button>
+    </div>
+  </div>
+
+  <!-- Modal do Calendário -->
+  <div id="dailyLoginModalOverlay" class="overlay-general" style="z-index: 3000;">
+    <div class="lobbyCardModal" style="max-width: 420px; padding: 25px;">
+      <button id="btnCloseDailyLogin" class="modal-close-btn">✕</button>
+      <h2 class="modal-title" style="margin-bottom: 5px;">📅 LOGIN DIÁRIO</h2>
+      <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
+        Entre todos os dias para não perder a sequência!
+      </p>
+
+      <div class="daily-grid" id="dailyLoginGrid">
+        <!-- Preenchido pelo JS -->
+      </div>
+
+      <button id="btnClaimDaily" class="btn primary"
+        style="width: 100%; min-height: 45px; border-radius: 12px; background: linear-gradient(135deg, #22c55e, #16a34a); border: 1px solid #4ade80; color: #022c22; font-weight: 900; cursor: pointer; display: none;">
+        RESGATAR RECOMPENSA
+      </button>
+      <div id="dailyClaimedMsg"
+        style="display: none; text-align: center; color: #22c55e; font-weight: 900; padding: 12px;">
+        Recompensa de hoje resgatada! Volte amanhã.
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal das Missões -->
+  <div id="missionsModalOverlay" class="overlay-general" style="z-index: 3000;">
+    <div class="lobbyCardModal" style="max-width: 460px; padding: 25px;">
+      <button id="btnCloseMissions" class="modal-close-btn">✕</button>
+      <h2 class="modal-title" style="margin-bottom: 5px;">📜 MISSÕES DIÁRIAS</h2>
+      <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
+        Complete desafios para ganhar moedas extras! Reseta à meia-noite.
+      </p>
+
+      <div id="missionsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Injetado via JavaScript -->
+      </div>
+    </div>
+  </div>
+
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mini">
@@ -1035,10 +1284,16 @@
       </div>
 
       <nav class="nav">
-        <button id="menuBtnGarage"><span class="icon">🛍️</span>Loja / Garagem</button>
+        <button id="menuBtnGarage"><span class="icon">🛍️</span>Garagem</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
-        <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da Atualização</button>
+        <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
+          Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
+        <button id="menuBtnRoulette"><span class="icon">🎡</span>Roleta Diária</button>
+        <!-- Botão para o Menu Lateral -->
+        <button id="menuBtnDailyLogin"><span class="icon">🎁</span>Recompensa Diária</button>
+        <!-- Botão para o Menu Lateral -->
+        <button id="menuBtnMissions"><span class="icon">📜</span>Missões Diárias</button>
       </nav>
 
       <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
@@ -1596,7 +1851,7 @@
     updateDailyFreeKarts();
     // Adicione esta linha temporariamente para o teste:
     console.log("Karts Sorteados Hoje:", dailyFreeKarts);
-        function sortKartsByAvailability() {
+    function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
@@ -1641,7 +1896,7 @@
       selectedIndex = KART_DATABASE.findIndex(k => k.id === currentSelectedId);
       if (selectedIndex === -1) selectedIndex = 0;
     }
-    
+
     sortKartsByAvailability();
 
     function checkKartLockStatus(kartId) {
@@ -2130,6 +2385,345 @@
       } catch (err) { }
     }
 
+    // --- SISTEMA DE ROLETA DIÁRIA ---
+    const prizes = [
+      { label: '50 Moedas', type: 'coins', amount: 50 },
+      { label: '100 Moedas', type: 'coins', amount: 100 },
+      { label: '200 Moedas', type: 'coins', amount: 200 },
+      { label: '10 Moedas', type: 'coins', amount: 10 },
+      { label: '300 Moedas', type: 'coins', amount: 300 },
+      { label: '500 Moedas', type: 'coins', amount: 500 }
+    ];
+
+    let currentRotation = 0;
+    let isSpinning = false;
+
+    const btnOpenRoulette = document.getElementById('menuBtnRoulette');
+    const btnCloseRoulette = document.getElementById('btnCloseRoulette');
+    const modalRoulette = document.getElementById('rouletteModalOverlay');
+    const wheel = document.getElementById('rouletteWheel');
+    const btnSpin = document.getElementById('btnSpinRoulette');
+    const statusText = document.getElementById('rouletteStatus');
+
+    function getUTCDateString() {
+      const now = new Date();
+      return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
+    }
+
+    btnOpenRoulette.onclick = () => {
+      modalRoulette.style.display = 'flex';
+      checkDailySpinStatus();
+    };
+
+    btnCloseRoulette.onclick = () => {
+      if (!isSpinning) modalRoulette.style.display = 'none';
+    };
+
+    function checkDailySpinStatus() {
+      const todayUTC = getUTCDateString();
+      const lastSpin = currentUserProfile ? currentUserProfile.last_spin_date : localStorage.getItem('pkart_last_spin');
+
+      if (lastSpin === todayUTC) {
+        btnSpin.disabled = true;
+        btnSpin.style.opacity = '0.5';
+        btnSpin.style.cursor = 'not-allowed';
+        btnSpin.innerText = 'VOLTE AMANHÃ';
+        statusText.innerText = 'Você já girou a roleta hoje!';
+      } else {
+        btnSpin.disabled = false;
+        btnSpin.style.opacity = '1';
+        btnSpin.style.cursor = 'pointer';
+        btnSpin.innerText = 'GIRAR AGORA';
+        statusText.innerText = 'Tente a sorte e ganhe prêmios todos os dias!';
+      }
+    }
+
+    btnSpin.onclick = async () => {
+      if (isSpinning) return;
+
+      if (!currentUserProfile) {
+        alert("Você precisa estar logado para girar a roleta!");
+        return;
+      }
+
+      isSpinning = true;
+      btnSpin.disabled = true;
+      btnSpin.innerText = 'GIRANDO...';
+      statusText.innerText = 'Boa sorte!';
+
+      // Sorteia o prêmio
+      const prizeIndex = Math.floor(Math.random() * prizes.length);
+      const sliceAngle = 360 / prizes.length;
+
+      // Calcula a rotação para cair exatamente no meio da fatia correta (com voltas extras)
+      const extraSpins = 5 * 360;
+      const prizeAngle = extraSpins + (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2);
+      currentRotation += prizeAngle;
+
+      wheel.style.transform = `rotate(${currentRotation}deg)`;
+
+      // Aguarda a animação do CSS (4 segundos)
+      setTimeout(async () => {
+        const wonPrize = prizes[prizeIndex];
+        statusText.innerText = `Parabéns! Você ganhou ${wonPrize.label}!`;
+        statusText.style.color = '#22c55e';
+
+        // Atualiza saldo e data no Supabase
+        const todayUTC = getUTCDateString();
+        const newCoins = (currentUserProfile.coins || 0) + wonPrize.amount;
+
+        currentUserProfile.coins = newCoins;
+        currentUserProfile.last_spin_date = todayUTC;
+        localStorage.setItem('pkart_last_spin', todayUTC);
+
+        document.getElementById('playerCoinsText').innerText = newCoins; // Atualiza UI
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({
+            coins: newCoins,
+            last_spin_date: todayUTC
+          }).eq('id', currentUserProfile.id);
+        }
+
+        isSpinning = false;
+        btnSpin.innerText = 'VOLTE AMANHÃ';
+      }, 4000);
+    };
+
+    // --- SISTEMA DE LOGIN DIÁRIO ---
+    const DAILY_REWARDS = [50, 100, 150, 200, 250, 350, 1000]; // Moedas do dia 1 ao 7
+
+    const btnOpenDaily = document.getElementById('menuBtnDailyLogin');
+    const btnCloseDaily = document.getElementById('btnCloseDailyLogin');
+    const modalDaily = document.getElementById('dailyLoginModalOverlay');
+    const dailyGrid = document.getElementById('dailyLoginGrid');
+    const btnClaimDaily = document.getElementById('btnClaimDaily');
+    const dailyClaimedMsg = document.getElementById('dailyClaimedMsg');
+
+    // Funções utilitárias para formatar datas UTC com precisão
+    function getUTCDailyString(dateOffset = 0) {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + dateOffset);
+      return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+    }
+
+    btnOpenDaily.onclick = () => {
+      modalDaily.style.display = 'flex';
+      renderDailyCalendar();
+    };
+
+    btnCloseDaily.onclick = () => {
+      modalDaily.style.display = 'none';
+    };
+
+    function renderDailyCalendar() {
+      if (!currentUserProfile) return;
+
+      const todayStr = getUTCDailyString(0);
+      const yesterdayStr = getUTCDailyString(-1);
+
+      let streak = currentUserProfile.login_streak || 0;
+      let lastRewardDate = currentUserProfile.last_reward_date || null;
+
+      let canClaimToday = false;
+
+      // Lógica da Sequência (Streak)
+      if (lastRewardDate === todayStr) {
+        // Já resgatou hoje. Mantém o streak visual para o jogador ver onde está.
+        canClaimToday = false;
+      } else if (lastRewardDate === yesterdayStr) {
+        // Logou ontem. Sequência continua! Se completou 7, reseta para 1.
+        if (streak >= 7) streak = 0;
+        canClaimToday = true;
+      } else {
+        // Quebrou a sequência ou é a primeira vez. Volta pro dia 1.
+        streak = 0;
+        canClaimToday = true;
+      }
+
+      const currentDayTarget = canClaimToday ? streak + 1 : streak;
+
+      // Desenha os 7 cartões
+      dailyGrid.innerHTML = '';
+      for (let i = 1; i <= 7; i++) {
+        const isClaimed = i <= streak && lastRewardDate === todayStr;
+        const isPastClaimed = i <= streak && lastRewardDate !== todayStr;
+        const isActive = i === currentDayTarget && canClaimToday;
+
+        let stateClass = '';
+        if (isClaimed || isPastClaimed) stateClass = 'claimed';
+        if (isActive) stateClass = 'active';
+
+        const extraClass = i === 7 ? 'day-7' : '';
+
+        dailyGrid.innerHTML += `
+      <div class="daily-card ${stateClass} ${extraClass}">
+        <div class="daily-day-text">DIA ${i}</div>
+        <div class="daily-prize-text">🪙 ${DAILY_REWARDS[i - 1]}</div>
+      </div>
+    `;
+      }
+
+      if (canClaimToday) {
+        btnClaimDaily.style.display = 'block';
+        dailyClaimedMsg.style.display = 'none';
+
+        // Configura o evento de clique do resgate
+        btnClaimDaily.onclick = async () => {
+          btnClaimDaily.disabled = true;
+          btnClaimDaily.innerText = 'PROCESSANDO...';
+
+          const newStreak = streak + 1;
+          const prizeCoins = DAILY_REWARDS[newStreak - 1];
+          const newBalance = (currentUserProfile.coins || 0) + prizeCoins;
+
+          currentUserProfile.coins = newBalance;
+          currentUserProfile.login_streak = newStreak;
+          currentUserProfile.last_reward_date = todayStr;
+
+          // Atualiza Topbar
+          document.getElementById('playerCoinsText').innerText = newBalance;
+
+          // Salva no Supabase
+          if (typeof supabaseClient !== 'undefined') {
+            await supabaseClient.from('profiles').update({
+              coins: newBalance,
+              login_streak: newStreak,
+              last_reward_date: todayStr
+            }).eq('id', currentUserProfile.id);
+          }
+
+          // Recarrega o visual
+          btnClaimDaily.style.display = 'none';
+          btnClaimDaily.disabled = false;
+          btnClaimDaily.innerText = 'RESGATAR RECOMPENSA';
+          renderDailyCalendar();
+        };
+      } else {
+        btnClaimDaily.style.display = 'none';
+        dailyClaimedMsg.style.display = 'block';
+      }
+    }
+
+    // --- SISTEMA DE MISSÕES DIÁRIAS ---
+    const MISSION_CATALOG = [
+      { id: 'm_solo', title: 'Treinador Dedicado', desc: 'Jogue 3 corridas no Modo Solo', goal: 3, reward: 100 },
+      { id: 'm_win', title: 'No Pódio', desc: 'Chegue em 1º lugar em qualquer corrida', goal: 1, reward: 150 },
+      { id: 'm_multi', title: 'Desafiante Global', desc: 'Jogue 2 corridas no Multiplayer', goal: 2, reward: 200 },
+      { id: 'm_tower', title: 'Escalador', desc: 'Vença 2 andares no Modo Torre', goal: 2, reward: 250 },
+      { id: 'm_play', title: 'Piloto Incansável', desc: 'Conclua 5 corridas no total', goal: 5, reward: 300 }
+    ];
+
+    const btnOpenMissions = document.getElementById('menuBtnMissions');
+    const btnCloseMissions = document.getElementById('btnCloseMissions');
+    const modalMissions = document.getElementById('missionsModalOverlay');
+    const missionsListContainer = document.getElementById('missionsListContainer');
+
+    btnOpenMissions.onclick = () => {
+      modalMissions.style.display = 'flex';
+      initDailyMissions();
+    };
+
+    btnCloseMissions.onclick = () => {
+      modalMissions.style.display = 'none';
+    };
+
+    async function initDailyMissions() {
+      if (!currentUserProfile) return;
+
+      const todayUTC = getUTCDailyString(); // Reaproveitando a função do Login Diário
+      let userMissions = currentUserProfile.daily_missions;
+
+      // Verifica se o JSON existe e se a data dele é a de hoje
+      if (!userMissions || userMissions.date !== todayUTC) {
+        userMissions = generateNewDailyMissions(todayUTC);
+        currentUserProfile.daily_missions = userMissions;
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({ daily_missions: userMissions }).eq('id', currentUserProfile.id);
+        }
+      }
+
+      renderMissions(userMissions);
+    }
+
+    function generateNewDailyMissions(dateStr) {
+      // Sorteia 3 missões únicas do catálogo
+      const shuffled = [...MISSION_CATALOG].sort(() => 0.5 - Math.random());
+      const selected = shuffled.slice(0, 3);
+
+      const missionData = {
+        date: dateStr,
+        list: selected.map(m => ({
+          id: m.id,
+          progress: 0,
+          claimed: false
+        }))
+      };
+      return missionData;
+    }
+
+    function renderMissions(userMissions) {
+      missionsListContainer.innerHTML = '';
+
+      userMissions.list.forEach((userM, index) => {
+        const catalogData = MISSION_CATALOG.find(c => c.id === userM.id);
+        if (!catalogData) return;
+
+        const isCompleted = userM.progress >= catalogData.goal;
+        const isClaimed = userM.claimed;
+        const progressPercent = Math.min((userM.progress / catalogData.goal) * 100, 100);
+
+        let btnHtml = '';
+        if (isClaimed) {
+          btnHtml = `<button class="btn-claim-mission" disabled>RESGATADO</button>`;
+        } else if (isCompleted) {
+          btnHtml = `<button class="btn-claim-mission" onclick="claimMission(${index}, ${catalogData.reward})">RESGATAR</button>`;
+        } else {
+          btnHtml = `<button class="btn-claim-mission" disabled>${userM.progress} / ${catalogData.goal}</button>`;
+        }
+
+        missionsListContainer.innerHTML += `
+      <div class="mission-card ${isCompleted ? 'completed' : ''}">
+        <div class="mission-info">
+          <h4>${catalogData.title}</h4>
+          <p>${catalogData.desc}</p>
+          <div class="mission-progress-bg">
+            <div class="mission-progress-fill" style="width: ${progressPercent}%;"></div>
+          </div>
+        </div>
+        <div class="mission-reward">
+          <span>🪙 ${catalogData.reward}</span>
+          ${btnHtml}
+        </div>
+      </div>
+    `;
+      });
+    }
+
+    window.claimMission = async (missionIndex, rewardAmount) => {
+      if (!currentUserProfile || !currentUserProfile.daily_missions) return;
+
+      // Marca como resgatado
+      currentUserProfile.daily_missions.list[missionIndex].claimed = true;
+
+      // Adiciona as moedas
+      const newBalance = (currentUserProfile.coins || 0) + rewardAmount;
+      currentUserProfile.coins = newBalance;
+      document.getElementById('playerCoinsText').innerText = newBalance;
+
+      // Salva no banco
+      if (typeof supabaseClient !== 'undefined') {
+        await supabaseClient.from('profiles').update({
+          coins: newBalance,
+          daily_missions: currentUserProfile.daily_missions
+        }).eq('id', currentUserProfile.id);
+      }
+
+      // Recarrega visual
+      renderMissions(currentUserProfile.daily_missions);
+    };
+
     window.addEventListener('DOMContentLoaded', async () => {
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');
@@ -2437,6 +3031,44 @@
         }
         sessionStorage.removeItem('pending_promotion');
       }
+
+      // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA
+      // Fica monitorando até o auth.js terminar de baixar o perfil do jogador
+      const expirationInterval = setInterval(() => {
+        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+          clearInterval(expirationInterval); // Achou o perfil, para o loop
+
+          let userKarts = ['jolteon'];
+          if (currentUserProfile.unlocked_karts) {
+            try {
+              userKarts = Array.isArray(currentUserProfile.unlocked_karts)
+                ? currentUserProfile.unlocked_karts
+                : JSON.parse(currentUserProfile.unlocked_karts);
+            } catch (e) { }
+          }
+
+          const currentDBKart = currentUserProfile.selected_kart;
+
+          // Se o kart que veio do banco não é o Jolteon, não é comprado e NÃO está na rotação de hoje: EXPIRADO!
+          if (currentDBKart && currentDBKart !== 'jolteon' && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
+            console.log("Kart expirado detectado! Retornando para o Jolteon...");
+
+            // Reseta sessão e perfil
+            sessionStorage.setItem('pkart_selected_kart', 'jolteon');
+            currentUserProfile.selected_kart = 'jolteon';
+
+            // Limpa o banco de dados
+            if (typeof supabaseClient !== 'undefined') {
+              supabaseClient.from('profiles').update({ selected_kart: 'jolteon' }).eq('id', currentUserProfile.id);
+            }
+
+            // Atualiza o modelo 3D na tela na mesma hora
+            selectedIndex = KART_DATABASE.findIndex(k => k.id === 'jolteon');
+            if (selectedIndex === -1) selectedIndex = 0;
+            if (typeof updatePreview === 'function') updatePreview();
+          }
+        }
+      }, 500);
     });
   </script>
 

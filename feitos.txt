@@ -4,7 +4,12 @@ Versão 1.8
 - Adicionado a opção para selecionar a pista na criação da tela multiplayer.;
 - Corrigido o sorteio dos karts diários.;
 - Adicionado 6 novos Karts (Victreebel, Rhydon, Persian, Starmie, Onix e Alakazam).;
-- 
+- Adicionado Roleta.;
+- Adicionado missões diarias.;
+- Adicionado Login diario.;
+- Ao finalizar uma corrida na torre e ganha-lá, dar a opção para ir para o proximo andar ou voltar para o lobby.;
+- Abandonar uma corrida na torre é considerado como derrota e reseta o andar.;
+- Ordenar karts por preço ou ativos na garagem.;
 
 
 

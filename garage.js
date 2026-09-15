@@ -263,7 +263,7 @@ function renderKartGrid() {
       try {
         userKarts = JSON.parse(currentUserProfile.unlocked_karts);
         if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
-      } catch(e) {
+      } catch (e) {
         userKarts = [currentUserProfile.unlocked_karts];
       }
     }
@@ -273,14 +273,36 @@ function renderKartGrid() {
   let unlockedList = Array.from(new Set([...userKarts, ...dailyFreeKarts]));
 
   // 🛡️ 3. TRAVA DE EXPIRAÇÃO AUTOMÁTICA
-  // Se o kart equipado não estiver nem na lista de comprados e nem nos gratuitos de hoje, ele expirou!
   const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
   if (currentEquipped && !unlockedList.includes(currentEquipped)) {
     sessionStorage.setItem('pkart_selected_kart', 'jolteon');
     selectedKartId = 'jolteon';
   }
 
-  KART_CATALOG.forEach((kart) => {
+  // 🔄 4. SISTEMA DE ORDENAÇÃO (FILTRO)
+  let catalogToRender = [...KART_CATALOG]; // Cria uma cópia para não estragar a lista original
+  const sortSelect = document.getElementById('garageSortSelect');
+  const sortMode = sortSelect ? sortSelect.value : 'default';
+
+  if (sortMode === 'price_asc') {
+    catalogToRender.sort((a, b) => a.price - b.price);
+  } else if (sortMode === 'price_desc') {
+    catalogToRender.sort((a, b) => b.price - a.price);
+  } else if (sortMode === 'owned') {
+    catalogToRender.sort((a, b) => {
+      const aIsActive = unlockedList.includes(a.id) ? 1 : 0;
+      const bIsActive = unlockedList.includes(b.id) ? 1 : 0;
+
+      // Se ambos tiverem o mesmo status (ambos bloqueados ou ambos ativos), desempata pelo preço
+      if (bIsActive === aIsActive) {
+        return a.price - b.price;
+      }
+      return bIsActive - aIsActive;
+    });
+  }
+
+  // 5. Renderiza os cartões na ordem escolhida
+  catalogToRender.forEach((kart) => {
     const isUnlocked = unlockedList.includes(kart.id);
     const pokemonId = KART_POKEMON_IDS[kart.id];
     const thumbSrc = pokemonId ? `${POKEAPI_SPRITE_BASE}${pokemonId}.png` : 'img/jolteon.png';
@@ -327,9 +349,9 @@ function selectKart(kartId) {
   if (kartData) {
     const nameEl = document.getElementById('kartName');
 
-    // 🛡️ TRAVA DE SEGURANÇA
+    // 🛡️ TRAVA DE SEGURANÇA PARA LER O BANCO
     let userKarts = ['jolteon', 'charizard'];
-    if (currentUserProfile && currentUserProfile.unlocked_karts) {
+    if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
       if (Array.isArray(currentUserProfile.unlocked_karts)) {
         userKarts = currentUserProfile.unlocked_karts;
       } else {
@@ -360,10 +382,65 @@ function selectKart(kartId) {
     const conceptImg = document.getElementById('kartConceptImg');
     if (conceptImg) conceptImg.src = kartData.conceptImg;
 
-    updateActionButton(kartData, isFreeRotation);
+    // Chama o botão atualizado
+    if (typeof updateActionButton === 'function') {
+      updateActionButton(kartData, isFreeRotation);
+    }
   }
 
-  loadKartModel(kartId);
+  // Carrega o modelo 3D
+  if (typeof loadKartModel === 'function') {
+    loadKartModel(kartId);
+  }
+}
+
+async function equipKart(kartId) {
+  let userKarts = ['jolteon', 'charizard'];
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
+    if (Array.isArray(currentUserProfile.unlocked_karts)) {
+      userKarts = currentUserProfile.unlocked_karts;
+    } else {
+      try {
+        userKarts = JSON.parse(currentUserProfile.unlocked_karts);
+        if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
+      } catch (e) {
+        userKarts = [currentUserProfile.unlocked_karts];
+      }
+    }
+  }
+
+  const isFreeRotation = dailyFreeKarts.includes(kartId) && !userKarts.includes(kartId);
+  const isPermanentlyUnlocked = userKarts.includes(kartId);
+
+  if (!isPermanentlyUnlocked && !isFreeRotation) {
+    alert('Este kart está bloqueado!');
+    return;
+  }
+
+  // 1. Salva na sessão imediatamente para uso rápido
+  sessionStorage.setItem('pkart_selected_kart', kartId);
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    currentUserProfile.selected_kart = kartId;
+  }
+
+  // 🛡️ 2. CORREÇÃO: Salva no Supabase SEMPRE. 
+  // Isso impede que o auth.js do Lobby puxe um dado velho e resete seu kart.
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
+    const { error } = await supabaseClient
+      .from('profiles')
+      .update({
+        selected_kart: kartId,
+        updated_at: new Date()
+      })
+      .eq('id', currentUserProfile.id);
+
+    if (error) {
+      console.warn('Erro ao salvar kart selecionado no banco:', error.message);
+    }
+  }
+
+  selectKart(kartId);
+  renderKartGrid();
 }
 
 function updateActionButton(kartData, isFreeRotation) {
@@ -411,54 +488,6 @@ function updateActionButton(kartData, isFreeRotation) {
     btnAction.disabled = false;
     btnAction.onclick = () => buyKart(kartData.id, kartData.price);
   }
-}
-
-async function equipKart(kartId) {
-  let userKarts = ['jolteon', 'charizard'];
-  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
-    if (Array.isArray(currentUserProfile.unlocked_karts)) {
-      userKarts = currentUserProfile.unlocked_karts;
-    } else {
-      try {
-        userKarts = JSON.parse(currentUserProfile.unlocked_karts);
-        if (!Array.isArray(userKarts)) userKarts = [currentUserProfile.unlocked_karts];
-      } catch(e) {
-        userKarts = [currentUserProfile.unlocked_karts];
-      }
-    }
-  }
-
-  const isFreeRotation = dailyFreeKarts.includes(kartId) && !userKarts.includes(kartId);
-  const isPermanentlyUnlocked = userKarts.includes(kartId);
-
-  if (!isPermanentlyUnlocked && !isFreeRotation) {
-    alert('Este kart está bloqueado!');
-    return;
-  }
-
-  // Salva obrigatoriamente na sessão do navegador (Garante o uso imediato)
-  sessionStorage.setItem('pkart_selected_kart', kartId);
-  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-    currentUserProfile.selected_kart = kartId;
-  }
-
-  // Só atualiza o Supabase se for um kart permanente (Evita forçar um kart temporário no banco)
-  if (isPermanentlyUnlocked && typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ 
-        selected_kart: kartId,
-        updated_at: new Date()
-      })
-      .eq('id', currentUserProfile.id);
-
-    if (error) {
-      console.warn('Erro ao salvar kart selecionado no banco:', error.message);
-    }
-  }
-
-  selectKart(kartId);
-  renderKartGrid();
 }
 
 async function buyKart(kartId, price) {

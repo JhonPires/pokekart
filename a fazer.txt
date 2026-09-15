@@ -1,16 +1,12 @@
+- Passe de batalha
 - Botão da moderação está dando para ativar via console (inspecionar)
-- Roleta com premiações diarias (1 giro por dia) e para ganhar mais giros ter que assistir um anuncio.
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
-- Abandonar uma corrida na torre deve considerar derrota e resetar o andar(F5, voltar ao lobby, perda de rede).
-- Quando acabar uma corrida na torre e ganhar, dar a opção para ir para o proximo andar ou voltar para o lobby.
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
-- Poder ordenar por preço dos karts na loja
 - Efeitos sonoros (Aceleração, derrapagem, poderes)
 - novas armadilhas
 - criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
 - Uma tela para mostrar a classificação ranked
 - Criar uma tela de perfil para o jogador, mostrando recordes das corridas, classificao ranked, moedas, titulos
-- seria legal nas configurações poder selecionar quais músicas vc quer habilitar pra tocar, igual o FIFA
 - Animação do poderzinho de raio por que ele só eletrocuta quem tá perto mas não tem nenhum indicativo, seria bom até pra tentar usar o escudo
 - O raio não deveria soltar pra trás pra não ficar muito quebrado pro primeiro colocado
 - Dar um pulinho na hora que apertar espaço igual no Mario Kart
@@ -24,12 +20,3 @@
 
 proximos 3d:
 Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D
-
-Onix
-Starmie
-Raichu
-Victreebel
-Weezing OK
-Alakazam
-Arcanine OK
-Rhydon OK
