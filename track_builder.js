@@ -836,6 +836,12 @@ window.toggleCustomDropdown = (trackId) => {
 };
 
 window.selectTrackDifficulty = async (trackId, value, labelText) => {
+  // 🛡️ TRAVA DE SEGURANÇA: Verifica se é admin antes de executar
+  if (typeof currentUserProfile === 'undefined' || !currentUserProfile || !currentUserProfile.is_admin) {
+    alert('Acesso negado: Tentativa de fraude detectada.');
+    return;
+  }
+
   const label = document.getElementById(`label-diff-${trackId}`);
   if (label) label.innerText = labelText;
 
@@ -863,6 +869,12 @@ window.addEventListener('click', (e) => {
 });
 
 window.testTrackById = async (trackId) => {
+  // 🛡️ TRAVA DE SEGURANÇA
+  if (typeof currentUserProfile === 'undefined' || !currentUserProfile || !currentUserProfile.is_admin) {
+    alert('Acesso negado: Você não tem permissão para excluir pistas.');
+    return;
+  }
+
   try {
     // Busca a pista e a dificuldade real direto do Supabase
     const { data: trackRecord, error } = await supabaseClient
@@ -885,6 +897,12 @@ window.testTrackById = async (trackId) => {
 };
 
 window.moderateTrack = async (trackId, approve) => {
+  // 🛡️ TRAVA DE SEGURANÇA
+  if (typeof currentUserProfile === 'undefined' || !currentUserProfile || !currentUserProfile.is_admin) {
+    alert('Acesso negado: Você não tem permissão para moderar pistas.');
+    return;
+  }
+
   try {
     const { error } = await supabaseClient
       .from('custom_tracks')
@@ -902,6 +920,12 @@ window.moderateTrack = async (trackId, approve) => {
 };
 
 window.deleteTrack = async (trackId) => {
+  // 🛡️ TRAVA DE SEGURANÇA
+  if (typeof currentUserProfile === 'undefined' || !currentUserProfile || !currentUserProfile.is_admin) {
+    alert('Acesso negado: Você não tem permissão para excluir pistas.');
+    return;
+  }
+
   if (!confirm('Tem certeza que deseja excluir esta pista permanentemente?')) return;
   try {
     const { error } = await supabaseClient

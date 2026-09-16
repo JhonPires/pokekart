@@ -1,5 +1,17 @@
 # Changelog - PokéKart
 
+## [1.8] - 15/09/2026
+- Corrigidos os efeitos das habilidades
+- Adicionada a opção de selecionar a pista durante a criação da sala multiplayer
+- Corrigido o sorteio dos Karts Diários
+- Adicionados 15 novos Karts
+- Adicionada a Roleta
+- Adicionadas as Missões Diárias
+- Adicionado o Login Diário
+- Ao finalizar e vencer uma corrida na Torre, será exibida a opção de avançar para o próximo andar ou retornar ao Lobby
+- Abandonar uma corrida na Torre será considerado uma derrota e fará com que o andar seja reiniciado
+- Adicionada a opção de ordenar os Karts por preço ou por Karts ativos na garagem.
+
 ## [1.7] - 13/09/2026
 - Opção para escolher a pista no multiplayer.
 - Corrigido as corridas no modo Torre.

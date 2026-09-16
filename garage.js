@@ -14,9 +14,10 @@ const KART_POKEMON_IDS = {
   'tatsugiri': 978, 'scyther': 123,
   'ninetales': 38, 'arcanine': 59, 'lucario': 448, 'dialga': 483, 'zapdos': 145,
   'luxray': 405, 'staraptor': 398, 'dragonite': 149, 'tangela': 114, 'sneasel': 215,
-  // Novos 3D Adicionados
   'darkrai': 491, 'moltres': 146, 'weezing': 110, 'swellow': 277, 'articuno': 144,
   'alakazam': 65, 'onix': 95, 'starmie': 121, 'victreebel': 71, 'rhydon': 112, 'persian': 53,
+  'blastoise': 9, 'venusaur': 3, 'ceruledge': 937, 'infernape': 392,
+  'empoleon': 395, 'torterra': 389, 'hooh': 250, 'ironjugulis': 994, 'lunala': 792,
 };
 
 // Catálogo Completo (32 Karts)
@@ -64,6 +65,15 @@ const KART_CATALOG = [
   { id: 'victreebel', name: 'Victreebel Kart', price: 1900, conceptImg: 'img/victreebel.png', stats: { speed: 78, accel: 79, handling: 80 } },
   { id: 'rhydon', name: 'Rhydon Kart', price: 2600, conceptImg: 'img/rhydon.png', stats: { speed: 88, accel: 72, handling: 74 } },
   { id: 'persian', name: 'Persian Kart', price: 1600, conceptImg: 'img/persian.png', stats: { speed: 84, accel: 90, handling: 87 } },
+  { id: 'blastoise', name: 'Blastoise Kart', price: 3200, conceptImg: 'img/blastoise.png', stats: { speed: 88, accel: 80, handling: 82 } },
+  { id: 'venusaur', name: 'Venusaur Kart', price: 3200, conceptImg: 'img/venusaur.png', stats: { speed: 86, accel: 82, handling: 84 } },
+  { id: 'ceruledge', name: 'Ceruledge Kart', price: 4600, conceptImg: 'img/ceruledge.png', stats: { speed: 94, accel: 88, handling: 85 } },
+  { id: 'infernape', name: 'Infernape Kart', price: 3800, conceptImg: 'img/infernape.png', stats: { speed: 91, accel: 90, handling: 86 } },
+  { id: 'empoleon', name: 'Empoleon Kart', price: 3500, conceptImg: 'img/empoleon.png', stats: { speed: 89, accel: 83, handling: 83 } },
+  { id: 'torterra', name: 'Torterra Kart', price: 3500, conceptImg: 'img/torterra.png', stats: { speed: 87, accel: 78, handling: 80 } },
+  { id: 'hooh', name: 'Ho-Oh Kart', price: 6000, conceptImg: 'img/hooh.png', stats: { speed: 99, accel: 92, handling: 80 } },
+  { id: 'ironjugulis', name: 'Iron Jugulis Kart', price: 5200, conceptImg: 'img/ironjugulis.png', stats: { speed: 96, accel: 89, handling: 84 } },
+  { id: 'lunala', name: 'Lunala Kart', price: 6000, conceptImg: 'img/lunala.png', stats: { speed: 98, accel: 90, handling: 86 } },
 ];
 
 let dailyFreeKarts = [];
