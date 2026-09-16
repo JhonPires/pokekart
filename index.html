@@ -214,9 +214,8 @@
       border-radius: 50%;
       display: grid;
       place-items: center;
-      background: var(--yellow);
+      background: transparent;
       color: #16385c;
-      border: 3px solid #fff;
       font-size: 20px;
       transition: all 0.3s ease;
     }
@@ -1030,6 +1029,157 @@
       cursor: not-allowed;
     }
 
+    /* --- TELA DE PERFIL DO JOGADOR --- */
+    .profile-header-card {
+      background: linear-gradient(135deg, rgba(15, 30, 50, 0.9), rgba(8, 15, 28, 0.95));
+      border: 1px solid #1e3a57;
+      border-radius: 16px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .profile-avatar-large {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: transparent;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      overflow: hidden;
+      /* Garante que a imagem respeite o círculo */
+      position: relative;
+    }
+
+    .profile-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .profile-stat-box {
+      background: rgba(12, 28, 48, .72);
+      border: 1px solid #1e3a57;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .profile-stat-box h4 {
+      color: #91a7be;
+      font-size: 11px;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .profile-stat-box span {
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .profile-stat-box .highlight {
+      color: #38bdf8;
+    }
+
+    /* Sistema de Insígnias */
+    .region-container {
+      background: rgba(5, 12, 22, 0.6);
+      border: 1px solid #162b42;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+    }
+
+    .region-title {
+      font-size: 12px;
+      color: #38bdf8;
+      text-transform: uppercase;
+      font-weight: 900;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #1e3a57;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .badges-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      justify-items: center;
+    }
+
+    .badge-slot {
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px dashed #1e3a57;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      opacity: 0.4;
+      filter: grayscale(1);
+      transition: 0.3s;
+    }
+
+    .badge-slot.unlocked {
+      border: 2px solid #facc15;
+      background: rgba(250, 204, 21, 0.1);
+      opacity: 1;
+      filter: grayscale(0);
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+    }
+
+    /* Região Bloqueada (Futuro) */
+    .region-locked {
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .region-locked .region-title {
+      color: #64748b;
+    }
+
+    /* Estilos para o Grid de Avatares */
+    .avatar-option {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      background: rgba(12, 28, 48, 0.7);
+      border: 2px solid #1e3a57;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .avatar-option:hover {
+      border-color: #facc15;
+      background: rgba(250, 204, 21, 0.2);
+      transform: scale(1.1);
+      box-shadow: 0 0 15px rgba(250, 204, 21, 0.4);
+    }
+
+    .avatar-option img {
+      width: 85%;
+      height: 85%;
+      object-fit: contain;
+      image-rendering: pixelated;
+      /* Mantém as sprites clássicas nítidas */
+    }
+
     @media(max-width: 1050px) {
       .sidebar {
         width: 220px;
@@ -1277,6 +1427,82 @@
     </div>
   </div>
 
+  <!-- Modal do Perfil do Jogador -->
+  <div id="profileModalOverlay" class="overlay-general" style="z-index: 3000; display: none;">
+    <div class="lobbyCardModal" style="max-width: 500px; padding: 25px; max-height: 90vh; overflow-y: auto;">
+      <button onclick="document.getElementById('profileModalOverlay').style.display='none'"
+        class="modal-close-btn">✕</button>
+
+      <div class="profile-header-card">
+        <!-- Avatar clicável que abre a seleção de avatares -->
+        <div class="profile-avatar-large" id="mainProfileAvatar" onclick="openAvatarModal()"
+          title="Clique para trocar de avatar" style="cursor: pointer; transition: transform 0.2s;"
+          onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🏁</div>
+        <div>
+          <h2 id="profileNameDisplay" style="color: #fff; margin: 0; font-size: 22px;">Buscando...</h2>
+          <div style="color: #22c55e; font-size: 13px; font-weight: bold; margin-top: 4px;" id="profileRankDisplay">🏆
+            Liga Bronze</div>
+        </div>
+      </div>
+
+      <div class="profile-stats-grid">
+        <div class="profile-stat-box">
+          <h4>Troféus (Ranked)</h4>
+          <span id="profileTrophiesDisplay" class="highlight">0</span>
+        </div>
+        <div class="profile-stat-box">
+          <h4>Moedas Atuais</h4>
+          <span id="profileCoinsDisplay" style="color: #facc15;">0</span>
+        </div>
+      </div>
+
+      <!-- INSÍGNIAS DAS TORRES (CARROSSEL DE REGIÕES) -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin: 10px 0 5px 0;">
+        <h3 style="color: #fff; font-size: 15px; margin: 0;">🏅 Mural de Insígnias</h3>
+        <div style="display: flex; gap: 6px;">
+          <button onclick="changeRegion(-1)"
+            style="background: rgba(12, 28, 48, .9); border: 1px solid #1e3a57; color: #38bdf8; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s;"
+            onmouseover="this.style.background='#1e3a57'"
+            onmouseout="this.style.background='rgba(12, 28, 48, .9)'">◀</button>
+          <button onclick="changeRegion(1)"
+            style="background: rgba(12, 28, 48, .9); border: 1px solid #1e3a57; color: #38bdf8; width: 28px; height: 28px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: 0.2s;"
+            onmouseover="this.style.background='#1e3a57'"
+            onmouseout="this.style.background='rgba(12, 28, 48, .9)'">▶</button>
+        </div>
+      </div>
+
+      <!-- Container Dinâmico das Regiões -->
+      <div id="regionCarouselContainer">
+        <!-- Injetado via JS -->
+      </div>
+
+      <!-- RECORDES DAS PISTAS
+      <h3 style="color: #fff; font-size: 15px; margin: 5px 0 5px 0;">⏱️ Recordes de Tempo</h3>
+      <div id="profileRecordsContainer"
+        style="background: rgba(12, 28, 48, .72); border: 1px solid #1e3a57; border-radius: 12px; padding: 10px; max-height: 150px; overflow-y: auto;">
+        <div style="text-align: center; color: #94a3b8; font-size: 12px; padding: 10px;">Carregando recordes...</div>
+      </div> -->
+
+    </div>
+  </div>
+
+  <!-- Modal de Seleção de Avatar -->
+  <div id="avatarModalOverlay" class="overlay-general" style="z-index: 3500; display: none;">
+    <div class="lobbyCardModal" style="max-width: 420px; padding: 25px;">
+      <button onclick="document.getElementById('avatarModalOverlay').style.display='none'"
+        class="modal-close-btn">✕</button>
+      <h2 class="modal-title" style="margin-bottom: 5px;">👤 SEU AVATAR</h2>
+      <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
+        Escolha seu personagem favorito para exibir no perfil e nas corridas.
+      </p>
+
+      <div id="avatarGrid"
+        style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-height: 350px; overflow-y: auto; padding-right: 5px;">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+  </div>
+
   <div class="shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand-mini">
@@ -1316,7 +1542,9 @@
 
       <div class="account">
         <div class="profile">
-          <div class="profile-top">
+          <div class="profile-top" style="cursor: pointer; transition: 0.2s;"
+            onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
+            onclick="openProfileModal()">
             <div class="avatar" id="sideLeagueIcon" style="border-color: #ff4b55; background: rgba(0,0,0,0.6);">
               <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
                 alt="Pokébola"
@@ -1324,10 +1552,10 @@
             </div>
             <div>
               <strong id="sideMenuNick">Piloto</strong>
-              <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">NOVATO (POKÉBOLA)</small>
+              <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">POKÉBOLA</small>
             </div>
           </div>
-          <div class="badges-container" id="sideMenuBadges"></div>
+          <!-- <div class="badges-container" id="sideMenuBadges"></div> -->
         </div>
         <button id="btnLogout" class="logout"
           style="border: 1px solid #1e3a57; background: rgba(12, 28, 48, .72); color: #edf5ff; border-radius: 13px; font-weight: 750; cursor: pointer;">↪
@@ -1339,9 +1567,9 @@
       <div class="topbar">
         <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
         <div class="stat"><span>🏆</span><b id="playerTrophiesText">0</b></div>
-        <div class="stat rank">
-          <div class="rank-avatar" id="topbarLeagueIcon">🏁</div>
-          <strong id="playerHeaderNick">Piloto</strong>
+        <div class="stat rank" style="display: none;">
+          <div class="rank-avatar" id="topbarLeagueIcon" style="display: none;">🏁</div>
+          <strong id="playerHeaderNick" style="display: none;">Piloto</strong>
         </div>
         <div class="stat" style="padding: 0 14px; gap: 10px; display: flex; align-items: center;">
           <div id="previewContainer"
@@ -1602,10 +1830,10 @@
     ];
 
     const LEAGUES = [
-      { id: 'pokeball', name: 'POKÉBOLA', min: 0, max: 499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png', color: '#ff4b55', title: 'NOVATO' },
-      { id: 'greatball', name: 'SUPER BOLA', min: 500, max: 1499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png', color: '#21c7ff', title: 'EXPERIENTE' },
-      { id: 'ultraball', name: 'ULTRA BOLA', min: 1500, max: 2999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png', color: '#ffd23f', title: 'ELITE' },
-      { id: 'masterball', name: 'MASTER BOLA', min: 3000, max: 99999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', color: '#a855f7', title: 'MESTRE KART' }
+      { id: 'pokeball', name: 'POKEBALL', min: 0, max: 499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png', color: '#ff4b55', title: 'NOVATO' },
+      { id: 'greatball', name: 'GREATBALL', min: 500, max: 1499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/great-ball.png', color: '#21c7ff', title: 'EXPERIENTE' },
+      { id: 'ultraball', name: 'ULTRABALL', min: 1500, max: 2999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/ultra-ball.png', color: '#ffd23f', title: 'ELITE' },
+      { id: 'masterball', name: 'MASTERBALL', min: 3000, max: 99999, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png', color: '#a855f7', title: 'MESTRE KART' }
     ];
 
     function getLeagueByTrophies(trophies) {
@@ -1617,11 +1845,29 @@
       const topbarIcon = document.getElementById('topbarLeagueIcon');
       const sideIcon = document.getElementById('sideLeagueIcon');
       const sideText = document.getElementById('sideMenuLeagueText');
-      const imgHtml = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px ${league.color});">`;
 
-      if (topbarIcon) { topbarIcon.innerHTML = imgHtml; topbarIcon.style.borderColor = league.color; topbarIcon.style.background = `rgba(0,0,0,0.6)`; }
-      if (sideIcon) { sideIcon.innerHTML = imgHtml; sideIcon.style.borderColor = league.color; sideIcon.style.background = `rgba(0,0,0,0.6)`; }
-      if (sideText) { sideText.innerText = `${league.title} (${league.name})`; sideText.style.color = league.color; }
+      // Aumentei a imagem para 100% já que tiramos as bordas
+      let displayHtml = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 4px ${league.color});">`;
+
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.avatar) {
+        displayHtml = `<img src="${currentUserProfile.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; image-rendering: pixelated;">`;
+      }
+
+      if (topbarIcon) {
+        topbarIcon.innerHTML = displayHtml;
+        topbarIcon.style.border = 'none';
+        topbarIcon.style.background = 'transparent';
+      }
+      if (sideIcon) {
+        sideIcon.innerHTML = displayHtml;
+        sideIcon.style.border = 'none';
+        sideIcon.style.background = 'transparent';
+      }
+      if (sideText) {
+        // Agora mostra APENAS o nome da liga (ex: POKEBALL), removendo o título
+        sideText.innerText = league.name;
+        sideText.style.color = league.color;
+      }
     }
 
     function showPromotionModal(trophies) {
@@ -2723,6 +2969,190 @@
       // Recarrega visual
       renderMissions(currentUserProfile.daily_missions);
     };
+
+    // --- SISTEMA DE PERFIL E INSÍGNIAS ---
+
+    // Catálogo completo de regiões e insígnias
+    const REGIONS_CATALOG = [
+      {
+        id: 'kanto',
+        name: 'Região de Kanto',
+        active: true,
+        gyms: [
+          { id: 'pewter', name: 'Pewter', leader: 'Brock', badge: '🪨' },
+          { id: 'cerulean', name: 'Cerulean', leader: 'Misty', badge: '💧' },
+          { id: 'vermilion', name: 'Vermilion', leader: 'Lt. Surge', badge: '⚡' },
+          { id: 'celadon', name: 'Celadon', leader: 'Erika', badge: '🌿' },
+          { id: 'fuchsia', name: 'Fuchsia', leader: 'Koga', badge: '☠️' },
+          { id: 'saffron', name: 'Saffron', leader: 'Sabrina', badge: '🔮' },
+          { id: 'cinnabar', name: 'Cinnabar', leader: 'Blaine', badge: '🔥' },
+          { id: 'viridian', name: 'Viridian', leader: 'Giovanni', badge: '🌍' }
+        ]
+      },
+      {
+        id: 'johto',
+        name: 'Região de Johto',
+        active: false,
+        gyms: [
+          { badge: '🪙' }, { badge: '🐝' }, { badge: '🔮' }, { badge: '🌊' },
+          { badge: '⚡' }, { badge: '🌿' }, { badge: '🔥' }, { badge: '🧊' }
+        ]
+      },
+      {
+        id: 'hoenn',
+        name: 'Região de Hoenn',
+        active: false,
+        gyms: [
+          { badge: '🪨' }, { badge: '🥊' }, { badge: '⚡' }, { badge: '💧' },
+          { badge: '🔥' }, { badge: '🪽' }, { badge: '🧬' }, { badge: '💧' }
+        ]
+      }
+    ];
+
+    let currentRegionIndex = 0;
+
+    function changeRegion(direction) {
+      currentRegionIndex += direction;
+      if (currentRegionIndex < 0) currentRegionIndex = REGIONS_CATALOG.length - 1;
+      if (currentRegionIndex >= REGIONS_CATALOG.length) currentRegionIndex = 0;
+      renderActiveRegionModal();
+    }
+
+    function renderActiveRegionModal() {
+      const container = document.getElementById('regionCarouselContainer');
+      if (!container) return;
+
+      const region = REGIONS_CATALOG[currentRegionIndex];
+      const userBadges = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? (currentUserProfile.unlocked_badges || []) : [];
+
+      if (!region.active) {
+        // Renderiza região bloqueada / em breve
+        let slotsHtml = '';
+        for (let i = 0; i < 8; i++) {
+          slotsHtml += `<div class="badge-slot">?</div>`;
+        }
+
+        container.innerHTML = `
+          <div class="region-container region-locked">
+            <div class="region-title"><span>${region.name}</span> <span style="color: #facc15;">EM BREVE</span></div>
+            <div class="badges-grid">
+              ${slotsHtml}
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Renderiza Kanto (ativa)
+      let unlockedCount = 0;
+      let gridHtml = '';
+
+      region.gyms.forEach(gym => {
+        const hasBadge = userBadges.includes(gym.id);
+        if (hasBadge) unlockedCount++;
+
+        gridHtml += `
+          <div class="badge-slot ${hasBadge ? 'unlocked' : ''}" title="${gym.name} - Líder: ${gym.leader}">
+            ${gym.badge}
+          </div>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="region-container">
+          <div class="region-title"><span>${region.name}</span> <span id="kantoProgress">${unlockedCount}/${region.gyms.length}</span></div>
+          <div class="badges-grid">
+            ${gridHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    async function openProfileModal() {
+      if (!currentUserProfile) return;
+
+      // 1. Abre o Modal e Seta Dados Básicos
+      document.getElementById('profileModalOverlay').style.display = 'flex';
+      document.getElementById('profileNameDisplay').innerText = currentUserProfile.nickname || 'Piloto';
+      document.getElementById('profileCoinsDisplay').innerText = currentUserProfile.coins || 0;
+
+      // 2. Sistema de Troféus e Liga (Puxando do sistema oficial)
+      const trophies = currentUserProfile.trophies || 0;
+      document.getElementById('profileTrophiesDisplay').innerText = trophies;
+
+      const currentLeague = getLeagueByTrophies(trophies);
+      const rankDisplay = document.getElementById('profileRankDisplay');
+      rankDisplay.innerHTML = `<img src="${currentLeague.iconUrl}" alt="${currentLeague.name}" style="width: 20px; height: 20px; vertical-align: middle; margin-bottom: 3px; margin-right: 4px; filter: drop-shadow(0 0 4px ${currentLeague.color});"> ${currentLeague.name}`;
+      rankDisplay.style.color = currentLeague.color;
+
+      // Atualiza o avatar gigante do perfil
+      const avatarLarge = document.querySelector('.profile-avatar-large');
+      if (avatarLarge) {
+        avatarLarge.style.boxShadow = 'none';
+        avatarLarge.style.background = 'transparent';
+
+        if (currentUserProfile.avatar) {
+          avatarLarge.innerHTML = `<img src="${currentUserProfile.avatar}" style="width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated;">`;
+        } else {
+          avatarLarge.innerHTML = '🏁';
+        }
+      }
+
+      // 3. Renderiza o Carrossel de Insígnias por Região
+      currentRegionIndex = 0;
+      renderActiveRegionModal();
+    }
+
+    // --- SISTEMA DE AVATARES ---
+    const AVATAR_CATALOG = [
+      { id: 'red', url: 'https://play.pokemonshowdown.com/sprites/trainers/red.png' },
+      { id: 'ash', url: 'https://play.pokemonshowdown.com/sprites/trainers/ash.png' },
+      { id: 'misty', url: 'https://play.pokemonshowdown.com/sprites/trainers/misty.png' },
+      { id: 'brock', url: 'https://play.pokemonshowdown.com/sprites/trainers/brock.png' },
+      { id: 'giovanni', url: 'https://play.pokemonshowdown.com/sprites/trainers/giovanni.png' },
+      { id: 'cynthia', url: 'https://play.pokemonshowdown.com/sprites/trainers/cynthia.png' },
+      { id: 'dawn', url: 'https://play.pokemonshowdown.com/sprites/trainers/dawn.png' },
+      { id: 'may', url: 'https://play.pokemonshowdown.com/sprites/trainers/may.png' },
+      { id: 'serena', url: 'https://play.pokemonshowdown.com/sprites/trainers/serena.png' },
+      { id: 'steven', url: 'https://play.pokemonshowdown.com/sprites/trainers/steven.png' },
+      { id: 'lance', url: 'https://play.pokemonshowdown.com/sprites/trainers/lance.png' },
+      { id: 'blue', url: 'https://play.pokemonshowdown.com/sprites/trainers/blue.png' },
+      { id: 'erika', url: 'https://play.pokemonshowdown.com/sprites/trainers/erika.png' },
+      { id: 'sabrina', url: 'https://play.pokemonshowdown.com/sprites/trainers/sabrina.png' },
+      { id: 'koga', url: 'https://play.pokemonshowdown.com/sprites/trainers/koga.png' },
+      { id: 'blaine', url: 'https://play.pokemonshowdown.com/sprites/trainers/blaine.png' }
+    ];
+
+    function openAvatarModal() {
+      const grid = document.getElementById('avatarGrid');
+      grid.innerHTML = '';
+
+      AVATAR_CATALOG.forEach(av => {
+        grid.innerHTML += `
+      <div class="avatar-option" onclick="selectAvatar('${av.url}')" title="${av.id.toUpperCase()}">
+        <img src="${av.url}" alt="${av.id}">
+      </div>
+    `;
+      });
+
+      document.getElementById('avatarModalOverlay').style.display = 'flex';
+    }
+
+    async function selectAvatar(url) {
+      if (!currentUserProfile) return;
+
+      // Atualiza no banco de dados
+      currentUserProfile.avatar = url;
+      if (typeof supabaseClient !== 'undefined') {
+        await supabaseClient.from('profiles').update({ avatar: url }).eq('id', currentUserProfile.id);
+      }
+
+      // Atualiza as interfaces instantaneamente
+      updateLeagueUI(currentUserProfile.trophies || 0);
+      openProfileModal(); // Recarrega o modal de perfil
+
+      document.getElementById('avatarModalOverlay').style.display = 'none';
+    }
 
     window.addEventListener('DOMContentLoaded', async () => {
       const btnPrev = document.getElementById('btnMusicPrev');

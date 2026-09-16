@@ -1,3 +1,6 @@
+Versão 1.9
+Adicionado perfil do jogador.;
+
 
 Versão 1.8
 - Correção dos efeitos das habilidades.;
