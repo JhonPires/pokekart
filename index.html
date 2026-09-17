@@ -1180,6 +1180,54 @@
       /* Mantém as sprites clássicas nítidas */
     }
 
+    /* ESTILOS DO PASSE DE BATALHA */
+    .bp-tier {
+      min-width: 140px;
+      background: rgba(12, 28, 48, .85);
+      border: 2px solid #1e3a57;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 12px;
+      position: relative;
+      transition: 0.3s;
+    }
+
+    .bp-tier.locked {
+      opacity: 0.6;
+      filter: grayscale(0.8);
+    }
+
+    .bp-tier.claimable {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.15);
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+      transform: translateY(-5px);
+    }
+
+    .bp-tier.claimed {
+      border-color: #38bdf8;
+      opacity: 0.8;
+    }
+
+    .bp-level-badge {
+      background: #0f172a;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      border: 1px solid #1e3a57;
+    }
+
+    .bp-tier.claimable .bp-level-badge {
+      background: #22c55e;
+      border-color: #16a34a;
+      color: #022c22;
+    }
+
     @media(max-width: 1050px) {
       .sidebar {
         width: 220px;
@@ -1338,6 +1386,46 @@
     </div>
   </div>
 
+  <!-- MODAL RANKING: CAMINHO DAS LIGAS -->
+  <div id="rankingModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+
+    <div
+      style="background: #1e293b; border: 2px solid #38bdf8; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+
+      <!-- Cabeçalho com Navegação de Ligas -->
+      <div
+        style="padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; flex-direction: column; gap: 12px; position: relative;">
+
+        <button onclick="fecharModalRanking()"
+          style="position: absolute; top: 16px; right: 20px; background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; padding: 0;">&times;</button>
+
+        <h2 style="margin: 0; color: #f8fafc; font-size: 18px; text-align: center;">Tabela de Classificação</h2>
+
+        <!-- Controles < LIGA > -->
+        <div
+          style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 8px; border: 1px solid #334155;">
+          <button onclick="mudarLigaRanking(-1)"
+            style="background: transparent; border: none; color: #38bdf8; font-size: 20px; cursor: pointer; padding: 0 10px; font-weight: bold;">&lt;</button>
+          <div id="rankingLeagueTitle"
+            style="font-size: 18px; font-weight: bold; color: #eab308; display: flex; align-items: center; gap: 8px;">
+            🥇 Liga Ouro
+          </div>
+          <button onclick="mudarLigaRanking(1)"
+            style="background: transparent; border: none; color: #38bdf8; font-size: 20px; cursor: pointer; padding: 0 10px; font-weight: bold;">&gt;</button>
+        </div>
+
+      </div>
+
+      <!-- Lista de Jogadores -->
+      <div id="rankingListContainer"
+        style="padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px;">
+        <!-- Preenchido via JS -->
+      </div>
+
+    </div>
+  </div>
+
 
   <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
     <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
@@ -1427,6 +1515,39 @@
     </div>
   </div>
 
+  <!-- Modal do Passe de Batalha -->
+  <div id="battlePassModalOverlay" class="overlay-general" style="z-index: 3000; display: none;">
+    <div class="lobbyCardModal" style="max-width: 780px; padding: 25px;">
+      <button onclick="document.getElementById('battlePassModalOverlay').style.display='none'"
+        class="modal-close-btn">✕</button>
+
+      <h2 class="modal-title" style="margin-bottom: 5px;">🎟️ PASSE DE BATALHA</h2>
+      <p
+        style="text-align: center; color: #facc15; font-size: 12px; font-weight: 900; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">
+        Temporada 1: O Despertar
+      </p>
+
+      <!-- Barra de Progresso do Nível -->
+      <div
+        style="background: rgba(9, 23, 42, 0.7); border: 1px solid #1d3857; border-radius: 16px; padding: 15px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; box-shadow: inset 0 0 15px rgba(0,0,0,0.5);">
+        <div style="font-size: 13px; font-weight: 900; color: #fff; margin-bottom: 8px;">
+          NÍVEL ATUAL: <span id="bpCurrentLevelText" style="color: #21c7ff; font-size: 20px; margin-left: 5px;">1</span>
+        </div>
+        <div class="mission-progress-bg" style="width: 100%; max-width: 500px; height: 14px; border-radius: 10px;">
+          <div id="bpXpFill" class="mission-progress-fill"
+            style="width: 0%; background: linear-gradient(90deg, #facc15, #eab308);"></div>
+        </div>
+        <div id="bpXpText" style="font-size: 11px; color: #91a7be; margin-top: 8px; font-weight: bold;">0 / 100 XP</div>
+      </div>
+
+      <!-- Trilha de Recompensas -->
+      <div id="bpTrackContainer"
+        style="display: flex; gap: 15px; overflow-x: auto; padding: 10px 5px 20px; scroll-behavior: smooth;">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+  </div>
+
   <!-- Modal do Perfil do Jogador -->
   <div id="profileModalOverlay" class="overlay-general" style="z-index: 3000; display: none;">
     <div class="lobbyCardModal" style="max-width: 500px; padding: 25px; max-height: 90vh; overflow-y: auto;">
@@ -1476,6 +1597,14 @@
         <!-- Injetado via JS -->
       </div>
 
+
+
+      <!-- MURAL DE CONQUISTAS -->
+      <h3 style="color: #fff; font-size: 15px; margin: 15px 0 5px 0;">🎯 Conquistas</h3>
+      <div class="region-container" id="achievementsContainer">
+        <!-- Injetado via JS -->
+      </div>
+
       <!-- RECORDES DAS PISTAS
       <h3 style="color: #fff; font-size: 15px; margin: 5px 0 5px 0;">⏱️ Recordes de Tempo</h3>
       <div id="profileRecordsContainer"
@@ -1512,6 +1641,7 @@
       <nav class="nav">
         <button id="menuBtnGarage"><span class="icon">🛍️</span>Garagem</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
+        <button id="menuBtnBattlePass"><span class="icon">🎟️</span>Passe de Batalha</button> <!-- NOVO BOTÃO -->
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
           Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
@@ -1565,8 +1695,13 @@
 
     <main>
       <div class="topbar">
+        <div class="stat" style="cursor: pointer;" onclick="document.getElementById('menuBtnBattlePass').click()">
+          <span>⭐</span><b id="topbarLevelText">Nv. 1</b>
+        </div> <!-- NOVO INDICADOR DE NÍVEL -->
         <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
-        <div class="stat"><span>🏆</span><b id="playerTrophiesText">0</b></div>
+        <div class="stat" onclick="abrirModalRanking()" style="cursor: pointer;" title="Ver Ranking das Ligas">
+          <span>🏆</span><b id="playerTrophiesText">0</b>
+        </div>
         <div class="stat rank" style="display: none;">
           <div class="rank-avatar" id="topbarLeagueIcon" style="display: none;">🏁</div>
           <strong id="playerHeaderNick" style="display: none;">Piloto</strong>
@@ -1911,49 +2046,58 @@
     function getKartUrl(filename) { return `./models/${filename}`; }
 
     const KART_DATABASE = [
-      { id: 'jolteon', name: '⚡ Jolteon Kart', modelUrl: getKartUrl('jolteon.glb') },
-      { id: 'zoroark', name: '🦊 Zoroark Kart', modelUrl: getKartUrl('zoroark.glb') },
-      { id: 'togetic', name: '🥚 Togetic Kart', modelUrl: getKartUrl('togetic.glb') },
-      { id: 'charizard', name: '🔥 Charizard Kart', modelUrl: getKartUrl('charizard.glb') },
-      { id: 'flygon', name: '🐉 Flygon Kart', modelUrl: getKartUrl('flygon.glb') },
-      { id: 'gengar', name: '👻 Gengar Kart', modelUrl: getKartUrl('gengar.glb') },
-      { id: 'oshawott', name: '🦦 Oshawott Kart', modelUrl: getKartUrl('oshawott.glb') },
-      { id: 'snorlax', name: '💤 Snorlax Kart', modelUrl: getKartUrl('snorlax.glb') },
-      { id: 'golem', name: '🪨 Golem Kart', modelUrl: getKartUrl('golem.glb') },
-      { id: 'jinx', name: '💋 Jynx Kart', modelUrl: getKartUrl('jinx.glb') },
-      { id: 'sudowoodo', name: '🌳 Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb') },
-      { id: 'sylveon', name: '🎀 Sylveon Kart', modelUrl: getKartUrl('sylveon.glb') },
-      { id: 'umbreon', name: '🌙 Umbreon Kart', modelUrl: getKartUrl('umbreon.glb') },
-      { id: 'pikachu', name: '⚡ Pikachu Kart', modelUrl: getKartUrl('pikachu.glb') },
-      { id: 'gliscor', name: '🦇 Gliscor Kart', modelUrl: getKartUrl('gliscor.glb') },
-      { id: 'mewtwo', name: '🧬 Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb') },
-      { id: 'zekrom', name: '🌩️ Zekrom Kart', modelUrl: getKartUrl('zekrom.glb') },
-      { id: 'swampert', name: '🐸 Swampert Kart', modelUrl: getKartUrl('swampert.glb') },
-      { id: 'rayquaza', name: '🌪️ Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb') },
-      { id: 'espeon', name: '🔮 Espeon Kart', modelUrl: getKartUrl('espeon.glb') },
-      { id: 'tatsugiri', name: '🍣 Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb') },
-      { id: 'scyther', name: '⚔️ Scyther Kart', modelUrl: getKartUrl('scyther.glb') },
-      { id: 'ninetales', name: '🦊 Ninetales Kart', modelUrl: getKartUrl('ninetales.glb') },
-      { id: 'arcanine', name: '🐕 Arcanine Kart', modelUrl: getKartUrl('arcanine.glb') },
-      { id: 'lucario', name: '🐾 Lucario Kart', modelUrl: getKartUrl('lucario.glb') },
-      { id: 'dialga', name: '⏳ Dialga Kart', modelUrl: getKartUrl('dialga.glb') },
-      { id: 'zapdos', name: '⚡ Zapdos Kart', modelUrl: getKartUrl('zapdos.glb') },
-      { id: 'luxray', name: '🦁 Luxray Kart', modelUrl: getKartUrl('luxray.glb') },
-      { id: 'staraptor', name: '🦅 Staraptor Kart', modelUrl: getKartUrl('staraptor.glb') },
-      { id: 'dragonite', name: '🐉 Dragonite Kart', modelUrl: getKartUrl('dragonite.glb') },
-      { id: 'tangela', name: '🌿 Tangela Kart', modelUrl: getKartUrl('tangela.glb') },
-      { id: 'sneasel', name: '🔪 Sneasel Kart', modelUrl: getKartUrl('sneasel.glb') },
-      { id: 'darkrai', name: '🌑 Darkrai Kart', modelUrl: getKartUrl('darkrai.glb') },
-      { id: 'moltres', name: '🔥 Moltres Kart', modelUrl: getKartUrl('moltres.glb') },
-      { id: 'weezing', name: '☠️ Weezing Kart', modelUrl: getKartUrl('weezing.glb') },
-      { id: 'swellow', name: '🦅 Swellow Kart', modelUrl: getKartUrl('swellow.glb') },
-      { id: 'articuno', name: '❄️ Articuno Kart', modelUrl: getKartUrl('articuno.glb') },
-      { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb') },
-      { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb') },
-      { id: 'starmie', name: '⭐ Starmie Kart', modelUrl: getKartUrl('starmie.glb') },
-      { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb') },
-      { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb') },
-      { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb') },
+      { id: 'jolteon', name: '⚡ Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 } },
+      { id: 'zoroark', name: '🦊 Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
+      { id: 'togetic', name: '🥚 Togetic Kart', modelUrl: getKartUrl('togetic.glb'), stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 } },
+      { id: 'charizard', name: '🔥 Charizard Kart', modelUrl: getKartUrl('charizard.glb'), stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 } },
+      { id: 'flygon', name: '🐉 Flygon Kart', modelUrl: getKartUrl('flygon.glb'), stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 } },
+      { id: 'gengar', name: '👻 Gengar Kart', modelUrl: getKartUrl('gengar.glb'), stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 } },
+      { id: 'oshawott', name: '🦦 Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 } },
+      { id: 'snorlax', name: '💤 Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 } },
+      { id: 'golem', name: '🪨 Golem Kart', modelUrl: getKartUrl('golem.glb'), stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 } },
+      { id: 'jinx', name: '💋 Jynx Kart', modelUrl: getKartUrl('jinx.glb'), stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 } },
+      { id: 'sudowoodo', name: '🌳 Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb'), stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 } },
+      { id: 'sylveon', name: '🎀 Sylveon Kart', modelUrl: getKartUrl('sylveon.glb'), stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
+      { id: 'umbreon', name: '🌙 Umbreon Kart', modelUrl: getKartUrl('umbreon.glb'), stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
+      { id: 'pikachu', name: '⚡ Pikachu Kart', modelUrl: getKartUrl('pikachu.glb'), stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+      { id: 'gliscor', name: '🦇 Gliscor Kart', modelUrl: getKartUrl('gliscor.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 } },
+      { id: 'mewtwo', name: '🧬 Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 } },
+      { id: 'zekrom', name: '🌩️ Zekrom Kart', modelUrl: getKartUrl('zekrom.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 } },
+      { id: 'swampert', name: '🐸 Swampert Kart', modelUrl: getKartUrl('swampert.glb'), stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 } },
+      { id: 'rayquaza', name: '🌪️ Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb'), stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 } },
+      { id: 'espeon', name: '🔮 Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+      { id: 'tatsugiri', name: '🍣 Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
+      { id: 'scyther', name: '⚔️ Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
+      { id: 'ninetales', name: '🦊 Ninetales Kart', modelUrl: getKartUrl('ninetales.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
+      { id: 'arcanine', name: '🐕 Arcanine Kart', modelUrl: getKartUrl('arcanine.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.2, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
+      { id: 'lucario', name: '🐾 Lucario Kart', modelUrl: getKartUrl('lucario.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
+      { id: 'dialga', name: '⏳ Dialga Kart', modelUrl: getKartUrl('dialga.glb'), stats: { accel: 25, maxSpeed: 38, turnSpeed: 2.9, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
+      { id: 'zapdos', name: '⚡ Zapdos Kart', modelUrl: getKartUrl('zapdos.glb'), stats: { accel: 35, maxSpeed: 34, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.2, driftControl: 1.1, grip: 0.75 } },
+      { id: 'luxray', name: '🦁 Luxray Kart', modelUrl: getKartUrl('luxray.glb'), stats: { accel: 33, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+      { id: 'staraptor', name: '🦅 Staraptor Kart', modelUrl: getKartUrl('staraptor.glb'), stats: { accel: 34, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
+      { id: 'dragonite', name: '🐉 Dragonite Kart', modelUrl: getKartUrl('dragonite.glb'), stats: { accel: 28, maxSpeed: 36, turnSpeed: 3.1, turboBonus: 1.7, driftRate: 1.1, driftControl: 1.1, grip: 0.85 } },
+      { id: 'tangela', name: '🌿 Tangela Kart', modelUrl: getKartUrl('tangela.glb'), stats: { accel: 30, maxSpeed: 29, turnSpeed: 3.8, turboBonus: 1.1, driftRate: 1.5, driftControl: 1.3, grip: 0.95 } },
+      { id: 'sneasel', name: '🔪 Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } },
+      { id: 'darkrai', name: '🌑 Darkrai Kart', modelUrl: getKartUrl('darkrai.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.5, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
+      { id: 'moltres', name: '🔥 Moltres Kart', modelUrl: getKartUrl('moltres.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.4, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.1, grip: 0.78 } },
+      { id: 'weezing', name: '☠️ Weezing Kart', modelUrl: getKartUrl('weezing.glb'), stats: { accel: 24, maxSpeed: 30, turnSpeed: 3.1, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.1, grip: 0.88 } },
+      { id: 'swellow', name: '🦅 Swellow Kart', modelUrl: getKartUrl('swellow.glb'), stats: { accel: 35, maxSpeed: 33, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.4, grip: 0.72 } },
+      { id: 'articuno', name: '❄️ Articuno Kart', modelUrl: getKartUrl('articuno.glb'), stats: { accel: 32, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.5, driftRate: 1.4, driftControl: 1.2, grip: 0.82 } },
+      { id: 'blastoise', name: '🐢 Blastoise Kart', modelUrl: getKartUrl('blastoise.glb'), stats: { accel: 28, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
+      { id: 'venusaur', name: '🌺 Venusaur Kart', modelUrl: getKartUrl('venusaur.glb'), stats: { accel: 29, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.85 } },
+      { id: 'ceruledge', name: '⚔️ Ceruledge Kart', modelUrl: getKartUrl('ceruledge.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
+      { id: 'infernape', name: '🔥 Infernape Kart', modelUrl: getKartUrl('infernape.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
+      { id: 'empoleon', name: '🐧 Empoleon Kart', modelUrl: getKartUrl('empoleon.glb'), stats: { accel: 30, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
+      { id: 'torterra', name: '🌳 Torterra Kart', modelUrl: getKartUrl('torterra.glb'), stats: { accel: 27, maxSpeed: 33, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.88 } },
+      { id: 'hooh', name: '🌈 Ho-Oh Kart', modelUrl: getKartUrl('hooh.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.5, turboBonus: 1.9, driftRate: 1.6, driftControl: 1.3, grip: 0.72 } },
+      { id: 'ironjugulis', name: '🤖 Iron Jugulis Kart', modelUrl: getKartUrl('ironjugulis.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
+      { id: 'lunala', name: '🦇 Lunala Kart', modelUrl: getKartUrl('lunala.glb'), stats: { accel: 35, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
+      { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
+      { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb'), stats: { accel: 20, maxSpeed: 36, turnSpeed: 2.8, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.95 } },
+      { id: 'starmie', name: '⭐ Starmie Kart', modelUrl: getKartUrl('starmie.glb'), stats: { accel: 33, maxSpeed: 35, turnSpeed: 3.8, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.2, grip: 0.80 } },
+      { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
+      { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb'), stats: { accel: 23, maxSpeed: 37, turnSpeed: 2.9, turboBonus: 1.7, driftRate: 1.0, driftControl: 1.1, grip: 0.90 } },
+      { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb'), stats: { accel: 34, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } }
     ];
 
     const savedKartId = sessionStorage.getItem('pkart_selected_kart');
@@ -2118,9 +2262,10 @@
       // Soma os karts do dia com os karts que o jogador já comprou
       unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
 
-      // 🛡️ TRAVA DE EXPIRAÇÃO AUTOMÁTICA
+      // 🛡️ TRAVA DE EXPIRAÇÃO AUTOMÁTICA CORRIGIDA
       const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
-      if (currentEquipped && !unlockedKarts.includes(currentEquipped)) {
+      // AGUARDA o perfil carregar antes de tirar conclusões precipitadas!
+      if (profile && currentEquipped && !unlockedKarts.includes(currentEquipped)) {
         sessionStorage.setItem('pkart_selected_kart', 'jolteon');
       }
 
@@ -2469,7 +2614,10 @@
           }
           if (data.t === 'start') {
             document.getElementById('lobbyStatusJoin').textContent = 'Iniciando corrida...';
-            redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+            // Convidado espera 2 segundos para o Host chegar na pista e criar a sala primeiro
+            setTimeout(() => {
+              redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+            }, 2000);
           }
           if (data.t === 'error') {
             document.getElementById('lobbyStatusJoin').textContent = data.msg;
@@ -2492,7 +2640,8 @@
         });
 
         localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, time: Date.now() }));
-        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 1200);
+        // Host espera só 400ms (tempo suficiente para enviar os dados e pular pra corrida)
+        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 400);
       }
     });
 
@@ -2501,7 +2650,9 @@
         const data = JSON.parse(e.newValue || '{}');
         if (data.t === 'start') {
           const roomFromKey = e.key.replace('pkart_start_signal_', '');
-          redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+          setTimeout(() => {
+            redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+          }, 2000);
         }
       }
     });
@@ -3068,6 +3219,77 @@
       `;
     }
 
+    // --- CATÁLOGO DE CONQUISTAS ---
+    const ACHIEVEMENTS_CATALOG = [
+      { id: 'first_win', name: 'Primeira Vitória', desc: 'Chegue em 1º lugar em qualquer corrida.', icon: '🥇' },
+      { id: 'rich', name: 'Mão de Vaca', desc: 'Acumule mais de 2000 moedas.', icon: '💰' },
+      { id: 'tower_climber', name: 'Escalador', desc: 'Derrote seu primeiro Líder de Ginásio.', icon: '🧗' },
+      { id: 'kart_collector', name: 'Colecionador', desc: 'Desbloqueie 3 karts na garagem.', icon: '🏎️' },
+      { id: 'social', name: 'Piloto Social', desc: 'Jogue uma corrida no Multiplayer.', icon: '🌐' },
+      { id: 'track_builder', name: 'Arquiteto', desc: 'Crie e salve uma pista personalizada.', icon: '🛠️' },
+      { id: 'dedication', name: 'Dedicação', desc: 'Complete 7 dias de login seguidos.', icon: '📅' },
+      { id: 'master', name: 'Mestre', desc: 'Chegue na Liga Masterball.', icon: '👑' }
+    ];
+
+    function renderAchievementsModal() {
+      const container = document.getElementById('achievementsContainer');
+      if (!container) return;
+
+      // Busca as conquistas do banco, se não existir, usa um array vazio
+      const userAchievements = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? (currentUserProfile.unlocked_achievements || []) : [];
+
+      let html = '<div class="badges-grid" style="grid-template-columns: repeat(4, 1fr);">';
+
+      ACHIEVEMENTS_CATALOG.forEach(ach => {
+        const hasAchieved = userAchievements.includes(ach.id);
+        html += `
+          <div class="badge-slot ${hasAchieved ? 'unlocked' : ''}" title="${ach.name}: ${ach.desc}" style="font-size: 22px;">
+            ${ach.icon}
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    // --- CARROSSEL DE LIGAS ---
+    let currentLeagueCarouselIndex = 0;
+
+    function changeLeagueCarousel(direction) {
+      currentLeagueCarouselIndex += direction;
+      if (currentLeagueCarouselIndex < 0) currentLeagueCarouselIndex = LEAGUES.length - 1;
+      if (currentLeagueCarouselIndex >= LEAGUES.length) currentLeagueCarouselIndex = 0;
+      renderActiveLeagueCarousel();
+    }
+
+    function renderActiveLeagueCarousel() {
+      const container = document.getElementById('leagueCarouselContainer');
+      if (!container) return;
+
+      const league = LEAGUES[currentLeagueCarouselIndex];
+      const userTrophies = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? (currentUserProfile.trophies || 0) : 0;
+
+      // Verifica se o jogador já chegou nesta liga
+      const hasReached = userTrophies >= league.min;
+
+      container.innerHTML = `
+        <div class="region-container ${hasReached ? '' : 'region-locked'}" style="padding: 8px 12px;">
+          <div class="region-title">
+            <span style="color: ${league.color};">${league.name}</span> 
+            <span style="color: ${hasReached ? '#22c55e' : '#facc15'};">${hasReached ? 'ALCANÇADA' : 'BLOQUEADA'}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 15px; padding: 4px;">
+            <img src="${league.iconUrl}" style="width: 45px; height: 45px; object-fit: contain; filter: ${hasReached ? `drop-shadow(0 0 10px ${league.color})` : 'grayscale(1) opacity(0.5)'};">
+            <div>
+              <div style="color: #fff; font-weight: 900; font-size: 14px; text-transform: uppercase;">${league.title}</div>
+              <div style="color: #91a7be; font-size: 11px; margin-top: 2px;">Requer <b style="color: #38bdf8;">${league.min}</b> Troféus</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     async function openProfileModal() {
       if (!currentUserProfile) return;
 
@@ -3101,6 +3323,14 @@
       // 3. Renderiza o Carrossel de Insígnias por Região
       currentRegionIndex = 0;
       renderActiveRegionModal();
+
+      // 4. Renderiza as Conquistas
+      renderAchievementsModal();
+
+      // 5. Renderiza o Carrossel de Ligas (Inicia mostrando a liga atual do jogador)
+      currentLeagueCarouselIndex = LEAGUES.findIndex(l => l.name === currentLeague.name);
+      if (currentLeagueCarouselIndex === -1) currentLeagueCarouselIndex = 0;
+      renderActiveLeagueCarousel();
     }
 
     // --- SISTEMA DE AVATARES ---
@@ -3154,7 +3384,238 @@
       document.getElementById('avatarModalOverlay').style.display = 'none';
     }
 
+    // --- SISTEMA DO PASSE DE BATALHA (BATTLE PASS) ---
+
+    // Configuração de XP por Nível (Ex: 100 XP para subir do 1 pro 2)
+    const XP_PER_LEVEL = 100;
+
+    // Catálogo da Temporada 1
+    const BATTLE_PASS_SEASON_1 = [
+      { level: 1, type: 'coins', amount: 100, name: '100 Moedas', icon: '🪙' },
+      { level: 2, type: 'coins', amount: 250, name: '250 Moedas', icon: '💰' },
+      { level: 3, type: 'avatar', amount: 'ash', name: 'Avatar Ash', icon: '🧢', img: 'https://play.pokemonshowdown.com/sprites/trainers/ash.png' },
+      { level: 4, type: 'coins', amount: 500, name: '500 Moedas', icon: '💎' },
+      { level: 5, type: 'kart', amount: 'mewtwo', name: 'Kart Mewtwo', icon: '🏎️', isPremium: true } // Kart Final da Temporada
+    ];
+
+    const btnOpenBP = document.getElementById('menuBtnBattlePass');
+    if (btnOpenBP) {
+      btnOpenBP.onclick = () => {
+        document.getElementById('battlePassModalOverlay').style.display = 'flex';
+        renderBattlePass();
+      };
+    }
+
+    function getPlayerLevelInfo() {
+      // Pega o XP do jogador (ou 0 se for novo)
+      const userXp = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.xp) ? currentUserProfile.xp : 0;
+
+      const currentLevel = Math.floor(userXp / XP_PER_LEVEL) + 1;
+      const currentLevelXp = userXp % XP_PER_LEVEL;
+
+      return { level: currentLevel, currentXp: currentLevelXp, nextLevelXp: XP_PER_LEVEL, totalXp: userXp };
+    }
+
+    // Função para atualizar o UI do Topo e do Modal
+    function updateLevelUI() {
+      const info = getPlayerLevelInfo();
+      const topbarText = document.getElementById('topbarLevelText');
+      if (topbarText) topbarText.innerText = `Nv. ${info.level}`;
+    }
+
+    function renderBattlePass() {
+      if (!currentUserProfile) return;
+      updateLevelUI();
+
+      const info = getPlayerLevelInfo();
+      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+
+      // Atualiza a Barra de Progresso no Modal
+      document.getElementById('bpCurrentLevelText').innerText = info.level;
+      document.getElementById('bpXpFill').style.width = `${(info.currentXp / info.nextLevelXp) * 100}%`;
+      document.getElementById('bpXpText').innerText = `${info.currentXp} / ${info.nextLevelXp} XP`;
+
+      // Renderiza a Trilha
+      const trackContainer = document.getElementById('bpTrackContainer');
+      trackContainer.innerHTML = '';
+
+      BATTLE_PASS_SEASON_1.forEach((reward, index) => {
+        const isClaimed = claimedRewards.includes(reward.level);
+        const isUnlocked = info.level >= reward.level;
+        const isClaimable = isUnlocked && !isClaimed;
+
+        let stateClass = 'locked';
+        let btnHtml = `<button class="btn-claim-mission" disabled style="background: #1e3a57; color: #64748b; border-color: #2a5078;">BLOQUEADO</button>`;
+
+        if (isClaimed) {
+          stateClass = 'claimed';
+          btnHtml = `<button class="btn-claim-mission" disabled style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8;">RESGATADO</button>`;
+        } else if (isClaimable) {
+          stateClass = 'claimable';
+          btnHtml = `<button class="btn-claim-mission" onclick="claimBPReward(${reward.level})" style="box-shadow: 0 0 10px rgba(34,197,94,0.4);">RESGATAR</button>`;
+        }
+
+        // Se for o prêmio final/kart, aplica um destaque amarelo
+        const bgHighlight = reward.isPremium ? 'background: linear-gradient(135deg, rgba(250, 204, 21, 0.2), rgba(20, 30, 50, 0.9)); border-color: #facc15;' : '';
+
+        // Mostra imagem customizada se for avatar, senão usa o ícone
+        const visualHtml = reward.img
+          ? `<img src="${reward.img}" style="width: 50px; height: 50px; object-fit: contain; image-rendering: pixelated; margin: 10px 0;">`
+          : `<div style="font-size: 40px; margin: 10px 0;">${reward.icon}</div>`;
+
+        trackContainer.innerHTML += `
+          <div class="bp-tier ${stateClass}" style="${bgHighlight}">
+            <div class="bp-level-badge">NÍVEL ${reward.level}</div>
+            ${visualHtml}
+            <div style="font-size: 12px; color: #fff; font-weight: bold; text-align: center; margin-bottom: 12px; height: 28px; display: flex; align-items: center; justify-content: center;">
+              ${reward.name}
+            </div>
+            <div style="width: 100%; margin-top: auto;">
+              ${btnHtml}
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // Função para Resgatar Prêmio
+    window.claimBPReward = async (level) => {
+      if (!currentUserProfile) return;
+
+      const reward = BATTLE_PASS_SEASON_1.find(r => r.level === level);
+      if (!reward) return;
+
+      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+      claimedRewards.push(level);
+
+      let updateData = { claimed_bp_rewards: claimedRewards };
+
+      // Aplica a recompensa de acordo com o tipo
+      if (reward.type === 'coins') {
+        const newCoins = (currentUserProfile.coins || 0) + reward.amount;
+        currentUserProfile.coins = newCoins;
+        updateData.coins = newCoins;
+        document.getElementById('playerCoinsText').innerText = newCoins;
+      }
+      else if (reward.type === 'kart') {
+        let userKarts = currentUserProfile.unlocked_karts || [];
+        if (typeof userKarts === 'string') userKarts = JSON.parse(userKarts);
+        if (!userKarts.includes(reward.amount)) {
+          userKarts.push(reward.amount);
+          currentUserProfile.unlocked_karts = userKarts;
+          updateData.unlocked_karts = userKarts;
+        }
+      }
+      else if (reward.type === 'avatar') {
+        // Opcional: Adicionar lógica para liberar um avatar específico na conta
+        alert(`Você desbloqueou o avatar especial: ${reward.name}!`);
+      }
+
+      currentUserProfile.claimed_bp_rewards = claimedRewards;
+
+      // Salva no Supabase
+      if (typeof supabaseClient !== 'undefined') {
+        await supabaseClient.from('profiles').update(updateData).eq('id', currentUserProfile.id);
+      }
+
+      // Re-renderiza para atualizar os botões e animações
+      renderBattlePass();
+
+      // Chama a função de organizar karts se ele tiver ganhado o Mewtwo
+      if (typeof sortKartsByAvailability === 'function') sortKartsByAvailability();
+    };
+
+    // Removemos o LIGAS_CONFIG e vamos usar direto o seu array LEAGUES.
+    let ligaAtualIndex = 0;
+
+    function abrirModalRanking() {
+      document.getElementById('rankingModal').style.display = 'flex';
+
+      // Descobre a liga atual do jogador usando a constante LEAGUES
+      const meusTrofeus = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? (currentUserProfile.trophies || 0) : 0;
+      ligaAtualIndex = LEAGUES.findIndex(l => meusTrofeus >= l.min && meusTrofeus <= l.max);
+      if (ligaAtualIndex === -1) ligaAtualIndex = 0;
+
+      atualizarInterfaceLiga();
+    }
+
+    function fecharModalRanking() {
+      document.getElementById('rankingModal').style.display = 'none';
+    }
+
+    function mudarLigaRanking(direcao) {
+      ligaAtualIndex += direcao;
+
+      if (ligaAtualIndex < 0) ligaAtualIndex = LEAGUES.length - 1;
+      if (ligaAtualIndex >= LEAGUES.length) ligaAtualIndex = 0;
+
+      atualizarInterfaceLiga();
+    }
+
+    async function atualizarInterfaceLiga() {
+      const liga = LEAGUES[ligaAtualIndex];
+
+      // Atualiza o título inserindo a imagem da Pokébola e aplicando a cor da liga
+      const titleEl = document.getElementById('rankingLeagueTitle');
+      titleEl.innerHTML = `<img src="${liga.iconUrl}" style="width: 24px; height: 24px; object-fit: contain; filter: drop-shadow(0 0 5px ${liga.color});"> ${liga.name}`;
+      titleEl.style.color = liga.color;
+
+      const container = document.getElementById('rankingListContainer');
+      container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding: 20px;">Buscando pilotos da liga...</div>';
+
+      if (typeof supabaseClient === 'undefined') return;
+
+      try {
+        // Busca os jogadores limitando aos troféus exatos da LEAGUE atual
+        const { data: jogadores, error } = await supabaseClient
+          .from('profiles')
+          .select('id, nickname, trophies')
+          .gte('trophies', liga.min)
+          .lte('trophies', liga.max)
+          .order('trophies', { ascending: false })
+          .limit(50);
+
+        if (error) throw error;
+
+        if (!jogadores || jogadores.length === 0) {
+          container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding: 20px;">Nenhum jogador alcançou esta liga ainda.</div>';
+          return;
+        }
+
+        const myId = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile.id : null;
+        let htmlLista = '';
+
+        jogadores.forEach((jogador, index) => {
+          const isMe = jogador.id === myId;
+          const bgStyle = isMe ? `background: ${liga.color}25; border: 1px solid ${liga.color};` : 'background: rgba(15, 23, 42, 0.5); border: 1px solid #334155;';
+          const nameColor = isMe ? liga.color : '#f8fafc';
+          const posColor = index === 0 ? '#eab308' : (index === 1 ? '#cbd5e1' : (index === 2 ? '#b45309' : '#64748b'));
+
+          htmlLista += `
+        <div style="${bgStyle} border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="color: ${posColor}; font-weight: 900; font-size: 16px; width: 24px; text-align: center;">#${index + 1}</span>
+            <span style="color: ${nameColor}; font-weight: bold; font-size: 15px;">${jogador.nickname || 'Piloto Anônimo'}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 20px;">
+            <span style="color: ${liga.color}; font-weight: bold;">${jogador.trophies || 0}</span>
+            <span style="font-size: 12px;">🏆</span>
+          </div>
+        </div>
+      `;
+        });
+
+        container.innerHTML = htmlLista;
+
+      } catch (err) {
+        console.error('Erro ao buscar ranking da liga:', err);
+        container.innerHTML = '<div style="color:#ef4444; text-align:center;">Falha ao carregar a liga.</div>';
+      }
+    }
+
+
     window.addEventListener('DOMContentLoaded', async () => {
+      setTimeout(updateLevelUI, 800);
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');
       const btnNext = document.getElementById('btnMusicNext');
@@ -3464,6 +3925,7 @@
 
       // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA
       // Fica monitorando até o auth.js terminar de baixar o perfil do jogador
+      // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA / SINCRONIZADOR DE GARAGEM
       const expirationInterval = setInterval(() => {
         if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
           clearInterval(expirationInterval); // Achou o perfil, para o loop
@@ -3477,26 +3939,28 @@
             } catch (e) { }
           }
 
-          const currentDBKart = currentUserProfile.selected_kart;
+          // Pega o kart selecionado direto do banco de dados (A garagem atualizou isso lá)
+          const currentDBKart = currentUserProfile.selected_kart || 'jolteon';
 
           // Se o kart que veio do banco não é o Jolteon, não é comprado e NÃO está na rotação de hoje: EXPIRADO!
-          if (currentDBKart && currentDBKart !== 'jolteon' && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
+          if (currentDBKart !== 'jolteon' && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
             console.log("Kart expirado detectado! Retornando para o Jolteon...");
 
-            // Reseta sessão e perfil
             sessionStorage.setItem('pkart_selected_kart', 'jolteon');
             currentUserProfile.selected_kart = 'jolteon';
 
-            // Limpa o banco de dados
             if (typeof supabaseClient !== 'undefined') {
               supabaseClient.from('profiles').update({ selected_kart: 'jolteon' }).eq('id', currentUserProfile.id);
             }
-
-            // Atualiza o modelo 3D na tela na mesma hora
-            selectedIndex = KART_DATABASE.findIndex(k => k.id === 'jolteon');
-            if (selectedIndex === -1) selectedIndex = 0;
-            if (typeof updatePreview === 'function') updatePreview();
+          } else {
+            // SE FOR VÁLIDO: Força a memória local a ficar igual ao banco de dados! 
+            // (Isso resolve o bug de voltar da garagem e a Home ignorar sua escolha)
+            sessionStorage.setItem('pkart_selected_kart', currentDBKart);
           }
+
+          // Agora que temos o perfil 100% carregado, reorganizamos a lista e aplicamos na tela
+          sortKartsByAvailability();
+          updatePreview();
         }
       }, 500);
     });

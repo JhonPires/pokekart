@@ -1,5 +1,11 @@
 Versão 1.9
 Adicionado perfil do jogador.;
+Sistema de Passe de batalha.;
+Corrigido missões diarias.;
+Adicionado EXP/Nível dos jogadores para o passe de batalha.;
+Adicionado as conquistas ao perfil do jogador.;
+Adicionado o Ranking das Ligas.;
+
 
 
 Versão 1.8

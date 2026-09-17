@@ -318,6 +318,13 @@ const KART_DATABASE = [
   { id: 'hooh', name: 'Ho-Oh Kart', modelUrl: getKartUrl('hooh.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.5, turboBonus: 1.9, driftRate: 1.6, driftControl: 1.3, grip: 0.72 } },
   { id: 'ironjugulis', name: 'Iron Jugulis Kart', modelUrl: getKartUrl('ironjugulis.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
   { id: 'lunala', name: 'Lunala Kart', modelUrl: getKartUrl('lunala.glb'), stats: { accel: 35, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
+  { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
+  { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb'), stats: { accel: 20, maxSpeed: 36, turnSpeed: 2.8, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.95 } },
+  { id: 'starmie', name: '⭐ Starmie Kart', modelUrl: getKartUrl('starmie.glb'), stats: { accel: 33, maxSpeed: 35, turnSpeed: 3.8, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.2, grip: 0.80 } },
+  { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
+  { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb'), stats: { accel: 23, maxSpeed: 37, turnSpeed: 2.9, turboBonus: 1.7, driftRate: 1.0, driftControl: 1.1, grip: 0.90 } },
+  { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb'), stats: { accel: 34, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
+
 ];
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
@@ -1783,40 +1790,58 @@ async function showFinishOverlay(place) {
 
   document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
 
-  // --- CÁLCULO DE MOEDAS COM MULTIPLICADOR DE DIFICULDADE DA PISTA ---
+  // --- CÁLCULO DE MOEDAS E XP (PASSE DE BATALHA) ---
   const currentTrackDifficulty = urlParams.get('difficulty') || 'easy'; // 'easy', 'normal', 'hard'
-  const TRACK_DIFFICULTY_MULTIPLIERS = {
-    easy: 1.0,
-    normal: 1.5,
-    hard: 2.5
-  };
+  const TRACK_DIFFICULTY_MULTIPLIERS = { easy: 1.0, normal: 1.5, hard: 2.5 };
   const trackMultiplier = TRACK_DIFFICULTY_MULTIPLIERS[currentTrackDifficulty] || 1.0;
 
   const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
   const baseCoins = baseCoinsByPosition[place] || 20;
   const totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
 
-  // SALVA AS MOEDAS NO BANCO DE DADOS (SUPABASE)
-  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-    try {
-      const novoSaldoCoins = (currentUserProfile.coins || 0) + totalCoinsEarned;
+  // Define XP baseado na posição e multiplica pela dificuldade
+  const baseXPByPosition = { 1: 50, 2: 30, 3: 20, 4: 10 };
+  const earnedXP = Math.round((baseXPByPosition[place] || 10) * trackMultiplier);
 
-      const { error: coinErr } = await supabaseClient
-        .from('profiles') // ou a tabela onde fica o saldo de moedas do usuário
-        .update({ coins: novoSaldoCoins })
-        .eq('id', currentUserProfile.id);
+  let updatePayload = {}; // Objeto para atualizar o Supabase em 1 única chamada!
 
-      if (!coinErr) {
-        currentUserProfile.coins = novoSaldoCoins; // Atualiza localmente
-      }
-    } catch (err) {
-      console.error('Erro ao salvar moedas:', err);
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    // 1. Atualiza Moedas
+    const novoSaldoCoins = (currentUserProfile.coins || 0) + totalCoinsEarned;
+    currentUserProfile.coins = novoSaldoCoins;
+    updatePayload.coins = novoSaldoCoins;
+
+    // 2. Atualiza XP do Passe de Batalha
+    const novoXP = (currentUserProfile.xp || 0) + earnedXP;
+    currentUserProfile.xp = novoXP;
+    updatePayload.xp = novoXP;
+
+    // 3. Gatilho de Conquistas (Achievements)
+    let unlockedAchvs = currentUserProfile.unlocked_achievements || [];
+    if (typeof unlockedAchvs === 'string') {
+      try { unlockedAchvs = JSON.parse(unlockedAchvs); } catch (e) { unlockedAchvs = []; }
     }
-  }
+    let achvsModified = false;
 
-  // --- SISTEMA DE MISSÕES DIÁRIAS (GATILHOS) ---
-  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.daily_missions) {
-    try {
+    const checkUnlock = (id) => {
+      if (!unlockedAchvs.includes(id)) {
+        unlockedAchvs.push(id);
+        achvsModified = true;
+      }
+    };
+
+    if (place === 1) checkUnlock('first_win');
+    if (typeof roomCodeParam !== 'undefined' && roomCodeParam) checkUnlock('social');
+    if (urlParams.get('mode') === 'tower' && place === 1) checkUnlock('tower_climber');
+    if (novoSaldoCoins >= 2000) checkUnlock('rich');
+
+    if (achvsModified) {
+      currentUserProfile.unlocked_achievements = unlockedAchvs;
+      updatePayload.unlocked_achievements = unlockedAchvs;
+    }
+
+    // 4. Progresso de Missões Diárias
+    if (currentUserProfile.daily_missions && currentUserProfile.daily_missions.list) {
       let missionsModified = false;
       const modeLocalParam = urlParams.get('mode');
 
@@ -1824,13 +1849,11 @@ async function showFinishOverlay(place) {
         if (mission.claimed) return; // Se já resgatou, ignora
 
         let fezProgresso = false;
-
-        // Regras de cada missão
-        if (mission.id === 'm_play') fezProgresso = true; // Terminou qualquer corrida
-        if (mission.id === 'm_win' && place === 1) fezProgresso = true; // Chegou em 1º
-        if (mission.id === 'm_solo' && modeLocalParam !== 'tower' && !roomCodeParam) fezProgresso = true; // Modo Solo
-        if (mission.id === 'm_multi' && roomCodeParam) fezProgresso = true; // Modo Multiplayer
-        if (mission.id === 'm_tower' && modeLocalParam === 'tower' && place === 1) fezProgresso = true; // Venceu andar da Torre
+        if (mission.id === 'm_play') fezProgresso = true;
+        if (mission.id === 'm_win' && place === 1) fezProgresso = true;
+        if (mission.id === 'm_solo' && modeLocalParam !== 'tower' && !roomCodeParam) fezProgresso = true;
+        if (mission.id === 'm_multi' && roomCodeParam) fezProgresso = true;
+        if (mission.id === 'm_tower' && modeLocalParam === 'tower' && place === 1) fezProgresso = true;
 
         if (fezProgresso) {
           mission.progress += 1;
@@ -1839,19 +1862,25 @@ async function showFinishOverlay(place) {
       });
 
       if (missionsModified) {
-        // Envia o progresso silenciosamente para o banco de dados
-        supabaseClient.from('profiles')
-          .update({ daily_missions: currentUserProfile.daily_missions })
-          .eq('id', currentUserProfile.id);
+        updatePayload.daily_missions = currentUserProfile.daily_missions;
       }
-    } catch (err) {
-      console.warn('Erro ao atualizar missões diárias:', err);
+    }
+
+    // 5. Salva TUDO no banco de dados de uma vez (Performance++)
+    if (typeof supabaseClient !== 'undefined' && Object.keys(updatePayload).length > 0) {
+      supabaseClient.from('profiles').update(updatePayload).eq('id', currentUserProfile.id).then(({ error }) => {
+        if (error) console.error('Erro ao salvar progresso da corrida:', error);
+      });
     }
   }
-  // Monta o HTML base com as moedas ganhas e o bônus da pista
-  let rewardHTML = `<div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>`;
 
-  // REQUISITO ATUALIZADO: Apenas ranca/ganha troféus se for sala multiplayer COM EXATAMENTE 4 JOGADORES REAIS (sem bots)
+  // Monta o HTML base de recompensas visuais
+  let rewardHTML = `
+    <div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>
+    <div style="color:#21c7ff; font-size:14px; margin-top: 4px;">⭐ +${earnedXP} XP <span style="font-size:11px; color:#94a3b8;">(Passe)</span></div>
+  `;
+
+  // REQUISITO ATUALIZADO: Apenas ranca/ganha troféus se for sala multiplayer COM EXATAMENTE 4 JOGADORES REAIS
   const isRankedMatch = typeof roomCodeParam !== 'undefined' && roomCodeParam && roomCodeParam.trim() !== '' && totalPlayersParam === 4;
 
   if (typeof supabaseClient !== 'undefined' && isRankedMatch) {
@@ -1866,8 +1895,7 @@ async function showFinishOverlay(place) {
         const ganhoTrofeus = data.delta_trofeus > 0 ? `+${data.delta_trofeus}` : data.delta_trofeus;
         const corRank = data.delta_trofeus >= 0 ? '#22c55e' : '#ef4444';
 
-        // Adiciona os troféus ao painel de recompensas
-        rewardHTML += `<div style="margin-top: 4px;"><span style="color:${corRank}">${ganhoTrofeus} 🏆</span> <span style="color:#94a3b8; font-size: 11px;">(Rank Total: ${data.new_trophies})</span></div>`;
+        rewardHTML += `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,0.1);"><span style="color:${corRank}">${ganhoTrofeus} 🏆</span> <span style="color:#94a3b8; font-size: 11px;">(Rank Total: ${data.new_trophies})</span></div>`;
 
         if (data.promoted) {
           sessionStorage.setItem('pending_promotion', JSON.stringify({
