@@ -34,6 +34,8 @@ let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
 let currentTreeGroup = null;
+let lapStartTime = 0; // Marca o início da volta atual
+let localLapTimes = []; // Guarda o tempo de cada volta completa
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
@@ -1381,6 +1383,8 @@ function startCountdown() {
       overlay.style.color = '#4CAF50';
       raceStarted = true;
       raceStartTime = performance.now();
+      lapStartTime = performance.now(); // Inicia o cronómetro da 1ª volta
+      localLapTimes = []; // Limpa registos anteriores
     } else {
       clearInterval(timer);
       overlay.style.display = 'none';
@@ -1687,8 +1691,16 @@ function updateRaceTracker(key, position) {
   }
 
   tr.lastRawT = rawT;
+  const previousLap = tr.lapCount; // Guarda a volta anterior
   tr.progress += deltaT;
   tr.lapCount = Math.max(1, Math.floor(tr.progress) + 1);
+
+  // Se o jogador local completou uma volta, guarda o tempo!
+  if (key === 'local' && tr.lapCount > previousLap && previousLap <= TOTAL_LAPS) {
+    const now = performance.now();
+    localLapTimes.push(now - lapStartTime);
+    lapStartTime = now; // Reinicia para a próxima volta
+  }
 
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
@@ -1868,8 +1880,12 @@ async function showFinishOverlay(place) {
   document.body.appendChild(overlay);
 
   const finalTimeMs = Math.round(totalRaceTimeMs);
+  // Calcula a volta mais rápida (se não houver, usa o tempo final como fallback de segurança)
+  const bestLapMs = localLapTimes.length > 0 ? Math.round(Math.min(...localLapTimes)) : finalTimeMs;
   const formattedTime = formatTime(finalTimeMs);
+  const formattedBestLap = formatRecordTime(bestLapMs); // Usa a mesma função de formatação de tempo
   let isNewRecord = false;
+  let isNewLapRecord = false;
 
   if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
     try {
@@ -1882,28 +1898,43 @@ async function showFinishOverlay(place) {
         .single();
 
       if (!existingRecord) {
-        // 🔥 INCLUI O kart_id NO INSERT
         await supabaseClient.from('track_records').insert({
           user_id: currentUserProfile.id,
           track_id: currentTrackId,
           best_time_ms: finalTimeMs,
+          best_lap_ms: bestLapMs,
           kart_id: selectedKartId
         });
         isNewRecord = true;
-      } else if (finalTimeMs < existingRecord.best_time_ms) {
-        // 🔥 INCLUI O kart_id NO UPDATE
-        await supabaseClient.from('track_records').update({
-          best_time_ms: finalTimeMs,
-          kart_id: selectedKartId,
-          created_at: new Date()
-        }).eq('id', existingRecord.id);
-        isNewRecord = true;
+        isNewLapRecord = true;
+      } else {
+        // Atualiza os tempos separadamente. Só atualiza se bateu o recorde específico.
+        const updates = { kart_id: selectedKartId, created_at: new Date() };
+
+        if (finalTimeMs < existingRecord.best_time_ms) {
+          updates.best_time_ms = finalTimeMs;
+          isNewRecord = true;
+        }
+
+        if (!existingRecord.best_lap_ms || bestLapMs < existingRecord.best_lap_ms) {
+          updates.best_lap_ms = bestLapMs;
+          isNewLapRecord = true;
+        }
+
+        // Só faz a chamada à DB se houver algo para atualizar
+        if (isNewRecord || isNewLapRecord) {
+          await supabaseClient.from('track_records').update(updates).eq('id', existingRecord.id);
+        }
       }
     } catch (err) { }
   }
 
-  document.getElementById('finalTimeDisplay').innerHTML = `${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE!</span>' : ''}`;
-
+  // Atualiza o HTML para mostrar ambos os tempos
+  document.getElementById('finalTimeDisplay').innerHTML = `
+      ${formattedTime} ${isNewRecord ? '<span style="color:#22c55e; margin-left: 5px;">🔥 NOVO RECORDE TOTAL!</span>' : ''}
+      <br>
+      <span style="color:#94a3b8; font-size: 11px;">Volta mais rápida: <span style="color:#fff;">${formattedBestLap}</span> ${isNewLapRecord ? '<span style="color:#38bdf8;">⚡ RECORDE DE VOLTA!</span>' : ''}</span>
+    `;
   // --- CÁLCULO DE MOEDAS E XP (PASSE DE BATALHA) ---
   const currentTrackDifficulty = urlParams.get('difficulty') || 'easy'; // 'easy', 'normal', 'hard'
   const TRACK_DIFFICULTY_MULTIPLIERS = { easy: 1.0, normal: 1.5, hard: 2.5 };
@@ -2205,7 +2236,17 @@ function updateItemBoxes(dt) {
 }
 
 function getItemFromBox() {
-  const skillKeys = Object.keys(SKILLS);
+  let skillKeys = Object.keys(SKILLS);
+
+  // Calcula a posição atual do jogador na corrida
+  const racers = updateStandings();
+  const myRank = racers.findIndex(r => r.key === 'local') + 1;
+
+  // Se estiver em 1º lugar, remove o 'DIG' da lista de itens disponíveis no sorteio
+  if (myRank === 1) {
+    skillKeys = skillKeys.filter(key => key !== 'DIG');
+  }
+
   const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
   currentItem = SKILLS[randomKey];
 
@@ -2786,6 +2827,21 @@ function useEquippedSkill(skill) {
       break;
 
     case 'DIG':
+      const classificacao = updateStandings();
+      const posicaoLocal = classificacao.findIndex(r => r.key === 'local') + 1;
+
+      if (posicaoLocal === 1) {
+        // Impede o uso e devolve o item para o inventário visual e lógico 
+        // (necessário pois o evento de tecla/toque limpa o slot antes desta função rodar)
+        setTimeout(() => {
+          currentItem = SKILLS.DIG;
+          const iconEl = document.getElementById('itemIcon');
+          if (iconEl) iconEl.innerHTML = SKILLS.DIG.icon;
+        }, 10);
+        console.warn("Ataque Cavar não pode ser usado pelo 1º colocado!");
+        break; // Interrompe a execução sem ativar a habilidade
+      }
+
       castDigAbility('local');
       break;
   }

@@ -1,4 +1,4 @@
-- Dig não pode ser usado pelo primeiro colocado (nem recebe qnd estiver em primeiro e pegar a pokebola)
+- Exibir uma  marcação em tela pro primeiro colocado quando estiver vindo um DIG a caminho dele
 - Não está voltando para a mesma sala multiplayer criada após o termino da corrida
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
 - Pensando nos recordes, seria interessante guardar os recordes das voltas mais rapidas e ter um ranking por pista
@@ -15,6 +15,8 @@
 - Mobile
 - Enquanto ta no drift e apertar o mouse ta ficando travado o drift
 - Ver a possibilidade de escolher para onde jogar a habilidade
+- Adicionar novas fases (Bastante) no Passe de Batalha
+
 
 
 proximos 3d:

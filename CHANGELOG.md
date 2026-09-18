@@ -1,5 +1,16 @@
 # Changelog - PokéKart
 
+## [1.9.1] - 18/09/2026
+- Corrigido bug com a habilidade DIG.
+- Adicionado notificação no ícone que da acesso ao Passe de Batalha caso tenha algo para resgatar.
+- Adicionado a tecla "Q" para inverter a camera (olhar para trás).
+- Adicionado aos recordes das pistas o Kart utilizado naquele recorde.
+- Removido o botão de jogar novamente ao placar de classificação de uma corrida no modo Torre.
+- Adicionado a opção para abrir as imagens dos karts na Garagem.
+- Adicionado para a última recompensa do passe ser de escolha do jogador.
+- Habilidade DIG não pode ser usado nem obtida por corredores em 1º lugar.
+- Adicionado um novo Ranking de Volta mais rápida.
+
 ## [1.9] - 17/09/2026
 - Adicionado o Perfil do Jogador
 - Adicionado o sistema de Passe de Batalha

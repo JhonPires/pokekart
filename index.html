@@ -1355,13 +1355,17 @@
       <button id="btnCloseRankingModal" class="modal-close-btn">✕</button>
       <h2 class="modal-title">🏆 RANKINGS GLOBAIS</h2>
 
-      <div style="display: flex; gap: 10px; width: 100%; margin-bottom: 4px; position: relative; z-index: 5;">
+      <!-- 3 Abas de Alternância -->
+      <div style="display: flex; gap: 6px; width: 100%; margin-bottom: 4px; position: relative; z-index: 5;">
         <button id="tabLeaderboardTrophies" class="btn primary"
-          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px; border-radius: 10px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">🏆
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 11px; border-radius: 10px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">🏆
           Troféus</button>
-        <button id="tabLeaderboardTracks" class="btn"
-          style="flex: 1; padding: 0; min-height: 42px; font-size: 13px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;">⏱️
-          Recordes</button>
+        <button id="tabLeaderboardTracksTotal" class="btn"
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 11px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;">🏁
+          Pista</button>
+        <button id="tabLeaderboardTracksLap" class="btn"
+          style="flex: 1; padding: 0; min-height: 42px; font-size: 11px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;">⚡
+          V. Rápida</button>
       </div>
 
       <div id="trackRecordSelectorBox" style="display: none; width: 100%; position: relative; z-index: 4;">
@@ -1545,6 +1549,23 @@
         style="display: flex; gap: 15px; overflow-x: auto; padding: 10px 5px 20px; scroll-behavior: smooth;">
         <!-- Injetado via JS -->
       </div>
+    </div>
+  </div>
+
+  <!-- Modal de Escolha de Kart do Passe -->
+  <div id="kartChoiceModalOverlay" class="overlay-general" style="z-index: 3500; display: none;">
+    <div class="lobbyCardModal" style="max-width: 500px; padding: 25px;">
+      <button onclick="document.getElementById('kartChoiceModalOverlay').style.display='none'"
+        class="modal-close-btn">✕</button>
+      <h2 class="modal-title" style="margin-bottom: 5px;">🎁 ESCOLHA SEU KART</h2>
+      <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
+        Você atingiu o nível máximo! Escolha apenas UM kart como recompensa.
+      </p>
+
+      <div id="kartChoiceGrid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
+        <!-- Injetado via JS -->
+      </div>
+
     </div>
   </div>
 
@@ -2798,7 +2819,7 @@
     }
 
     // --- SISTEMA DE ROLETA DIÁRIA ---
-    const prizes = [
+    let prizes = [
       { label: '50 Moedas', type: 'coins', amount: 50 },
       { label: '100 Moedas', type: 'coins', amount: 100 },
       { label: '200 Moedas', type: 'coins', amount: 200 },
@@ -3018,7 +3039,7 @@
     }
 
     // --- SISTEMA DE MISSÕES DIÁRIAS ---
-    const MISSION_CATALOG = [
+    let MISSION_CATALOG = [
       { id: 'm_solo', title: 'Treinador Dedicado', desc: 'Jogue 3 corridas no Modo Solo', goal: 3, reward: 100 },
       { id: 'm_win', title: 'No Pódio', desc: 'Chegue em 1º lugar em qualquer corrida', goal: 1, reward: 150 },
       { id: 'm_multi', title: 'Desafiante Global', desc: 'Jogue 2 corridas no Multiplayer', goal: 2, reward: 200 },
@@ -3405,7 +3426,7 @@
     const XP_PER_LEVEL = 100;
 
     // Catálogo da Temporada 1
-    const BATTLE_PASS_SEASON_1 = [
+    let BATTLE_PASS_SEASON_1 = [
       { level: 1, type: 'coins', amount: 100, name: '100 Moedas', icon: '🪙' },
       { level: 2, type: 'coins', amount: 250, name: '250 Moedas', icon: '💰' },
       { level: 3, type: 'avatar', amount: 'ash', name: 'Avatar Ash', icon: '🧢', img: 'https://play.pokemonshowdown.com/sprites/trainers/ash.png' },
@@ -3519,12 +3540,18 @@
       const reward = BATTLE_PASS_SEASON_1.find(r => r.level === level);
       if (!reward) return;
 
+      // Se for uma caixa de escolha de karts, abre o modal e PARA a execução aqui
+      if (reward.type === 'kart_choice') {
+        abrirModalEscolhaKart(level, reward.choices);
+        return;
+      }
+
       const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
       claimedRewards.push(level);
 
       let updateData = { claimed_bp_rewards: claimedRewards };
 
-      // Aplica a recompensa de acordo com o tipo
+      // Aplica a recompensa de acordo com o tipo padrão
       if (reward.type === 'coins') {
         const newCoins = (currentUserProfile.coins || 0) + reward.amount;
         currentUserProfile.coins = newCoins;
@@ -3541,7 +3568,6 @@
         }
       }
       else if (reward.type === 'avatar') {
-        // Opcional: Adicionar lógica para liberar um avatar específico na conta
         alert(`Você desbloqueou o avatar especial: ${reward.name}!`);
       }
 
@@ -3552,13 +3578,97 @@
         await supabaseClient.from('profiles').update(updateData).eq('id', currentUserProfile.id);
       }
 
-      // Re-renderiza para atualizar os botões e animações
       renderBattlePass();
-
-      atualizarBadgePasse(); // 🔥 Nova linha para apagar a bolinha se não houver mais prêmios
-
-      // Chama a função de organizar karts se ele tiver ganhado o Mewtwo
+      atualizarBadgePasse();
       if (typeof sortKartsByAvailability === 'function') sortKartsByAvailability();
+    };
+
+    // --- LÓGICA DE MÚLTIPLA ESCOLHA DE KARTS ---
+    // --- LÓGICA DE MÚLTIPLA ESCOLHA DE KARTS ---
+    function abrirModalEscolhaKart(level, choices) {
+      const grid = document.getElementById('kartChoiceGrid');
+      grid.innerHTML = '';
+
+      // Verifica quais os karts que o jogador já tem na garagem
+      let userKarts = [];
+      if (currentUserProfile && currentUserProfile.unlocked_karts) {
+        try {
+          userKarts = typeof currentUserProfile.unlocked_karts === 'string'
+            ? JSON.parse(currentUserProfile.unlocked_karts)
+            : currentUserProfile.unlocked_karts;
+        } catch (e) {
+          userKarts = [currentUserProfile.unlocked_karts];
+        }
+      }
+
+      choices.forEach(choice => {
+        const jaPossui = userKarts.includes(choice.id);
+
+        // Se já possuir, aplica estilo bloqueado e tira o evento de clique
+        const cardStyle = jaPossui
+          ? "background: rgba(15, 23, 42, 0.9); border-color: #334155; opacity: 0.6; filter: grayscale(0.8); cursor: not-allowed;"
+          : "cursor: pointer; background: rgba(20, 30, 50, 0.9); border-color: #facc15;";
+
+        const onClickAction = jaPossui
+          ? ""
+          : `onclick="confirmarEscolhaKart(${level}, '${choice.id}', '${choice.name}')"`;
+
+        const btnText = jaPossui ? "OBTIDO" : "ESCOLHER";
+        const btnStyle = jaPossui
+          ? "background: #1e3a57; color: #64748b; border-color: #2a5078;"
+          : "";
+
+        grid.innerHTML += `
+          <div class="bp-tier" style="${cardStyle}" ${onClickAction}>
+             <img src="${choice.img || ''}" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 10px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+             <div style="font-size: 40px; margin: 10px 0; display: none;">🏎️</div>
+             <div style="font-size: 13px; color: #fff; font-weight: bold; text-align: center;">${choice.name}</div>
+             <button class="mode-btn" style="margin-top: 10px; width: 100%; font-size: 11px; pointer-events: none; ${btnStyle}">${btnText}</button>
+          </div>
+        `;
+      });
+
+      // Esconde o modal do passe para o novo modal ficar mais focado
+      document.getElementById('battlePassModalOverlay').style.display = 'none';
+      document.getElementById('kartChoiceModalOverlay').style.display = 'flex';
+    }
+
+    window.confirmarEscolhaKart = async (level, kartId, kartName) => {
+      if (!currentUserProfile) return;
+
+      const confirmar = confirm(`Tem certeza que deseja escolher o ${kartName}? Você NÃO poderá alterar depois!`);
+      if (!confirmar) return;
+
+      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+      claimedRewards.push(level);
+
+      let userKarts = currentUserProfile.unlocked_karts || [];
+      if (typeof userKarts === 'string') userKarts = JSON.parse(userKarts);
+      if (!userKarts.includes(kartId)) {
+        userKarts.push(kartId);
+      }
+
+      currentUserProfile.claimed_bp_rewards = claimedRewards;
+      currentUserProfile.unlocked_karts = userKarts;
+
+      // Salva no Supabase
+      if (typeof supabaseClient !== 'undefined') {
+        await supabaseClient.from('profiles').update({
+          claimed_bp_rewards: claimedRewards,
+          unlocked_karts: userKarts
+        }).eq('id', currentUserProfile.id);
+      }
+
+      document.getElementById('kartChoiceModalOverlay').style.display = 'none';
+
+      // Reabre o passe para o jogador ver que foi resgatado
+      document.getElementById('battlePassModalOverlay').style.display = 'flex';
+
+      renderBattlePass();
+      atualizarBadgePasse();
+      if (typeof sortKartsByAvailability === 'function') sortKartsByAvailability();
+
+      alert(`Incrível! O ${kartName} foi adicionado à sua garagem com sucesso.`);
     };
 
     // Removemos o LIGAS_CONFIG e vamos usar direto o seu array LEAGUES.
@@ -3649,8 +3759,26 @@
       }
     }
 
+    // --- CARREGAR CONFIGURAÇÕES DO ADMIN (SUPABASE) ---
+    async function carregarConfigsDoServidor() {
+      if (typeof supabaseClient === 'undefined') return;
+      try {
+        const { data, error } = await supabaseClient.from('game_configs').select('config_name, config_data');
+        if (!error && data) {
+          data.forEach(item => {
+            if (item.config_name === 'roulette') prizes = item.config_data;
+            if (item.config_name === 'battle_pass') BATTLE_PASS_SEASON_1 = item.config_data;
+            if (item.config_name === 'daily_missions') MISSION_CATALOG = item.config_data;
+          });
+        }
+      } catch (err) {
+        console.warn('Erro ao carregar configurações do painel admin:', err);
+      }
+    }
+
 
     window.addEventListener('DOMContentLoaded', async () => {
+      await carregarConfigsDoServidor();
       setTimeout(updateLevelUI, 800);
       const btnPrev = document.getElementById('btnMusicPrev');
       const btnPlayPause = document.getElementById('btnMusicPlayPause');

@@ -4,9 +4,9 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Estado local do jogador logado e modo do ranking
+// Estado local do jogador logado e aba ativa do ranking
 let currentUserProfile = null;
-let currentLeaderboardMode = 'trophies'; // 'trophies' | 'tracks'
+let activeLeaderboardTab = 'trophies'; // 'trophies', 'tracks_total' ou 'tracks_lap'
 
 // Helper para sanitize de texto (prevenir XSS)
 function escapeHtml(str) {
@@ -16,7 +16,7 @@ function escapeHtml(str) {
 
 // Helper para formatar tempo (ms -> mm:ss.mmm)
 function formatRecordTime(ms) {
-  if (!ms || isNaN(ms)) return '--:--.---';
+  if (!ms || isNaN(ms) || ms === Infinity) return '--:--.---';
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   const milliseconds = Math.floor(ms % 1000);
@@ -44,26 +44,20 @@ async function loginPlayer(email, password) {
 
 // Carregar Perfil do Jogador Logado
 async function fetchPlayerProfile() {
-  // 1. Verifica se existe uma sessão local básica antes de tentar a rede
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) return null;
 
-  // 2. Tenta validar o usuário no servidor do Supabase
   const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
 
-  // SE DER ERRO 403 (Ou qualquer outro erro de autenticação):
   if (authError || !user) {
     console.warn('Sessão de login expirada ou inválida. Limpando dados...');
-    await supabaseClient.auth.signOut(); // Força o logout e limpa o token quebrado
-
-    // Se estiver na tela do jogo, manda de volta pro lobby para logar de novo
+    await supabaseClient.auth.signOut();
     if (window.location.pathname.includes('game.html')) {
       window.location.href = 'index.html';
     }
     return null;
   }
 
-  // 3. Busca o perfil no banco de dados
   const { data, error } = await supabaseClient
     .from('profiles')
     .select('*')
@@ -77,12 +71,10 @@ async function fetchPlayerProfile() {
 
   currentUserProfile = data;
 
-  // Garante que a sessão do navegador saiba qual é o kart atual do banco de dados
   if (currentUserProfile.selected_kart) {
     sessionStorage.setItem('pkart_selected_kart', currentUserProfile.selected_kart);
   }
 
-  // Atualiza o nickname no Menu Lateral se ele existir na página
   const sideNickEl = document.getElementById('sideMenuNick');
   if (sideNickEl && data.nickname) {
     sideNickEl.innerText = data.nickname;
@@ -95,13 +87,11 @@ async function fetchPlayerProfile() {
 async function updateSelectedKart(kartId) {
   if (!currentUserProfile) return;
 
-  // Valida se o kart é padrão, comprado permanentemente ou se é grátis hoje
   const isBase = kartId === 'jolteon' || kartId === 'charizard';
   const isPermanent = currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(kartId);
   const dailyFree = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
   const isTemporary = dailyFree.includes(kartId);
 
-  // Se o jogador não tem acesso legal ao kart, bloqueia
   if (!isBase && !isPermanent && !isTemporary) return;
 
   const { error } = await supabaseClient
@@ -114,7 +104,7 @@ async function updateSelectedKart(kartId) {
   }
 }
 
-// Adicionar Moedas e Troféus após a corrida (Chamado no game.js ao finalizar a corrida)
+// Adicionar Moedas e Troféus após a corrida
 async function addRewards(coinsEarned, trophiesEarned) {
   if (!currentUserProfile) return;
 
@@ -140,22 +130,20 @@ let isLoginMode = false;
 
 // Preenche a barra superior e ativa as ações do Lobby com os dados do Supabase
 async function updateLobbyUI() {
-  // 1. Dados do Jogador Logado
   const profile = await fetchPlayerProfile();
   if (profile) {
     const headerNick = document.getElementById('playerHeaderNick');
     const coinsText = document.getElementById('playerCoinsText');
-    const trophiesText = document.getElementById('playerTrophiesText'); // Correção aqui (remoção do .innerText)
+    const trophiesText = document.getElementById('playerTrophiesText');
 
     if (headerNick) headerNick.innerText = profile.nickname || 'Piloto';
     if (coinsText) coinsText.innerText = profile.coins || 0;
-    if (trophiesText) trophiesText.innerText = profile.trophies || 0; // Correção aqui (usando 'profile' em vez de 'profileData')
-    // --- ADICIONE ESTA LINHA AQUI ---
-    // Atualiza dinamicamente as insígnias e o texto da liga (ex: Novato, Super Bola, etc) na sidebar e topbar
+    if (trophiesText) trophiesText.innerText = profile.trophies || 0;
+
     if (typeof updateLeagueUI === 'function') {
       updateLeagueUI(profile.trophies || 0);
     }
-    // Sincroniza o seletor de kart do lobby com o kart equipado no perfil do jogador
+
     if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {
       const equippedIndex = KART_DATABASE.findIndex(k => k.id === profile.selected_kart);
       if (equippedIndex !== -1 && typeof selectedIndex !== 'undefined') {
@@ -165,7 +153,6 @@ async function updateLobbyUI() {
     }
   }
 
-  // 2. Configura os Botões do Lobby (Respeitando o Multiplayer)  
   const btnStartRace = document.getElementById('btnStartRace');
   if (btnStartRace) {
     btnStartRace.addEventListener('click', (e) => {
@@ -173,181 +160,211 @@ async function updateLobbyUI() {
         e.preventDefault();
         const selectedKart = profile ? (profile.selected_kart || 'jolteon') : 'jolteon';
         const nickname = profile ? profile.nickname : 'JOGADOR';
-        // Adicionado o &players=1 para o modo solo:
         window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}&slot=0&players=1`;
       }
     });
   }
 
-  // 3. Busca e Renderiza o Ranking Inicial (Troféus)
-  await loadTrophiesLeaderboard();
+  // Carrega o ranking inicial corretamente chamando a nova função unificada
+  await loadLeaderboardData();
 }
 
-// Renderiza o Ranking Global por Troféus
-async function loadTrophiesLeaderboard() {
-  const listEl = document.getElementById('leaderboardList');
-  const titleEl = document.getElementById('leaderboardColumnTitle');
-  if (!listEl) return;
+// --- SISTEMA DE RANKINGS UNIFICADO (3 ABAS) ---
 
-  if (titleEl) titleEl.innerText = 'TROFÉUS';
+const tabTrophies = document.getElementById('tabLeaderboardTrophies');
+const tabTracksTotal = document.getElementById('tabLeaderboardTracksTotal');
+const tabTracksLap = document.getElementById('tabLeaderboardTracksLap');
+const trackSelectorBox = document.getElementById('trackRecordSelectorBox');
 
-  if (typeof supabaseClient === 'undefined') {
-    listEl.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:12px;">Erro ao conectar Supabase</div>';
-    return;
+// Função para atualizar o estilo visual das abas
+function updateTabStyles(activeBtn) {
+  [tabTrophies, tabTracksTotal, tabTracksLap].forEach(btn => {
+    if (!btn) return;
+    btn.className = 'btn';
+    btn.style.background = 'rgba(7, 28, 49, .68)';
+    btn.style.color = '#5bd5ff';
+    btn.style.border = '1px solid #128dcc';
+  });
+  if (activeBtn) {
+    activeBtn.className = 'btn primary';
+    activeBtn.style.background = 'linear-gradient(135deg, #27c8ff, #078be8)';
+    activeBtn.style.color = '#031525';
+    activeBtn.style.border = '1px solid #52d6ff';
   }
+}
 
-  const { data: topPlayers, error } = await supabaseClient
-    .from('profiles')
-    .select('nickname, trophies')
-    .order('trophies', { ascending: false })
-    .limit(10);
+// Configurar os cliques das 3 abas
+if (tabTrophies && tabTracksTotal && tabTracksLap) {
+  tabTrophies.onclick = () => {
+    activeLeaderboardTab = 'trophies';
+    updateTabStyles(tabTrophies);
+    if (trackSelectorBox) trackSelectorBox.style.display = 'none';
+    loadLeaderboardData();
+  };
 
-  if (error || !topPlayers) {
-    console.error('Erro ao buscar ranking:', error);
-    listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px;">Falha ao carregar ranking</div>';
-    return;
+  tabTracksTotal.onclick = () => {
+    activeLeaderboardTab = 'tracks_total';
+    updateTabStyles(tabTracksTotal);
+    if (trackSelectorBox) trackSelectorBox.style.display = 'block';
+    const currentTrackVal = document.getElementById('leaderboardTrackSelect')?.value || 'default';
+    loadLeaderboardData(currentTrackVal);
+  };
+
+  tabTracksLap.onclick = () => {
+    activeLeaderboardTab = 'tracks_lap';
+    updateTabStyles(tabTracksLap);
+    if (trackSelectorBox) trackSelectorBox.style.display = 'block';
+    const currentTrackVal = document.getElementById('leaderboardTrackSelect')?.value || 'default';
+    loadLeaderboardData(currentTrackVal);
+  };
+}
+
+// Função central para carregar e renderizar os dados do ranking ativo
+async function loadLeaderboardData(trackId = 'default') {
+  const listContainer = document.getElementById('leaderboardList');
+  if (!listContainer) return;
+
+  listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Carregando...</div>';
+
+  if (typeof supabaseClient === 'undefined') return;
+
+  try {
+    if (activeLeaderboardTab === 'trophies') {
+      // 1. Ranking Geral por Troféus
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select('nickname, trophies, avatar')
+        .order('trophies', { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); font-size: 13px; padding-top: 20px;">Sem registos.</div>';
+        return;
+      }
+
+      let html = '';
+      data.forEach((row, index) => {
+        let posBadge = `${index + 1}º`;
+        if (index === 0) posBadge = '🥇 1º';
+        else if (index === 1) posBadge = '🥈 2º';
+        else if (index === 2) posBadge = '🥉 3º';
+
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+              <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
+              <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(row.nickname || 'Piloto')}</span>
+            </div>
+            <div style="font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
+              <span>🏆</span> ${row.trophies || 0}
+            </div>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+
+    } else if (activeLeaderboardTab === 'tracks_total') {
+      // 2. Recordes de Pista (Tempo Total)
+      const { data, error } = await supabaseClient
+        .from('track_records')
+        .select('best_time_ms, kart_id, profiles(nickname)')
+        .eq('track_id', trackId)
+        .order('best_time_ms', { ascending: true })
+        .limit(20);
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); font-size: 12px; padding-top: 10px;">Ainda não há recordes nesta pista!</div>';
+        return;
+      }
+
+      let html = '';
+      data.forEach((row, index) => {
+        let posBadge = `${index + 1}º`;
+        if (index === 0) posBadge = '🥇 1º';
+        else if (index === 1) posBadge = '🥈 2º';
+        else if (index === 2) posBadge = '🥉 3º';
+
+        const timeFormatted = formatRecordTime(row.best_time_ms);
+        const nick = row.profiles?.nickname || 'Piloto';
+
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+              <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
+              <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(nick)}</span>
+            </div>
+            <div style="font-weight: bold; color: #facc15; font-family: monospace; font-size: 13px;">
+              ⏱️ ${timeFormatted}
+            </div>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+
+    } else {
+      // 3. Recordes de Volta Mais Rápida (best_lap_ms)
+      const { data, error } = await supabaseClient
+        .from('track_records')
+        .select('best_lap_ms, profiles(nickname)')
+        .eq('track_id', trackId)
+        .order('best_lap_ms', { ascending: true })
+        .limit(20);
+
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        listContainer.innerHTML = '<div style="text-align: center; color: var(--muted); font-size: 12px; padding-top: 10px;">Ainda não há registos de volta rápida nesta pista!</div>';
+        return;
+      }
+
+      let html = '';
+      data.forEach((row, index) => {
+        let posBadge = `${index + 1}º`;
+        if (index === 0) posBadge = '🥇 1º';
+        else if (index === 1) posBadge = '🥈 2º';
+        else if (index === 2) posBadge = '🥉 3º';
+
+        const lapFormatted = formatRecordTime(row.best_lap_ms);
+        const nick = row.profiles?.nickname || 'Piloto';
+
+        html += `
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
+              <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
+              <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(nick)}</span>
+            </div>
+            <div style="color: #38bdf8; font-weight: bold; font-family: monospace; font-size: 13px;">
+              ⚡ ${lapFormatted}
+            </div>
+          </div>
+        `;
+      });
+      listContainer.innerHTML = html;
+    }
+  } catch (err) {
+    console.error("Erro ao carregar leaderboard:", err);
+    listContainer.innerHTML = '<div style="text-align: center; color: #ff4b55; font-size: 13px; padding-top: 20px;">Erro ao carregar dados.</div>';
   }
+}
 
-  listEl.innerHTML = '';
-
-  topPlayers.forEach((player, index) => {
-    let posBadge = `${index + 1}º`;
-    if (index === 0) posBadge = '🥇 1º';
-    else if (index === 1) posBadge = '🥈 2º';
-    else if (index === 2) posBadge = '🥉 3º';
-
-    const item = document.createElement('div');
-    item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
-    item.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
-        <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
-        <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(player.nickname || 'Anônimo')}</span>
-      </div>
-      <div style="font-weight: bold; color: #38bdf8; display: flex; align-items: center; gap: 4px;">
-        <span>🏆</span> ${player.trophies || 0}
-      </div>
-    `;
-
-    listEl.appendChild(item);
+// Integração com o seletor de pistas personalizado do modal
+const rankDropdownMenu = document.getElementById('rankDropdownMenu');
+if (rankDropdownMenu) {
+  rankDropdownMenu.addEventListener('click', (e) => {
+    const opt = e.target.closest('.customDropdownOption');
+    if (opt) {
+      const trackVal = opt.getAttribute('data-value') || 'default';
+      loadLeaderboardData(trackVal);
+    }
   });
 }
 
-// Renderiza o Ranking de Recordes por Pista (Join track_records -> profiles)
-async function loadTrackRecordsLeaderboard(trackId) {
-  const listEl = document.getElementById('leaderboardList');
-  const titleEl = document.getElementById('leaderboardColumnTitle');
-  if (!listEl) return;
-
-  if (titleEl) titleEl.innerText = 'TEMPO';
-  listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; padding-top:10px;">Carregando recordes...</div>';
-
-  try {
-    const { data: records, error } = await supabaseClient
-      .from('track_records')
-      .select('best_time_ms, kart_id, profiles ( nickname )')
-      .eq('track_id', trackId || 'default')
-      .order('best_time_ms', { ascending: true }) // Menor tempo primeiro
-      .limit(10);
-
-    if (error) throw error;
-
-    if (!records || records.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:12px; padding-top:10px;">Nenhum recorde registrado nesta pista ainda!</div>';
-      return;
-    }
-
-    listEl.innerHTML = '';
-    records.forEach((rec, index) => {
-      let posBadge = `${index + 1}º`;
-      if (index === 0) posBadge = '🥇 1º';
-      else if (index === 1) posBadge = '🥈 2º';
-      else if (index === 2) posBadge = '🥉 3º';
-
-      const nick = rec.profiles ? rec.profiles.nickname : 'Piloto';
-      const timeStr = formatRecordTime(rec.best_time_ms);
-
-      // 2. Buscamos o nome legível do kart através do ID salvo no recorde
-      const kartUsado = typeof KART_DATABASE !== 'undefined'
-        ? KART_DATABASE.find(k => k.id === rec.kart_id)
-        : null;
-      const nomeKart = kartUsado ? kartUsado.name : (rec.kart_id ? rec.kart_id.toUpperCase() : 'Kart Padrão');
-
-      const item = document.createElement('div');
-      item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
-      item.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
-          <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
-          <div style="display: flex; flex-direction: column;">
-            <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">${escapeHtml(nick)}</span>
-            <span style="color: #38bdf8; font-size: 10px; font-weight: 800; margin-top: 1px;">${escapeHtml(nomeKart)}</span>
-          </div>
-        </div>
-        <div style="font-weight: bold; color: #facc15; font-family: monospace; font-size: 13px;">
-          ⏱️ ${timeStr}
-        </div>
-      `;
-      listEl.appendChild(item);
-    });
-
-  } catch (err) {
-    console.error('Erro ao buscar recordes:', err);
-    listEl.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:12px;">Erro ao carregar recordes</div>';
-  }
-}
-
-// Configura as Abas e Seletores do Ranking
-function setupLeaderboardTabs() {
-  const btnTrophies = document.getElementById('tabLeaderboardTrophies');
-  const btnTracks = document.getElementById('tabLeaderboardTracks');
-  const trackSelectorBox = document.getElementById('trackRecordSelectorBox');
-  const trackSelect = document.getElementById('leaderboardTrackSelect');
-
-  if (btnTrophies && btnTracks) {
-    // Clique na Aba TROFÉUS
-    btnTrophies.onclick = () => {
-      currentLeaderboardMode = 'trophies';
-
-      // Estilo Ativo (Azul com texto escuro)
-      btnTrophies.style.background = '#38bdf8';
-      btnTrophies.style.color = '#0f172a';
-      btnTrophies.style.border = 'none';
-
-      // Estilo Inativo (Transparente com texto cinza)
-      btnTracks.style.background = 'transparent';
-      btnTracks.style.color = '#94a3b8';
-      btnTracks.style.border = '1px solid #334155';
-
-      if (trackSelectorBox) trackSelectorBox.style.display = 'none';
-      loadTrophiesLeaderboard();
-    };
-
-    // Clique na Aba RECORDES
-    btnTracks.onclick = () => {
-      currentLeaderboardMode = 'tracks';
-
-      // Estilo Ativo (Azul com texto escuro)
-      btnTracks.style.background = '#38bdf8';
-      btnTracks.style.color = '#0f172a';
-      btnTracks.style.border = 'none';
-
-      // Estilo Inativo (Transparente com texto cinza)
-      btnTrophies.style.background = 'transparent';
-      btnTrophies.style.color = '#94a3b8';
-      btnTrophies.style.border = '1px solid #334155';
-
-      if (trackSelectorBox) trackSelectorBox.style.display = 'block';
-      const selectedTrack = trackSelect ? trackSelect.value : 'default';
-      loadTrackRecordsLeaderboard(selectedTrack);
-    };
-  }
-
-  if (trackSelect) {
-    trackSelect.onchange = () => {
-      if (currentLeaderboardMode === 'tracks') {
-        loadTrackRecordsLeaderboard(trackSelect.value);
-      }
-    };
-  }
+const leaderboardTrackSelect = document.getElementById('leaderboardTrackSelect');
+if (leaderboardTrackSelect) {
+  leaderboardTrackSelect.onchange = () => {
+    loadLeaderboardData(leaderboardTrackSelect.value);
+  };
 }
 
 // Gerenciamento do Menu Lateral (Drawer) e Modais Popup
@@ -387,7 +404,10 @@ function setupSideMenu() {
     btnRankings.onclick = () => {
       closeMenu();
       if (rankingModal) rankingModal.style.display = 'flex';
-      loadTrophiesLeaderboard();
+      activeLeaderboardTab = 'trophies';
+      if (tabTrophies) updateTabStyles(tabTrophies);
+      if (trackSelectorBox) trackSelectorBox.style.display = 'none';
+      loadLeaderboardData();
     };
   }
 
@@ -421,7 +441,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const title = document.getElementById('authTitle');
   const nickInput = document.getElementById('authNick');
 
-  setupLeaderboardTabs();
   setupSideMenu();
 
   // Verifica a sessão atual com o Supabase
