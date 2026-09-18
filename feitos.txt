@@ -1,4 +1,14 @@
-## Versão 1.9
+Versão 1.91
+Corrigido bug com a habilidade DIG.;
+Adicionado notificação no ícone que da acesso ao Passe de Batalha caso tenha algo para resgatar.;
+Adicionado a tecla "Q" para inverter a camera (olhar para trás).;
+Adicionado aos recordes das pistas o Kart utilizado naquele recorde.;
+Removido o botão de jogar novamente ao placar de classificação de uma corrida no modo Torre.;
+Adicionado a opção para abrir as imagens dos karts na Garagem.;
+
+
+
+Versão 1.9
 
 Adicionado o Perfil do Jogador;
 Adicionado o sistema de Passe de Batalha;

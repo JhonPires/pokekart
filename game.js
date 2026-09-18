@@ -1519,12 +1519,34 @@ function enforceTrackBoundary() {
 }
 
 const camOffset = new THREE.Vector3(0, 3.5, -8);
+const camOffsetReverse = new THREE.Vector3(0, 3.5, 10); // Câmera vai para a frente do kart
+let wasLookingBack = false;
+
 function updateCamera(dt) {
   if (!kart) return;
-  const desired = kart.position.clone().add(camOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading));
+
+  const isLookingBack = keys['KeyQ'];
+
+  // Se segurar Q, usa o offset da frente. Se soltar, usa o original (-8)
+  const activeOffset = isLookingBack ? camOffsetReverse : camOffset;
+
+  // A MESMA MATEMÁTICA ORIGINAL SUA QUE DEIXA O DRIFT SUAVE
+  const desired = kart.position.clone().add(activeOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading));
   desired.y = kart.position.y + 5;
-  camera.position.lerp(desired, Math.min(1, dt * 4));
-  camera.lookAt(kart.position.clone().add(new THREE.Vector3(0, 1.2, 0)));
+
+  // O "teleporte" instantâneo apenas para a câmera não atravessar o kart dando enjoo
+  if (isLookingBack !== wasLookingBack) {
+    camera.position.copy(desired);
+    wasLookingBack = isLookingBack;
+  } else {
+    // O seu lerp original
+    camera.position.lerp(desired, Math.min(1, dt * 4));
+  }
+
+  // O SEGREDO: Se estiver olhando para trás, manda a câmera focar 20 metros atrás da pista
+  // Se estiver normal, foca no kart como no seu código original
+  const lookOffset = isLookingBack ? new THREE.Vector3(0, 1.2, -20) : new THREE.Vector3(0, 1.2, 0);
+  camera.lookAt(kart.position.clone().add(lookOffset.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading)));
 }
 
 // ------------------------------------------------------------
@@ -1820,7 +1842,7 @@ async function showFinishOverlay(place) {
     }
 
     // 🔥 NOVO: Botão "Jogar Novamente" (Aparece no Solo normal, ou se perder na Torre)
-    if (!isTower || (isTower && place !== 1)) {
+    if (!isTower) {
       const btnPlayAgain = document.createElement('button');
       btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
@@ -1860,10 +1882,21 @@ async function showFinishOverlay(place) {
         .single();
 
       if (!existingRecord) {
-        await supabaseClient.from('track_records').insert({ user_id: currentUserProfile.id, track_id: currentTrackId, best_time_ms: finalTimeMs });
+        // 🔥 INCLUI O kart_id NO INSERT
+        await supabaseClient.from('track_records').insert({
+          user_id: currentUserProfile.id,
+          track_id: currentTrackId,
+          best_time_ms: finalTimeMs,
+          kart_id: selectedKartId
+        });
         isNewRecord = true;
       } else if (finalTimeMs < existingRecord.best_time_ms) {
-        await supabaseClient.from('track_records').update({ best_time_ms: finalTimeMs, created_at: new Date() }).eq('id', existingRecord.id);
+        // 🔥 INCLUI O kart_id NO UPDATE
+        await supabaseClient.from('track_records').update({
+          best_time_ms: finalTimeMs,
+          kart_id: selectedKartId,
+          created_at: new Date()
+        }).eq('id', existingRecord.id);
         isNewRecord = true;
       }
     } catch (err) { }
@@ -2531,13 +2564,19 @@ function triggerDigExplosion(targetId) {
 
   if (targetId === 'local') {
     physics.speed = 0;       // Zera a velocidade completamente
-    physics.stunTimer = 1.0; // Adicione esta linha! (Trava o seu kart por 4 segundos)
+    physics.stunTimer = 1.0; // Fica atordoado por 1s
     if (kart) targetKartObj = kart;
   } else if (remoteKarts.has(targetId)) {
-    targetKartObj = remoteKarts.get(targetId).obj.group; // Pega o 3D do bot/remoto
+    targetKartObj = remoteKarts.get(targetId).obj.group;
   }
 
   if (targetKartObj) {
+    // 🔥 TRAVA DE SEGURANÇA: Se já estiver pulando, ignora novos impactos
+    if (targetKartObj.userData.isJumping) return;
+
+    // Tranca o cadeado
+    targetKartObj.userData.isJumping = true;
+
     const startY = targetKartObj.position.y;
     const startRotX = targetKartObj.rotation.x;
     const startRotZ = targetKartObj.rotation.z;
@@ -2545,10 +2584,11 @@ function triggerDigExplosion(targetId) {
     let jumpTime = 0;
 
     const jumpInterval = setInterval(() => {
-      jumpTime += 0.02;
+      // Ajuste o 0.05 para um valor menor (ex: 0.03) se quiser que ele fique mais tempo no ar
+      jumpTime += 0.05;
 
       // 1. Pula para o alto
-      targetKartObj.position.y = startY + Math.sin(jumpTime * Math.PI) * 3;
+      targetKartObj.position.y = startY + Math.sin(jumpTime * Math.PI) * 3.5;
 
       // 2. Efeito de TREMOR
       if (jumpTime < 1) {
@@ -2558,8 +2598,12 @@ function triggerDigExplosion(targetId) {
 
       if (jumpTime >= 1) {
         clearInterval(jumpInterval);
-        // Trava de segurança para caso o jogador tenha desconectado durante o pulo
+
+        // Abre o cadeado novamente
+        targetKartObj.userData.isJumping = false;
+
         if (targetId === 'local' || remoteKarts.has(targetId)) {
+          // Crava o kart no chão original com exatidão
           targetKartObj.position.y = startY;
           targetKartObj.rotation.x = startRotX;
           targetKartObj.rotation.z = startRotZ;

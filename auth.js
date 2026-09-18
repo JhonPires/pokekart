@@ -244,7 +244,7 @@ async function loadTrackRecordsLeaderboard(trackId) {
   try {
     const { data: records, error } = await supabaseClient
       .from('track_records')
-      .select('best_time_ms, profiles ( nickname )')
+      .select('best_time_ms, kart_id, profiles ( nickname )')
       .eq('track_id', trackId || 'default')
       .order('best_time_ms', { ascending: true }) // Menor tempo primeiro
       .limit(10);
@@ -266,12 +266,21 @@ async function loadTrackRecordsLeaderboard(trackId) {
       const nick = rec.profiles ? rec.profiles.nickname : 'Piloto';
       const timeStr = formatRecordTime(rec.best_time_ms);
 
+      // 2. Buscamos o nome legível do kart através do ID salvo no recorde
+      const kartUsado = typeof KART_DATABASE !== 'undefined'
+        ? KART_DATABASE.find(k => k.id === rec.kart_id)
+        : null;
+      const nomeKart = kartUsado ? kartUsado.name : (rec.kart_id ? rec.kart_id.toUpperCase() : 'Kart Padrão');
+
       const item = document.createElement('div');
       item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: #0f172a; border-radius: 8px; border: 1px solid #334155; font-size: 14px;';
       item.innerHTML = `
         <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
           <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
-          <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">${escapeHtml(nick)}</span>
+          <div style="display: flex; flex-direction: column;">
+            <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 120px;">${escapeHtml(nick)}</span>
+            <span style="color: #38bdf8; font-size: 10px; font-weight: 800; margin-top: 1px;">${escapeHtml(nomeKart)}</span>
+          </div>
         </div>
         <div style="font-weight: bold; color: #facc15; font-family: monospace; font-size: 13px;">
           ⏱️ ${timeStr}

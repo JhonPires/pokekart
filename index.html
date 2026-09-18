@@ -1641,7 +1641,11 @@
       <nav class="nav">
         <button id="menuBtnGarage"><span class="icon">🛍️</span>Garagem</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
-        <button id="menuBtnBattlePass"><span class="icon">🎟️</span>Passe de Batalha</button> <!-- NOVO BOTÃO -->
+        <button id="menuBtnBattlePass" style="position: relative;"><span class="icon">🎟️</span>Passe de
+          Batalha</button>
+        <div id="badgePasse"
+          style="display: none; position: absolute; top: -4px; right: -4px; width: 14px; height: 14px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 10px #ef4444; border: 2px solid #0f172a;">
+        </div>
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
           Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
@@ -3427,11 +3431,30 @@
       return { level: currentLevel, currentXp: currentLevelXp, nextLevelXp: XP_PER_LEVEL, totalXp: userXp };
     }
 
+    function atualizarBadgePasse() {
+      if (!currentUserProfile) return;
+
+      const info = getPlayerLevelInfo();
+      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+
+      // Verifica se o jogador tem nível suficiente para algum prêmio que AINDA NÃO foi resgatado
+      const temRecompensaPendente = BATTLE_PASS_SEASON_1.some(reward => {
+        return info.level >= reward.level && !claimedRewards.includes(reward.level);
+      });
+
+      const badge = document.getElementById('badgePasse');
+      if (badge) {
+        badge.style.display = temRecompensaPendente ? 'block' : 'none';
+      }
+    }
+
     // Função para atualizar o UI do Topo e do Modal
     function updateLevelUI() {
       const info = getPlayerLevelInfo();
       const topbarText = document.getElementById('topbarLevelText');
       if (topbarText) topbarText.innerText = `Nv. ${info.level}`;
+
+      atualizarBadgePasse(); // 🔥 Nova linha para checar a notificação
     }
 
     function renderBattlePass() {
@@ -3531,6 +3554,8 @@
 
       // Re-renderiza para atualizar os botões e animações
       renderBattlePass();
+
+      atualizarBadgePasse(); // 🔥 Nova linha para apagar a bolinha se não houver mais prêmios
 
       // Chama a função de organizar karts se ele tiver ganhado o Mewtwo
       if (typeof sortKartsByAvailability === 'function') sortKartsByAvailability();

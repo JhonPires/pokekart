@@ -687,7 +687,8 @@
           </div>
 
           <div class="card" style="padding: 10px;">
-            <div class="concept-preview">
+            <div class="concept-preview" style="cursor: pointer;" title="Clique para ampliar"
+              onclick="document.getElementById('zoomedKartImg').src = document.getElementById('kartConceptImg').src; document.getElementById('imageZoomModal').style.display = 'flex';">
               <img id="kartConceptImg" src="img/jolteon.png" alt="Ficha Técnica do Kart" />
             </div>
           </div>
@@ -697,6 +698,19 @@
 
       </div>
     </main>
+  </div>
+
+  <!-- Modal de Zoom da Imagem do Kart -->
+  <div id="imageZoomModal"
+    style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(3,9,20,0.85); backdrop-filter:blur(10px); justify-content:center; align-items:center; cursor:pointer;"
+    onclick="this.style.display='none'">
+    <div style="position:relative; max-width:90vw; max-height:90vh; text-align:center;"
+      onclick="event.stopPropagation()">
+      <button onclick="document.getElementById('imageZoomModal').style.display='none'"
+        style="position:absolute; top:-40px; right:0; background:#ff4b55; border:none; color:#fff; font-size:18px; width:36px; height:36px; border-radius:50%; cursor:pointer; font-weight:bold;">&times;</button>
+      <img id="zoomedKartImg" src="" alt="Zoom do Kart"
+        style="max-width:90vw; max-height:85vh; object-fit:contain; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.8); border:1px solid #23557c;" />
+    </div>
   </div>
 
   <!-- DEPENDÊNCIAS ORIGINAIS -->
