@@ -17,7 +17,9 @@ const KART_POKEMON_IDS = {
   'darkrai': 491, 'moltres': 146, 'weezing': 110, 'swellow': 277, 'articuno': 144,
   'alakazam': 65, 'onix': 95, 'starmie': 121, 'victreebel': 71, 'rhydon': 112, 'persian': 53,
   'blastoise': 9, 'venusaur': 3, 'ceruledge': 937, 'infernape': 392,
-  'empoleon': 395, 'torterra': 389, 'hooh': 250, 'ironjugulis': 994, 'lunala': 792,
+  'empoleon': 395, 'torterra': 389, 'hooh': 250, 'hydreigon': 635, 'lunala': 792,
+  'kyogre': 382, 'groudon': 383, 'suicune': 245, 'entei': 244, 'raikou': 243,
+  'giratina': 487, 'arceus': 493, 'mew': 151, 'celebi': 251, 'lugia': 249
 };
 
 // Catálogo Completo (32 Karts)
@@ -72,8 +74,18 @@ const KART_CATALOG = [
   { id: 'empoleon', name: 'Empoleon Kart', price: 3500, conceptImg: 'img/empoleon.png', stats: { speed: 89, accel: 83, handling: 83 } },
   { id: 'torterra', name: 'Torterra Kart', price: 3500, conceptImg: 'img/torterra.png', stats: { speed: 87, accel: 78, handling: 80 } },
   { id: 'hooh', name: 'Ho-Oh Kart', price: 6000, conceptImg: 'img/hooh.png', stats: { speed: 99, accel: 92, handling: 80 } },
-  { id: 'ironjugulis', name: 'Iron Jugulis Kart', price: 5200, conceptImg: 'img/ironjugulis.png', stats: { speed: 96, accel: 89, handling: 84 } },
+  { id: 'hydreigon', name: 'Hydreigon Kart', price: 5200, conceptImg: 'img/hydreigon.png', stats: { speed: 96, accel: 89, handling: 84 } },
   { id: 'lunala', name: 'Lunala Kart', price: 6000, conceptImg: 'img/lunala.png', stats: { speed: 98, accel: 90, handling: 86 } },
+  { id: 'kyogre', name: 'Kyogre Kart', price: 7000, conceptImg: 'img/kyogre.png', stats: { speed: 95, accel: 85, handling: 82 } },
+  { id: 'groudon', name: 'Groudon Kart', price: 7000, conceptImg: 'img/groudon.png', stats: { speed: 96, accel: 80, handling: 80 } },
+  { id: 'suicune', name: 'Suicune Kart', price: 6500, conceptImg: 'img/suicune.png', stats: { speed: 90, accel: 88, handling: 86 } },
+  { id: 'entei', name: 'Entei Kart', price: 6500, conceptImg: 'img/entei.png', stats: { speed: 92, accel: 90, handling: 83 } },
+  { id: 'raikou', name: 'Raikou Kart', price: 6500, conceptImg: 'img/raikou.png', stats: { speed: 94, accel: 92, handling: 85 } },
+  { id: 'giratina', name: 'Giratina Kart', price: 8500, conceptImg: 'img/giratina.png', stats: { speed: 97, accel: 82, handling: 81 } },
+  { id: 'arceus', name: 'Arceus Kart', price: 10000, conceptImg: 'img/arceus.png', stats: { speed: 99, accel: 94, handling: 90 } },
+  { id: 'mew', name: 'Mew Kart', price: 8000, conceptImg: 'img/mew.png', stats: { speed: 90, accel: 95, handling: 92 } },
+  { id: 'celebi', name: 'Celebi Kart', price: 7500, conceptImg: 'img/celebi.png', stats: { speed: 88, accel: 93, handling: 90 } },
+  { id: 'lugia', name: 'Lugia Kart', price: 8500, conceptImg: 'img/lugia.png', stats: { speed: 98, accel: 88, handling: 85 } },
 ];
 
 let dailyFreeKarts = [];

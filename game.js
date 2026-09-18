@@ -316,7 +316,7 @@ const KART_DATABASE = [
   { id: 'empoleon', name: 'Empoleon Kart', modelUrl: getKartUrl('empoleon.glb'), stats: { accel: 30, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
   { id: 'torterra', name: 'Torterra Kart', modelUrl: getKartUrl('torterra.glb'), stats: { accel: 27, maxSpeed: 33, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.88 } },
   { id: 'hooh', name: 'Ho-Oh Kart', modelUrl: getKartUrl('hooh.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.5, turboBonus: 1.9, driftRate: 1.6, driftControl: 1.3, grip: 0.72 } },
-  { id: 'ironjugulis', name: 'Iron Jugulis Kart', modelUrl: getKartUrl('ironjugulis.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
+  { id: 'hydreigon', name: 'Hydreigon Kart', modelUrl: getKartUrl('hydreigon.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
   { id: 'lunala', name: 'Lunala Kart', modelUrl: getKartUrl('lunala.glb'), stats: { accel: 35, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
   { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
   { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb'), stats: { accel: 20, maxSpeed: 36, turnSpeed: 2.8, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.95 } },
@@ -324,7 +324,16 @@ const KART_DATABASE = [
   { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
   { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb'), stats: { accel: 23, maxSpeed: 37, turnSpeed: 2.9, turboBonus: 1.7, driftRate: 1.0, driftControl: 1.1, grip: 0.90 } },
   { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb'), stats: { accel: 34, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-
+  { id: 'kyogre', name: '🌊 Kyogre Kart', modelUrl: getKartUrl('kyogre.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.3, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
+  { id: 'groudon', name: '🌋 Groudon Kart', modelUrl: getKartUrl('groudon.glb'), stats: { accel: 24, maxSpeed: 37, turnSpeed: 3.0, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
+  { id: 'suicune', name: '💧 Suicune Kart', modelUrl: getKartUrl('suicune.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
+  { id: 'entei', name: '🔥 Entei Kart', modelUrl: getKartUrl('entei.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.80 } },
+  { id: 'raikou', name: '⚡ Raikou Kart', modelUrl: getKartUrl('raikou.glb'), stats: { accel: 36, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
+  { id: 'giratina', name: '🕳️ Giratina Kart', modelUrl: getKartUrl('giratina.glb'), stats: { accel: 27, maxSpeed: 39, turnSpeed: 3.1, turboBonus: 2.0, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
+  { id: 'arceus', name: '✨ Arceus Kart', modelUrl: getKartUrl('arceus.glb'), stats: { accel: 35, maxSpeed: 40, turnSpeed: 3.8, turboBonus: 2.1, driftRate: 1.6, driftControl: 1.4, grip: 0.85 } },
+  { id: 'mew', name: '🔮 Mew Kart', modelUrl: getKartUrl('mew.glb'), stats: { accel: 36, maxSpeed: 34, turnSpeed: 4.1, turboBonus: 1.4, driftRate: 1.7, driftControl: 1.4, grip: 0.75 } },
+  { id: 'celebi', name: '🌿 Celebi Kart', modelUrl: getKartUrl('celebi.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 4.0, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.3, grip: 0.80 } },
+  { id: 'lugia', name: '🌪️ Lugia Kart', modelUrl: getKartUrl('lugia.glb'), stats: { accel: 33, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
 ];
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
@@ -1071,6 +1080,36 @@ function createBoostEffect() {
   return group;
 }
 
+function createSurfEffect() {
+  const group = new THREE.Group();
+
+  // Cria dois anéis (ondas) que ficarão embaixo do kart
+  const geo = new THREE.RingGeometry(0.8, 1.5, 16);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x00bfff, // Azul ciano brilhante
+    transparent: true,
+    opacity: 0.7,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+
+  const wave1 = new THREE.Mesh(geo, mat);
+  wave1.rotation.x = -Math.PI / 2; // Deita no chão
+  wave1.position.y = 0.1; // Pouco acima do chão
+
+  const wave2 = new THREE.Mesh(geo, mat.clone());
+  wave2.rotation.x = -Math.PI / 2;
+  wave2.position.y = 0.05;
+
+  group.add(wave1, wave2);
+  group.userData.wave1 = wave1;
+  group.userData.wave2 = wave2;
+  group.visible = false;
+
+  return group;
+}
+
 // --- ATUALIZE SUA FUNÇÃO CREATEKART ---
 function createKart(chassisColor) {
   const group = new THREE.Group();
@@ -1079,15 +1118,17 @@ function createKart(chassisColor) {
   const shieldMesh = createShieldEffect();
   const poisonMesh = createPoisonEffect();
   const boostMesh = createBoostEffect();
+  const surfMesh = createSurfEffect(); // NOVO EFEITO AQUÁTICO
 
   // Etiqueta os efeitos para o sistema saber que não deve deletá-los
   shieldMesh.userData.isEffect = true;
   poisonMesh.userData.isEffect = true;
   boostMesh.userData.isEffect = true;
+  surfMesh.userData.isEffect = true;
 
-  group.add(shieldMesh, poisonMesh, boostMesh);
+  group.add(shieldMesh, poisonMesh, boostMesh, surfMesh);
 
-  return { group, wheels: [], shieldMesh, poisonMesh, boostMesh };
+  return { group, wheels: [], shieldMesh, poisonMesh, boostMesh, surfMesh };
 }
 
 let localKartObj, kart, wheels;
@@ -1445,7 +1486,8 @@ function enforceTrackBoundary() {
 
   if (Math.abs(lateral) > grassStart && Math.abs(lateral) <= (grassStart + 3.2)) {
     const maxGrassSpeed = 10;
-    if (physics.speed > maxGrassSpeed) {
+    // SE ESTIVER SURFANDO, IGNORA A PENALIDADE DE VELOCIDADE DA GRAMA!
+    if (physics.speed > maxGrassSpeed && !physics.isSurfing) {
       physics.speed = THREE.MathUtils.lerp(physics.speed, maxGrassSpeed, 0.07);
     }
   }
@@ -1941,7 +1983,15 @@ const SKILLS = {
   FUMACA: {
     id: 'FUMACA', name: 'Cortina de Fumaça',
     icon: '<svg viewBox="0 0 24 24" width="34" height="34"><circle cx="7" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/><circle cx="12" cy="12" r="4" fill="#9aa7b3" opacity="0.85"/><circle cx="17" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/></svg>'
-  }
+  },
+  SURF: {
+    id: 'SURF', name: 'Surf Aquático',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌊</div>'
+  },
+  LAMA: {
+    id: 'LAMA', name: 'Ataque de Lama',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">💩</div>'
+  },
 };
 
 let currentItem = null;
@@ -2356,6 +2406,35 @@ function castShockAbility() {
   }
 }
 
+function castMudAbility() {
+  if (!kart) return;
+  const myProgress = raceTrackers.get('local')?.progress || 0;
+  let targetPeerId = null;
+  let bestAheadProgress = Infinity;
+
+  // Procura o adversário imediatamente à frente
+  for (const [pid, entry] of remoteKarts.entries()) {
+    if (!entry.finished && entry.progress > myProgress && entry.progress < bestAheadProgress) {
+      bestAheadProgress = entry.progress;
+      targetPeerId = pid;
+    }
+  }
+
+  if (targetPeerId) {
+    const tBot = remoteKarts.get(targetPeerId);
+    if (tBot && tBot.isBot) {
+      if (tBot.shieldTimer <= 0) {
+        // Punição para Bots: Corta velocidade e faz o bot perder o traçado
+        tBot.speed *= 0.6;
+        tBot.laneOffset += (Math.random() > 0.5 ? 4 : -4);
+      }
+    } else {
+      // Dispara o evento de rede para o jogador real
+      sendNetworkEvent({ t: 'apply_mud', targetId: targetPeerId });
+    }
+  }
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyE' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
@@ -2391,6 +2470,18 @@ function useEquippedSkill(skill) {
 
     case 'FUMACA':
       dropTrapOnTrack('FUMACA');
+      break;
+
+    case 'SURF':
+      physics.isSurfing = true;
+      // Duração de 4.5 segundos apenas mantendo a velocidade na grama
+      setTimeout(() => {
+        physics.isSurfing = false;
+      }, 4500);
+      break;
+
+    case 'LAMA':
+      castMudAbility();
       break;
   }
 }
@@ -2446,6 +2537,19 @@ function handleNetworkMessage(data) {
       if (!isShieldActive) {
         physics.stunTimer = 1.0;
         if (kart) triggerSparkEffect(kart.position);
+      }
+    } else if (isHost) {
+      broadcastEvent(data);
+    }
+  } else if (data.t === 'apply_mud') {
+    if (racePeer && data.targetId === racePeer.id) {
+      if (!isShieldActive) {
+        // Ativa a mancha na tela!
+        const mudUI = document.getElementById('mudOverlay');
+        if (mudUI) {
+          mudUI.style.opacity = '0.95'; // Suja a tela
+          setTimeout(() => { mudUI.style.opacity = '0'; }, 3500); // Limpa após 3.5s
+        }
       }
     } else if (isHost) {
       broadcastEvent(data);
@@ -2569,7 +2673,7 @@ function initRaceMultiplayer() {
 
     racePeer.on('open', (myId) => {
       let attemptCount = 0;
-      const maxAttempts = 25;
+      const maxAttempts = 40; // Aumentamos para dar mais tempo ao Host carregar
 
       function tryConnectToHost() {
         attemptCount++;
@@ -2577,25 +2681,27 @@ function initRaceMultiplayer() {
           try { hostConn.close(); } catch (e) { }
         }
 
+        console.log(`[Multiplayer] Tentativa ${attemptCount} de conectar ao Host (${racePeerId})...`);
         hostConn = racePeer.connect(racePeerId, { reliable: true });
 
         hostConn.on('open', () => {
-          lastSnapshotReceivedTime = Date.now(); // Reseta o timer de watchdog
+          console.log("[Multiplayer] Conectado ao Host com sucesso!");
+          lastSnapshotReceivedTime = Date.now();
 
           setInterval(() => {
             if (kart && hostConn && hostConn.open) {
               const myTracker = raceTrackers.get('local');
               hostConn.send({
                 t: 'state',
-                x: kart.position.x,
-                y: kart.position.y,
-                z: kart.position.z,
-                ry: physics.heading,
-                speed: physics.speed,
+                x: (kart && !isNaN(kart.position.x)) ? kart.position.x : 0,
+                y: (kart && !isNaN(kart.position.y)) ? kart.position.y : 0,
+                z: (kart && !isNaN(kart.position.z)) ? kart.position.z : 0,
+                ry: !isNaN(physics.heading) ? physics.heading : 0,
+                speed: !isNaN(physics.speed) ? physics.speed : 0,
                 nick: playerNickname,
                 kartId: selectedKartId,
                 slot: _slotParam,
-                progress: myTracker ? myTracker.progress : 0,
+                progress: (myTracker && !isNaN(myTracker.progress)) ? myTracker.progress : 0,
                 lapCount: myTracker ? myTracker.lapCount : 1,
                 finished: myTracker ? myTracker.finished : false,
                 poisoned: isControlInverted,
@@ -2607,10 +2713,18 @@ function initRaceMultiplayer() {
         });
 
         hostConn.on('data', (data) => {
-          // Removemos a exigência de "raceStarted" e usamos window para evitar erros de escopo
+          // Atualiza o relógio de snapshot imediatamente para não causar timeout no loading/countdown
+          if (data.t === 'snapshot') {
+            lastSnapshotReceivedTime = Date.now();
+          }
+
+          // 🛡️ SEGURANÇA: Se o kart local ainda não carregou o modelo 3D, ignora snapshots para não crashar
+          if (!kart) {
+            if (data.t === 'snapshot') return;
+          }
           if (data.t === 'host_disconnected' && !window.jaSurgiuAlertaDeQueda) {
             const myTracker = raceTrackers.get('local');
-            if (myTracker && myTracker.finished) return; // Sai sem dar o alerta
+            if (myTracker && myTracker.finished) return;
 
             window.jaSurgiuAlertaDeQueda = true;
             corridaAtivaParaPunicao = false;
@@ -2621,7 +2735,6 @@ function initRaceMultiplayer() {
               startCountdown();
             }
           } else if (data.t === 'snapshot' && data.karts) {
-            lastSnapshotReceivedTime = Date.now();
             for (const [peerId, state] of Object.entries(data.karts)) {
               if (racePeer && peerId !== racePeer.id) {
                 handleRemoteKartState(peerId, state);
@@ -2633,11 +2746,16 @@ function initRaceMultiplayer() {
         });
       }
 
-      setTimeout(tryConnectToHost, 1000);
+      // 🛡️ Damos 2 segundos iniciais para o Host abrir a sala antes de tentar a 1ª vez
+      setTimeout(tryConnectToHost, 2000);
 
       racePeer.on('error', (err) => {
         if (err.type === 'peer-unavailable' && attemptCount < maxAttempts) {
-          setTimeout(tryConnectToHost, 1500);
+          console.warn(`[Multiplayer] Host ainda não respondeu. Nova tentativa em 2s (${attemptCount}/${maxAttempts})...`);
+          setTimeout(tryConnectToHost, 2000);
+        } else if (attemptCount >= maxAttempts) {
+          alert("❌ Não foi possível conectar ao Host. A sala pode ter sido fechada.");
+          window.location.href = 'index.html';
         }
       });
     });
@@ -2652,7 +2770,7 @@ function networkTick(dt) {
       const myTracker = raceTrackers.get('local');
       if (myTracker && myTracker.finished) return;
 
-      corridaAtivaParaPunicao = false; // Impede punição por queda de internet do host
+      corridaAtivaParaPunicao = false;
       alert("⚠️ A conexão com o Host foi perdida. A corrida foi encerrada.");
       window.location.href = 'index.html';
       return;
@@ -2666,20 +2784,30 @@ function networkTick(dt) {
   netTimer = 0;
 
   const myTracker = raceTrackers.get('local');
+
+  // 🛡️ Garante números inteiros/limpos para evitar o erro do BinaryPack
+  const safeX = (kart && !isNaN(kart.position.x)) ? Number(kart.position.x.toFixed(2)) : 0;
+  const safeY = (kart && !isNaN(kart.position.y)) ? Number(kart.position.y.toFixed(2)) : 0;
+  const safeZ = (kart && !isNaN(kart.position.z)) ? Number(kart.position.z.toFixed(2)) : 0;
+  const safeRy = !isNaN(physics.heading) ? Number(physics.heading.toFixed(3)) : 0;
+  const safeSpeed = !isNaN(physics.speed) ? Number(physics.speed.toFixed(1)) : 0;
+  const safeProgress = (myTracker && !isNaN(myTracker.progress)) ? Number(myTracker.progress.toFixed(4)) : 0;
+  const safeFinishTime = (myTracker && myTracker.finishTime && myTracker.finishTime !== Infinity) ? myTracker.finishTime : 0;
+
   const snapshot = {
     [racePeer.id]: {
-      x: kart ? kart.position.x : 0,
-      y: kart ? kart.position.y : 0,
-      z: kart ? kart.position.z : 0,
-      ry: physics.heading,
-      speed: physics.speed,
+      x: safeX,
+      y: safeY,
+      z: safeZ,
+      ry: safeRy,
+      speed: safeSpeed,
       nick: playerNickname,
       kartId: selectedKartId,
       slot: playerSlotParam,
-      progress: myTracker ? myTracker.progress : 0,
+      progress: safeProgress,
       lapCount: myTracker ? myTracker.lapCount : 1,
       finished: myTracker ? myTracker.finished : false,
-      finishTime: myTracker ? myTracker.finishTime : Infinity,
+      finishTime: safeFinishTime,
       poisoned: isControlInverted,
       shield: isShieldActive,
       turbo: physics.turboTimer > 0
@@ -2688,27 +2816,34 @@ function networkTick(dt) {
 
   for (const [pid, entry] of remoteKarts.entries()) {
     const remoteTracker = raceTrackers.get(pid);
+    const rPos = entry.isBot ? entry.obj.group.position : entry.target.pos;
+    const rFinish = (remoteTracker && remoteTracker.finishTime && remoteTracker.finishTime !== Infinity) ? remoteTracker.finishTime : 0;
+
     snapshot[pid] = {
-      x: entry.isBot ? entry.obj.group.position.x : entry.target.pos.x,
-      y: entry.isBot ? entry.obj.group.position.y : entry.target.pos.y,
-      z: entry.isBot ? entry.obj.group.position.z : entry.target.pos.z,
-      ry: entry.isBot ? entry.heading : entry.target.ry,
-      speed: entry.isBot ? entry.speed : entry.target.speed,
+      x: (rPos && !isNaN(rPos.x)) ? Number(rPos.x.toFixed(2)) : 0,
+      y: (rPos && !isNaN(rPos.y)) ? Number(rPos.y.toFixed(2)) : 0,
+      z: (rPos && !isNaN(rPos.z)) ? Number(rPos.z.toFixed(2)) : 0,
+      ry: !isNaN(entry.isBot ? entry.heading : entry.target.ry) ? Number((entry.isBot ? entry.heading : entry.target.ry).toFixed(3)) : 0,
+      speed: !isNaN(entry.isBot ? entry.speed : entry.target.speed) ? Number((entry.isBot ? entry.speed : entry.target.speed).toFixed(1)) : 0,
       nick: entry.nickname,
       kartId: entry.kartId,
-      progress: entry.progress,
-      lapCount: entry.lapCount,
-      finished: entry.finished,
+      progress: (entry.progress && !isNaN(entry.progress)) ? Number(entry.progress.toFixed(4)) : 0,
+      lapCount: entry.lapCount || 1,
+      finished: Boolean(entry.finished),
       poisoned: entry.isBot ? (entry.stunTimer > 0) : Boolean(entry.isPoisoned),
       shield: entry.isBot ? (entry.shieldTimer > 0) : Boolean(entry.isShieldActive),
       turbo: entry.isBot ? (entry.turboTimer > 0) : Boolean(entry.isTurboActive),
-      finishTime: remoteTracker ? remoteTracker.finishTime : Infinity
+      finishTime: rFinish
     };
   }
 
   for (const conn of activeGuestConns.values()) {
     if (conn.open) {
-      conn.send({ t: 'snapshot', karts: snapshot });
+      try {
+        conn.send({ t: 'snapshot', karts: snapshot });
+      } catch (e) {
+        // Silencia para não poluir o console, mas impede o crash
+      }
     }
   }
 }
@@ -3296,6 +3431,35 @@ function useBotSkill(botId, bot, skill) {
         }
       }
       break;
+    case 'LAMA':
+      // O Bot tenta sujar a tela de quem estiver na frente dele
+      let mudTargetId = null;
+      let mudBestAhead = Infinity;
+      const localTr = raceTrackers.get('local');
+
+      if (localTr && !localTr.finished && localTr.progress > bot.progress && localTr.progress < mudBestAhead) {
+        mudBestAhead = localTr.progress; mudTargetId = 'local';
+      }
+      for (const [pid, entry] of remoteKarts.entries()) {
+        if (pid !== botId && !entry.finished && entry.progress > bot.progress && entry.progress < mudBestAhead) {
+          mudBestAhead = entry.progress; mudTargetId = pid;
+        }
+      }
+
+      if (mudTargetId === 'local' && !isShieldActive) {
+        const mudUI = document.getElementById('mudOverlay');
+        if (mudUI) {
+          mudUI.style.opacity = '0.95';
+          setTimeout(() => { mudUI.style.opacity = '0'; }, 3500);
+        }
+      } else if (mudTargetId) {
+        const tBot = remoteKarts.get(mudTargetId);
+        if (tBot && tBot.isBot && tBot.shieldTimer <= 0) {
+          tBot.speed *= 0.6;
+          tBot.laneOffset += (Math.random() > 0.5 ? 4 : -4);
+        }
+      }
+      break;
   }
 }
 
@@ -3594,7 +3758,22 @@ function updateKartEffects(dt) {
       localKartObj.poisonMesh.visible = false;
     }
 
-    if (physics.turboTimer > 0) {
+    // --- NOVA ANIMAÇÃO DO SURF ---
+    if (physics.isSurfing) {
+      localKartObj.surfMesh.visible = true;
+      const t = performance.now() * 0.005;
+      // Faz as ondas girarem em direções opostas e pulsarem de tamanho
+      localKartObj.surfMesh.userData.wave1.rotation.z = t;
+      localKartObj.surfMesh.userData.wave1.scale.setScalar(1.0 + Math.sin(t * 1.5) * 0.15);
+
+      localKartObj.surfMesh.userData.wave2.rotation.z = -t * 0.8;
+      localKartObj.surfMesh.userData.wave2.scale.setScalar(1.3 + Math.cos(t * 1.5) * 0.15);
+    } else {
+      localKartObj.surfMesh.visible = false;
+    }
+
+    // --- CORREÇÃO: SÓ MOSTRA FOGO SE NÃO ESTIVER SURFANDO ---
+    if (physics.turboTimer > 0 && !physics.isSurfing) {
       localKartObj.boostMesh.visible = true;
       localKartObj.boostMesh.scale.z = 0.8 + Math.random() * 0.5;
     } else {

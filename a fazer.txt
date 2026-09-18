@@ -1,15 +1,12 @@
+- Ao clicar na imagem da galeria dar zoom 
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 - Efeitos sonoros (Aceleração, derrapagem, poderes)
 - novas armadilhas
 - criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
-- Animação do poderzinho de raio por que ele só eletrocuta quem tá perto mas não tem nenhum indicativo, seria bom até pra tentar usar o escudo
-- O raio não deveria soltar pra trás pra não ficar muito quebrado pro primeiro colocado
 - Dar um pulinho na hora que apertar espaço igual no Mario Kart
 - colocar os Pokemon falando quando começar a corrida
-- Ao iniciar a corrida aconteceu 3x aleatoriamente de ao dar o GO e começar a correr o carro voltar para o inicio como se tivesse resetado
 - Mobile
-- Boost ignorar o travamento da grama
 - Enquanto ta no drift e apertar o mouse ta ficando travado o drift
 - Ver a possibilidade de escolher para onde jogar a habilidade
 

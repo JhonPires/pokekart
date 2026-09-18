@@ -326,6 +326,41 @@
         <button id="btnReturnLobby" class="lobbyBtn">Sair para o Lobby</button>
     </div>
 
+
+    <!-- EFEITO LAMA NA TELA (EXPANDIDO) -->
+    <div id="mudOverlay"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 5000;">
+        <!-- Grande mancha superior esquerda -->
+        <div
+            style="position: absolute; top: -5%; left: 5%; width: 55vw; height: 45vh; background: #2b170b; border-radius: 40% 60% 50% 50%; filter: blur(8px); transform: rotate(-15deg); box-shadow: inset 20px 20px 40px rgba(0,0,0,0.8);">
+        </div>
+
+        <!-- Grande mancha superior direita cobrindo o ranking -->
+        <div
+            style="position: absolute; top: 0%; right: 0%; width: 50vw; height: 50vh; background: #3d2314; border-radius: 60% 40% 40% 60%; filter: blur(10px); transform: rotate(20deg); box-shadow: inset -20px 20px 40px rgba(0,0,0,0.8);">
+        </div>
+
+        <!-- Mancha central gigante tapando o meio da pista -->
+        <div
+            style="position: absolute; top: 25%; left: 20%; width: 60vw; height: 45vh; background: #1f0f07; border-radius: 50% 50% 60% 40%; filter: blur(12px); transform: rotate(10deg); box-shadow: inset 0 0 50px rgba(0,0,0,0.9);">
+        </div>
+
+        <!-- Mancha inferior esquerda perto do minimapa -->
+        <div
+            style="position: absolute; bottom: 0%; left: 0%; width: 40vw; height: 40vh; background: #331c0e; border-radius: 70% 30% 50% 50%; filter: blur(8px);">
+        </div>
+
+        <!-- Mancha inferior direita perto da velocidade -->
+        <div
+            style="position: absolute; bottom: 5%; right: 5%; width: 45vw; height: 40vh; background: #261308; border-radius: 40% 60% 30% 70%; filter: blur(9px);">
+        </div>
+
+        <!-- Pingo espirrado solto no topo -->
+        <div
+            style="position: absolute; top: 15%; left: 45%; width: 20vw; height: 15vh; background: #3d2314; border-radius: 50%; filter: blur(5px);">
+        </div>
+    </div>
+
     <!-- CONTROLES VIRTUAIS PARA DISPOSITIVOS MÓVEIS -->
     <!-- Nota: A posição 'bottom' foi elevada para não sobrepor o minimapa e o velocímetro nas laterais -->
     <div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;">
