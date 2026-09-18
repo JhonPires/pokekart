@@ -1,5 +1,16 @@
 # Changelog - PokéKart
 
+## [1.9] - 17/09/2026
+- Adicionado o Perfil do Jogador
+- Adicionado o sistema de Passe de Batalha
+- Corrigidas as Missões Diárias
+- Adicionado o sistema de EXP e Nível dos jogadores para o Passe de Batalha
+- Adicionadas as Conquistas ao Perfil do Jogador
+- Adicionado o Ranking das Ligas
+- Adicionadas 3 novas habilidades: Surf, Dig e Lama.
+- Adicionado botão de jogar novamente ao fim da corrida solo.
+- Adicionado 10 novos Karts.
+
 ## [1.8] - 15/09/2026
 - Corrigidos os efeitos das habilidades
 - Adicionada a opção de selecionar a pista durante a criação da sala multiplayer

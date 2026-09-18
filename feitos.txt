@@ -6,7 +6,8 @@ Corrigidas as Missões Diárias;
 Adicionado o sistema de EXP e Nível dos jogadores para o Passe de Batalha;
 Adicionadas as Conquistas ao Perfil do Jogador;
 Adicionado o Ranking das Ligas;
-Adicionadas 2 novas habilidades: Surf e Lama.;
+Adicionadas 3 novas habilidades: Surf, Dig e Lama.;
+Adicionado botão de jogar novamente ao fim da corrida solo.;
 Adicionado 10 novos Karts.
 
 

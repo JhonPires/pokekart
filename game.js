@@ -1110,6 +1110,24 @@ function createSurfEffect() {
   return group;
 }
 
+function createDigEffect() {
+  const group = new THREE.Group();
+
+  // Pequenos montes de terra/rochas girando ao redor do kart ou no chão
+  const geo = new THREE.ConeGeometry(0.4, 0.8, 5);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x5c4033 }); // Marrom terra
+
+  for (let i = 0; i < 3; i++) {
+    const mound = new THREE.Mesh(geo, mat);
+    const angle = (i / 3) * Math.PI * 2;
+    mound.position.set(Math.cos(angle) * 1.2, 0.2, Math.sin(angle) * 1.2);
+    group.add(mound);
+  }
+
+  group.visible = false;
+  return group;
+}
+
 // --- ATUALIZE SUA FUNÇÃO CREATEKART ---
 function createKart(chassisColor) {
   const group = new THREE.Group();
@@ -1713,6 +1731,7 @@ async function showFinishOverlay(place) {
 
   const style = document.createElement('style');
   style.innerHTML = `
+    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     #finishOverlay ::-webkit-scrollbar { width: 6px; }
     #finishOverlay ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
   `;
@@ -1720,9 +1739,16 @@ async function showFinishOverlay(place) {
 
   const card = document.createElement('div');
   card.style.cssText = `
-    background: rgba(30, 41, 59, 0.95); border: 2px solid #38bdf8; border-radius: 16px;
-    padding: 24px; width: 380px; box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+    background: rgba(15, 23, 42, 0.85); 
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(56, 189, 248, 0.4); 
+    border-radius: 20px; 
+    padding: 32px 24px; 
+    width: 380px; 
+    box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(56, 189, 248, 0.1);
     display: flex; flex-direction: column; align-items: center; gap: 16px;
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   `;
 
   card.innerHTML = `
@@ -1791,6 +1817,19 @@ async function showFinishOverlay(place) {
         window.location.href = `game.html?nick=${urlParams.get('nick')}&kart=${urlParams.get('kart')}&slot=0&ai=hard&players=1&mode=tower&floor=${targetFloor}&gym=${gymId}&maxFloors=${maxFloorsVal}&leader=${encodeURIComponent(leader)}&leaderkart=${leaderKart}`;
       };
       buttonsContainer.appendChild(btnNextFloor);
+    }
+
+    // 🔥 NOVO: Botão "Jogar Novamente" (Aparece no Solo normal, ou se perder na Torre)
+    if (!isTower || (isTower && place !== 1)) {
+      const btnPlayAgain = document.createElement('button');
+      btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
+      btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
+      btnPlayAgain.onmousedown = () => btnPlayAgain.style.transform = 'translateY(4px)';
+      btnPlayAgain.onmouseup = () => btnPlayAgain.style.transform = 'translateY(0)';
+
+      // Recarrega a página exatamente como está (mesma pista, kart e dificuldade)
+      btnPlayAgain.onclick = () => window.location.reload();
+      buttonsContainer.appendChild(btnPlayAgain);
     }
 
     const btnRestart = document.createElement('button');
@@ -1991,6 +2030,10 @@ const SKILLS = {
   LAMA: {
     id: 'LAMA', name: 'Ataque de Lama',
     icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">💩</div>'
+  },
+  DIG: {
+    id: 'DIG', name: 'Ataque Cavar',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">⛏️</div>'
   },
 };
 
@@ -2435,6 +2478,220 @@ function castMudAbility() {
   }
 }
 
+function castDigAbility(casterId = 'local') {
+  let leaderId = null;
+  let maxProgress = -1;
+
+  const localTracker = raceTrackers.get('local');
+  if (localTracker && !localTracker.finished) {
+    maxProgress = localTracker.progress;
+    leaderId = 'local';
+  }
+
+  for (const [pid, entry] of remoteKarts.entries()) {
+    if (!entry.finished && entry.progress > maxProgress) {
+      maxProgress = entry.progress;
+      leaderId = pid;
+    }
+  }
+
+  // Se o líder for o próprio atirador (você ou o bot), ele mira no 2º lugar
+  if (leaderId === casterId) {
+    let secondBest = -1;
+    leaderId = null;
+
+    if (casterId !== 'local' && localTracker && !localTracker.finished) {
+      secondBest = localTracker.progress;
+      leaderId = 'local';
+    }
+
+    for (const [pid, entry] of remoteKarts.entries()) {
+      if (pid !== casterId && !entry.finished && entry.progress > secondBest) {
+        secondBest = entry.progress;
+        leaderId = pid;
+      }
+    }
+  }
+
+  if (leaderId) {
+    // Spawna saindo do atirador correto
+    spawnDigProjectile(casterId, leaderId);
+
+    // Avisa a rede
+    if (casterId === 'local') {
+      sendNetworkEvent({ t: 'spawn_dig', casterId: 'local', targetId: leaderId });
+    } else if (typeof isHost !== 'undefined' && isHost) {
+      broadcastEvent({ t: 'spawn_dig', casterId: casterId, targetId: leaderId });
+    }
+  }
+}
+
+function triggerDigExplosion(targetId) {
+  let targetKartObj = null;
+
+  if (targetId === 'local') {
+    physics.speed = 0;       // Zera a velocidade completamente
+    physics.stunTimer = 1.0; // Adicione esta linha! (Trava o seu kart por 4 segundos)
+    if (kart) targetKartObj = kart;
+  } else if (remoteKarts.has(targetId)) {
+    targetKartObj = remoteKarts.get(targetId).obj.group; // Pega o 3D do bot/remoto
+  }
+
+  if (targetKartObj) {
+    const startY = targetKartObj.position.y;
+    const startRotX = targetKartObj.rotation.x;
+    const startRotZ = targetKartObj.rotation.z;
+
+    let jumpTime = 0;
+
+    const jumpInterval = setInterval(() => {
+      jumpTime += 0.02;
+
+      // 1. Pula para o alto
+      targetKartObj.position.y = startY + Math.sin(jumpTime * Math.PI) * 3;
+
+      // 2. Efeito de TREMOR
+      if (jumpTime < 1) {
+        targetKartObj.rotation.x = startRotX + (Math.random() - 0.5) * 0.5;
+        targetKartObj.rotation.z = startRotZ + (Math.random() - 0.5) * 0.5;
+      }
+
+      if (jumpTime >= 1) {
+        clearInterval(jumpInterval);
+        // Trava de segurança para caso o jogador tenha desconectado durante o pulo
+        if (targetId === 'local' || remoteKarts.has(targetId)) {
+          targetKartObj.position.y = startY;
+          targetKartObj.rotation.x = startRotX;
+          targetKartObj.rotation.z = startRotZ;
+        }
+      }
+    }, 16);
+  }
+}
+
+const activeDigs = []; // Guarda as animações que estão viajando
+
+function spawnDigProjectile(casterId, targetId) {
+  const group = new THREE.Group();
+
+  const geo = new THREE.DodecahedronGeometry(0.5, 0);
+  const mat1 = new THREE.MeshBasicMaterial({ color: 0x3b240e });
+  const mat2 = new THREE.MeshBasicMaterial({ color: 0x5c3a21 });
+
+  // Pedras muito mais "achatadas" no eixo Y, como se fossem o asfalto levantando
+  const rock1 = new THREE.Mesh(geo, mat1);
+  rock1.scale.set(0.8, 0.2, 0.8);
+
+  const rock2 = new THREE.Mesh(geo, mat2);
+  rock2.scale.set(0.5, 0.15, 0.5);
+  rock2.position.set(0.3, 0.05, -0.3);
+
+  const rock3 = new THREE.Mesh(geo, mat2);
+  rock3.scale.set(0.5, 0.15, 0.5);
+  rock3.position.set(-0.3, 0.05, 0.3);
+
+  group.add(rock1, rock2, rock3);
+
+  let startPos = new THREE.Vector3();
+  if (casterId === 'local' && kart) {
+    startPos.copy(kart.position);
+  } else if (remoteKarts.has(casterId)) {
+    const rKart = remoteKarts.get(casterId);
+    startPos.copy(rKart.isBot ? rKart.obj.group.position : rKart.target.pos);
+  }
+
+  group.position.copy(startPos);
+  group.position.y = 0.05; // Bem colado no chão
+  scene.add(group);
+
+  activeDigs.push({ mesh: group, targetId: targetId, casterId: casterId, isLocalCaster: (casterId === 'local') });
+}
+
+function updateDigProjectiles(dt) {
+  const trackLength = trackCurve.getLength();
+
+  for (let i = activeDigs.length - 1; i >= 0; i--) {
+    const dig = activeDigs[i];
+    let targetPos = null;
+
+    if (dig.targetId === 'local' && kart) {
+      targetPos = kart.position;
+    } else if (remoteKarts.has(dig.targetId)) {
+      const rKart = remoteKarts.get(dig.targetId);
+      targetPos = rKart.isBot ? rKart.obj.group.position : rKart.target.pos;
+    }
+
+    if (targetPos) {
+      const directDist = dig.mesh.position.distanceTo(targetPos);
+
+      if (directDist < 3.0) {
+        // BATEU!
+        scene.remove(dig.mesh);
+        dig.mesh.traverse((child) => {
+          if (child.isMesh) {
+            child.geometry.dispose();
+            child.material.dispose();
+          }
+        });
+        activeDigs.splice(i, 1);
+
+        const isBotCaster = dig.casterId !== 'local' && remoteKarts.has(dig.casterId) && remoteKarts.get(dig.casterId).isBot;
+        const isSinglePlayer = typeof roomCodeParam === 'undefined' || !roomCodeParam;
+
+        // Quem dispara o dano? O jogador local (se ele atirou) ou o controlador do Bot (Host ou Single Player)
+        if (dig.isLocalCaster || (isBotCaster && (isHost || isSinglePlayer))) {
+          if (dig.targetId === 'local') {
+            triggerDigExplosion('local'); // BOOM em você!
+          } else {
+            sendNetworkEvent({ t: 'trigger_dig', targetId: dig.targetId });
+            triggerDigExplosion(dig.targetId);
+
+            const targetBot = remoteKarts.get(dig.targetId);
+            if (targetBot && targetBot.isBot) {
+              targetBot.speed = 0;
+              targetBot.stunTimer = 2.5;
+            }
+          }
+        }
+      } else {
+        // NAVEGAÇÃO PELA PISTA
+        let moveDir = new THREE.Vector3();
+
+        if (directDist < 25.0) {
+          moveDir.subVectors(targetPos, dig.mesh.position);
+        } else {
+          const { sample } = nearestTrackSample(dig.mesh.position);
+          let lookAheadT = sample.t + (18.0 / trackLength);
+          if (lookAheadT > 1.0) lookAheadT -= 1.0;
+
+          const pathTarget = trackCurve.getPointAt(lookAheadT);
+          moveDir.subVectors(pathTarget, dig.mesh.position);
+        }
+
+        moveDir.y = 0;
+        moveDir.normalize();
+
+        // 🚀 Velocidade de perseguição extremamente alta
+        const speed = 55;
+        dig.mesh.position.addScaledVector(moveDir, speed * dt);
+
+        // 🪨 EFEITO SUBTERRÂNEO: Fica preso ao chão e vibra intensamente
+        dig.mesh.position.y = 0.12;
+
+        // Tremor aleatório nos eixos X e Z para simular rachaduras violentas
+        dig.mesh.rotation.x = (Math.random() - 0.5) * 0.6;
+        dig.mesh.rotation.z = (Math.random() - 0.5) * 0.6;
+
+        // Gira a base rapidamente no eixo Y para parecer que a terra está revolvendo
+        dig.mesh.rotation.y += 20 * dt;
+      }
+    } else {
+      scene.remove(dig.mesh);
+      activeDigs.splice(i, 1);
+    }
+  }
+}
+
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyE' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
@@ -2482,6 +2739,10 @@ function useEquippedSkill(skill) {
 
     case 'LAMA':
       castMudAbility();
+      break;
+
+    case 'DIG':
+      castDigAbility('local');
       break;
   }
 }
@@ -2552,6 +2813,21 @@ function handleNetworkMessage(data) {
         }
       }
     } else if (isHost) {
+      broadcastEvent(data);
+    }
+
+  } else if (data.t === 'spawn_dig') {
+    // Alguém atirou o Dig, vamos mostrar a animação na nossa tela!
+    spawnDigProjectile(data.casterId, data.targetId);
+    if (isHost) broadcastEvent(data);
+
+  } else if (data.t === 'trigger_dig') {
+    if (racePeer && data.targetId === racePeer.id) {
+      triggerDigExplosion('local');
+    } else {
+      triggerDigExplosion(data.targetId); // 🔥 Mostra a animação do coitado voando para todos na sala
+    }
+    if (isHost) {
       broadcastEvent(data);
     }
   }
@@ -3460,6 +3736,10 @@ function useBotSkill(botId, bot, skill) {
         }
       }
       break;
+
+    case 'DIG':
+      castDigAbility(botId); // Agora o bot atira o poder como ele mesmo!
+      break;
   }
 }
 
@@ -3856,7 +4136,7 @@ function animate() {
     }
   }
   // -----------------------------------------------------
-
+  updateDigProjectiles(dt);
   composer.render();
 }
 

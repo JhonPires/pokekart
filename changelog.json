@@ -1,5 +1,20 @@
 [
     {
+        "version": "1.9",
+        "date": "17/09/2026",
+        "changes": [
+            "Adicionado o Perfil do Jogador",
+            "Adicionado o sistema de Passe de Batalha",
+            "Corrigidas as Missões Diárias",
+            "Adicionado o sistema de EXP e Nível dos jogadores para o Passe de Batalha",
+            "Adicionadas as Conquistas ao Perfil do Jogador",
+            "Adicionado o Ranking das Ligas",
+            "Adicionadas 3 novas habilidades: Surf, Dig e Lama.",
+            "Adicionado botão de jogar novamente ao fim da corrida solo.",
+            "Adicionado 10 novos Karts."
+        ]
+    },
+    {
         "version": "1.8",
         "date": "15/09/2026",
         "changes": [

@@ -1,3 +1,7 @@
+- Dig não pode ser usado pelo primeiro colocado (nem recebe qnd estiver em primeiro e pegar a pokebola)
+- Escudo defender o DIG
+- Refazer os modal que estao com padrao antigo (final da corrida)
+- Ver a possibilidade de colocar um boost se apertar o acelerar no timing certo da largada
 - Ao clicar na imagem da galeria dar zoom 
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
