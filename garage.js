@@ -19,7 +19,9 @@ const KART_POKEMON_IDS = {
   'blastoise': 9, 'venusaur': 3, 'ceruledge': 937, 'infernape': 392,
   'empoleon': 395, 'torterra': 389, 'hooh': 250, 'hydreigon': 635, 'lunala': 792,
   'kyogre': 382, 'groudon': 383, 'suicune': 245, 'entei': 244, 'raikou': 243,
-  'giratina': 487, 'arceus': 493, 'mew': 151, 'celebi': 251, 'lugia': 249
+  'giratina': 487, 'arceus': 493, 'mew': 151, 'celebi': 251, 'lugia': 249, 'pidgeot': 18, 'butterfree': 12,
+  'beedrill': 15, 'arbok': 24, 'sandslash': 28, 'clefable': 36, 'wigglytuff': 40, 'golbat': 42, 'vileplume': 45,
+  'parasect': 47, 'magikarp': 129,
 };
 
 // Catálogo Completo (32 Karts)
@@ -86,6 +88,17 @@ const KART_CATALOG = [
   { id: 'mew', name: 'Mew Kart', price: 8000, conceptImg: 'img/mew.png', stats: { speed: 90, accel: 95, handling: 92 } },
   { id: 'celebi', name: 'Celebi Kart', price: 7500, conceptImg: 'img/celebi.png', stats: { speed: 88, accel: 93, handling: 90 } },
   { id: 'lugia', name: 'Lugia Kart', price: 8500, conceptImg: 'img/lugia.png', stats: { speed: 98, accel: 88, handling: 85 } },
+  { id: 'magikarp', name: 'Magikarp Kart', price: 300, conceptImg: 'img/magikarp.png', stats: { speed: 20, accel: 50, handling: 30 } },
+  { id: 'pidgeot', name: 'Pidgeot Kart', price: 1200, conceptImg: 'img/pidgeot.png', stats: { speed: 75, accel: 70, handling: 80 } },
+  { id: 'beedrill', name: 'Beedrill Kart', price: 1000, conceptImg: 'img/beedrill.png', stats: { speed: 70, accel: 85, handling: 65 } },
+  { id: 'arbok', name: 'Arbok Kart', price: 900, conceptImg: 'img/arbok.png', stats: { speed: 65, accel: 65, handling: 70 } },
+  { id: 'butterfree', name: 'Butterfree Kart', price: 850, conceptImg: 'img/butterfree.png', stats: { speed: 55, accel: 75, handling: 85 } },
+  { id: 'sandslash', name: 'Sandslash Kart', price: 900, conceptImg: 'img/sandslash.png', stats: { speed: 65, accel: 70, handling: 65 } },
+  { id: 'clefable', name: 'Clefable Kart', price: 800, conceptImg: 'img/clefable.png', stats: { speed: 50, accel: 60, handling: 65 } },
+  { id: 'wigglytuff', name: 'Wigglytuff Kart', price: 800, conceptImg: 'img/wigglytuff.png', stats: { speed: 50, accel: 60, handling: 60 } },
+  { id: 'golbat', name: 'Golbat Kart', price: 1100, conceptImg: 'img/golbat.png', stats: { speed: 72, accel: 70, handling: 72 } },
+  { id: 'vileplume', name: 'Vileplume Kart', price: 850, conceptImg: 'img/vileplume.png', stats: { speed: 55, accel: 55, handling: 60 } },
+  { id: 'parasect', name: 'Parasect Kart', price: 700, conceptImg: 'img/parasect.png', stats: { speed: 45, accel: 60, handling: 55 } }
 ];
 
 let dailyFreeKarts = [];

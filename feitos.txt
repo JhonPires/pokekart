@@ -4,9 +4,10 @@ Adicionado alerta na habilidade DIG. O corredor que estiver em primeiro será no
 Adicionado um "pulo" ao iniciar um drift.;
 Adicionado boost de largada.;
 Adicionado uma nova habilidade Onda Sonora.;
-
-
-
+Corrigido o retorno da sala multiplayer.;
+Corrigido a roleta diária.;
+Reformulado o perfil do jogador.;
+Adicionado novos karts.
 
 
 Versão 1.9.1
@@ -22,7 +23,6 @@ Adicionado um novo Ranking de Volta mais rápida.;
 
 
 Versão 1.9
-
 Adicionado o Perfil do Jogador;
 Adicionado o sistema de Passe de Batalha;
 Corrigidas as Missões Diárias;
@@ -32,8 +32,6 @@ Adicionado o Ranking das Ligas;
 Adicionadas 3 novas habilidades: Surf, Dig e Lama.;
 Adicionado botão de jogar novamente ao fim da corrida solo.;
 Adicionado 10 novos Karts.
-
-
 
 
 Versão 1.8

@@ -356,6 +356,17 @@ const KART_DATABASE = [
   { id: 'mew', name: '🔮 Mew Kart', modelUrl: getKartUrl('mew.glb'), stats: { accel: 36, maxSpeed: 34, turnSpeed: 4.1, turboBonus: 1.4, driftRate: 1.7, driftControl: 1.4, grip: 0.75 } },
   { id: 'celebi', name: '🌿 Celebi Kart', modelUrl: getKartUrl('celebi.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 4.0, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.3, grip: 0.80 } },
   { id: 'lugia', name: '🌪️ Lugia Kart', modelUrl: getKartUrl('lugia.glb'), stats: { accel: 33, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
+  { id: 'magikarp', name: '🐟 Magikarp Kart', modelUrl: getKartUrl('magikarp.glb'), stats: { accel: 25, maxSpeed: 20, turnSpeed: 2.5, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.0, grip: 0.60 } },
+  { id: 'pidgeot', name: '🦅 Pidgeot Kart', modelUrl: getKartUrl('pidgeot.glb'), stats: { accel: 35, maxSpeed: 42, turnSpeed: 4.0, turboBonus: 2.0, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
+  { id: 'beedrill', name: '🐝 Beedrill Kart', modelUrl: getKartUrl('beedrill.glb'), stats: { accel: 40, maxSpeed: 36, turnSpeed: 4.2, turboBonus: 2.2, driftRate: 1.6, driftControl: 1.4, grip: 0.75 } },
+  { id: 'arbok', name: '🐍 Arbok Kart', modelUrl: getKartUrl('arbok.glb'), stats: { accel: 30, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.7, driftRate: 1.8, driftControl: 1.5, grip: 0.70 } },
+  { id: 'butterfree', name: '🦋 Butterfree Kart', modelUrl: getKartUrl('butterfree.glb'), stats: { accel: 28, maxSpeed: 32, turnSpeed: 4.5, turboBonus: 1.6, driftRate: 1.3, driftControl: 1.4, grip: 0.85 } },
+  { id: 'sandslash', name: '🏜️ Sandslash Kart', modelUrl: getKartUrl('sandslash.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.2, turboBonus: 1.6, driftRate: 1.4, driftControl: 1.2, grip: 0.90 } },
+  { id: 'clefable', name: '⭐ Clefable Kart', modelUrl: getKartUrl('clefable.glb'), stats: { accel: 30, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+  { id: 'wigglytuff', name: '🎈 Wigglytuff Kart', modelUrl: getKartUrl('wigglytuff.glb'), stats: { accel: 28, maxSpeed: 29, turnSpeed: 3.4, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
+  { id: 'golbat', name: '🦇 Golbat Kart', modelUrl: getKartUrl('golbat.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.8, turboBonus: 1.9, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
+  { id: 'vileplume', name: '🌸 Vileplume Kart', modelUrl: getKartUrl('vileplume.glb'), stats: { accel: 26, maxSpeed: 31, turnSpeed: 3.0, turboBonus: 1.4, driftRate: 1.2, driftControl: 1.1, grip: 0.85 } },
+  { id: 'parasect', name: '🍄 Parasect Kart', modelUrl: getKartUrl('parasect.glb'), stats: { accel: 27, maxSpeed: 28, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.82 } }
 ];
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
@@ -1525,11 +1536,24 @@ function updatePhysics(dt) {
       physics.isDrifting = true;
       physics.driftDirection = turnInput !== 0 ? Math.sign(turnInput) : (left ? 1 : -1);
       physics.driftCharge = 0;
+
+      // CORREÇÃO 1: Zera a inércia do drift anterior. 
+      // Impede o "teleporte lateral" se o jogador trocar de lado muito rápido!
+      physics.driftFactor = 0;
     }
     physics.driftCharge += dt * (physics.driftRate || 1.0);
 
     const driftSteer = physics.turnSpeed * (physics.driftControl || 1.0);
-    physics.heading += physics.driftDirection * driftSteer * 0.38 * movingFactor * dt;
+
+    // CORREÇÃO 2: Permite abrir e fechar a curva enquanto o kart está a fazer drift
+    let currentTurnStrength = 0.38; // Força de curva neutra (igual à sua original)
+    if (turnInput === physics.driftDirection) {
+      currentTurnStrength = 0.58; // Pressionando para dentro da curva: Fecha mais a curva
+    } else if (turnInput === -physics.driftDirection) {
+      currentTurnStrength = 0.15; // Pressionando contra a curva: Abre o traçado (evita bater nas paredes)
+    }
+
+    physics.heading += physics.driftDirection * driftSteer * currentTurnStrength * movingFactor * dt;
     physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2.5);
   } else {
     if (physics.isDrifting && physics.driftCharge > 0.8) {
@@ -1890,7 +1914,13 @@ async function showFinishOverlay(place) {
     btnKeep.innerText = isHost ? 'Manter Sala e Voltar' : 'Voltar para a Sala';
     btnKeep.onmousedown = () => btnKeep.style.transform = 'translateY(4px)';
     btnKeep.onmouseup = () => btnKeep.style.transform = 'translateY(0)';
-    btnKeep.onclick = () => window.location.href = `index.html?rejoin=${roomCodeParam}&host=${isHost}`;
+    btnKeep.onclick = () => {
+      // Avisa o sistema que estamos a voltar legitimamente para o lobby (impede a destruição da sala)
+      window.isRejoiningLobby = true;
+
+      // Muda de 'rejoin' para 'room', que é o padrão que o seu lobby provavelmente reconhece
+      window.location.href = `index.html?room=${roomCodeParam}&host=${isHost}`;
+    };
 
     const btnLeave = document.createElement('button');
     btnLeave.style.cssText = baseBtnStyle + 'background: #ef4444; color: #fff; box-shadow: 0 4px 0 #b91c1c;';
@@ -2015,7 +2045,7 @@ async function showFinishOverlay(place) {
     `;
   // --- CÁLCULO DE MOEDAS E XP (PASSE DE BATALHA) ---
   const currentTrackDifficulty = urlParams.get('difficulty') || 'easy'; // 'easy', 'normal', 'hard'
-  const TRACK_DIFFICULTY_MULTIPLIERS = { easy: 1.0, normal: 1.5, hard: 2.5 };
+  const TRACK_DIFFICULTY_MULTIPLIERS = { easy: 1.0, normal: 1.5, hard: 2.0 };
   const trackMultiplier = TRACK_DIFFICULTY_MULTIPLIERS[currentTrackDifficulty] || 1.0;
 
   const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
@@ -2023,8 +2053,8 @@ async function showFinishOverlay(place) {
   const totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
 
   // Define XP baseado na posição e multiplica pela dificuldade
-  const baseXPByPosition = { 1: 50, 2: 30, 3: 20, 4: 10 };
-  const earnedXP = Math.round((baseXPByPosition[place] || 10) * trackMultiplier);
+  const baseXPByPosition = { 1: 5, 2: 3, 3: 2, 4: 1 };
+  const earnedXP = Math.round((baseXPByPosition[place] || 1) * trackMultiplier);
 
   let updatePayload = {}; // Objeto para atualizar o Supabase em 1 única chamada!
 
@@ -4255,7 +4285,7 @@ const isRankedMatchGlobal = typeof roomCodeParam !== 'undefined' && roomCodePara
 let isLeavingRoom = false;
 
 function executarSaidaDaSala() {
-  if (isLeavingRoom) return;
+  if (isLeavingRoom || window.isRejoiningLobby) return;
   isLeavingRoom = true;
 
   // 1. Se for o Host, avisa os convidados independentemente de ser ranqueada ou não

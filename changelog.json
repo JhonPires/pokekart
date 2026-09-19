@@ -1,8 +1,23 @@
 [
     {
+        "version": "1.9.2",
+        "date": "19/09/2026",
+        "changes": [
+            "Corrigido o manobrar do kart utilizando a ré.",
+            "Adicionado alerta na habilidade DIG. O corredor que estiver em primeiro será notificado.",
+            "Adicionado um \"pulo\" ao iniciar um drift.",
+            "Adicionado boost de largada.",
+            "Adicionado uma nova habilidade Onda Sonora.",
+            "Corrigido o retorno da sala multiplayer.",
+            "Corrigido a roleta diária.",
+            "Reformulado o perfil do jogador.",
+            "Adicionado novos karts."
+        ]
+    },
+    {
         "version": "1.9.1",
         "date": "18/09/2026",
-       "changes": [
+        "changes": [
             "Corrigido o bug com a habilidade DIG.",
             "Adicionada uma notificação no ícone de acesso ao Passe de Batalha caso haja algo para resgatar.",
             "Adicionada a tecla \"Q\" para inverter a câmera (olhar para trás).",

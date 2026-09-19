@@ -1,12 +1,20 @@
-- Não está voltando para a mesma sala multiplayer criada após o termino da corrida
+BUGS
+
+
+AJUSTES
+
+
+
+NOVIDADES
+- Opcoes para modificar o perfil do jogador
+- Loja de consumiveis (Revives para torre, bordas para o perfil, avatares especiais)
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
-- Refazer os modal que estao com padrao antigo (final da corrida)
 - Ver a possibilidade de escolher para onde jogar a habilidade
-- Enquanto ta no drift e apertar o mouse ta ficando travado o drift
-- Apertar para um lado e depois para o outro enquanto está fazendo drift está bugando e jogando o kart para longe lateralmente 
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
-- Adicionar novas fases (Bastante) no Passe de Batalha
-- novas armadilhas
+- Adicionar novas fases (muitas) no Passe de Batalha e criar novas conquistas (muitas)
+
+FUTURO
+- Adicionar na tela de admin as opçoes para balancear todos os karts
 - Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Efeitos sonoros (Aceleração, derrapagem, poderes)

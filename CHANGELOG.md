@@ -1,15 +1,26 @@
 # Changelog - PokéKart
 
+## [1.9.2] - 19/09/2026
+- Corrigido o manobrar do kart utilizando a ré.
+- Adicionado alerta na habilidade DIG. O corredor que estiver em primeiro será notificado.
+- Adicionado um "pulo" ao iniciar um drift.
+- Adicionado boost de largada.
+- Adicionado uma nova habilidade Onda Sonora.
+- Corrigido o retorno da sala multiplayer.
+- Corrigido a roleta diária.
+- Reformulado o perfil do jogador.
+- Adicionado novos karts.
+
 ## [1.9.1] - 18/09/2026
-- Corrigido bug com a habilidade DIG.
-- Adicionado notificação no ícone que da acesso ao Passe de Batalha caso tenha algo para resgatar.
-- Adicionado a tecla "Q" para inverter a camera (olhar para trás).
-- Adicionado aos recordes das pistas o Kart utilizado naquele recorde.
-- Removido o botão de jogar novamente ao placar de classificação de uma corrida no modo Torre.
-- Adicionado a opção para abrir as imagens dos karts na Garagem.
-- Adicionado para a última recompensa do passe ser de escolha do jogador.
-- Habilidade DIG não pode ser usado nem obtida por corredores em 1º lugar.
-- Adicionado um novo Ranking de Volta mais rápida.
+- Corrigido o bug com a habilidade DIG.
+- Adicionada uma notificação no ícone de acesso ao Passe de Batalha caso haja algo para resgatar.
+- Adicionada a tecla "Q" para inverter a câmera (olhar para trás).
+- Adicionado aos recordes das pistas o Kart utilizado em cada recorde.
+- Removido o botão "Jogar Novamente" do placar de classificação de uma corrida no modo Torre.
+- Adicionada a opção de abrir as imagens dos Karts na Garagem.
+- Adicionada a opção de escolher a última recompensa do Passe de Batalha.
+- A habilidade DIG não pode ser utilizada nem obtida por corredores que estejam em 1º lugar.
+- Adicionado um novo Ranking de Voltas Mais Rápidas.
 
 ## [1.9] - 17/09/2026
 - Adicionado o Perfil do Jogador
