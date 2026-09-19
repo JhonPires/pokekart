@@ -1,4 +1,15 @@
-Versão 1.91
+Versão 1.9.2
+Corrigido o manobrar do kart utilizando a ré.;
+Adicionado alerta na habilidade DIG. O corredor que estiver em primeiro será notificado.;
+Adicionado um "pulo" ao iniciar um drift.;
+Adicionado boost de largada.;
+Adicionado uma nova habilidade Onda Sonora.;
+
+
+
+
+
+Versão 1.9.1
 Corrigido bug com a habilidade DIG.;
 Adicionado notificação no ícone que da acesso ao Passe de Batalha caso tenha algo para resgatar.;
 Adicionado a tecla "Q" para inverter a camera (olhar para trás).;

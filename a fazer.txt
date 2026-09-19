@@ -1,23 +1,15 @@
-- Exibir uma  marcação em tela pro primeiro colocado quando estiver vindo um DIG a caminho dele
 - Não está voltando para a mesma sala multiplayer criada após o termino da corrida
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
-- Pensando nos recordes, seria interessante guardar os recordes das voltas mais rapidas e ter um ranking por pista
-- Criar uma habilidade estilo caixa de som que ao ser utilizada empurra os karts proximos a quem utilizou para o lado
 - Refazer os modal que estao com padrao antigo (final da corrida)
-- Ver a possibilidade de colocar um boost se apertar o acelerar no timing certo da largada
-- Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
-- Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
-- Efeitos sonoros (Aceleração, derrapagem, poderes)
-- novas armadilhas
-- criar um painel onde vc pode ficar alterando os parametros caso seja o admin (ao salvar guarda diretamente no banco)
-- Dar um pulinho na hora que apertar espaço igual no Mario Kart
-- colocar os Pokemon falando quando começar a corrida
-- Mobile
-- Enquanto ta no drift e apertar o mouse ta ficando travado o drift
 - Ver a possibilidade de escolher para onde jogar a habilidade
+- Enquanto ta no drift e apertar o mouse ta ficando travado o drift
+- Apertar para um lado e depois para o outro enquanto está fazendo drift está bugando e jogando o kart para longe lateralmente 
+- Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 - Adicionar novas fases (Bastante) no Passe de Batalha
-
-
+- novas armadilhas
+- Mobile
+- Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
+- Efeitos sonoros (Aceleração, derrapagem, poderes)
 
 proximos 3d:
 Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D

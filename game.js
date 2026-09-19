@@ -30,6 +30,26 @@ driftBarFill.style.cssText = 'width: 0%; height: 100%; background: #facc15; tran
 driftBarContainer.appendChild(driftBarFill);
 document.body.appendChild(driftBarContainer);
 
+// --- CRIAÇÃO DO ALERTA DE ATAQUE (DIG) ---
+const digWarningContainer = document.createElement('div');
+digWarningContainer.id = 'digWarningContainer';
+digWarningContainer.style.cssText = 'position: absolute; top: 15%; left: 50%; transform: translateX(-50%); width: auto; padding: 10px 24px; background: rgba(185, 28, 28, 0.85); border: 2px solid #f87171; border-radius: 8px; display: none; z-index: 100; text-align: center; color: #fff; font-size: 18px; font-weight: bold; font-family: sans-serif; text-shadow: 1px 1px 3px rgba(0,0,0,0.9); box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);';
+digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
+document.body.appendChild(digWarningContainer);
+
+// Animação para o alerta piscar
+const digWarningStyle = document.createElement('style');
+digWarningStyle.innerHTML = `
+  @keyframes pulseWarning {
+    0% { transform: translateX(-50%) scale(1); opacity: 1; box-shadow: 0 0 10px rgba(239, 68, 68, 0.8); }
+    100% { transform: translateX(-50%) scale(1.08); opacity: 0.7; box-shadow: 0 0 25px rgba(239, 68, 68, 1); }
+  }
+  #digWarningContainer {
+    animation: pulseWarning 0.35s infinite alternate;
+  }
+`;
+document.head.appendChild(digWarningStyle);
+
 let raceStartTime = 0;
 let totalRaceTimeMs = 0;
 let raceTimerInterval = null;
@@ -1169,7 +1189,11 @@ const physics = {
   driftCharge: 0,
   turboTimer: 0,
   stunTimer: 0,
-  spinTimer: 0
+  spinTimer: 0,
+  hopTimer: 0,
+  wasDriftKeyPressed: false,
+  pushVelocity: new THREE.Vector3(),
+  pushTimer: 0
 };
 
 let localKartLoaded = false;
@@ -1361,10 +1385,14 @@ window.addEventListener('keydown', (event) => {
 
 let raceStarted = false;
 let countdownInProgress = false;
+let countdownStartTime = 0;
+let gasPressedTime = 0;
 
 function startCountdown() {
   if (countdownInProgress || raceStarted) return;
   countdownInProgress = true;
+  countdownStartTime = performance.now(); // Grava a hora exata que os números começam
+  gasPressedTime = 0; // Limpa o registo do acelerador
 
   const overlay = document.getElementById('countdownOverlay');
   if (!overlay) return;
@@ -1385,6 +1413,23 @@ function startCountdown() {
       raceStartTime = performance.now();
       lapStartTime = performance.now(); // Inicia o cronómetro da 1ª volta
       localLapTimes = []; // Limpa registos anteriores
+
+      // --- LÓGICA DO ROCKET START (TURBO DE ARRANQUE) ---
+      // A contagem total demora 3000ms. O "2" aparece aos 1000ms e o "1" aos 2000ms.
+      if (gasPressedTime > 0) {
+        if (gasPressedTime < 2200) {
+          // 1. Apertou muito cedo (antes ou no início do "1") -> Queima a largada
+          physics.spinTimer = 0.6;
+        } else if (gasPressedTime >= 2200 && gasPressedTime < 2700) {
+          // 2. Timing Bom (durante o "1", mas ainda longe do fim) -> Mini Turbo
+          physics.turboTimer = 0.3 * (physics.turboBonus || 1.0);
+        } else if (gasPressedTime >= 2700) {
+          // 3. Timing Perfeito! (Quase colado no "GO!") -> Super Turbo
+          physics.turboTimer = 0.8 * (physics.turboBonus || 1.0);
+        }
+      }
+      // --------------------------------------------------
+
     } else {
       clearInterval(timer);
       overlay.style.display = 'none';
@@ -1426,6 +1471,13 @@ function updatePhysics(dt) {
   const right = isControlInverted ? rawLeft : rawRight;
   const driftKey = !raceOver && keys['Space'];
 
+  // Se apertou espaço agora, não estava apertando antes, e não está voando por uma explosão:
+  if (driftKey && !physics.wasDriftKeyPressed && physics.hopTimer <= 0 && !kart.userData.isJumping) {
+    physics.hopTimer = 0.4; // O pulinho dura exatamente 0.25 segundos
+  }
+  physics.wasDriftKeyPressed = driftKey; // Grava o estado para não pular infinitamente
+  // ----------------------------
+
   if (forward) physics.speed += physics.accel * dt;
   else if (backward) physics.speed -= physics.brakeDecel * dt;
   else {
@@ -1456,7 +1508,11 @@ function updatePhysics(dt) {
     }
   }
 
-  const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / physics.maxSpeed, 0.2, 1);
+  // Usa a velocidade máxima correta como base (maxSpeed para a frente, maxReverse para trás)
+  const refSpeed = physics.speed >= 0 ? physics.maxSpeed : Math.abs(physics.maxReverse);
+
+  // Calcula o fator de movimento usando a referência adequada
+  const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / refSpeed, 0.2, 1);
   const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
   if (turnInput !== 0 && !canDrift && physics.speed > 8) {
@@ -1493,7 +1549,29 @@ function updatePhysics(dt) {
   kart.position.addScaledVector(moveDir, physics.speed * dt);
   kart.rotation.y = physics.heading;
 
+  // --- LÓGICA DO EMPURRÃO DA ONDA SONORA ---
+  if (physics.pushTimer > 0) {
+    physics.pushTimer -= dt;
+    // Empurra o kart com muita força na direção definida
+    kart.position.addScaledVector(physics.pushVelocity, 45 * dt);
+  }
+  // -----------------------------------------
+
   enforceTrackBoundary();
+  // Apenas faz o pulinho se não estiver a sofrer o ataque "Cavar" (DIG)
+  if (!kart.userData.isJumping) {
+    if (physics.hopTimer > 0) {
+      physics.hopTimer -= dt;
+
+      // Converte o tempo de 0.25s numa escala de 0 a 1
+      const hopProgress = 1.0 - (physics.hopTimer / 0.4);
+
+      // O Math.sin cria um arco perfeito: sobe até ao pico (1.2 de altura) e desce
+      kart.position.y = Math.sin(hopProgress * Math.PI) * 0.5;
+    } else {
+      kart.position.y = 0; // Garante que volta exatamente para o chão
+    }
+  }
 }
 
 function enforceTrackBoundary() {
@@ -2099,6 +2177,10 @@ const SKILLS = {
     id: 'DIG', name: 'Ataque Cavar',
     icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">⛏️</div>'
   },
+  SOM: {
+    id: 'SOM', name: 'Onda Sonora',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🔊</div>'
+  },
 };
 
 let currentItem = null;
@@ -2654,6 +2736,80 @@ function triggerDigExplosion(targetId) {
   }
 }
 
+// Efeito de argola de som expandindo
+function createSonicBoomEffect(startPos) {
+  const geo = new THREE.RingGeometry(0.5, 2.5, 32);
+  const mat = new THREE.MeshBasicMaterial({
+    color: 0x38bdf8, // Azul claro/Ciano
+    transparent: true,
+    opacity: 0.9,
+    side: THREE.DoubleSide,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending
+  });
+  const ring = new THREE.Mesh(geo, mat);
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.copy(startPos);
+  ring.position.y += 0.8;
+  scene.add(ring);
+
+  let age = 0;
+  const interval = setInterval(() => {
+    age += 0.03;
+    const progress = age / 0.4; // Expande durante 0.4 segundos
+    ring.scale.setScalar(1 + progress * 7);
+    ring.material.opacity = 0.9 * (1 - progress);
+
+    if (age >= 0.4) {
+      clearInterval(interval);
+      scene.remove(ring);
+      ring.geometry.dispose();
+      ring.material.dispose();
+    }
+  }, 16);
+}
+
+// Lógica de acertar quem está por perto
+function castSonicBoom(casterId) {
+  const radius = 8.0;
+
+  let casterPos = null;
+  if (casterId === 'local' && kart) {
+    casterPos = kart.position;
+    sendNetworkEvent({ t: 'trigger_sonic_boom', casterId: 'local' });
+  } else if (remoteKarts.has(casterId)) {
+    const rKart = remoteKarts.get(casterId);
+    casterPos = rKart.isBot ? rKart.obj.group.position : rKart.target.pos;
+  }
+
+  if (!casterPos) return;
+
+  // Analisa todos os outros karts no jogo
+  for (const [pid, entry] of remoteKarts.entries()) {
+    if (pid === casterId || entry.finished) continue;
+
+    const targetPos = entry.isBot ? entry.obj.group.position : entry.target.pos;
+    const dist = casterPos.distanceTo(targetPos);
+
+    if (dist < radius) {
+      const pushDir = new THREE.Vector3().subVectors(targetPos, casterPos).normalize();
+
+      if (entry.isBot && entry.shieldTimer <= 0) {
+        // Empurra o Bot lateralmente para fora do traçado
+        const kartForward = new THREE.Vector3(Math.sin(entry.heading), 0, Math.cos(entry.heading));
+        const directionSign = kartForward.cross(pushDir).y > 0 ? 1 : -1;
+
+        entry.laneOffset += 6.5 * directionSign;
+        entry.speed *= 0.3; // Trava o kart
+        entry.spinTimer = 0.8; // Faz ele rodopiar
+      } else if (!entry.isBot && casterId === 'local') {
+        // Se acertou um jogador real, avisa-o pela rede!
+        sendNetworkEvent({ t: 'apply_push', targetId: pid, originX: casterPos.x, originZ: casterPos.z });
+      }
+    }
+  }
+}
+
 const activeDigs = []; // Guarda as animações que estão viajando
 
 function spawnDigProjectile(casterId, targetId) {
@@ -2844,6 +3000,13 @@ function useEquippedSkill(skill) {
 
       castDigAbility('local');
       break;
+
+    case 'SOM':
+      if (kart) {
+        createSonicBoomEffect(kart.position);
+        castSonicBoom('local');
+      }
+      break;
   }
 }
 
@@ -2928,6 +3091,31 @@ function handleNetworkMessage(data) {
       triggerDigExplosion(data.targetId); // 🔥 Mostra a animação do coitado voando para todos na sala
     }
     if (isHost) {
+      broadcastEvent(data);
+    }
+  } else if (data.t === 'trigger_sonic_boom') {
+    let casterPos = null;
+    if (remoteKarts.has(data.casterId)) {
+      const rKart = remoteKarts.get(data.casterId);
+      casterPos = rKart.isBot ? rKart.obj.group.position : rKart.target.pos;
+    }
+    if (casterPos) createSonicBoomEffect(casterPos);
+    if (isHost) broadcastEvent(data);
+
+  } else if (data.t === 'apply_push') {
+    if (racePeer && data.targetId === racePeer.id) {
+      if (!isShieldActive && kart) {
+        // Você foi atingido pela onda de som!
+        const origin = new THREE.Vector3(data.originX, kart.position.y, data.originZ);
+        const pushDir = new THREE.Vector3().subVectors(kart.position, origin).normalize();
+
+        physics.pushVelocity.copy(pushDir);
+        physics.pushTimer = 0.25; // Fica a deslizar/voar para o lado
+        physics.speed *= 0.3; // Perde quase toda a velocidade
+        physics.spinTimer = 0.8; // Roda
+        triggerSparkEffect(kart.position); // Solta faíscas
+      }
+    } else if (isHost) {
       broadcastEvent(data);
     }
   }
@@ -3357,6 +3545,16 @@ function updateHUD() {
     } else {
       driftBarContainer.style.display = 'none';
       driftBarFill.style.width = '0%';
+    }
+
+    // Verifica se existe algum poder DIG ativo cujo alvo seja o jogador local
+    const isDigIncoming = activeDigs.some(dig => dig.targetId === 'local');
+
+    // Mostra o aviso apenas se o jogador for o alvo e a corrida ainda não tiver acabado
+    if (isDigIncoming && !tr.finished) {
+      digWarningContainer.style.display = 'block';
+    } else {
+      digWarningContainer.style.display = 'none';
     }
 
     if (raceStarted && !tr.finished) {
@@ -3838,7 +4036,22 @@ function useBotSkill(botId, bot, skill) {
       break;
 
     case 'DIG':
-      castDigAbility(botId); // Agora o bot atira o poder como ele mesmo!
+      // Verifica a posição atual do bot na corrida
+      const classificacaoBot = updateStandings();
+      const posicaoBot = classificacaoBot.findIndex(r => r.key === botId) + 1;
+
+      if (posicaoBot === 1) {
+        // Se o bot estiver em 1º lugar, ele não usa a habilidade.
+        // O loop principal (updateBots) já vai limpar o item da mão dele, então ele apenas descarta.
+        break;
+      }
+
+      castDigAbility(botId);
+      break;
+
+    case 'SOM':
+      createSonicBoomEffect(bot.obj.group.position);
+      castSonicBoom(botId);
       break;
   }
 }
@@ -4213,6 +4426,17 @@ function animate() {
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+
+  // Acompanha a pressão do acelerador enquanto o semáforo conta
+  if (countdownInProgress && !raceStarted) {
+    const forward = keys['KeyW'] || keys['ArrowUp'] || mobileGasActive;
+    if (forward && gasPressedTime === 0) {
+      gasPressedTime = performance.now() - countdownStartTime;
+    } else if (!forward) {
+      gasPressedTime = 0; // Se o jogador soltar o botão, a tentativa faz reset
+    }
+  }
+  // -------------------------------------------------------
 
   updatePhysics(dt);
   updateDriftEffects(dt);
