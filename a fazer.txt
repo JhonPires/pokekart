@@ -4,20 +4,26 @@ BUGS
 AJUSTES
 
 
-
 NOVIDADES
-- Opcoes para modificar o perfil do jogador
+- Perfil do jogador mostrar quantas corridas já correu, quantas vitorias e derrotas o jogador tem.
+- FASE 4 - Adicionar para visualizar o perfil de um outro jogador (Na tela de ranking ser possivel abrir um modal com o perfil do jogador)
+- FASE 4 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game_3.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
+- FASE 4 - Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
+- Colocar uma sinalização nos novos karts adicionados na tela da garagem
+- Adicionar uma area no perfil do jogador de itens obtidos para poder equipar ou desequipar.;
+- Adicionar no filtro na garagem por região dos pokemons (talvez necessario add no banco as regioes pra cada kart)
+- Adicionar na tela de admin as opçoes para balancear todos os karts (seria algo de um dropdown para selecionar o kart e qnd selecionar trazer o json do banco para eu atualizar e salvar)
 - Loja de consumiveis (Revives para torre, bordas para o perfil, avatares especiais)
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
 - Ver a possibilidade de escolher para onde jogar a habilidade
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
-- Adicionar novas fases (muitas) no Passe de Batalha e criar novas conquistas (muitas)
 
 FUTURO
-- Adicionar na tela de admin as opçoes para balancear todos os karts
 - Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Efeitos sonoros (Aceleração, derrapagem, poderes)
+
+
 
 proximos 3d:
 Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D

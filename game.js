@@ -293,81 +293,35 @@ function getKartUrl(filename) {
   return `./models/${filename}`;
 }
 
-const KART_DATABASE = [
-  { id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 } },
-  { id: 'zoroark', name: 'Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
-  { id: 'togetic', name: 'Togetic Kart', modelUrl: getKartUrl('togetic.glb'), stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 } },
-  { id: 'charizard', name: 'Charizard Kart', modelUrl: getKartUrl('charizard.glb'), stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 } },
-  { id: 'flygon', name: 'Flygon Kart', modelUrl: getKartUrl('flygon.glb'), stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 } },
-  { id: 'gengar', name: 'Gengar Kart', modelUrl: getKartUrl('gengar.glb'), stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 } },
-  { id: 'oshawott', name: 'Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 } },
-  { id: 'snorlax', name: 'Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 } },
-  { id: 'golem', name: 'Golem Kart', modelUrl: getKartUrl('golem.glb'), stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 } },
-  { id: 'jinx', name: 'Jynx Kart', modelUrl: getKartUrl('jinx.glb'), stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 } },
-  { id: 'sudowoodo', name: 'Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb'), stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 } },
-  { id: 'sylveon', name: 'Sylveon Kart', modelUrl: getKartUrl('sylveon.glb'), stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
-  { id: 'umbreon', name: 'Umbreon Kart', modelUrl: getKartUrl('umbreon.glb'), stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
-  { id: 'pikachu', name: 'Pikachu Kart', modelUrl: getKartUrl('pikachu.glb'), stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-  { id: 'gliscor', name: 'Gliscor Kart', modelUrl: getKartUrl('gliscor.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 } },
-  { id: 'mewtwo', name: 'Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 } },
-  { id: 'zekrom', name: 'Zekrom Kart', modelUrl: getKartUrl('zekrom.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 } },
-  { id: 'swampert', name: 'Swampert Kart', modelUrl: getKartUrl('swampert.glb'), stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 } },
-  { id: 'rayquaza', name: 'Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb'), stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 } },
-  { id: 'espeon', name: 'Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-  { id: 'tatsugiri', name: 'Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
-  { id: 'scyther', name: 'Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-  { id: 'ninetales', name: 'Ninetales Kart', modelUrl: getKartUrl('ninetales.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-  { id: 'arcanine', name: 'Arcanine Kart', modelUrl: getKartUrl('arcanine.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.2, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-  { id: 'lucario', name: 'Lucario Kart', modelUrl: getKartUrl('lucario.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
-  { id: 'dialga', name: 'Dialga Kart', modelUrl: getKartUrl('dialga.glb'), stats: { accel: 25, maxSpeed: 38, turnSpeed: 2.9, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
-  { id: 'zapdos', name: 'Zapdos Kart', modelUrl: getKartUrl('zapdos.glb'), stats: { accel: 35, maxSpeed: 34, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.2, driftControl: 1.1, grip: 0.75 } },
-  { id: 'luxray', name: 'Luxray Kart', modelUrl: getKartUrl('luxray.glb'), stats: { accel: 33, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-  { id: 'staraptor', name: 'Staraptor Kart', modelUrl: getKartUrl('staraptor.glb'), stats: { accel: 34, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-  { id: 'dragonite', name: 'Dragonite Kart', modelUrl: getKartUrl('dragonite.glb'), stats: { accel: 28, maxSpeed: 36, turnSpeed: 3.1, turboBonus: 1.7, driftRate: 1.1, driftControl: 1.1, grip: 0.85 } },
-  { id: 'tangela', name: 'Tangela Kart', modelUrl: getKartUrl('tangela.glb'), stats: { accel: 30, maxSpeed: 29, turnSpeed: 3.8, turboBonus: 1.1, driftRate: 1.5, driftControl: 1.3, grip: 0.95 } },
-  { id: 'sneasel', name: 'Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } },
-  { id: 'darkrai', name: 'Darkrai Kart', modelUrl: getKartUrl('darkrai.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.5, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-  { id: 'moltres', name: 'Moltres Kart', modelUrl: getKartUrl('moltres.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.4, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.1, grip: 0.78 } },
-  { id: 'weezing', name: 'Weezing Kart', modelUrl: getKartUrl('weezing.glb'), stats: { accel: 24, maxSpeed: 30, turnSpeed: 3.1, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.1, grip: 0.88 } },
-  { id: 'swellow', name: 'Swellow Kart', modelUrl: getKartUrl('swellow.glb'), stats: { accel: 35, maxSpeed: 33, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.4, grip: 0.72 } },
-  { id: 'articuno', name: 'Articuno Kart', modelUrl: getKartUrl('articuno.glb'), stats: { accel: 32, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.5, driftRate: 1.4, driftControl: 1.2, grip: 0.82 } },
-  { id: 'blastoise', name: 'Blastoise Kart', modelUrl: getKartUrl('blastoise.glb'), stats: { accel: 28, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-  { id: 'venusaur', name: 'Venusaur Kart', modelUrl: getKartUrl('venusaur.glb'), stats: { accel: 29, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.85 } },
-  { id: 'ceruledge', name: 'Ceruledge Kart', modelUrl: getKartUrl('ceruledge.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-  { id: 'infernape', name: 'Infernape Kart', modelUrl: getKartUrl('infernape.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-  { id: 'empoleon', name: 'Empoleon Kart', modelUrl: getKartUrl('empoleon.glb'), stats: { accel: 30, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
-  { id: 'torterra', name: 'Torterra Kart', modelUrl: getKartUrl('torterra.glb'), stats: { accel: 27, maxSpeed: 33, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.88 } },
-  { id: 'hooh', name: 'Ho-Oh Kart', modelUrl: getKartUrl('hooh.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.5, turboBonus: 1.9, driftRate: 1.6, driftControl: 1.3, grip: 0.72 } },
-  { id: 'hydreigon', name: 'Hydreigon Kart', modelUrl: getKartUrl('hydreigon.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-  { id: 'lunala', name: 'Lunala Kart', modelUrl: getKartUrl('lunala.glb'), stats: { accel: 35, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-  { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
-  { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb'), stats: { accel: 20, maxSpeed: 36, turnSpeed: 2.8, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.95 } },
-  { id: 'starmie', name: '⭐ Starmie Kart', modelUrl: getKartUrl('starmie.glb'), stats: { accel: 33, maxSpeed: 35, turnSpeed: 3.8, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.2, grip: 0.80 } },
-  { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-  { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb'), stats: { accel: 23, maxSpeed: 37, turnSpeed: 2.9, turboBonus: 1.7, driftRate: 1.0, driftControl: 1.1, grip: 0.90 } },
-  { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb'), stats: { accel: 34, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-  { id: 'kyogre', name: '🌊 Kyogre Kart', modelUrl: getKartUrl('kyogre.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.3, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
-  { id: 'groudon', name: '🌋 Groudon Kart', modelUrl: getKartUrl('groudon.glb'), stats: { accel: 24, maxSpeed: 37, turnSpeed: 3.0, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
-  { id: 'suicune', name: '💧 Suicune Kart', modelUrl: getKartUrl('suicune.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
-  { id: 'entei', name: '🔥 Entei Kart', modelUrl: getKartUrl('entei.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.80 } },
-  { id: 'raikou', name: '⚡ Raikou Kart', modelUrl: getKartUrl('raikou.glb'), stats: { accel: 36, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-  { id: 'giratina', name: '🕳️ Giratina Kart', modelUrl: getKartUrl('giratina.glb'), stats: { accel: 27, maxSpeed: 39, turnSpeed: 3.1, turboBonus: 2.0, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
-  { id: 'arceus', name: '✨ Arceus Kart', modelUrl: getKartUrl('arceus.glb'), stats: { accel: 35, maxSpeed: 40, turnSpeed: 3.8, turboBonus: 2.1, driftRate: 1.6, driftControl: 1.4, grip: 0.85 } },
-  { id: 'mew', name: '🔮 Mew Kart', modelUrl: getKartUrl('mew.glb'), stats: { accel: 36, maxSpeed: 34, turnSpeed: 4.1, turboBonus: 1.4, driftRate: 1.7, driftControl: 1.4, grip: 0.75 } },
-  { id: 'celebi', name: '🌿 Celebi Kart', modelUrl: getKartUrl('celebi.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 4.0, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.3, grip: 0.80 } },
-  { id: 'lugia', name: '🌪️ Lugia Kart', modelUrl: getKartUrl('lugia.glb'), stats: { accel: 33, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-  { id: 'magikarp', name: '🐟 Magikarp Kart', modelUrl: getKartUrl('magikarp.glb'), stats: { accel: 25, maxSpeed: 20, turnSpeed: 2.5, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.0, grip: 0.60 } },
-  { id: 'pidgeot', name: '🦅 Pidgeot Kart', modelUrl: getKartUrl('pidgeot.glb'), stats: { accel: 35, maxSpeed: 42, turnSpeed: 4.0, turboBonus: 2.0, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
-  { id: 'beedrill', name: '🐝 Beedrill Kart', modelUrl: getKartUrl('beedrill.glb'), stats: { accel: 40, maxSpeed: 36, turnSpeed: 4.2, turboBonus: 2.2, driftRate: 1.6, driftControl: 1.4, grip: 0.75 } },
-  { id: 'arbok', name: '🐍 Arbok Kart', modelUrl: getKartUrl('arbok.glb'), stats: { accel: 30, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.7, driftRate: 1.8, driftControl: 1.5, grip: 0.70 } },
-  { id: 'butterfree', name: '🦋 Butterfree Kart', modelUrl: getKartUrl('butterfree.glb'), stats: { accel: 28, maxSpeed: 32, turnSpeed: 4.5, turboBonus: 1.6, driftRate: 1.3, driftControl: 1.4, grip: 0.85 } },
-  { id: 'sandslash', name: '🏜️ Sandslash Kart', modelUrl: getKartUrl('sandslash.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.2, turboBonus: 1.6, driftRate: 1.4, driftControl: 1.2, grip: 0.90 } },
-  { id: 'clefable', name: '⭐ Clefable Kart', modelUrl: getKartUrl('clefable.glb'), stats: { accel: 30, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-  { id: 'wigglytuff', name: '🎈 Wigglytuff Kart', modelUrl: getKartUrl('wigglytuff.glb'), stats: { accel: 28, maxSpeed: 29, turnSpeed: 3.4, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-  { id: 'golbat', name: '🦇 Golbat Kart', modelUrl: getKartUrl('golbat.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.8, turboBonus: 1.9, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-  { id: 'vileplume', name: '🌸 Vileplume Kart', modelUrl: getKartUrl('vileplume.glb'), stats: { accel: 26, maxSpeed: 31, turnSpeed: 3.0, turboBonus: 1.4, driftRate: 1.2, driftControl: 1.1, grip: 0.85 } },
-  { id: 'parasect', name: '🍄 Parasect Kart', modelUrl: getKartUrl('parasect.glb'), stats: { accel: 27, maxSpeed: 28, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.82 } }
-];
+let KART_DATABASE = [];
+async function loadKartsFromDatabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('karts')
+      .select('id, name, stats, physics');
+
+    if (error) throw error;
+
+    KART_DATABASE = data.map(dbKart => {
+      // Mescla as estatísticas da loja (stats) com a física do jogo (physics)
+      // e utiliza o getKartUrl para montar o caminho do 3D
+      return {
+        id: dbKart.id,
+        name: dbKart.name,
+        modelUrl: getKartUrl(`${dbKart.id}.glb`),
+        stats: { ...dbKart.stats, ...dbKart.physics }
+      };
+    });
+  } catch (err) {
+    console.error("Erro ao carregar karts do banco:", err);
+    // Fallback de segurança usando getKartUrl também
+    KART_DATABASE = [{
+      id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
+      stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
+    }];
+  }
+}
+
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
 
@@ -379,8 +333,6 @@ const roomCodeParam = urlParams.get('room');
 const customTrackParam = urlParams.get('customTrack');
 const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
 const totalPlayersParam = parseInt(urlParams.get('players') || '1', 10);
-let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
-if (selectedKartIndex === -1) selectedKartIndex = 0;
 
 // Variáveis para controle de punição e estado ativo da partida
 let corridaAtivaParaPunicao = true;
@@ -1244,8 +1196,6 @@ function setLocalKartModel(kartEntry) {
   });
 }
 
-setLocalKartModel(KART_DATABASE[selectedKartIndex]);
-
 // ------------------------------------------------------------
 // CONTROLES E CÂMERA
 // ------------------------------------------------------------
@@ -1724,6 +1674,7 @@ function updateDriftEffects(dt) {
     if (skidSpawnTimer > 0.045) {
       spawnSkidMarkPair();
       spawnDustPuff();
+      spawnNeonTrail();
       skidSpawnTimer = 0;
     }
   }
@@ -1762,6 +1713,7 @@ function updateDriftEffects(dt) {
       dustParticles.splice(i, 1);
     }
   }
+  updateNeonTrails(dt);
 }
 
 // ------------------------------------------------------------
@@ -1855,6 +1807,10 @@ async function showFinishOverlay(place) {
       particleCount: 150, spread: 100, origin: { y: 0.6 },
       colors: ['#facc15', '#38bdf8', '#ffffff'], zIndex: 99999
     });
+  }
+
+  if (place === 1 && kart) {
+    trigger3DVictoryEffect(kart);
   }
 
   const overlay = document.createElement('div');
@@ -2814,7 +2770,7 @@ function castSonicBoom(casterId) {
 
   if (!casterPos) return;
 
-  // Analisa todos os outros karts no jogo
+  // 1. Analisa todos os outros karts remotos (Bots e Multiplayer)
   for (const [pid, entry] of remoteKarts.entries()) {
     if (pid === casterId || entry.finished) continue;
 
@@ -2836,6 +2792,23 @@ function castSonicBoom(casterId) {
         // Se acertou um jogador real, avisa-o pela rede!
         sendNetworkEvent({ t: 'apply_push', targetId: pid, originX: casterPos.x, originZ: casterPos.z });
       }
+    }
+  }
+
+  // 2. VERIFICAÇÃO NOVA: O alvo atingido é o jogador LOCAL? (Você!)
+  if (casterId !== 'local' && kart) {
+    const distToMe = casterPos.distanceTo(kart.position);
+
+    if (distToMe < radius && !isShieldActive) {
+      // Aplica o empurrão e o atordoamento em si imediatamente
+      const origin = new THREE.Vector3(casterPos.x, kart.position.y, casterPos.z);
+      const pushDir = new THREE.Vector3().subVectors(kart.position, origin).normalize();
+
+      physics.pushVelocity.copy(pushDir);
+      physics.pushTimer = 0.25; // Fica a deslizar/voar para o lado
+      physics.speed *= 0.3; // Perde quase toda a velocidade
+      physics.spinTimer = 0.8; // Roda
+      triggerSparkEffect(kart.position); // Solta faíscas
     }
   }
 }
@@ -3467,7 +3440,6 @@ function updateRemoteKarts(dt) {
   }
 }
 
-initRaceMultiplayer();
 
 // ------------------------------------------------------------
 // CLASSIFICAÇÃO DA HUD
@@ -3878,7 +3850,7 @@ function spawnBots() {
     });
   }
 }
-spawnBots();
+
 
 function updateBots(dt) {
   if (!raceStarted) return;
@@ -4447,6 +4419,236 @@ function updateKartEffects(dt) {
 }
 
 // ------------------------------------------------------------
+// COSMÉTICOS 3D (RASTROS E VITÓRIA)
+// ------------------------------------------------------------
+const playerCosmetics = {
+  trailColor: null, // Guardará o THREE.Color do rastro
+  victoryEffectId: null
+};
+
+async function loadPlayerCosmetics() {
+  if (typeof supabaseClient === 'undefined') return;
+  try {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if (!sessionData?.session?.user) return;
+
+    // 1. Pega os IDs equipados no perfil do jogador
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('equipped_trail, equipped_victory')
+      .eq('id', sessionData.session.user.id)
+      .single();
+
+    // 2. Se tiver um rastro equipado, busca a cor exata na tabela da loja
+    if (profile?.equipped_trail) {
+      const { data: item } = await supabaseClient
+        .from('store_items')
+        .select('metadata')
+        .eq('id', profile.equipped_trail)
+        .single();
+
+      if (item?.metadata?.particle_color) {
+        // Converte a cor HEX da loja num objeto de cor do Three.js e intensifica o brilho
+        playerCosmetics.trailColor = new THREE.Color(item.metadata.particle_color);
+      }
+    }
+
+    // Guarda o efeito de vitória para usarmos depois
+    if (profile?.equipped_victory) {
+      playerCosmetics.victoryEffectId = profile.equipped_victory;
+    }
+  } catch (err) {
+    console.warn("[Cosméticos] Erro ao carregar itens equipados:", err);
+  }
+}
+
+const neonTrails = [];
+
+function spawnNeonTrail() {
+  // Só funciona se houver kart e se o jogador tiver um rastro equipado
+  if (!kart || !playerCosmetics.trailColor) return;
+
+  // Cria 3 partículas a cada frame de emissão para dar volume
+  for (let i = 0; i < 3; i++) {
+    // Usamos BoxGeometry para simular "faíscas/cubos" cyberpunk saindo do pneu
+    const geo = new THREE.BoxGeometry(0.22, 0.22, 0.22);
+    const mat = new THREE.MeshBasicMaterial({
+      color: playerCosmetics.trailColor,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending // Faz o brilho somar e estourar no BloomPass
+    });
+
+    // Força a cor a ultrapassar o Threshold de 0.95 do seu UnrealBloomPass para garantir que brilha muito!
+    mat.color.multiplyScalar(1.5);
+
+    const mesh = new THREE.Mesh(geo, mat);
+
+    // Posicionamento exato: Atrás dos pneus traseiros (lateralX: 0.6 ou -0.6)
+    const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+    const lateralX = (Math.random() > 0.5 ? 0.6 : -0.6) + (Math.random() - 0.5) * 0.2;
+    const localPos = new THREE.Vector3(lateralX, 0.15, -1.0).applyQuaternion(headingQuat);
+
+    mesh.position.copy(kart.position.clone().add(localPos));
+
+    // Rotação inicial aleatória
+    mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+    scene.add(mesh);
+
+    neonTrails.push({
+      mesh: mesh,
+      life: 0.6 + Math.random() * 0.4, // Vive entre 0.6s e 1.0s
+      maxLife: 1.0,
+      scaleSpeed: 1.2 + Math.random(),
+      rotSpeed: (Math.random() - 0.5) * 15 // Gira freneticamente no ar
+    });
+  }
+}
+
+function updateNeonTrails(dt) {
+  for (let i = neonTrails.length - 1; i >= 0; i--) {
+    const p = neonTrails[i];
+    p.life -= dt;
+
+    // Animação de rotação e subida leve
+    p.mesh.rotation.x += p.rotSpeed * dt;
+    p.mesh.rotation.y += p.rotSpeed * dt;
+    p.mesh.position.y += dt * 0.5; // Partícula sobe suavemente enquanto some
+
+    // Encolhe e fica transparente
+    const progress = Math.max(0, p.life / p.maxLife);
+    p.mesh.scale.setScalar(progress * p.scaleSpeed);
+    p.mesh.material.opacity = progress;
+
+    // Destrói quando a vida acaba
+    if (p.life <= 0) {
+      scene.remove(p.mesh);
+      p.mesh.geometry.dispose();
+      p.mesh.material.dispose();
+      neonTrails.splice(i, 1);
+    }
+  }
+}
+
+// ARRAY PARA ANIMAR OS EFEITOS DE VITÓRIA
+const victoryAnimations = [];
+
+function trigger3DVictoryEffect(targetGroup) {
+  // Só ativa se o jogador tiver um efeito equipado
+  if (!targetGroup || !playerCosmetics.victoryEffectId) return;
+
+  const effectId = playerCosmetics.victoryEffectId.toLowerCase();
+
+  // EFEITO 1: AURA DE LUZ DIVINA (Se o ID contiver a palavra "aura")
+  if (effectId.includes('aura')) {
+    const geo = new THREE.CylinderGeometry(2.5, 2.5, 20, 16, 1, true);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xffd700, // Dourado
+      transparent: true,
+      opacity: 0.5,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    // Multiplica a cor para estourar no BloomPass e ficar neon
+    mat.color.multiplyScalar(2.0);
+
+    const pillar = new THREE.Mesh(geo, mat);
+    pillar.position.y = 10; // Levanta o pilar para focar no kart
+    targetGroup.add(pillar);
+
+    // Animação do pilar girando e pulsando
+    victoryAnimations.push((dt) => {
+      pillar.rotation.y += dt * 3;
+      pillar.material.opacity = 0.5 + Math.sin(performance.now() * 0.005) * 0.3;
+    });
+  }
+  // EFEITO 2: FOGOS DE ARTIFÍCIO NEON (Padrão para outros IDs)
+  else {
+    const pGroup = new THREE.Group();
+    pGroup.position.y = 1.0;
+    targetGroup.add(pGroup);
+
+    const count = 45;
+    const geo = new THREE.SphereGeometry(0.25, 8, 8);
+    const mat = new THREE.MeshBasicMaterial({
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    });
+
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      const mesh = new THREE.Mesh(geo, mat.clone());
+      // Cores aleatórias e muito saturadas
+      mesh.colorOriginal = new THREE.Color().setHSL(Math.random(), 1.0, 0.6);
+      mesh.material.color = mesh.colorOriginal;
+      mesh.material.color.multiplyScalar(2.5); // Super brilho
+
+      pGroup.add(mesh);
+      particles.push({
+        mesh: mesh,
+        vx: (Math.random() - 0.5) * 20,
+        vy: 8 + Math.random() * 15, // Joga para o alto
+        vz: (Math.random() - 0.5) * 20,
+        life: 2.0 + Math.random() * 1.5 // Vive entre 2 e 3.5 segundos
+      });
+    }
+
+    // Física das partículas (Gravidade)
+    victoryAnimations.push((dt) => {
+      for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.life -= dt;
+
+        p.vy -= 18.0 * dt; // Gravidade puxando para baixo
+
+        p.mesh.position.x += p.vx * dt;
+        p.mesh.position.y += p.vy * dt;
+        p.mesh.position.z += p.vz * dt;
+
+        p.mesh.material.opacity = Math.max(0, p.life / 2.0);
+
+        if (p.life <= 0) {
+          pGroup.remove(p.mesh);
+          p.mesh.geometry.dispose();
+          p.mesh.material.dispose();
+          particles.splice(i, 1);
+        }
+      }
+    });
+  }
+}
+
+// Executa as animações guardadas
+function updateVictoryEffectsAnim(dt) {
+  victoryAnimations.forEach(anim => anim(dt));
+}
+
+async function initGameEngine() {
+  // NOVO: Carrega os cosméticos do Supabase antes de a corrida começar
+  await loadPlayerCosmetics();
+
+  // 1. Espera os karts carregarem do banco de dados
+  await loadKartsFromDatabase();
+
+  // 2. Só agora define o índice do kart escolhido
+  let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
+  if (selectedKartIndex === -1) selectedKartIndex = 0;
+
+  // 3. Inicia os modelos locais
+  setLocalKartModel(KART_DATABASE[selectedKartIndex]);
+
+  // 4. Inicia bots e rede
+  spawnBots();
+  initRaceMultiplayer();
+}
+
+// Inicia a engine
+initGameEngine();
+
+// ------------------------------------------------------------
 // LOOP PRINCIPAL
 // ------------------------------------------------------------
 let lastTime = performance.now();
@@ -4478,6 +4680,7 @@ function animate() {
   networkTick(dt);
   updateRemoteKarts(dt);
   updateKartEffects(dt);
+  updateVictoryEffectsAnim(dt);
   updateHUD();
   drawMinimap();
 

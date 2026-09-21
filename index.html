@@ -1303,6 +1303,82 @@
       color: #022c22;
     }
 
+    .emoji-btn {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid transparent;
+      border-radius: 8px;
+      font-size: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      user-select: none;
+    }
+
+    .emoji-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #38bdf8;
+      transform: scale(1.15);
+    }
+
+    .emoji-btn:active {
+      transform: scale(0.9);
+    }
+
+    .floating-sticker {
+      position: fixed;
+      font-size: 50px;
+      pointer-events: none;
+      z-index: 9999;
+      filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+    }
+
+    @keyframes firePulse {
+      0% {
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.6), inset 0 0 4px rgba(245, 158, 11, 0.4);
+        filter: brightness(1);
+      }
+
+      50% {
+        box-shadow: 0 0 16px rgba(245, 158, 11, 0.95), inset 0 0 8px rgba(239, 68, 68, 0.8);
+        filter: brightness(1.25);
+      }
+
+      100% {
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.6), inset 0 0 4px rgba(245, 158, 11, 0.4);
+        filter: brightness(1);
+      }
+    }
+
+    @keyframes waterPulse {
+      0% {
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.6), inset 0 0 4px rgba(6, 182, 212, 0.4);
+        filter: brightness(1);
+      }
+
+      50% {
+        box-shadow: 0 0 16px rgba(6, 182, 212, 0.95), inset 0 0 8px rgba(59, 130, 246, 0.8);
+        filter: brightness(1.25);
+      }
+
+      100% {
+        box-shadow: 0 0 6px rgba(59, 130, 246, 0.6), inset 0 0 4px rgba(6, 182, 212, 0.4);
+        filter: brightness(1);
+      }
+    }
+
+    .avatar-border-fire {
+      background: linear-gradient(135deg, #ef4444, #f59e0b) !important;
+      animation: firePulse 2s infinite ease-in-out;
+    }
+
+    .avatar-border-water {
+      background: linear-gradient(135deg, #3b82f6, #06b6d4) !important;
+      animation: waterPulse 2s infinite ease-in-out;
+    }
+
     @media(max-width: 1050px) {
       .sidebar {
         width: 220px;
@@ -1505,6 +1581,39 @@
     </div>
   </div>
 
+  <!-- PAINEL DE BATE-PAPO (STICKERS Paginado) -->
+  <div id="stickerChatContainer"
+    style="display: none; position: fixed; background: rgba(9, 23, 42, 0.95); border: 2px solid #38bdf8; border-radius: 16px; padding: 16px; z-index: 4000; flex-direction: column; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 15px 45px rgba(0,0,0,0.8); width: 280px;">
+
+    <!-- Cabeçalho com Navegação -->
+    <div
+      style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(56,189,248,0.2); padding-bottom: 8px; margin-bottom: 4px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="color: #f8fafc; font-size: 13px; font-weight: 900;">💬 REAÇÕES</span>
+        <div style="display: flex; gap: 4px;">
+          <button onclick="changeStickerPage(-1)"
+            style="background: rgba(12, 28, 48, .9); border: 1px solid #1e3a57; color: #38bdf8; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s;"
+            onmouseover="this.style.background='#1e3a57'"
+            onmouseout="this.style.background='rgba(12, 28, 48, .9)'">◀</button>
+          <button onclick="changeStickerPage(1)"
+            style="background: rgba(12, 28, 48, .9); border: 1px solid #1e3a57; color: #38bdf8; width: 24px; height: 24px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 12px; transition: 0.2s;"
+            onmouseover="this.style.background='#1e3a57'"
+            onmouseout="this.style.background='rgba(12, 28, 48, .9)'">▶</button>
+        </div>
+      </div>
+      <button onclick="document.getElementById('stickerChatContainer').style.display='none'"
+        style="background: transparent; border: none; color: #ef4444; font-size: 16px; font-weight: bold; cursor: pointer;">✕</button>
+    </div>
+
+    <div style="text-align: right; color: #facc15; font-size: 10px; font-weight: bold; margin-bottom: 4px;"
+      id="stickerPageIndicator">Pág. 1/1</div>
+
+    <div id="emojiGrid"
+      style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 110px; align-content: flex-start;">
+      <!-- Emojis gerados via JS -->
+    </div>
+  </div>
+
 
   <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
     <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
@@ -1533,7 +1642,39 @@
     </div>
   </div>
 
+  <!-- MODAL DA LOJA DE COSMÉTICOS -->
+  <div id="storeModalOverlay" class="overlay-general" style="z-index: 3100; display: none;">
+    <div class="lobbyCardModal profile-modal-wide" style="max-height: 90vh; display: flex; flex-direction: column;">
 
+      <!-- BOTÃO X PADRÃO NO CANTO SUPERIOR DIREITO -->
+      <button onclick="document.getElementById('storeModalOverlay').style.display='none'"
+        class="modal-close-btn">✕</button>
+
+      <!-- TOPO COM TÍTULO E MOEDAS ALINHADOS -->
+      <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-right: 35px;">
+        <h2 class="modal-title" style="text-align: left; margin: 0;">🛒 LOJA DE COSMÉTICOS</h2>
+
+        <div
+          style="background: rgba(12, 28, 48, .8); border: 1px solid #facc15; padding: 6px 16px; border-radius: 12px; font-weight: 900; color: #facc15; font-size: 16px; box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);">
+          🪙 <span id="storeUserCoins">0</span>
+        </div>
+      </div>
+
+      <!-- Abas de Categorias (Dinâmicas) -->
+      <div id="storeTabsContainer"
+        style="display: flex; gap: 8px; margin-bottom: 15px; flex-shrink: 0; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin;">
+        <!-- As abas serão injetadas aqui via JS -->
+      </div>
+
+      <!-- Área de Itens (Grid) -->
+      <div id="storeItemsGrid"
+        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 5px; padding-bottom: 10px; flex: 1;">
+        <!-- Os itens serão injetados aqui via JS -->
+      </div>
+
+    </div>
+  </div>
 
   <!-- Modal da Roleta -->
   <div id="rouletteModalOverlay" class="overlay-general" style="z-index: 3000;">
@@ -1660,11 +1801,20 @@
 
           <!-- Card de Identidade -->
           <div class="profile-header-card" style="margin-bottom: 0; padding: 15px;">
-            <div class="profile-avatar-large" id="mainProfileAvatar" onclick="openAvatarModal()"
-              title="Clique para trocar de avatar" style="cursor: pointer; transition: transform 0.2s;"
-              onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🏁</div>
+            <div id="profileAvatarBorder"
+              style="padding: 3px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease;">
+              <div class="profile-avatar-large" id="mainProfileAvatar" onclick="openAvatarModal()"
+                title="Clique para trocar de avatar" style="cursor: pointer; transition: transform 0.2s;"
+                onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">🏁</div>
+            </div>
             <div>
               <h2 id="profileNameDisplay" style="color: #fff; margin: 0; font-size: 20px;">Buscando...</h2>
+
+              <!-- Título de Piloto -->
+              <div id="profileTitleDisplay"
+                style="display: none; font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 6px; border-radius: 4px; margin-top: 4px; text-transform: uppercase; width: fit-content;">
+              </div>
+
               <div style="color: #22c55e; font-size: 12px; font-weight: bold; margin-top: 4px;" id="profileRankDisplay">
                 🏆 Liga Bronze</div>
             </div>
@@ -1761,9 +1911,9 @@
 
       <nav class="nav">
         <button id="menuBtnGarage"><span class="icon">🛍️</span>Garagem</button>
-        <!-- <button id="menuBtnGarage"><span class="icon">🛍️</span>Loja</button> -->
+        <button id="menuBtnStore"><span class="icon">🛒</span>Loja de Cosméticos</button>
         <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
-        <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings</button>
+        <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings De Pistas</button>
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
           Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
         <button id="menuBtnRoulette"><span class="icon">🎡</span>Roleta Diária</button>
@@ -1796,13 +1946,25 @@
           <div class="profile-top" style="cursor: pointer; transition: 0.2s;"
             onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"
             onclick="openProfileModal()">
-            <div class="avatar" id="sideLeagueIcon" style="border-color: #ff4b55; background: rgba(0,0,0,0.6);">
-              <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
-                alt="Pokébola"
-                style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px #ff4b55);">
+
+            <!-- Envoltório para a Borda Colorida -->
+            <div id="sideAvatarBorder"
+              style="padding: 2px; border-radius: 50%; background: transparent; display: flex; transition: 0.3s; margin-right: 4px;">
+              <div class="avatar" id="sideLeagueIcon"
+                style="border: none; background: #0c1c30; width: 44px; height: 44px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png"
+                  alt="Pokébola"
+                  style="width: 75%; height: 75%; object-fit: contain; filter: drop-shadow(0 0 4px #ff4b55);">
+              </div>
             </div>
-            <div>
+
+            <div style="display: flex; flex-direction: column; justify-content: center;">
               <strong id="sideMenuNick">Piloto</strong>
+              <!-- Título do Menu Lateral -->
+              <div id="sideMenuTitle"
+                style="display: none; font-size: 8px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 4px; border-radius: 4px; margin-top: 2px; margin-bottom: 2px; text-transform: uppercase; width: fit-content;">
+              </div>
+
               <small id="sideMenuLeagueText" style="color: #ff4b55; font-weight: 850;">POKÉBOLA</small>
             </div>
           </div>
@@ -1824,8 +1986,10 @@
           </div>
         </div>
         <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
-        <div class="stat" onclick="abrirModalRanking()" style="cursor: pointer;" title="Ver Ranking das Ligas">
-          <span>🏆</span><b id="playerTrophiesText">0</b>
+        <div class="stat" onclick="abrirModalRanking()" style="cursor: pointer;" title="Ranking das Ligas">
+          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png"
+            alt="Troféus" style="width: 28px; height: 28px; object-fit: contain;">
+          <b id="playerTrophiesText">0</b>
         </div>
         <div class="stat rank" style="display: none;">
           <div class="rank-avatar" id="topbarLeagueIcon" style="display: none;">🏁</div>
@@ -1989,26 +2153,74 @@
                           style="display:none; color: #22c55e; font-weight: 900; font-size: 16px; text-transform: uppercase; letter-spacing: 2px;">
                         </div>
                         <div id="lobbyStatusHost"
-                          style="color: #91a7be; font-size: 11px; font-weight: bold; margin-top: 4px; min-height: 14px;">
+                          style="color: #ffffff; font-size: 11px; font-weight: bold; margin-top: 4px; min-height: 14px;">
                         </div>
                       </div>
                       <div id="lobbyPlayersHost" class="lobby-slots" style="width: 100%; min-height: 220px;"></div>
+
                     </div>
 
                     <!-- JOIN CONTENT -->
                     <div id="contentJoin" style="display: none; flex-direction: column; width: 100%; gap: 10px;">
-                      <div id="joinInputArea" style="display: flex; gap: 8px; width: 100%;">
-                        <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
-                          style="text-transform:uppercase; flex: 1; min-height: 42px; font-size: 13px; text-align: center; letter-spacing: 2px;" />
-                        <button id="btnConnect" class="mode-btn"
-                          style="margin-top:0; min-height: 42px; width: auto; padding: 0 16px; font-size: 12px;">Conectar</button>
-                      </div>
-                      <div style="text-align: center;">
+
+                      <!-- CAIXA COM BORDA E FUNDO ESCURO -->
+                      <div id="joinBoxWrapper"
+                        style="display: flex; flex-direction: column; width: 100%; border: 1px solid #1d3857; background: rgba(9, 23, 42, 0.5); border-radius: 12px; padding: 10px; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+
+                        <!-- Cabeçalho de Navegação -->
+                        <div id="joinTabHeader"
+                          style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1d3857; padding-bottom: 8px; margin-bottom: 8px;">
+                          <h3 id="joinTabTitle" style="font-size: 14px; color: var(--yellow); margin: 0;">🌐 Salas
+                            Abertas</h3>
+                          <div style="display: flex; gap: 12px; align-items: center;">
+                            <button id="btnRefreshRoomsInline"
+                              style="background: none; border: none; font-size: 18px; cursor: pointer; transition: 0.2s;"
+                              title="Atualizar lista">🔄</button>
+                          </div>
+                        </div>
+
+                        <!-- VISÃO 1: Lista de Salas (Alternável com a lupa) -->
+                        <div id="publicRoomsBrowser"
+                          style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                          <!-- AQUI: Aumentamos o min-height para 280px e max-height para 380px -->
+                          <div id="roomListContainerInline"
+                            style="min-height: 240px; max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px;">
+                            <div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 20px;">A procurar
+                              salas...</div>
+                          </div>
+                        </div>
+
+                        <!-- VISÃO 2: Input Manual (Alternável com a lupa) -->
+                        <div id="joinInputArea"
+                          style="display: none; flex-direction: column; gap: 12px; width: 100%; padding: 10px 0;">
+                          <p style="color: #91a7be; font-size: 12px; text-align: center; margin: 0;">Tem um código
+                            privado? Digite-o abaixo:</p>
+                          <div style="display: flex; gap: 8px; width: 100%;">
+                            <input id="joinCode" class="game-input" placeholder="CÓDIGO" maxlength="5"
+                              style="text-transform:uppercase; flex: 1; min-height: 44px; font-size: 14px; text-align: center; letter-spacing: 3px;" />
+                            <button id="btnConnect" class="mode-btn"
+                              style="margin-top:0; min-height: 44px; width: auto; padding: 0 20px; font-size: 13px;">Conectar</button>
+                          </div>
+                        </div>
+
+                      </div> <!-- Fim da Caixa com Borda -->
+
+                      <!-- Status -->
+                      <div style="text-align: center; width: 100%;">
                         <div id="lobbyStatusJoin"
                           style="color: #91a7be; font-size: 11px; font-weight: bold; min-height: 14px;"></div>
                       </div>
+
+                      <!-- Lista de Jogadores do Lobby (Oculta até conectar) -->
                       <div id="lobbyPlayersJoin" class="lobby-slots"
-                        style="width: 100%; min-height: 220px; display: none;"></div>
+                        style="width: 100%; min-height: 200px; display: none;"></div>
+
+                      <!-- Botão Sair da Sala (Oculto até conectar) -->
+                      <button id="btnLeaveRoom" class="mode-btn"
+                        style="display: none; margin-top: 10px; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
+                        Abandonar Sala
+                      </button>
+
                     </div>
                   </div>
 
@@ -2105,8 +2317,10 @@
       const topbarIcon = document.getElementById('topbarLeagueIcon');
       const sideIcon = document.getElementById('sideLeagueIcon');
       const sideText = document.getElementById('sideMenuLeagueText');
+      const sideAvatarBorder = document.getElementById('sideAvatarBorder');
+      const sideTitle = document.getElementById('sideMenuTitle');
+      const sideNick = document.getElementById('sideMenuNick'); // <--- 1. Referência ao elemento do nick
 
-      // Aumentei a imagem para 100% já que tiramos as bordas
       let displayHtml = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 4px ${league.color});">`;
 
       if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.avatar) {
@@ -2118,14 +2332,47 @@
         topbarIcon.style.border = 'none';
         topbarIcon.style.background = 'transparent';
       }
+
       if (sideIcon) {
         sideIcon.innerHTML = displayHtml;
         sideIcon.style.border = 'none';
-        sideIcon.style.background = 'transparent';
+        sideIcon.style.background = '#0c1c30';
       }
+
+      // Aplica Cosméticos no Menu Lateral de forma Dinâmica
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+
+        // 0. Aplica o Nickname Estilizado (Cores/Degradê)
+        if (sideNick) {
+          sideNick.innerHTML = getStyledNickname(currentUserProfile.nickname || 'Piloto', currentUserProfile.equipped_title);
+        }
+
+        // 1. Aplica a Borda Dinâmica via Cache do Supabase
+        if (sideAvatarBorder) {
+          applyBorderStyles(sideAvatarBorder, currentUserProfile.equipped_border);
+        }
+
+        // 2. Aplica o Título Dinâmico via Cache do Supabase
+        if (sideTitle) {
+          if (currentUserProfile.equipped_title && typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
+            const titleItem = storeItemsCache.titles.find(t => t.id === currentUserProfile.equipped_title);
+            if (titleItem) {
+              sideTitle.innerText = `${titleItem.icon || '🏷️'} ${titleItem.name}`;
+              sideTitle.style.display = 'block';
+            } else {
+              sideTitle.style.display = 'none';
+            }
+          } else {
+            sideTitle.style.display = 'none';
+          }
+        }
+      }
+
       if (sideText) {
-        // Agora mostra APENAS o nome da liga (ex: POKEBALL), removendo o título
-        sideText.innerText = league.name;
+        sideText.style.display = 'flex';
+        sideText.style.alignItems = 'center';
+        sideText.style.gap = '4px';
+        sideText.innerHTML = `<img src="${league.iconUrl}" alt="${league.name}" style="width: 14px; height: 14px; object-fit: contain; filter: drop-shadow(0 0 3px ${league.color});"> ${league.name}`;
         sideText.style.color = league.color;
       }
     }
@@ -2170,85 +2417,36 @@
 
     function getKartUrl(filename) { return `./models/${filename}`; }
 
-    const KART_DATABASE = [
-      { id: 'jolteon', name: '⚡ Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'), stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 } },
-      { id: 'zoroark', name: '🦊 Zoroark Kart', modelUrl: getKartUrl('zoroark.glb'), stats: { accel: 27, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
-      { id: 'togetic', name: '🥚 Togetic Kart', modelUrl: getKartUrl('togetic.glb'), stats: { accel: 28.5, maxSpeed: 28.5, turnSpeed: 4.0, turboBonus: 1.2, driftRate: 1.1, driftControl: 1.0, grip: 0.80 } },
-      { id: 'charizard', name: '🔥 Charizard Kart', modelUrl: getKartUrl('charizard.glb'), stats: { accel: 25, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.0, driftControl: 0.8, grip: 0.65 } },
-      { id: 'flygon', name: '🐉 Flygon Kart', modelUrl: getKartUrl('flygon.glb'), stats: { accel: 26, maxSpeed: 35, turnSpeed: 3.1, turboBonus: 1.1, driftRate: 1.6, driftControl: 1.1, grip: 0.70 } },
-      { id: 'gengar', name: '👻 Gengar Kart', modelUrl: getKartUrl('gengar.glb'), stats: { accel: 29, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.0, driftRate: 1.3, driftControl: 1.3, grip: 0.55 } },
-      { id: 'oshawott', name: '🦦 Oshawott Kart', modelUrl: getKartUrl('oshawott.glb'), stats: { accel: 31, maxSpeed: 30, turnSpeed: 3.2, turboBonus: 1.1, driftRate: 1.0, driftControl: 1.0, grip: 0.70 } },
-      { id: 'snorlax', name: '💤 Snorlax Kart', modelUrl: getKartUrl('snorlax.glb'), stats: { accel: 21, maxSpeed: 38, turnSpeed: 3.0, turboBonus: 2.0, driftRate: 0.8, driftControl: 1.1, grip: 0.85 } },
-      { id: 'golem', name: '🪨 Golem Kart', modelUrl: getKartUrl('golem.glb'), stats: { accel: 22, maxSpeed: 34, turnSpeed: 2.9, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.80 } },
-      { id: 'jinx', name: '💋 Jynx Kart', modelUrl: getKartUrl('jinx.glb'), stats: { accel: 28, maxSpeed: 30, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.75 } },
-      { id: 'sudowoodo', name: '🌳 Sudowoodo Kart', modelUrl: getKartUrl('sudowoodo.glb'), stats: { accel: 24, maxSpeed: 28, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.1, driftControl: 1.2, grip: 0.85 } },
-      { id: 'sylveon', name: '🎀 Sylveon Kart', modelUrl: getKartUrl('sylveon.glb'), stats: { accel: 32, maxSpeed: 31, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
-      { id: 'umbreon', name: '🌙 Umbreon Kart', modelUrl: getKartUrl('umbreon.glb'), stats: { accel: 30, maxSpeed: 32, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
-      { id: 'pikachu', name: '⚡ Pikachu Kart', modelUrl: getKartUrl('pikachu.glb'), stats: { accel: 33, maxSpeed: 30, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-      { id: 'gliscor', name: '🦇 Gliscor Kart', modelUrl: getKartUrl('gliscor.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.5, driftControl: 1.2, grip: 0.75 } },
-      { id: 'mewtwo', name: '🧬 Mewtwo Kart', modelUrl: getKartUrl('mewtwo.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.3, grip: 0.80 } },
-      { id: 'zekrom', name: '🌩️ Zekrom Kart', modelUrl: getKartUrl('zekrom.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.2, turboBonus: 1.7, driftRate: 1.2, driftControl: 1.0, grip: 0.75 } },
-      { id: 'swampert', name: '🐸 Swampert Kart', modelUrl: getKartUrl('swampert.glb'), stats: { accel: 29, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.1, driftControl: 1.1, grip: 0.90 } },
-      { id: 'rayquaza', name: '🌪️ Rayquaza Kart', modelUrl: getKartUrl('rayquaza.glb'), stats: { accel: 32, maxSpeed: 37, turnSpeed: 3.4, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.1, grip: 0.75 } },
-      { id: 'espeon', name: '🔮 Espeon Kart', modelUrl: getKartUrl('espeon.glb'), stats: { accel: 31, maxSpeed: 32, turnSpeed: 3.7, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-      { id: 'tatsugiri', name: '🍣 Tatsugiri Kart', modelUrl: getKartUrl('tatsugiri.glb'), stats: { accel: 34, maxSpeed: 29, turnSpeed: 3.9, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.3, grip: 0.70 } },
-      { id: 'scyther', name: '⚔️ Scyther Kart', modelUrl: getKartUrl('scyther.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.6, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-      { id: 'ninetales', name: '🦊 Ninetales Kart', modelUrl: getKartUrl('ninetales.glb'), stats: { accel: 31, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-      { id: 'arcanine', name: '🐕 Arcanine Kart', modelUrl: getKartUrl('arcanine.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.2, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-      { id: 'lucario', name: '🐾 Lucario Kart', modelUrl: getKartUrl('lucario.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
-      { id: 'dialga', name: '⏳ Dialga Kart', modelUrl: getKartUrl('dialga.glb'), stats: { accel: 25, maxSpeed: 38, turnSpeed: 2.9, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
-      { id: 'zapdos', name: '⚡ Zapdos Kart', modelUrl: getKartUrl('zapdos.glb'), stats: { accel: 35, maxSpeed: 34, turnSpeed: 3.4, turboBonus: 1.6, driftRate: 1.2, driftControl: 1.1, grip: 0.75 } },
-      { id: 'luxray', name: '🦁 Luxray Kart', modelUrl: getKartUrl('luxray.glb'), stats: { accel: 33, maxSpeed: 32, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-      { id: 'staraptor', name: '🦅 Staraptor Kart', modelUrl: getKartUrl('staraptor.glb'), stats: { accel: 34, maxSpeed: 31, turnSpeed: 3.5, turboBonus: 1.2, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-      { id: 'dragonite', name: '🐉 Dragonite Kart', modelUrl: getKartUrl('dragonite.glb'), stats: { accel: 28, maxSpeed: 36, turnSpeed: 3.1, turboBonus: 1.7, driftRate: 1.1, driftControl: 1.1, grip: 0.85 } },
-      { id: 'tangela', name: '🌿 Tangela Kart', modelUrl: getKartUrl('tangela.glb'), stats: { accel: 30, maxSpeed: 29, turnSpeed: 3.8, turboBonus: 1.1, driftRate: 1.5, driftControl: 1.3, grip: 0.95 } },
-      { id: 'sneasel', name: '🔪 Sneasel Kart', modelUrl: getKartUrl('sneasel.glb'), stats: { accel: 36, maxSpeed: 30, turnSpeed: 3.7, turboBonus: 1.2, driftRate: 1.6, driftControl: 1.4, grip: 0.70 } },
-      { id: 'darkrai', name: '🌑 Darkrai Kart', modelUrl: getKartUrl('darkrai.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.5, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-      { id: 'moltres', name: '🔥 Moltres Kart', modelUrl: getKartUrl('moltres.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.4, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.1, grip: 0.78 } },
-      { id: 'weezing', name: '☠️ Weezing Kart', modelUrl: getKartUrl('weezing.glb'), stats: { accel: 24, maxSpeed: 30, turnSpeed: 3.1, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.1, grip: 0.88 } },
-      { id: 'swellow', name: '🦅 Swellow Kart', modelUrl: getKartUrl('swellow.glb'), stats: { accel: 35, maxSpeed: 33, turnSpeed: 3.8, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.4, grip: 0.72 } },
-      { id: 'articuno', name: '❄️ Articuno Kart', modelUrl: getKartUrl('articuno.glb'), stats: { accel: 32, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.5, driftRate: 1.4, driftControl: 1.2, grip: 0.82 } },
-      { id: 'blastoise', name: '🐢 Blastoise Kart', modelUrl: getKartUrl('blastoise.glb'), stats: { accel: 28, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-      { id: 'venusaur', name: '🌺 Venusaur Kart', modelUrl: getKartUrl('venusaur.glb'), stats: { accel: 29, maxSpeed: 33, turnSpeed: 3.4, turboBonus: 1.3, driftRate: 1.3, driftControl: 1.2, grip: 0.85 } },
-      { id: 'ceruledge', name: '⚔️ Ceruledge Kart', modelUrl: getKartUrl('ceruledge.glb'), stats: { accel: 33, maxSpeed: 36, turnSpeed: 3.6, turboBonus: 1.6, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-      { id: 'infernape', name: '🔥 Infernape Kart', modelUrl: getKartUrl('infernape.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-      { id: 'empoleon', name: '🐧 Empoleon Kart', modelUrl: getKartUrl('empoleon.glb'), stats: { accel: 30, maxSpeed: 34, turnSpeed: 3.3, turboBonus: 1.4, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
-      { id: 'torterra', name: '🌳 Torterra Kart', modelUrl: getKartUrl('torterra.glb'), stats: { accel: 27, maxSpeed: 33, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.88 } },
-      { id: 'hooh', name: '🌈 Ho-Oh Kart', modelUrl: getKartUrl('hooh.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.5, turboBonus: 1.9, driftRate: 1.6, driftControl: 1.3, grip: 0.72 } },
-      { id: 'hydreigon', name: '🤖 Hydreigon Kart', modelUrl: getKartUrl('hydreigon.glb'), stats: { accel: 34, maxSpeed: 37, turnSpeed: 3.6, turboBonus: 1.7, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-      { id: 'lunala', name: '🦇 Lunala Kart', modelUrl: getKartUrl('lunala.glb'), stats: { accel: 35, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.5, driftControl: 1.3, grip: 0.75 } },
-      { id: 'alakazam', name: '🥄 Alakazam Kart', modelUrl: getKartUrl('alakazam.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 3.6, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.75 } },
-      { id: 'onix', name: '🪨 Onix Kart', modelUrl: getKartUrl('onix.glb'), stats: { accel: 20, maxSpeed: 36, turnSpeed: 2.8, turboBonus: 1.5, driftRate: 0.9, driftControl: 1.0, grip: 0.95 } },
-      { id: 'starmie', name: '⭐ Starmie Kart', modelUrl: getKartUrl('starmie.glb'), stats: { accel: 33, maxSpeed: 35, turnSpeed: 3.8, turboBonus: 1.4, driftRate: 1.5, driftControl: 1.2, grip: 0.80 } },
-      { id: 'victreebel', name: '🌿 Victreebel Kart', modelUrl: getKartUrl('victreebel.glb'), stats: { accel: 29, maxSpeed: 31, turnSpeed: 3.2, turboBonus: 1.2, driftRate: 1.3, driftControl: 1.1, grip: 0.85 } },
-      { id: 'rhydon', name: '🛡️ Rhydon Kart', modelUrl: getKartUrl('rhydon.glb'), stats: { accel: 23, maxSpeed: 37, turnSpeed: 2.9, turboBonus: 1.7, driftRate: 1.0, driftControl: 1.1, grip: 0.90 } },
-      { id: 'persian', name: '🐈 Persian Kart', modelUrl: getKartUrl('persian.glb'), stats: { accel: 34, maxSpeed: 33, turnSpeed: 3.5, turboBonus: 1.3, driftRate: 1.4, driftControl: 1.2, grip: 0.80 } },
-      { id: 'kyogre', name: '🌊 Kyogre Kart', modelUrl: getKartUrl('kyogre.glb'), stats: { accel: 30, maxSpeed: 36, turnSpeed: 3.3, turboBonus: 1.7, driftRate: 1.3, driftControl: 1.2, grip: 0.82 } },
-      { id: 'groudon', name: '🌋 Groudon Kart', modelUrl: getKartUrl('groudon.glb'), stats: { accel: 24, maxSpeed: 37, turnSpeed: 3.0, turboBonus: 1.8, driftRate: 1.0, driftControl: 1.0, grip: 0.90 } },
-      { id: 'suicune', name: '💧 Suicune Kart', modelUrl: getKartUrl('suicune.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.6, turboBonus: 1.4, driftRate: 1.4, driftControl: 1.2, grip: 0.85 } },
-      { id: 'entei', name: '🔥 Entei Kart', modelUrl: getKartUrl('entei.glb'), stats: { accel: 34, maxSpeed: 35, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.1, grip: 0.80 } },
-      { id: 'raikou', name: '⚡ Raikou Kart', modelUrl: getKartUrl('raikou.glb'), stats: { accel: 36, maxSpeed: 35, turnSpeed: 3.7, turboBonus: 1.5, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-      { id: 'giratina', name: '🕳️ Giratina Kart', modelUrl: getKartUrl('giratina.glb'), stats: { accel: 27, maxSpeed: 39, turnSpeed: 3.1, turboBonus: 2.0, driftRate: 1.2, driftControl: 1.1, grip: 0.80 } },
-      { id: 'arceus', name: '✨ Arceus Kart', modelUrl: getKartUrl('arceus.glb'), stats: { accel: 35, maxSpeed: 40, turnSpeed: 3.8, turboBonus: 2.1, driftRate: 1.6, driftControl: 1.4, grip: 0.85 } },
-      { id: 'mew', name: '🔮 Mew Kart', modelUrl: getKartUrl('mew.glb'), stats: { accel: 36, maxSpeed: 34, turnSpeed: 4.1, turboBonus: 1.4, driftRate: 1.7, driftControl: 1.4, grip: 0.75 } },
-      { id: 'celebi', name: '🌿 Celebi Kart', modelUrl: getKartUrl('celebi.glb'), stats: { accel: 35, maxSpeed: 32, turnSpeed: 4.0, turboBonus: 1.3, driftRate: 1.6, driftControl: 1.3, grip: 0.80 } },
-      { id: 'lugia', name: '🌪️ Lugia Kart', modelUrl: getKartUrl('lugia.glb'), stats: { accel: 33, maxSpeed: 38, turnSpeed: 3.6, turboBonus: 1.8, driftRate: 1.4, driftControl: 1.2, grip: 0.78 } },
-      { id: 'magikarp', name: '🐟 Magikarp Kart', modelUrl: getKartUrl('magikarp.glb'), stats: { accel: 25, maxSpeed: 20, turnSpeed: 2.5, turboBonus: 1.2, driftRate: 1.0, driftControl: 1.0, grip: 0.60 } },
-      { id: 'pidgeot', name: '🦅 Pidgeot Kart', modelUrl: getKartUrl('pidgeot.glb'), stats: { accel: 35, maxSpeed: 42, turnSpeed: 4.0, turboBonus: 2.0, driftRate: 1.5, driftControl: 1.3, grip: 0.82 } },
-      { id: 'beedrill', name: '🐝 Beedrill Kart', modelUrl: getKartUrl('beedrill.glb'), stats: { accel: 40, maxSpeed: 36, turnSpeed: 4.2, turboBonus: 2.2, driftRate: 1.6, driftControl: 1.4, grip: 0.75 } },
-      { id: 'arbok', name: '🐍 Arbok Kart', modelUrl: getKartUrl('arbok.glb'), stats: { accel: 30, maxSpeed: 35, turnSpeed: 3.5, turboBonus: 1.7, driftRate: 1.8, driftControl: 1.5, grip: 0.70 } },
-      { id: 'butterfree', name: '🦋 Butterfree Kart', modelUrl: getKartUrl('butterfree.glb'), stats: { accel: 28, maxSpeed: 32, turnSpeed: 4.5, turboBonus: 1.6, driftRate: 1.3, driftControl: 1.4, grip: 0.85 } },
-      { id: 'sandslash', name: '🏜️ Sandslash Kart', modelUrl: getKartUrl('sandslash.glb'), stats: { accel: 32, maxSpeed: 34, turnSpeed: 3.2, turboBonus: 1.6, driftRate: 1.4, driftControl: 1.2, grip: 0.90 } },
-      { id: 'clefable', name: '⭐ Clefable Kart', modelUrl: getKartUrl('clefable.glb'), stats: { accel: 30, maxSpeed: 30, turnSpeed: 3.3, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-      { id: 'wigglytuff', name: '🎈 Wigglytuff Kart', modelUrl: getKartUrl('wigglytuff.glb'), stats: { accel: 28, maxSpeed: 29, turnSpeed: 3.4, turboBonus: 1.5, driftRate: 1.3, driftControl: 1.2, grip: 0.80 } },
-      { id: 'golbat', name: '🦇 Golbat Kart', modelUrl: getKartUrl('golbat.glb'), stats: { accel: 36, maxSpeed: 39, turnSpeed: 3.8, turboBonus: 1.9, driftRate: 1.5, driftControl: 1.3, grip: 0.78 } },
-      { id: 'vileplume', name: '🌸 Vileplume Kart', modelUrl: getKartUrl('vileplume.glb'), stats: { accel: 26, maxSpeed: 31, turnSpeed: 3.0, turboBonus: 1.4, driftRate: 1.2, driftControl: 1.1, grip: 0.85 } },
-      { id: 'parasect', name: '🍄 Parasect Kart', modelUrl: getKartUrl('parasect.glb'), stats: { accel: 27, maxSpeed: 28, turnSpeed: 3.1, turboBonus: 1.3, driftRate: 1.2, driftControl: 1.1, grip: 0.82 } },
-    ];
+    let KART_DATABASE = [];
+    let selectedIndex = 0;
 
-    const savedKartId = sessionStorage.getItem('pkart_selected_kart');
-    let selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
-    if (selectedIndex === -1) selectedIndex = 0;
+    async function loadKartsFromDatabase() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('karts')
+          .select('id, name, stats, physics');
+
+        if (error) throw error;
+
+        KART_DATABASE = data.map(dbKart => {
+          // Mescla as estatísticas da loja (stats) com a física do jogo (physics)
+          // e utiliza o getKartUrl para montar o caminho do 3D
+          return {
+            id: dbKart.id,
+            name: dbKart.name,
+            modelUrl: getKartUrl(`${dbKart.id}.glb`),
+            stats: { ...dbKart.stats, ...dbKart.physics }
+          };
+        });
+      } catch (err) {
+        console.error("Erro ao carregar karts do banco:", err);
+        // Fallback de segurança usando getKartUrl também
+        KART_DATABASE = [{
+          id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
+          stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
+        }];
+      }
+    }
 
     let previewScene, previewCamera, previewRenderer, currentModel;
     let previewRequestId = 0;
@@ -2286,6 +2484,10 @@
     }
 
     async function updatePreview() {
+      // Trava de segurança: impede o crash se o Supabase ainda não respondeu
+      if (!KART_DATABASE || KART_DATABASE.length === 0 || !KART_DATABASE[selectedIndex]) {
+        return;
+      }
       const item = KART_DATABASE[selectedIndex];
       const kartNameEl = document.getElementById('kartName');
       const spinnerEl = document.getElementById('previewSpinner');
@@ -2382,11 +2584,13 @@
 
       // Seleciona os 4 primeiros
       dailyFreeKarts = availableKarts.slice(0, 4);
+      // LOG DENTRO DA FUNÇÃO
+      if (dailyFreeKarts.length > 0) {
+        console.log("Karts Sorteados Hoje:", dailyFreeKarts);
+      }
     }
 
-    updateDailyFreeKarts();
-    // Adicione esta linha temporariamente para o teste:
-    console.log("Karts Sorteados Hoje:", dailyFreeKarts);
+
     function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
@@ -2434,7 +2638,6 @@
       if (selectedIndex === -1) selectedIndex = 0;
     }
 
-    sortKartsByAvailability();
 
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
@@ -2581,14 +2784,59 @@
 
     function renderLobbySlots(containerId, players) {
       const container = document.getElementById(containerId);
+      if (!container) return;
       container.innerHTML = '';
       container.style.display = 'flex';
 
       for (let i = 0; i < 4; i++) {
         const slot = document.createElement('div');
         if (players[i]) {
+          const p = players[i];
+          const borderItem = p.border || p.equipped_border;
+
+          const borderWrapper = document.createElement('div');
+          borderWrapper.style.cssText = 'padding: 3px; border-radius: 50%; display: flex; transition: 0.3s; margin-right: 4px;';
+          applyBorderStyles(borderWrapper, borderItem);
+
+          let titleHtml = '';
+          if (p.title && typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
+            const titleItem = storeItemsCache.titles.find(t => t.id === p.title);
+            if (titleItem) {
+              const displayTitle = `${titleItem.icon || '🏷️'} ${titleItem.name}`;
+              titleHtml = `<div style="font-size: 9px; color: #38bdf8; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); padding: 1px 4px; border-radius: 4px; margin-top: 2px; text-transform: uppercase; width: fit-content;">${displayTitle}</div>`;
+            }
+          }
+
+          const avatarInner = p.avatar
+            ? `<img src="${p.avatar}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; image-rendering: pixelated;">`
+            : `👤`;
+
+          borderWrapper.innerHTML = `
+            <div style="width: 32px; height: 32px; background: #0c1c30; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; overflow: hidden;">
+              ${avatarInner}
+            </div>
+          `;
+
+          // VERIFICA SE ESTE SLOT É O SEU PARA MOSTRAR O BOTÃO
+          const isMe = p.name === getNickname();
+          const emojiBtnHtml = isMe ? `
+            <button onclick="toggleStickerChat(this)" style="background: rgba(33, 199, 255, 0.15); border: 1px solid #21c7ff; border-radius: 8px; color: #21c7ff; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; transition: 0.2s;" title="Enviar Reação" onmouseover="this.style.background='rgba(33, 199, 255, 0.3)'" onmouseout="this.style.background='rgba(33, 199, 255, 0.15)'">
+              💬
+            </button>
+          ` : '';
+
           slot.className = 'player-slot filled';
-          slot.innerHTML = `<span style="font-size:16px;">👤</span> ${players[i]}`;
+          slot.style.alignItems = 'center';
+
+          // O flex: 1 na div do nome empurra o botão do emoji para o canto direito
+          slot.innerHTML = `
+            ${borderWrapper.outerHTML}
+            <div style="display: flex; flex-direction: column; justify-content: center; flex: 1; overflow: hidden;">
+              <span style="line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${getStyledNickname(p.name, p.title)}</span>
+              ${titleHtml}
+            </div>
+            ${emojiBtnHtml}
+          `;
         } else {
           slot.className = 'player-slot';
           slot.innerHTML = `<span style="font-size:16px;">⏳</span> Aguardando...`;
@@ -2602,7 +2850,12 @@
       roomCode = forcedCode || Math.random().toString(36).substring(2, 7).toLowerCase();
       if (peer) peer.destroy();
       guestConns.length = 0;
-      lobbyPlayers = [getNickname()];
+      lobbyPlayers = [{
+        name: getNickname(),
+        avatar: currentUserProfile ? currentUserProfile.avatar : null,
+        title: currentUserProfile ? currentUserProfile.equipped_title : null,
+        border: currentUserProfile ? currentUserProfile.equipped_border : null
+      }];
 
       renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
 
@@ -2614,22 +2867,63 @@
         codeDisplay.textContent = 'CÓDIGO: ' + roomCode.toUpperCase();
         document.getElementById('btnStartRace').style.display = 'block';
         document.getElementById('lobbyStatusHost').textContent = 'Aguardando jogadores...';
+
+        // --- PASSO B: REGISTRA A SALA ABERTA NO BANCO ---
+        if (typeof supabaseClient !== 'undefined') {
+          const trackId = document.getElementById('trackSelect')?.value || 'default';
+          const meuNick = getNickname();
+
+          // 1. Limpa qualquer sala "fantasma" que este jogador tenha deixado para trás (ex: após um F5)
+          supabaseClient.from('public_rooms').delete().eq('host_name', meuNick).then(() => {
+
+            // 2. Só depois de limpar a sujeira, cria a sala nova
+            supabaseClient.from('public_rooms').insert({
+              room_code: roomCode,
+              host_name: meuNick,
+              track_id: trackId,
+              players_count: 1,
+              status: 'waiting'
+            }).then(({ error }) => {
+              if (error) console.error("Erro ao registrar sala:", error);
+            });
+
+          });
+        }
       });
 
       peer.on('connection', (conn) => {
         conn.on('data', (data) => {
+          if (data.t === 'chat_sticker') {
+            spawnFloatingSticker(data.emoji); // O Host vê a animação
+            // O Host retransmite para os outros convidados na sala
+            guestConns.forEach(g => {
+              if (g.conn && g.conn.open && g.peer !== conn.peer) {
+                g.conn.send(data);
+              }
+            });
+          }
           if (data.t === 'join_req') {
             if (lobbyPlayers.length >= 4) {
               conn.send({ t: 'error', msg: 'Sala cheia' });
               return;
             }
             const slotIndex = lobbyPlayers.length;
-            lobbyPlayers.push(data.nick);
-            guestConns.push({ peer: conn.peer, conn: conn, nick: data.nick });
+
+            const newPlayer = {
+              name: data.nick,
+              avatar: data.avatar,
+              title: data.title,
+              border: data.border
+            };
+            lobbyPlayers.push(newPlayer);
+            guestConns.push({ peer: conn.peer, conn: conn, ...newPlayer });
 
             conn.send({ t: 'assign_slot', slot: slotIndex, players: lobbyPlayers });
             broadcastLobby();
             renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
+
+            // MENSAGEM DE ENTRADA PERSONALIZADA AQUI:
+            document.getElementById('lobbyStatusHost').textContent = getCustomJoinMessage(data.nick, data.title);
           }
         });
 
@@ -2637,7 +2931,11 @@
           const idx = guestConns.findIndex(g => g.peer === conn.peer);
           if (idx !== -1) {
             guestConns.splice(idx, 1);
-            lobbyPlayers = [getNickname(), ...guestConns.map(g => g.nick)];
+            // Reconstrói a lista com o Host + Convidados restantes
+            lobbyPlayers = [
+              { name: getNickname(), title: currentUserProfile ? currentUserProfile.equipped_title : null, border: currentUserProfile ? currentUserProfile.equipped_border : null },
+              ...guestConns.map(g => ({ name: g.name, title: g.title, border: g.border }))
+            ];
             broadcastLobby();
             renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
           }
@@ -2652,8 +2950,10 @@
     }
 
     function switchMultiTab(tab, forcedCode = null) {
-      // 1. Declara a variável com segurança
+      const chatPanel = document.getElementById('stickerChatContainer');
+      if (chatPanel) chatPanel.style.display = 'none';
       const trackContainer = document.getElementById('hostTrackContainer');
+      const wrapperBox = document.getElementById('joinBoxWrapper');
 
       if (tab === 'host') {
         btnTabHost.classList.add('active');
@@ -2661,8 +2961,14 @@
         contentHost.style.display = 'flex';
         contentJoin.style.display = 'none';
 
-        // 👈 Mostra o seletor de pistas apenas na aba de Criar Sala
         if (trackContainer) trackContainer.style.display = 'block';
+
+        // LIMPEZA: Se estava conectado noutra sala como convidado, sai dela
+        if (hostLobbyConn) {
+          hostLobbyConn.close();
+          hostLobbyConn = null;
+          if (peer && !roomCode) { peer.destroy(); peer = null; }
+        }
 
         if (!roomCode || peer === null) {
           initHost(forcedCode);
@@ -2673,20 +2979,64 @@
         contentHost.style.display = 'none';
         contentJoin.style.display = 'flex';
 
-        // 👈 Esconde o seletor de pistas na aba de Buscar
         if (trackContainer) trackContainer.style.display = 'none';
 
+        // LIMPEZA: Se era Host, destrói a sala no banco
         if (roomCode) {
           if (peer) peer.destroy();
+          const roomToDelete = roomCode;
           peer = null;
           roomCode = '';
           document.getElementById('btnStartRace').style.display = 'none';
           document.getElementById('roomCodeDisplay').style.display = 'none';
+
+          if (typeof supabaseClient !== 'undefined') {
+            supabaseClient.from('public_rooms').delete().eq('room_code', roomToDelete).then(() => {
+              buscarSalasAbertas();
+            });
+          }
+        } else {
+          // LIMPEZA: Se já era convidado e clicou em "Buscar" novamente, sai da sala atual
+          if (hostLobbyConn) {
+            hostLobbyConn.close();
+            hostLobbyConn = null;
+            if (peer) { peer.destroy(); peer = null; }
+          }
+          buscarSalasAbertas();
         }
 
-        document.getElementById('joinInputArea').style.display = 'flex';
-        document.getElementById('lobbyPlayersJoin').style.display = 'none';
-        document.getElementById('lobbyStatusJoin').textContent = '';
+        // RESTAURA A INTERFACE DA ABA BUSCAR
+        // RESTAURA A INTERFACE DA ABA BUSCAR
+        if (wrapperBox) wrapperBox.style.display = 'flex';
+
+        const joinTabHeader = document.getElementById('joinTabHeader');
+        if (joinTabHeader) joinTabHeader.style.display = 'flex';
+
+        const publicRoomsBrowser = document.getElementById('publicRoomsBrowser');
+        if (publicRoomsBrowser) publicRoomsBrowser.style.display = 'flex';
+
+        const joinInputArea = document.getElementById('joinInputArea');
+        if (joinInputArea) joinInputArea.style.display = 'none';
+
+        const joinTabTitle = document.getElementById('joinTabTitle');
+        if (joinTabTitle) joinTabTitle.innerHTML = '🌐 Salas Abertas';
+
+        const btnToggleManualCode = document.getElementById('btnToggleManualCode');
+        if (btnToggleManualCode) btnToggleManualCode.innerHTML = '🔍';
+
+        const btnRefreshRoomsInline = document.getElementById('btnRefreshRoomsInline');
+        if (btnRefreshRoomsInline) btnRefreshRoomsInline.style.display = 'block';
+
+        // Esconde dados da sala anterior
+        const lobbyPlayersJoin = document.getElementById('lobbyPlayersJoin');
+        if (lobbyPlayersJoin) lobbyPlayersJoin.style.display = 'none';
+
+        const lobbyStatusJoin = document.getElementById('lobbyStatusJoin');
+        if (lobbyStatusJoin) lobbyStatusJoin.textContent = '';
+
+        // Esconde o botão sair
+        const btnLeave = document.getElementById('btnLeaveRoom');
+        if (btnLeave) btnLeave.style.display = 'none';
       }
     }
 
@@ -2705,9 +3055,20 @@
     };
 
     function getNickname() {
-      const nickHeader = document.getElementById('playerHeaderNick');
-      const nick = nickHeader ? nickHeader.innerText.trim().toUpperCase() : 'JOGADOR';
-      sessionStorage.setItem('pkart_nickname', nick); return nick;
+      const headerNickEl = document.getElementById('playerHeaderNick');
+      if (headerNickEl && currentUserProfile) {
+        const styledHtml = getStyledNickname(currentUserProfile.nickname || 'Piloto', currentUserProfile.equipped_title);
+        headerNickEl.innerHTML = styledHtml;
+
+        const nickText = currentUserProfile.nickname || 'JOGADOR';
+        const finalNick = nickText.trim().toUpperCase();
+        sessionStorage.setItem('pkart_nickname', finalNick);
+        return finalNick;
+      }
+
+      const fallback = (currentUserProfile && currentUserProfile.nickname) ? currentUserProfile.nickname.toUpperCase() : 'JOGADOR';
+      sessionStorage.setItem('pkart_nickname', fallback);
+      return fallback;
     }
 
     function redirectToRace(room = '', slot = 0, trackId = '', totalPlayers = 1) {
@@ -2745,15 +3106,32 @@
         hostLobbyConn = peer.connect(targetHostId, { reliable: true });
 
         hostLobbyConn.on('open', () => {
-          hostLobbyConn.send({ t: 'join_req', nick: getNickname() });
+          // O Convidado envia os seus cosméticos para o Host no momento da conexão
+          hostLobbyConn.send({
+            t: 'join_req',
+            nick: getNickname(),
+            avatar: currentUserProfile ? currentUserProfile.avatar : null,
+            title: currentUserProfile ? currentUserProfile.equipped_title : null,
+            border: currentUserProfile ? currentUserProfile.equipped_border : null
+          });
         });
 
         hostLobbyConn.on('data', (data) => {
+          if (data.t === 'chat_sticker') {
+            spawnFloatingSticker(data.emoji);
+          }
           if (data.t === 'assign_slot') {
             myAssignedSlot = data.slot;
             document.getElementById('lobbyStatusJoin').textContent = 'Conectado à sala!';
-            document.getElementById('joinInputArea').style.display = 'none';
+
+            const wrapperBox = document.getElementById('joinBoxWrapper');
+            if (wrapperBox) wrapperBox.style.display = 'none';
+
             renderLobbySlots('lobbyPlayersJoin', data.players);
+
+            // --- MOSTRA O BOTÃO SAIR ---
+            const btnLeave = document.getElementById('btnLeaveRoom');
+            if (btnLeave) btnLeave.style.display = 'block';
           }
           if (data.t === 'update_lobby') {
             renderLobbySlots('lobbyPlayersJoin', data.players);
@@ -2772,6 +3150,15 @@
       });
     };
 
+    // Ação do Botão "Abandonar Sala"
+    const btnLeaveRoom = document.getElementById('btnLeaveRoom');
+    if (btnLeaveRoom) {
+      btnLeaveRoom.addEventListener('click', () => {
+        // Chamar a própria aba 'join' força a limpeza da ligação e restaura a UI instantaneamente
+        switchMultiTab('join');
+      });
+    }
+
     document.addEventListener('click', (e) => {
       const startBtn = e.target.closest('#btnStartRace');
       if (startBtn) {
@@ -2787,6 +3174,9 @@
         });
 
         localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, time: Date.now() }));
+        if (typeof supabaseClient !== 'undefined') {
+          supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
+        }
         // Host espera só 400ms (tempo suficiente para enviar os dados e pular pra corrida)
         setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 400);
       }
@@ -3559,8 +3949,29 @@
 
       // 1. Abre o Modal e Seta Dados Básicos
       document.getElementById('profileModalOverlay').style.display = 'flex';
-      document.getElementById('profileNameDisplay').innerText = currentUserProfile.nickname || 'Piloto';
+
+      // AQUI: Usamos innerHTML e getStyledNickname para o efeito aparecer no modal de perfil
+      document.getElementById('profileNameDisplay').innerHTML = getStyledNickname(currentUserProfile.nickname || 'Piloto', currentUserProfile.equipped_title);
+
       document.getElementById('profileCoinsDisplay').innerText = currentUserProfile.coins || 0;
+
+      // --- APLICA OS COSMÉTICOS NO PERFIL (DINÂMICO) ---
+      const titleDisplay = document.getElementById('profileTitleDisplay');
+      if (currentUserProfile.equipped_title && typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
+        const titleItem = storeItemsCache.titles.find(t => t.id === currentUserProfile.equipped_title);
+        if (titleItem) {
+          titleDisplay.innerText = `${titleItem.icon || '🏷️'} ${titleItem.name}`;
+          titleDisplay.style.display = 'block';
+        } else {
+          titleDisplay.style.display = 'none';
+        }
+      } else {
+        titleDisplay.style.display = 'none';
+      }
+
+      // Aplica a borda dinâmica no perfil
+      const avatarBorder = document.getElementById('profileAvatarBorder');
+      applyBorderStyles(avatarBorder, currentUserProfile.equipped_border);
 
       // 2. Sistema de Troféus e Liga (Puxando do sistema oficial)
       const trophies = currentUserProfile.trophies || 0;
@@ -3575,8 +3986,7 @@
       const avatarLarge = document.querySelector('.profile-avatar-large');
       if (avatarLarge) {
         avatarLarge.style.boxShadow = 'none';
-        avatarLarge.style.background = 'transparent';
-
+        avatarLarge.style.background = '#0c1c30';
         if (currentUserProfile.avatar) {
           avatarLarge.innerHTML = `<img src="${currentUserProfile.avatar}" style="width: 100%; height: 100%; object-fit: contain; image-rendering: pixelated;">`;
         } else {
@@ -4084,9 +4494,632 @@
       }
     }
 
+    async function buscarSalasAbertas() {
+      const container = document.getElementById('roomListContainerInline');
+      if (!container) return;
+
+      container.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 10px;">A procurar salas...</div>';
+
+      try {
+        if (typeof supabaseClient === 'undefined') throw new Error("Supabase não carregado");
+
+        const { data, error } = await supabaseClient
+          .from('public_rooms')
+          .select('*')
+          .eq('status', 'waiting')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // --- NOVA LÓGICA DE FILTRO ---
+        const meuNick = getNickname();
+        const salasValidas = data.filter(room => room.host_name !== meuNick);
+
+        if (!salasValidas || salasValidas.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 10px;">Nenhuma sala aberta no momento. Tente criar uma!</div>';
+          return;
+        }
+
+        container.innerHTML = salasValidas.map(room => `
+      <div style="background: rgba(12, 28, 48, 0.8); border: 1px solid #275276; border-radius: 8px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; transition: 0.2s;" onmouseover="this.style.borderColor='#38bdf8'" onmouseout="this.style.borderColor='#275276'">
+        <div style="text-align: left;">
+          <div style="font-weight: 900; color: #38bdf8; font-size: 12px;">${room.host_name}</div>
+          <div style="font-size: 10px; color: #91a7be; margin-top: 2px;">Pista: ${room.room_code} | ${room.players_count}/4 👤</div>
+        </div>
+        <button onclick="entrarNaSalaPublica('${room.room_code}')" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #022c22; font-weight: 900; font-size: 10px; border: 1px solid #4ade80; padding: 6px 12px; border-radius: 6px; cursor: pointer; text-transform: uppercase;">
+          Entrar
+        </button>
+      </div>
+    `).join('');
+      } catch (err) {
+        console.error("Erro ao buscar salas:", err);
+        container.innerHTML = '<div style="text-align: center; color: #ef4444; font-size: 11px; padding: 10px;">Sem ligação ao servidor.</div>';
+      }
+    }
+
+    // Preenche o código e clica em Conectar automaticamente
+    window.entrarNaSalaPublica = function (roomCode) {
+      const inputRoom = document.getElementById('joinCode');
+      if (inputRoom) inputRoom.value = roomCode.toUpperCase();
+      document.getElementById('btnConnect').click();
+    };
+
+    // Evento do botão atualizar inline
+    const btnRefreshInline = document.getElementById('btnRefreshRoomsInline');
+    if (btnRefreshInline) {
+      btnRefreshInline.addEventListener('click', buscarSalasAbertas);
+    }
+
+    function entrarNaSalaPublica(roomCode) {
+      // Preenche o input invisível/visível do lobby com o código da sala e dispara a função de entrar
+      const inputRoom = document.getElementById('roomCodeInput'); // Ajuste para o ID real do seu input de código
+      if (inputRoom) inputRoom.value = roomCode;
+
+      // Chama a sua função existente que faz o jogador entrar na sala (ajuste o nome se for diferente)
+      joinRoom(roomCode);
+    }
+
+    // --- SISTEMA DA LOJA DE COSMÉTICOS ---
+
+    // --- SISTEMA DA LOJA DE COSMÉTICOS INTEGRADO AO SUPABASE ---
+
+    let storeItemsCache = {
+      titles: [],
+      borders: [],
+      avatars: []
+    };
+
+    let currentStoreCategory = 'titles';
+
+    // 1. Abrir a Loja e carregar dados do Supabase
+    const btnOpenStore = document.getElementById('menuBtnStore');
+    if (btnOpenStore) {
+      btnOpenStore.addEventListener('click', async () => {
+
+        // Proteção 1: Verifica se o Modal realmente existe antes de aplicar o estilo
+        const modal = document.getElementById('storeModalOverlay');
+        if (modal) {
+          modal.style.display = 'flex';
+        } else {
+          console.error("⚠️ ERRO: A div com id 'storeModalOverlay' não foi encontrada no HTML!");
+          return; // Para a execução para não quebrar o resto
+        }
+
+        // Atualiza moedas do perfil atual
+        const userCoins = currentUserProfile ? (currentUserProfile.coins || 0) : 0;
+        const coinsDisplay = document.getElementById('storeUserCoins');
+        if (coinsDisplay) coinsDisplay.innerText = userCoins;
+
+        try {
+          await carregarItensDaLojaDoBanco();
+
+          // Renderiza as abas dinâmicas que criámos no passo anterior
+          if (typeof renderStoreTabs === 'function') {
+            renderStoreTabs();
+          }
+
+          // Renderiza os itens
+          if (typeof renderStoreItems === 'function') {
+            renderStoreItems(currentStoreCategory || 'titles');
+          }
+        } catch (error) {
+          console.error("⚠️ Erro ao carregar ou renderizar a loja:", error);
+        }
+      });
+    }
+
+    // 2. Buscar itens cadastrados na tabela store_items do Supabase
+    async function carregarItensDaLojaDoBanco() {
+      if (typeof supabaseClient === 'undefined') return;
+
+      try {
+        const { data, error } = await supabaseClient.from('store_items').select('*');
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          // Cosméticos clássicos (mantidos no plural por compatibilidade com o código antigo)
+          storeItemsCache.titles = data.filter(i => i.type === 'title');
+          storeItemsCache.borders = data.filter(i => i.type === 'border');
+          storeItemsCache.avatars = data.filter(i => i.type === 'avatar');
+
+          // NOVOS COSMÉTICOS: Rastros e Efeitos de Vitória
+          storeItemsCache.trail = data.filter(i => i.type === 'trail');
+          storeItemsCache.victory = data.filter(i => i.type === 'victory');
+
+        } else {
+          // Fallback local caso a tabela esteja vazia inicialmente
+          storeItemsCache = {
+            titles: [{ id: 'title_drift', name: 'Rei do Drift', type: 'title', price: 500, icon: '💨' }],
+            borders: [{ id: 'border_fire', name: 'Borda em Chamas', type: 'border', price: 1200, icon: '🔥' }],
+            avatars: [{ id: 'avatar_red', name: 'Lenda Red', type: 'avatar', price: 3000, icon: '🧢' }],
+            trail: [],
+            victory: []
+          };
+        }
+      } catch (err) {
+        console.warn("Erro ao buscar itens da loja, usando catálogo padrão.", err);
+      }
+    }
+
+    // 3. Mudar de Aba (Versão Dinâmica)
+    window.mudarAbaLoja = function (category) {
+      currentStoreCategory = category;
+
+      // Recria os botões dinamicamente.
+      // A função renderStoreTabs já sabe aplicar a classe 'active' na categoria correta!
+      if (typeof renderStoreTabs === 'function') {
+        renderStoreTabs();
+      }
+
+      // Atualiza a grid com os itens da loja da aba escolhida
+      if (typeof renderStoreItems === 'function') {
+        renderStoreItems(category);
+      }
+    };
+
+    // 4. Renderizar Itens no Grid
+    function renderStoreItems(category) {
+      const grid = document.getElementById('storeItemsGrid');
+      grid.innerHTML = '';
+
+      const items = storeItemsCache[category] || [];
+
+      // Pega os cosméticos desbloqueados do perfil do jogador
+      let myCosmetics = [];
+      if (currentUserProfile && currentUserProfile.unlocked_cosmetics) {
+        try {
+          myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics)
+            ? currentUserProfile.unlocked_cosmetics
+            : JSON.parse(currentUserProfile.unlocked_cosmetics);
+        } catch (e) { myCosmetics = []; }
+      }
+
+      if (items.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #94a3b8; padding: 20px;">Nenhum item disponível nesta categoria.</div>';
+        return;
+      }
+
+      items.forEach(item => {
+        const isOwned = myCosmetics.includes(item.id);
+
+        // Verifica se já está equipado (com proteção para garantir que o perfil existe)
+        let isEquipped = false;
+        if (currentUserProfile) {
+          if (item.type === 'title' && currentUserProfile.equipped_title === item.id) isEquipped = true;
+          if (item.type === 'border' && currentUserProfile.equipped_border === item.id) isEquipped = true;
+          if (item.type === 'trail' && currentUserProfile.equipped_trail === item.id) isEquipped = true;
+          if (item.type === 'victory' && currentUserProfile.equipped_victory === item.id) isEquipped = true;
+        }
+
+        const cardBg = isOwned ? 'rgba(34, 197, 94, 0.1)' : 'rgba(12, 28, 48, 0.8)';
+        const cardBorder = isOwned ? '#22c55e' : '#1e3a57';
+
+        let btnText = 'COMPRAR';
+        let btnStyle = 'background: linear-gradient(135deg, #27c8ff, #078be8); border: 1px solid #52d6ff; color: #031525;';
+
+        if (isOwned) {
+          if (isEquipped) {
+            btnText = 'EQUIPADO';
+            btnStyle = 'background: #22c55e; border: 1px solid #16a34a; color: #022c22; font-weight: 900;';
+          } else {
+            btnText = 'EQUIPAR';
+            btnStyle = 'background: transparent; border: 1px solid #22c55e; color: #22c55e;';
+          }
+        } else {
+          btnText = `🪙 ${item.price}`;
+        }
+
+        grid.innerHTML += `
+      <div style="background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
+        
+        <div style="height: 70px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 10px;">
+          ${item.icon || '🎁'}
+        </div>
+        
+        <div style="font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 5px;">
+          ${item.name}
+        </div>
+        <div style="font-size: 11px; color: #91a7be; margin-bottom: 15px; text-transform: uppercase; font-weight: bold;">
+          ${item.type === 'title' ? 'Título' : (item.type === 'border' ? 'Borda' : 'Avatar')}
+        </div>
+        
+        <button class="mode-btn" style="margin-top: auto; width: 100%; min-height: 36px; font-size: 12px; ${btnStyle}" onclick="interagirItemLoja('${item.id}', ${item.price}, '${item.type}', ${isOwned}, ${isEquipped})">
+          ${btnText}
+        </button>
+      </div>
+    `;
+      });
+    }
+
+    // 5. Ação de Comprar ou Equipar Integrada ao Supabase
+    window.interagirItemLoja = async function (itemId, price, type, isOwned, isEquipped) {
+      if (!currentUserProfile) return;
+
+      let myCosmetics = [];
+      if (currentUserProfile.unlocked_cosmetics) {
+        try {
+          myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics)
+            ? currentUserProfile.unlocked_cosmetics
+            : JSON.parse(currentUserProfile.unlocked_cosmetics);
+        } catch (e) { myCosmetics = []; }
+      }
+
+      let updateData = {};
+
+      if (!isOwned) {
+        // Processo de Compra
+        const userCoins = currentUserProfile.coins || 0;
+        if (userCoins < price) {
+          alert("Moedas insuficientes para realizar esta compra!");
+          return;
+        }
+
+        const confirmar = confirm(`Deseja comprar este item por ${price} moedas?`);
+        if (!confirmar) return;
+
+        const novasMoedas = userCoins - price;
+        myCosmetics.push(itemId);
+
+        currentUserProfile.coins = novasMoedas;
+        currentUserProfile.unlocked_cosmetics = myCosmetics;
+
+        updateData.coins = novasMoedas;
+        updateData.unlocked_cosmetics = myCosmetics;
+
+        document.getElementById('storeUserCoins').innerText = novasMoedas;
+        document.getElementById('playerCoinsText').innerText = novasMoedas;
+      } else {
+        // Processo de Equipar / Desequipar
+
+        // Mapeia o tipo do item para a coluna correspondente no Supabase
+        let colunaEquipamento = null;
+        if (type === 'title') colunaEquipamento = 'equipped_title';
+        if (type === 'border') colunaEquipamento = 'equipped_border';
+        if (type === 'trail') colunaEquipamento = 'equipped_trail';
+        if (type === 'victory') colunaEquipamento = 'equipped_victory';
+
+        if (colunaEquipamento) {
+          if (isEquipped) {
+            currentUserProfile[colunaEquipamento] = null;
+            updateData[colunaEquipamento] = null;
+          } else {
+            currentUserProfile[colunaEquipamento] = itemId;
+            updateData[colunaEquipamento] = itemId;
+          }
+        }
+      }
+
+      // Salva alterações no Supabase
+      if (typeof supabaseClient !== 'undefined') {
+        const { error } = await supabaseClient
+          .from('profiles')
+          .update(updateData)
+          .eq('id', currentUserProfile.id);
+
+        if (error) {
+          alert("Erro ao atualizar dados na base de dados.");
+          console.error(error);
+          return;
+        }
+      }
+
+      // Atualiza o grid da loja para refletir o novo estado
+      renderStoreItems(currentStoreCategory);
+      // NOVA LINHA AQUI: Atualiza o menu lateral na mesma hora!
+      updateLeagueUI(currentUserProfile.trophies || 0);
+      // --- SINCRONIZAÇÃO EM TEMPO REAL NO MULTIPLAYER ---
+      if (typeof roomCode !== 'undefined' && roomCode) {
+        // Se fores o Host, atualiza os teus dados na lista e faz o broadcast
+        if (typeof lobbyPlayers !== 'undefined' && lobbyPlayers.length > 0) {
+          lobbyPlayers[0].title = currentUserProfile.equipped_title;
+          lobbyPlayers[0].border = currentUserProfile.equipped_border;
+          if (typeof broadcastLobby === 'function') broadcastLobby();
+          if (typeof renderLobbySlots === 'function') renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
+        }
+      } else if (typeof hostLobbyConn !== 'undefined' && hostLobbyConn && hostLobbyConn.open) {
+        // Se fores Convidado, envia um pacote ao Host a avisar da mudança de cosméticos
+        hostLobbyConn.send({
+          t: 'update_profile',
+          nick: currentUserProfile.nickname,
+          avatar: currentUserProfile.avatar,
+          title: currentUserProfile.equipped_title,
+          border: currentUserProfile.equipped_border
+        });
+      }
+    };
+
+    function getStyledNickname(nickname, equippedTitleId) {
+      if (!equippedTitleId) return nickname;
+
+      if (typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
+        const item = storeItemsCache.titles.find(t => t.id === equippedTitleId);
+        if (item && item.metadata && item.metadata.nickname_style) {
+          // Adicionamos display: inline-block por segurança para o gradiente funcionar no texto
+          return `<span style="${item.metadata.nickname_style}; display: inline-block;">${nickname}</span>`;
+        }
+      }
+
+      return nickname;
+    }
+
+    function getCustomJoinMessage(playerName, equippedTitleId) {
+      if (!equippedTitleId) return `🚪 ${playerName} entrou na sala.`;
+
+      // 1. Tenta ler a frase personalizada guardada no metadata do Supabase
+      if (typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
+        const item = storeItemsCache.titles.find(t => t.id === equippedTitleId);
+        if (item && item.metadata && item.metadata.join_message) {
+          return item.metadata.join_message.replace('{player}', playerName);
+        }
+      }
+
+      // 2. Fallbacks automáticos
+      if (equippedTitleId === 'title_drift') return `💨 ${playerName} derrapou para dentro da sala!`;
+      if (equippedTitleId === 'title_rich') return `💰 O magnata ${playerName} ostentou presença na sala!`;
+      if (equippedTitleId === 'title_kanto') return `🌍 O mestre ${playerName} pisou no circuito!`;
+
+      return `✨ ${playerName} entrou na sala.`;
+    }
+
+    function applyBorderStyles(element, borderId) {
+      if (!element) return;
+
+      // Limpa estados anteriores
+      element.className = '';
+      element.style.background = 'transparent';
+      element.style.boxShadow = 'none';
+
+      if (!borderId) return;
+
+      // 1. Tenta ler o metadata do Supabase via cache da loja
+      if (typeof storeItemsCache !== 'undefined' && storeItemsCache.borders) {
+        const item = storeItemsCache.borders.find(b => b.id === borderId);
+        if (item && item.metadata) {
+          if (item.metadata.border_style) {
+            element.style.background = item.metadata.border_style;
+          }
+          if (item.metadata.shadow_style) {
+            element.style.boxShadow = item.metadata.shadow_style;
+          }
+          if (item.metadata.animation_class) {
+            element.classList.add(item.metadata.animation_class);
+          }
+          return;
+        }
+      }
+
+      // 2. Fallback de segurança caso o cache demore um instante
+      if (borderId === 'border_fire') {
+        element.style.background = 'linear-gradient(135deg, #ef4444, #f59e0b)';
+        element.style.boxShadow = '0 0 10px rgba(239, 68, 68, 0.8)';
+        element.classList.add('avatar-border-fire');
+      } else if (borderId === 'border_water') {
+        element.style.background = 'linear-gradient(135deg, #3b82f6, #06b6d4)';
+        element.style.boxShadow = '0 0 10px rgba(59, 130, 246, 0.8)';
+        element.classList.add('avatar-border-water');
+      }
+    }
+
+    // Dicionário de tradução para os tipos que vêm do Supabase
+    const storeCategoryNames = {
+      'titles': '🪪 Títulos',
+      'borders': '🖼️ Bordas',
+      'avatars': '👤 Avatares',
+      'trail': '💨 Rastros',
+      'victory': '🏆 Efeitos'
+    };
+
+    // Função para gerar as abas dinamicamente
+    function renderStoreTabs() {
+      const tabsContainer = document.getElementById('storeTabsContainer');
+      if (!tabsContainer || typeof storeItemsCache === 'undefined') return;
+
+      tabsContainer.innerHTML = '';
+
+      // Cria um botão para cada categoria (chave) existente no cache do banco
+      Object.keys(storeItemsCache).forEach(typeKey => {
+        // Ignora se a categoria não tiver itens
+        if (!storeItemsCache[typeKey] || storeItemsCache[typeKey].length === 0) return;
+
+        const btn = document.createElement('button');
+        // Aplica a classe 'tab-btn' e 'active' se for a selecionada
+        btn.className = `tab-btn ${currentStoreCategory === typeKey ? 'active' : ''}`;
+
+        // Busca o nome formatado ou usa a chave bruta em maiúsculas
+        btn.innerText = storeCategoryNames[typeKey] || storeCategoryNames[typeKey + 's'] || typeKey.toUpperCase();
+
+        // Define a ação de clique
+        btn.onclick = () => mudarAbaLoja(typeKey);
+
+        tabsContainer.appendChild(btn);
+      });
+    }
+
+
+
+    // Nova função limpa e dinâmica
+    function mudarAbaLoja(categoria) {
+      currentStoreCategory = categoria;
+
+      // O renderStoreTabs recria os botões dinamicamente e já aplica a classe 'active' ao botão clicado
+      if (typeof renderStoreTabs === 'function') {
+        renderStoreTabs();
+      }
+
+      // Renderiza os itens da loja para a aba que foi clicada
+      if (typeof renderStoreItems === 'function') {
+        renderStoreItems(categoria);
+      }
+    }
+
+    // --- SISTEMA DE STICKERS NO LOBBY ---
+    // const LOBBY_EMOJIS = ['🔥', '😂', '💀', '💩', '🏁', '🚀', '❤️', '🤬'];
+
+    const LOBBY_STICKERS = [
+      'emojis/bulbasaur.png',
+      'emojis/bulbasaur2.png',
+      'emojis/bulbasaur3.png',
+      'emojis/charizard.png',
+      'emojis/charmander.png',
+      'emojis/charmander2.png',
+      'emojis/charmander3.png',
+      'emojis/chikorita.png',
+      'emojis/cyndaquill.png',
+      'emojis/dragonite.png',
+      'emojis/eevee.png',
+      'emojis/espeon.png',
+      'emojis/gardevoir.png',
+      'emojis/gengar.png',
+      'emojis/glaceon.png',
+      'emojis/gyarados.png',
+      'emojis/lapras.png',
+      'emojis/leafeon.png',
+      'emojis/lucario.png',
+      'emojis/mewtwo.png',
+      'emojis/mudkip.png',
+      'emojis/pikachu.png',
+      'emojis/pikachu2.png',
+      'emojis/pokeball.png',
+      'emojis/psyduck.png',
+      'emojis/snorlax.png',
+      'emojis/squirtle.png',
+      'emojis/squirtle2.png',
+      'emojis/torchic.png',
+      'emojis/umbreon.png',
+    ];
+
+    let currentStickerPage = 0;
+    const STICKERS_PER_PAGE = 8; // Limite exato por página
+
+    // Função para navegar entre as páginas de stickers
+    function changeStickerPage(direction) {
+      const totalPages = Math.ceil(LOBBY_STICKERS.length / STICKERS_PER_PAGE);
+      currentStickerPage += direction;
+
+      if (currentStickerPage < 0) currentStickerPage = totalPages - 1;
+      if (currentStickerPage >= totalPages) currentStickerPage = 0;
+
+      initStickerChat(); // Re-renderiza a grelha
+    }
+
+    // Função para renderizar os stickers da página atual
+    function initStickerChat() {
+      const grid = document.getElementById('emojiGrid');
+      const indicator = document.getElementById('stickerPageIndicator');
+      if (!grid) return;
+
+      grid.innerHTML = '';
+
+      const totalPages = Math.ceil(LOBBY_STICKERS.length / STICKERS_PER_PAGE) || 1;
+      if (indicator) indicator.innerText = `Pág. ${currentStickerPage + 1}/${totalPages}`;
+
+      // Fatiar a lista de stickers para mostrar apenas os 8 da página atual
+      const startIndex = currentStickerPage * STICKERS_PER_PAGE;
+      const paginatedStickers = LOBBY_STICKERS.slice(startIndex, startIndex + STICKERS_PER_PAGE);
+
+      paginatedStickers.forEach(stickerUrl => {
+        const btn = document.createElement('button');
+        btn.className = 'emoji-btn';
+
+        btn.innerHTML = `<img src="${stickerUrl}" style="width: 28px; height: 28px; object-fit: contain; pointer-events: none;">`;
+
+        btn.onclick = () => {
+          spawnFloatingSticker(stickerUrl);
+          sendStickerToNetwork(stickerUrl);
+          document.getElementById('stickerChatContainer').style.display = 'none'; // Fecha após uso
+        };
+        grid.appendChild(btn);
+      });
+    }
+
+    function spawnFloatingSticker(stickerUrl) {
+      const sticker = document.createElement('div');
+      sticker.className = 'floating-sticker';
+
+      // Injeta a imagem na animação com um tamanho maior e sombra
+      sticker.innerHTML = `<img src="${stickerUrl}" style="width: 70px; height: 70px; object-fit: contain; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));">`;
+
+      const startX = 80 + Math.random() * (window.innerWidth - 160);
+      const startY = window.innerHeight - 80;
+      sticker.style.left = `${startX}px`;
+      sticker.style.top = `${startY}px`;
+      document.body.appendChild(sticker);
+
+      const sway = (Math.random() - 0.5) * 120;
+      sticker.animate([
+        { transform: `translate(0, 0) scale(0.2) rotate(-15deg)`, opacity: 0 },
+        { transform: `translate(${sway * 0.3}px, -50px) scale(1.5) rotate(10deg)`, opacity: 1, offset: 0.15 },
+        { transform: `translate(${sway}px, -350px) scale(1) rotate(-10deg)`, opacity: 0 }
+      ], { duration: 2500, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+
+      setTimeout(() => sticker.remove(), 2500);
+    }
+
+    function sendStickerToNetwork(emoji) {
+      const payload = { t: 'chat_sticker', emoji: emoji };
+
+      // Se for o Host, envia para todos os convidados
+      if (document.getElementById('btnTabHost') && document.getElementById('btnTabHost').classList.contains('active')) {
+        if (typeof guestConns !== 'undefined') {
+          guestConns.forEach(g => {
+            if (g.conn && g.conn.open) g.conn.send(payload);
+          });
+        }
+      }
+      // Se for Convidado, envia para o Host
+      else if (typeof hostLobbyConn !== 'undefined' && hostLobbyConn && hostLobbyConn.open) {
+        hostLobbyConn.send(payload);
+      }
+    }
+
+    // Função para mostrar/esconder o painel
+    function toggleStickerChat(btnElement) {
+      const panel = document.getElementById('stickerChatContainer');
+
+      if (panel.style.display === 'none' || panel.style.display === '') {
+        // Pega as coordenadas exatas do botão clicado na tela
+        const rect = btnElement.getBoundingClientRect();
+
+        // Posiciona o modal alinhado à esquerda do botão e logo acima dele
+        panel.style.top = 'auto'; // Limpa o top por segurança
+        panel.style.left = rect.left + 'px';
+        panel.style.bottom = (window.innerHeight - rect.top + 10) + 'px';
+
+        panel.style.display = 'flex';
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
+    // Inicializa os botões do chat
+    initStickerChat();
 
     window.addEventListener('DOMContentLoaded', async () => {
       await carregarConfigsDoServidor();
+      await carregarItensDaLojaDoBanco();
+      currentStoreCategory = Object.keys(storeItemsCache)[0]; // Opcional: Define a 1ª aba detectada como padrão
+      renderStoreTabs();
+      renderStoreItems(currentStoreCategory);
+      // 1. Espera os karts virem do banco
+      await loadKartsFromDatabase();
+
+      // 2. Agora sim sorteia os grátis e organiza a disponibilidade
+      updateDailyFreeKarts();
+      sortKartsByAvailability();
+
+      // 3. Define qual kart exibir na tela inicial
+      const savedKartId = sessionStorage.getItem('pkart_selected_kart');
+      selectedIndex = KART_DATABASE.findIndex(k => k.id === savedKartId);
+      if (selectedIndex === -1) selectedIndex = 0;
+
+      // 3. AGORA SIM inicia o visualizador 3D, pois os karts já existem na memória
+      if (typeof initPreview === 'function') {
+        initPreview();
+      } else if (typeof updatePreview === 'function') {
+        updatePreview();
+      }
+
+
       renderRoulette();
       setTimeout(updateLevelUI, 800);
       const btnPrev = document.getElementById('btnMusicPrev');
@@ -4202,7 +5235,6 @@
         }
       });
 
-      initPreview();
       await fetchCustomTracks();
       setupCustomDropdowns();
 
@@ -4448,6 +5480,14 @@
           updatePreview();
         }
       }, 500);
+    });
+    // --- PASSO C.3: GARANTIA CASO O HOST FECHE O NAVEGADOR ---
+    window.addEventListener('beforeunload', () => {
+      // Se ele tem um código de sala e estava na aba de Host, deleta a sala no banco
+      if (roomCode && typeof supabaseClient !== 'undefined' && document.getElementById('btnTabHost')?.classList.contains('active')) {
+        // Envia comando rápido (sem await) para limpar a sujeira antes de a página morrer
+        supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
+      }
     });
   </script>
 
