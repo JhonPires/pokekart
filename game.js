@@ -140,7 +140,11 @@ function setupEnhancedEnvironment(scene) {
   sun.shadow.camera.top = 110; sun.shadow.camera.bottom = -110;
   scene.add(sun);
 
-  respawnTreesForTrack();
+  if (currentBiome === 'ghost') {
+    spawnGhostDecorations();
+  } else {
+    respawnTreesForTrack(); // Padrão original
+  }
 
   // Adiciona as nuvens e pedras ao redor da pista
   spawnClouds(scene);
@@ -468,53 +472,126 @@ function buildTrackMesh() {
   return geo;
 }
 
-const trackTexCanvas = document.createElement('canvas');
-trackTexCanvas.width = 256;
-trackTexCanvas.height = 512;
-const tctx = trackTexCanvas.getContext('2d');
+// ============================================================
+// SISTEMA DE BIOMAS (TEMA POKÉMON)
+// ============================================================
+const BIOME_CONFIGS = {
+  grass: { // Planta / Inseto (Padrão)
+    ground: ['#3b8940', '#2d6a31'],
+    noiseL: 'rgba(255,255,255,0.04)', noiseD: 'rgba(0,0,0,0.07)',
+    track: '#3a3a40', trackLines: 'rgba(255,255,255,0.7)',
+    kerb: ['#d32f2f', '#f5f5f5'], // Vermelho e branco
+    trackRoughness: 0.75, trackMetalness: 0.1, groundRoughness: 0.95
+  },
+  ice: { // Gelo (Articuno, Lapras)
+    ground: ['#bae6fd', '#7dd3fc'], // Neve e gelo claro
+    noiseL: 'rgba(255,255,255,0.6)', noiseD: 'rgba(2,132,199,0.1)',
+    track: '#e0f2fe', trackLines: 'rgba(2,132,199,0.5)', // Asfalto de gelo
+    kerb: ['#0ea5e9', '#ffffff'], // Azul e branco
+    trackRoughness: 0.15, trackMetalness: 0.4, groundRoughness: 0.4 // Muito liso e reflexivo!
+  },
+  lava: { // Fogo (Charizard, Moltres)
+    ground: ['#7f1d1d', '#450a0a'], // Magma escuro e rocha vulcânica
+    noiseL: 'rgba(239,68,68,0.4)', noiseD: 'rgba(0,0,0,0.8)',
+    track: '#1c1917', trackLines: 'rgba(234,88,12,0.8)', // Rocha vulcânica com linhas laranjas
+    kerb: ['#ea580c', '#292524'], // Laranja e Cinza Escuro
+    trackRoughness: 0.95, trackMetalness: 0.0, groundRoughness: 0.95 // Muito fosco
+  },
+  dirt: { // Terra / Terrestre (Onix, Diglett)
+    ground: ['#166534', '#14532d'], // Grama rústica e escura nas bordas
+    noiseL: 'rgba(255,255,255,0.02)', noiseD: 'rgba(0,0,0,0.1)',
+    track: '#78350f', trackLines: 'rgba(253,230,138,0.4)', // Pista de terra batida
+    kerb: ['#ca8a04', '#451a03'], // Amarelo e Marrom
+    trackRoughness: 0.95, trackMetalness: 0.0, groundRoughness: 0.95
+  },
+  water: { // Aquático (Água / Squirtle / Gyarados)
+    ground: ['#0284c7', '#0369a1'], // Tons de oceano profundo
+    noiseL: 'rgba(255,255,255,0.15)', noiseD: 'rgba(0,0,0,0.2)', // Efeito de brilho de ondas na água
+    track: '#0c4a6e', trackLines: 'rgba(56,189,248,0.7)', // Asfalto azul escuro molhado com linhas ciano
+    kerb: ['#0ea5e9', '#ffffff'], // Zebras Ciano e Branco
+    trackRoughness: 0.1, trackMetalness: 0.3, groundRoughness: 0.1 // Chão liso e reflexivo simulando água
+  },
 
-// Fundo do asfalto
-tctx.fillStyle = '#3a3a40';
-tctx.fillRect(0, 0, 256, 512);
+  ghost: { // Fantasma (Gengar / Misdreavus)
+    ground: ['#2e1065', '#1e1b4b'], // Roxo sombrio e escuro
+    noiseL: 'rgba(168,85,247,0.1)', noiseD: 'rgba(0,0,0,0.8)', // Névoa densa
+    track: '#111111', trackLines: 'rgba(192,132,252,0.6)', // Pista quase preta com linhas roxas espectrais
+    kerb: ['#7e22ce', '#000000'], // Zebras Roxo Neon e Preto
+    trackRoughness: 0.8, trackMetalness: 0.1, groundRoughness: 0.9 // Tudo muito fosco e sombrio
+  },
 
-// Gerador de ruído processual (pedregulhos do asfalto)
-for (let i = 0; i < 40000; i++) {
-  tctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
-  tctx.fillRect(Math.random() * 256, Math.random() * 512, 1, 1);
+  city: { // Metropolitana (Aço / Normal / Magneton)
+    ground: ['#475569', '#334155'], // Calçadas e cimento urbano
+    noiseL: 'rgba(255,255,255,0.05)', noiseD: 'rgba(0,0,0,0.15)', // Textura de asfalto/concreto
+    track: '#0f172a', trackLines: 'rgba(234,179,8,0.7)', // Pista clássica de rua com linhas amarelas
+    kerb: ['#eab308', '#1e293b'], // Zebras Amarelo e Cinza Escuro (estilo industrial)
+    trackRoughness: 0.6, trackMetalness: 0.1, groundRoughness: 0.8
+  },
+
+  poison: { // Venenoso (Poison / Muk / Koffing)
+    ground: ['#3f6212', '#14532d'], // Pântano e lodo escuro
+    noiseL: 'rgba(132,204,22,0.25)', noiseD: 'rgba(0,0,0,0.7)', // Efeito de bolhas ácidas verdes e sujeira
+    track: '#27272a', trackLines: 'rgba(34,197,94,0.7)', // Pista cinza asfalto com linhas verde tóxico
+    kerb: ['#22c55e', '#4c1d95'], // Zebras Verde Ácido e Roxo Profundo
+    trackRoughness: 0.7, trackMetalness: 0.1, groundRoughness: 0.4 // Chão meio liso para simular pântano pegajoso
+  }
+};
+
+// Lê da URL (ex: ?biome=lava), se não tiver, usa 'grass'
+const currentBiome = urlParams.get('biome') || 'grass';
+const biome = BIOME_CONFIGS[currentBiome] || BIOME_CONFIGS.grass;
+
+// ------------------------------------------------------------
+// GERADORES DE TEXTURA COM BIOMA
+// ------------------------------------------------------------
+
+// 1. Textura da Pista Principal
+function createBiomeTrackTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 512;
+  const ctx = c.getContext('2d');
+
+  ctx.fillStyle = biome.track;
+  ctx.fillRect(0, 0, 256, 512);
+
+  // Ruído do asfalto/terra/gelo
+  for (let i = 0; i < 40000; i++) {
+    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
+    ctx.fillRect(Math.random() * 256, Math.random() * 512, 1, 1);
+  }
+
+  // Faixa central
+  ctx.strokeStyle = biome.trackLines;
+  ctx.lineWidth = 4;
+  ctx.setLineDash([30, 30]);
+  ctx.beginPath(); ctx.moveTo(128, 0); ctx.lineTo(128, 512); ctx.stroke();
+
+  // Faixas laterais
+  ctx.strokeStyle = biome.trackLines;
+  ctx.setLineDash([]);
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(8, 0); ctx.lineTo(8, 512);
+  ctx.moveTo(248, 0); ctx.lineTo(248, 512);
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(c);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1, 10);
+  return texture;
 }
 
-// Faixa central tracejada
-tctx.strokeStyle = 'rgba(255,255,255,0.7)';
-tctx.lineWidth = 4;
-tctx.setLineDash([30, 30]);
-tctx.beginPath();
-tctx.moveTo(128, 0);
-tctx.lineTo(128, 512);
-tctx.stroke();
-
-// Faixas laterais contínuas
-tctx.strokeStyle = 'rgba(255,255,255,0.85)';
-tctx.setLineDash([]);
-tctx.lineWidth = 3;
-tctx.beginPath();
-tctx.moveTo(8, 0); tctx.lineTo(8, 512);
-tctx.moveTo(248, 0); tctx.lineTo(248, 512);
-tctx.stroke();
-
-const trackTexture = new THREE.CanvasTexture(trackTexCanvas);
-trackTexture.wrapS = THREE.RepeatWrapping;
-trackTexture.wrapT = THREE.RepeatWrapping;
-trackTexture.repeat.set(1, 10);
-trackTexture.needsUpdate = true;
-
+const trackTexture = createBiomeTrackTexture();
 let trackMesh = null;
+
 function buildAndAddTrackMesh() {
   trackMesh = new THREE.Mesh(
     buildTrackMesh(),
     new THREE.MeshStandardMaterial({
       map: trackTexture,
-      roughness: 0.75, // Permite refletir levemente o sol
-      metalness: 0.1,  // Tira o aspecto fosco
+      roughness: biome.trackRoughness,
+      metalness: biome.trackMetalness,
       side: THREE.DoubleSide
     })
   );
@@ -522,25 +599,25 @@ function buildAndAddTrackMesh() {
   trackElementsGroup.add(trackMesh);
 }
 
-function createKerbTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 256;
-  const ctx = canvas.getContext('2d');
+// 2. Textura das Zebras (Kerbs)
+function createBiomeKerbTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 256;
+  const ctx = c.getContext('2d');
 
   const stripeWidth = 64;
   for (let i = 0; i < 256; i += stripeWidth) {
-    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? '#d32f2f' : '#f5f5f5';
+    ctx.fillStyle = (i / stripeWidth) % 2 === 0 ? biome.kerb[0] : biome.kerb[1];
     ctx.fillRect(i, 0, stripeWidth, 256);
   }
 
-  // Adiciona sujeira de pneu nas zebras
+  // Sujeira nas zebras
   for (let i = 0; i < 15000; i++) {
     ctx.fillStyle = 'rgba(0,0,0,0.05)';
     ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(c);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(60, 1);
@@ -548,28 +625,25 @@ function createKerbTexture() {
 }
 
 const kerbMaterial = new THREE.MeshStandardMaterial({
-  map: createKerbTexture(),
-  roughness: 0.7,
-  metalness: 0.1
+  map: createBiomeKerbTexture(),
+  roughness: biome.trackRoughness, // Usa a mesma rugosidade da pista para manter a física visual
+  metalness: biome.trackMetalness
 });
 
+// Mantém a função de adicionar a geometria das zebras intacta
 function addTrackKerbs() {
   const segments = 500;
   const kerbWidth = 0.8;
   const points = trackCurve.getSpacedPoints(segments);
 
   [-1, 1].forEach(sideSign => {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
+    const positions = []; const uvs = []; const indices = [];
 
     for (let i = 0; i <= segments; i++) {
       const pPrev = points[(i - 1 + segments) % segments];
       const pNext = points[(i + 1) % segments];
-
       const dir = new THREE.Vector3().subVectors(pNext, pPrev);
-      dir.y = 0;
-      dir.normalize();
+      dir.y = 0; dir.normalize();
 
       const normal = new THREE.Vector3(-dir.z, 0, dir.x).normalize();
       const current = points[i % segments];
@@ -581,23 +655,14 @@ function addTrackKerbs() {
       positions.push(outerEdge.x, 0.035, outerEdge.z);
 
       const progress = i / segments;
-      uvs.push(progress * 12, 0);
-      uvs.push(progress * 12, 1);
+      uvs.push(progress * 12, 0); uvs.push(progress * 12, 1);
     }
 
     for (let i = 0; i < segments; i++) {
-      const a = i * 2;
-      const b = i * 2 + 1;
-      const c = (i + 1) * 2;
-      const d = (i + 1) * 2 + 1;
-
-      if (sideSign === 1) {
-        indices.push(a, b, c);
-        indices.push(b, d, c);
-      } else {
-        indices.push(a, c, b);
-        indices.push(b, c, d);
-      }
+      const a = i * 2; const b = i * 2 + 1;
+      const c = (i + 1) * 2; const d = (i + 1) * 2 + 1;
+      if (sideSign === 1) { indices.push(a, b, c); indices.push(b, d, c); }
+      else { indices.push(a, c, b); indices.push(b, c, d); }
     }
 
     const geo = new THREE.BufferGeometry();
@@ -612,42 +677,42 @@ function addTrackKerbs() {
   });
 }
 
-function createStripedGrassTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
-  const ctx = canvas.getContext('2d');
+// 3. Textura do Chão / Terreno (Antiga Relva)
+function createBiomeGroundTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const ctx = c.getContext('2d');
 
   const stripeHeight = 64;
   for (let i = 0; i < 512; i += stripeHeight) {
-    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? '#3b8940' : '#2d6a31';
+    ctx.fillStyle = (i / stripeHeight) % 2 === 0 ? biome.ground[0] : biome.ground[1];
     ctx.fillRect(0, i, 512, stripeHeight);
   }
 
-  // Ruído vertical para simular fios de grama
+  // Ruído processual adaptado ao bioma
   for (let i = 0; i < 90000; i++) {
-    ctx.fillStyle = Math.random() > 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.04)';
+    ctx.fillStyle = Math.random() > 0.5 ? biome.noiseD : biome.noiseL;
     ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 3);
   }
 
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new THREE.CanvasTexture(c);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.set(60, 60);
   return texture;
 }
 
-const grassMat = new THREE.MeshStandardMaterial({
-  map: createStripedGrassTexture(),
-  roughness: 0.95, // Grama absorve luz
+const groundMat = new THREE.MeshStandardMaterial({
+  map: createBiomeGroundTexture(),
+  roughness: biome.groundRoughness,
   metalness: 0.0
 });
 
-const grass = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), grassMat);
-grass.rotation.x = -Math.PI / 2;
-grass.position.y = -0.02;
-grass.receiveShadow = true;
-scene.add(grass);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), groundMat);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.02;
+ground.receiveShadow = true;
+scene.add(ground);
 
 function createStripedTireTexture() {
   const canvas = document.createElement('canvas');
@@ -692,6 +757,40 @@ function addTires() {
 
       tireStack.position.set(pos.x, 0, pos.z);
       trackElementsGroup.add(tireStack);
+    }
+  }
+}
+
+function addGhostBarriers() {
+  const tombstoneGeo = new THREE.BoxGeometry(1.2, 1.8, 0.3);
+  const mat1 = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.95 }); // Pedra clara
+  const mat2 = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 }); // Pedra escura
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    // Alterna a cor das pedras para dar variedade
+    const currentMat = (i % 2 === 0) ? mat1 : mat2;
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+
+      const tombstone = new THREE.Mesh(tombstoneGeo, currentMat);
+      tombstone.position.set(pos.x, 0.9, pos.z);
+
+      // Gira a lápide para ficar virada de frente para a pista
+      tombstone.rotation.y = Math.atan2(tangent.x, tangent.z) + (Math.PI / 2);
+
+      // Dá uma ligeira inclinação aleatória para parecerem velhas e abandonadas
+      tombstone.rotation.z = (Math.random() - 0.5) * 0.2;
+      tombstone.rotation.x = (Math.random() - 0.5) * 0.2;
+
+      tombstone.castShadow = true;
+      trackElementsGroup.add(tombstone);
     }
   }
 }
@@ -762,8 +861,13 @@ function checkBoostPads() {
 
 buildAndAddTrackMesh();
 addTrackKerbs();
-addTires();
+if (currentBiome === 'ghost') {
+  addGhostBarriers();
+} else {
+  addTires(); // Padrão original
+}
 addStartFinishLine();
+// spawnDynamicSpectators();
 setupEnhancedEnvironment(scene);
 
 function respawnTreesForTrack() {
@@ -828,6 +932,232 @@ function respawnTreesForTrack() {
   scene.add(currentTreeGroup);
 }
 
+function spawnGhostDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+
+  // Geometria das Árvores Secas
+  const trunkGeo = new THREE.CylinderGeometry(0.3, 0.8, 4.5, 5);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, roughness: 1.0 }); // Tronco roxo muito escuro
+
+  // Geometria das Chamas Espectrais
+  const flameGeo = new THREE.DodecahedronGeometry(1.2, 0);
+  const flameMat = new THREE.MeshStandardMaterial({ color: 0x9333ea, transparent: true, opacity: 0.7, emissive: 0x4c1d95 }); // Fogo Roxo Brilhante
+
+  const trunkInstanced = new THREE.InstancedMesh(trunkGeo, trunkMat, decorCount);
+  const flameInstanced = new THREE.InstancedMesh(flameGeo, flameMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0;
+  let attempts = 0;
+  const MIN_DISTANCE_FROM_TRACK = (trackWidth / 2) + 14.0;
+
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    const { sample } = nearestTrackSample(pos);
+    if (sample.point.distanceTo(pos) >= MIN_DISTANCE_FROM_TRACK) {
+      const scale = 0.8 + Math.random() * 0.6;
+
+      // 60% de probabilidade de ser uma chama flutuante, 40% de ser uma árvore morta
+      const isFlame = Math.random() > 0.4;
+
+      if (isFlame) {
+        dummy.position.set(x, 4.0 * scale, z); // Flutua no ar
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(Math.random(), Math.random(), Math.random());
+        dummy.updateMatrix();
+        flameInstanced.setMatrixAt(spawned, dummy.matrix);
+
+        // Oculta o tronco
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        trunkInstanced.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, 2.25 * scale, z); // Colado ao chão
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set((Math.random() - 0.5) * 0.3, Math.random() * Math.PI, (Math.random() - 0.5) * 0.3); // Árvores tortas
+        dummy.updateMatrix();
+        trunkInstanced.setMatrixAt(spawned, dummy.matrix);
+
+        // Oculta a chama
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        flameInstanced.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+
+  trunkInstanced.count = spawned;
+  flameInstanced.count = spawned;
+  trunkInstanced.instanceMatrix.needsUpdate = true;
+  flameInstanced.instanceMatrix.needsUpdate = true;
+
+  currentTreeGroup.add(trunkInstanced);
+  currentTreeGroup.add(flameInstanced);
+  scene.add(currentTreeGroup);
+}
+
+// ============================================================
+// SISTEMA DINÂMICO DE ESPECTADORES POKÉMON (PMD COLLAB)
+// ============================================================
+const spectators = [];
+const spectatorMaterials = [];
+let lastSpectatorAnim = Date.now();
+
+// 1. Função que vai buscar a imagem diretamente do GitHub do PMDCollab
+async function loadDynamicPMDPokemon(dexNumber) {
+  const base = `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${dexNumber}`;
+  const imgUrl = `${base}/Idle-Anim.png`;
+  const xmlUrl = `${base}/AnimData.xml`;
+
+  // 1. Busca os metadados reais da animação
+  const xmlText = await fetch(xmlUrl).then(r => r.text());
+  const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+
+  // Acha o bloco <Anim> cujo <Name> é "Idle"
+  const anims = xmlDoc.getElementsByTagName("Anim");
+  let idleAnim = null;
+  for (const anim of anims) {
+    if (anim.getElementsByTagName("Name")[0]?.textContent === "Idle") {
+      idleAnim = anim;
+      break;
+    }
+  }
+
+  if (!idleAnim) {
+    console.warn(`Sem animação Idle para ${dexNumber}`);
+    return;
+  }
+
+  const frameWidth = parseInt(idleAnim.getElementsByTagName("FrameWidth")[0].textContent, 10);
+  const frameHeight = parseInt(idleAnim.getElementsByTagName("FrameHeight")[0].textContent, 10);
+  const totalFrames = idleAnim.getElementsByTagName("Duration").length; // <- número real de frames
+
+  const rows = 8; // direções continuam fixas em 8
+
+  // 2. Só agora carrega a textura, já com os dados corretos
+  const texture = new THREE.TextureLoader().load(imgUrl);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestFilter;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(1 / totalFrames, 1 / rows);
+
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    alphaTest: 0.5,
+  });
+
+  spectatorMaterials.push({ material, texture, totalFrames, currentFrame: 0, frameWidth, frameHeight });
+}
+
+// Lista de Pokémon populares e testados no PMDCollab
+const todosPokemonPMD = [
+  '0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0025',
+  '0039', '0052', '0054', '0058', '0059', '0065', '0068', '0079', '0094', '0104',
+  '0130', '0133', '0134', '0135', '0136', '0143', '0149', '0150', '0151', '0154',
+  '0157', '0158', '0162', '0172', '0175', '0196', '0197', '0212', '0214', '0243',
+  '0244', '0245', '0248', '0249', '0250', '0253', '0254', '0257', '0258', '0260',
+  '0282', '0300', '0330', '0359', '0373', '0380', '0382', '0383', '0384', '0385',
+  '0386', '0387', '0430', '0447', '0448', '0471', '0478', '0493'
+];
+
+// Embaralha a lista e seleciona 14 Pokémon totalmente diferentes a cada corrida
+const pokemonEscolhidos = todosPokemonPMD.sort(() => 0.5 - Math.random()).slice(0, 14);
+pokemonEscolhidos.forEach(dexNum => loadDynamicPMDPokemon(dexNum));
+
+// Substitua a sua função spawnDynamicSpectators atual por esta:
+function spawnDynamicSpectators() {
+  setTimeout(() => {
+    if (spectatorMaterials.length === 0) return;
+
+    const totalPontos = 260; // Aumentei um pouco a resolução dos pontos
+    const trackPoints = trackCurve.getSpacedPoints(totalPontos);
+
+    const trackCenter = new THREE.Vector3();
+    trackPoints.forEach(p => trackCenter.add(p));
+    trackCenter.divideScalar(trackPoints.length);
+
+    // Limpa a torcida antiga
+    spectators.length = 0;
+
+    for (let i = 0; i < trackPoints.length; i++) {
+      // DENSIDADE DA PISTA: Reduzido de 4 para 3 (nascerão mais grupos ao longo da pista)
+      if (i % 3 !== 0) continue;
+
+      // EXCLUSÃO DA LARGADA: Ignora os primeiros e últimos pontos
+      if (i < 10 || i > trackPoints.length - 10) continue;
+
+      const point = trackPoints[i];
+      const nextPoint = trackPoints[(i + 1) % trackPoints.length];
+
+      const tangent = new THREE.Vector3().subVectors(nextPoint, point).normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      // TAMANHO DO GRUPO (TORCIDA): Cada ponto de spawn vai gerar de 2 a 4 Pokémon juntos
+      const tamanhoTorcida = 2 + Math.floor(Math.random() * 3);
+
+      for (let j = 0; j < tamanhoTorcida; j++) {
+        // Sorteio TOTALMENTE ALEATÓRIO para cada um dos membros do grupo
+        const randomPoke = spectatorMaterials[Math.floor(Math.random() * spectatorMaterials.length)];
+
+        // PROFUNDIDADE: 'j' empurra o Pokémon mais para trás, criando "filas" (frente, meio, fundo)
+        const offsetDist = (trackWidth / 2) + 12 + (j * 2.8) + (Math.random() * 2);
+
+        const posA = point.clone().addScaledVector(normal, offsetDist);
+        const posB = point.clone().addScaledVector(normal, -offsetDist);
+
+        const distA = posA.distanceTo(trackCenter);
+        const distB = posB.distanceTo(trackCenter);
+        const basePos = distA > distB ? posA : posB;
+
+        // ESPALHAMENTO LATERAL: Evita que fiquem em fila indiana perfeita, espalhando-os como uma multidão real
+        const espalhamento = (Math.random() - 0.5) * 4.0;
+        const finalPos = basePos.clone().addScaledVector(tangent, espalhamento);
+
+        const sprite = new THREE.Sprite(randomPoke.material);
+
+        sprite.scale.set(1.0, 1.0, 1);
+        sprite.position.set(finalPos.x, 0.7, finalPos.z);
+
+        trackElementsGroup.add(sprite);
+
+        spectators.push({
+          sprite: sprite,
+          texture: randomPoke.texture,
+          totalFrames: randomPoke.totalFrames,
+          currentFrame: Math.floor(Math.random() * randomPoke.totalFrames),
+          animSpeed: 720 + Math.random() * 160,
+          lastUpdate: Date.now() + Math.random() * 1000,
+
+          originPos: finalPos.clone(),
+          // Variáveis para andar em círculos/curvas suaves 2D na grama
+          walkSpeedX: 0.3 + Math.random() * 0.4,
+          walkSpeedZ: 0.3 + Math.random() * 0.4,
+          walkRangeX: 1.0 + Math.random() * 2.0,
+          walkRangeZ: 1.0 + Math.random() * 2.0,
+          walkOffsetX: Math.random() * Math.PI * 2,
+          walkOffsetZ: Math.random() * Math.PI * 2
+        });
+      }
+    }
+  }, 1000);
+}
+
 async function loadCustomTrack(trackParam) {
   let trackData = null;
 
@@ -866,11 +1196,20 @@ async function loadCustomTrack(trackParam) {
     updateTrackSamples();
     buildAndAddTrackMesh();
     addTrackKerbs();
-    addTires();
+    // VERIFICAÇÃO SEGURA DOS PNEUS / BARREIRAS
+    if (currentBiome === 'ghost') {
+      addGhostBarriers();
+    } else {
+      addTires(); // Padrão original
+    }
     addStartFinishLine();
+    // spawnDynamicSpectators();
     spawnItemBoxes(trackData.items);
-    respawnTreesForTrack();
-
+    if (currentBiome === 'ghost') {
+      spawnGhostDecorations();
+    } else {
+      respawnTreesForTrack(); // Padrão original
+    }
     if (kart) {
       const grid = getGridPosition(playerSlotParam);
       kart.position.copy(grid.pos);
@@ -4694,6 +5033,52 @@ function animate() {
   }
   // -----------------------------------------------------
   updateDigProjectiles(dt);
+  // --- ANIMAÇÃO, CAMINHADA 2D ORGÂNICA E 8 DIREÇÕES ---
+  const now2 = Date.now();
+  const timeSec = now2 * 0.001;
+
+  spectators.forEach(sp => {
+    // 1. Passos
+    if (now2 - sp.lastUpdate > sp.animSpeed) {
+      sp.lastUpdate = now2;
+      sp.currentFrame = (sp.currentFrame + 1) % sp.totalFrames;
+      sp.texture.offset.x = sp.currentFrame * (1 / sp.totalFrames);
+    }
+
+    if (sp.originPos) {
+      // 2. Movimento 2D na grama (X e Z independentes eliminam o efeito "pêndulo")
+      const posX = Math.sin(timeSec * sp.walkSpeedX + sp.walkOffsetX) * sp.walkRangeX;
+      const posZ = Math.cos(timeSec * sp.walkSpeedZ + sp.walkOffsetZ) * sp.walkRangeZ;
+
+      sp.sprite.position.x = sp.originPos.x + posX;
+      sp.sprite.position.z = sp.originPos.z + posZ;
+
+      // 3. Calcula o vetor de velocidade (derivada da posição) para saber para onde está a olhar
+      const velX = sp.walkSpeedX * Math.cos(timeSec * sp.walkSpeedX + sp.walkOffsetX) * sp.walkRangeX;
+      const velZ = -sp.walkSpeedZ * Math.sin(timeSec * sp.walkSpeedZ + sp.walkOffsetZ) * sp.walkRangeZ;
+
+      // Ângulo do corpo no mundo
+      const facingAngle = Math.atan2(velZ, velX);
+
+      // Ângulo da câmara
+      const dx = camera.position.x - sp.sprite.position.x;
+      const dz = camera.position.z - sp.sprite.position.z;
+      const camAngle = Math.atan2(dz, dx);
+
+      // 4. DIREÇÃO DA SPRITE (Câmara MENOS Corpo)
+      // Resolve o balanço! O offset de PI/2 apenas alinha a imagem com os eixos X/Z.
+      let diff = camAngle - facingAngle - (Math.PI / 2);
+
+      // Normaliza rigidamente para ficar entre 0 e 2PI
+      while (diff < 0) diff += Math.PI * 2;
+      while (diff >= Math.PI * 2) diff -= Math.PI * 2;
+
+      const rows = 8;
+      let row = Math.floor((diff / (Math.PI * 2)) * rows) % rows;
+
+      sp.texture.offset.y = (rows - 1 - row) / rows;
+    }
+  });
   composer.render();
 }
 

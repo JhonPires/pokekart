@@ -451,6 +451,68 @@
       font-weight: 900;
       text-transform: uppercase;
     }
+
+    #customBiomeDropdown {
+      width: 100%;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    .dropdown-selected {
+      height: 44px;
+      background: rgba(12, 28, 48, 0.72);
+      color: #edf5ff;
+      border: 1px solid #1e3a57;
+      border-radius: 13px;
+      padding: 0 16px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    /* Seta customizada azul */
+    .dropdown-selected::after {
+      content: '▼';
+      font-size: 10px;
+      color: #38bdf8;
+    }
+
+    .dropdown-options {
+      display: none;
+      /* Escondido por padrão */
+      position: absolute;
+      top: 50px;
+      left: 0;
+      width: 100%;
+      background: rgba(12, 28, 48, 0.98);
+      border: 1px solid #1e3a57;
+      border-radius: 13px;
+      overflow: hidden;
+      z-index: 999;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    }
+
+    .dropdown-options.show {
+      display: block;
+    }
+
+    .dropdown-options div {
+      padding: 12px 16px;
+      color: #edf5ff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    /* O hover customizado que o select nativo bloqueava */
+    .dropdown-options div:hover {
+      background: #1e3a57;
+      color: #38bdf8;
+    }
   </style>
 </head>
 
@@ -477,6 +539,26 @@
 
     <div class="tool-section-title">Opções</div>
     <nav class="nav">
+      <div style="padding: 0; margin-bottom: 5px; position: relative;" id="customBiomeDropdown">
+        <!-- O botão visível -->
+        <div class="dropdown-selected">🌿 Bioma: Grama</div>
+
+        <!-- A lista flutuante (que substitui o <select> nativo) -->
+        <div class="dropdown-options">
+          <div data-value="grass">🌿 Bioma: Grama</div>
+          <div data-value="ice">❄️ Bioma: Gelo</div>
+          <div data-value="lava">🔥 Bioma: Lava</div>
+          <div data-value="dirt">🪨 Bioma: Terra</div>
+          <div data-value="water">💧 Bioma: Aquático</div>
+          <div data-value="ghost">👻 Bioma: Fantasma</div>
+          <div data-value="city">🏙️ Bioma: Metrópole</div>
+          <div data-value="poison">☣️ Bioma: Venenoso</div>
+        </div>
+
+        <!-- Mantemos um input com o ID original para o seu game.js continuar a funcionar sem alterações -->
+        <input type="hidden" id="biomeSelect" value="grass">
+      </div>
+
       <button id="btnBack"><span class="icon">🏠</span><span>Voltar ao Lobby</span></button>
     </nav>
 

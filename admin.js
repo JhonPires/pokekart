@@ -19,8 +19,102 @@ document.addEventListener('DOMContentLoaded', async () => {
         panelEl.style.display = 'block';
 
         await carregarConfiguracoesAdmin();
+        await carregarListaKarts();
     }, 1000);
 });
+
+// Variável global para armazenar os dados dos karts carregados
+let kartsDatabaseAdmin = [];
+
+async function carregarListaKarts() {
+    const selector = document.getElementById('kartSelector');
+    const textarea = document.getElementById('jsonKartStats');
+
+    // Vai buscar os karts à tabela 'karts'
+    const { data, error } = await supabaseClient
+        .from('karts')
+        .select('id, name, stats, physics');
+
+    if (error) {
+        console.error('Erro ao carregar lista de karts:', error);
+        return;
+    }
+
+    kartsDatabaseAdmin = data;
+
+    // Preenche o dropdown com os karts disponíveis
+    data.forEach(kart => {
+        const option = document.createElement('option');
+        option.value = kart.id;
+        option.textContent = `${kart.name} (${kart.id})`;
+        selector.appendChild(option);
+    });
+
+    // Evento que dispara sempre que escolhe um kart diferente no dropdown
+    selector.addEventListener('change', (e) => {
+        const kartId = e.target.value;
+
+        if (!kartId) {
+            textarea.value = '';
+            return;
+        }
+
+        const kart = kartsDatabaseAdmin.find(k => k.id === kartId);
+
+        // Agrupa stats e physics num único objeto JSON para edição mais fácil
+        const kartEditData = {
+            stats: kart.stats || {},
+            physics: kart.physics || {}
+        };
+
+        textarea.value = JSON.stringify(kartEditData, null, 2);
+    });
+}
+
+async function salvarKart() {
+    const kartId = document.getElementById('kartSelector').value;
+    const rawData = document.getElementById('jsonKartStats').value;
+
+    if (!kartId) {
+        alert('Por favor, selecione um kart no menu suspenso primeiro!');
+        return;
+    }
+
+    if (!rawData) {
+        alert('O campo de JSON está vazio.');
+        return;
+    }
+
+    let parsedJson;
+    try {
+        parsedJson = JSON.parse(rawData);
+    } catch (e) {
+        alert(`Erro de sintaxe no JSON:\n${e.message}`);
+        return;
+    }
+
+    // Atualiza a tabela de karts com os blocos 'stats' e 'physics' separados
+    const { error } = await supabaseClient
+        .from('karts')
+        .update({
+            stats: parsedJson.stats || {},
+            physics: parsedJson.physics || {}
+        })
+        .eq('id', kartId);
+
+    if (error) {
+        alert(`Erro ao salvar balanceamento do kart: ${error.message}`);
+    } else {
+        alert('✅ Kart balanceado e atualizado com sucesso!');
+
+        // Atualiza a cache local para não ter de recarregar a página
+        const kartIndex = kartsDatabaseAdmin.findIndex(k => k.id === kartId);
+        if (kartIndex > -1) {
+            kartsDatabaseAdmin[kartIndex].stats = parsedJson.stats;
+            kartsDatabaseAdmin[kartIndex].physics = parsedJson.physics;
+        }
+    }
+}
 
 async function carregarConfiguracoesAdmin() {
     const { data, error } = await supabaseClient.from('game_configs').select('*');

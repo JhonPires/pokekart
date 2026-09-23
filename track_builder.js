@@ -631,7 +631,10 @@ function setupUIEvents() {
     const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
     const nick = (sessionStorage.getItem('pkart_nickname') || 'PILOTO').toUpperCase();
 
-    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=preview`;
+    // Passa o bioma na URL para o game.js aplicar a textura correta
+    const biome = trackData.biome || 'grass';
+
+    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=preview&biome=${biome}`;
   };
 
   // Salvar Pista (Abre Modal)
@@ -742,14 +745,46 @@ function validateTrack() {
 }
 
 function getTrackExportData() {
+  const selectedBiome = document.getElementById('biomeSelect') ? document.getElementById('biomeSelect').value : 'grass';
   return {
     version: 1,
+    biome: selectedBiome,
     width: trackWidth,
     points: points.map(p => ({ x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 })),
     items: items.map(it => ({ t: Math.round(it.t * 1000) / 1000 })),
     boosts: boosts.map(b => ({ t: Math.round(b.t * 1000) / 1000 }))
   };
 }
+
+const dropdown = document.getElementById('customBiomeDropdown');
+const selected = dropdown.querySelector('.dropdown-selected');
+const optionsPanel = dropdown.querySelector('.dropdown-options');
+const hiddenInput = document.getElementById('biomeSelect');
+const options = dropdown.querySelectorAll('.dropdown-options div');
+
+// Abre e fecha a lista ao clicar na caixa principal
+selected.addEventListener('click', () => {
+  optionsPanel.classList.toggle('show');
+});
+
+// Ação de clique em cada opção do bioma
+options.forEach(opt => {
+  opt.addEventListener('click', () => {
+    selected.innerHTML = opt.innerHTML; // Muda o texto visível
+    hiddenInput.value = opt.getAttribute('data-value'); // Muda o valor para o game.js usar
+    optionsPanel.classList.remove('show'); // Fecha a lista
+
+    // Dispara o evento de mudança (caso o game.js esteja à espera de um "change")
+    hiddenInput.dispatchEvent(new Event('change'));
+  });
+});
+
+// Fecha a lista automaticamente se o jogador clicar fora dela
+document.addEventListener('click', (e) => {
+  if (!dropdown.contains(e.target)) {
+    optionsPanel.classList.remove('show');
+  }
+});
 
 // ------------------------------------------------------------
 // PAINEL DE MODERAÇÃO DO ADMINISTRADOR
@@ -876,20 +911,24 @@ window.testTrackById = async (trackId) => {
   }
 
   try {
-    // Busca a pista e a dificuldade real direto do Supabase
+    // Busca a pista, a dificuldade e os dados (para pegar o bioma) direto do Supabase
     const { data: trackRecord, error } = await supabaseClient
       .from('custom_tracks')
-      .select('difficulty')
+      .select('difficulty, track_data')
       .eq('id', trackId)
       .single();
 
     if (error) throw error;
 
     const trackDifficulty = trackRecord && trackRecord.difficulty ? trackRecord.difficulty : 'easy';
+
+    // Extrai o bioma do JSON do banco (fallback para grass se for uma pista antiga)
+    const trackBiome = (trackRecord && trackRecord.track_data && trackRecord.track_data.biome) ? trackRecord.track_data.biome : 'grass';
+
     const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
     const nick = (sessionStorage.getItem('pkart_nickname') || 'ADMIN').toUpperCase();
 
-    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=${trackId}&difficulty=${trackDifficulty}`;
+    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=${trackId}&difficulty=${trackDifficulty}&biome=${trackBiome}`;
   } catch (err) {
     console.error('Erro ao buscar dificuldade da pista:', err);
     window.location.href = `game.html?customTrack=${trackId}`;

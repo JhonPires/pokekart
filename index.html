@@ -3071,7 +3071,7 @@
       return fallback;
     }
 
-    function redirectToRace(room = '', slot = 0, trackId = '', totalPlayers = 1) {
+    function redirectToRace(room = '', slot = 0, trackId = '', totalPlayers = 1, paramBiome = '') {
       const nick = getNickname();
       const kartId = KART_DATABASE[selectedIndex].id;
       const cleanRoom = typeof room === 'string' ? room.trim().toLowerCase() : '';
@@ -3079,7 +3079,23 @@
       const trackSelectEl = document.getElementById('trackSelect');
       const chosenTrack = trackId || (trackSelectEl ? trackSelectEl.value : 'circuitoE');
 
-      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}`;
+      // NOVIDADE: Descobrir qual bioma usar
+      let finalBiome = 'grass'; // Grass é o padrão caso não encontre nada
+
+      if (paramBiome) {
+        // 1. Se o bioma foi passado diretamente como parâmetro na função
+        finalBiome = paramBiome;
+      } else if (!trackId && trackSelectEl) {
+        // 2. Se a pista veio do dropdown (select), tentamos ler o atributo "data-biome"
+        const selectedOption = trackSelectEl.options[trackSelectEl.selectedIndex];
+        if (selectedOption && selectedOption.dataset.biome) {
+          finalBiome = selectedOption.dataset.biome;
+        }
+      }
+
+      // NOVIDADE: Adicionamos o &biome=${finalBiome} na URL base
+      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}&biome=${finalBiome}`;
+
       if (cleanRoom !== '') target += `&room=${cleanRoom}`;
 
       if (chosenTrack) {
@@ -3140,7 +3156,8 @@
             document.getElementById('lobbyStatusJoin').textContent = 'Iniciando corrida...';
             // Convidado espera 2 segundos para o Host chegar na pista e criar a sala primeiro
             setTimeout(() => {
-              redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+              // NOVIDADE: Lê o data.biome enviado pelo Host
+              redirectToRace(code, myAssignedSlot, data.trackId || '', data.totalPlayers || 1, data.biome || 'grass');
             }, 2000);
           }
           if (data.t === 'error') {
@@ -3166,19 +3183,25 @@
         const trackSelectEl = document.getElementById('trackSelect');
         const chosenTrack = trackSelectEl ? trackSelectEl.value : 'circuitoE';
 
+        // NOVIDADE: O Host descobre qual é o bioma da pista selecionada
+        const selectedTrackOption = trackSelectEl ? trackSelectEl.selectedOptions[0] : null;
+        const trackBiome = selectedTrackOption && selectedTrackOption.dataset.biome ? selectedTrackOption.dataset.biome : 'grass';
+
         document.getElementById('lobbyStatusHost').textContent = 'Enviando sinal de início...';
         const totalPlayers = lobbyPlayers.length;
 
         guestConns.forEach(g => {
-          if (g.conn && g.conn.open) g.conn.send({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers });
+          // NOVIDADE: Envia a propriedade 'biome' no pacote para os outros jogadores
+          if (g.conn && g.conn.open) g.conn.send({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, biome: trackBiome });
         });
 
-        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, time: Date.now() }));
+        localStorage.setItem('pkart_start_signal_' + roomCode, JSON.stringify({ t: 'start', trackId: chosenTrack, totalPlayers: totalPlayers, biome: trackBiome, time: Date.now() }));
         if (typeof supabaseClient !== 'undefined') {
           supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
         }
-        // Host espera só 400ms (tempo suficiente para enviar os dados e pular pra corrida)
-        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers); }, 400);
+
+        // NOVIDADE: Passa o bioma como 5º argumento para a função
+        setTimeout(() => { redirectToRace(roomCode, 0, chosenTrack, totalPlayers, trackBiome); }, 400);
       }
     });
 
@@ -3188,7 +3211,8 @@
         if (data.t === 'start') {
           const roomFromKey = e.key.replace('pkart_start_signal_', '');
           setTimeout(() => {
-            redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '', data.totalPlayers || 1);
+            // NOVIDADE: Puxa o bioma salvo na memória local
+            redirectToRace(roomFromKey, myAssignedSlot, data.trackId || '', data.totalPlayers || 1, data.biome || 'grass');
           }, 2000);
         }
       }
@@ -3203,9 +3227,15 @@
       const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
       const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
 
+      // NOVIDADE: Lê o bioma escondido na opção selecionada
+      const trackBiome = selectedTrackOption && selectedTrackOption.dataset.biome ? selectedTrackOption.dataset.biome : 'grass';
+
       let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}&players=1`;
       if (chosenTrack) target += `&customTrack=${chosenTrack}`;
       if (trackDifficulty) target += `&difficulty=${trackDifficulty}`;
+
+      // NOVIDADE: Adiciona o bioma na URL final
+      target += `&biome=${trackBiome}`;
 
       window.location.href = target;
     };
@@ -3247,7 +3277,8 @@
     async function fetchCustomTracks() {
       if (typeof supabaseClient === 'undefined') return;
       try {
-        const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name, difficulty');
+        // 1. ADICIONADO 'track_data' no select para puxar o JSON
+        const { data: tracks, error } = await supabaseClient.from('custom_tracks').select('id, name, difficulty, track_data');
         if (error || !tracks) return;
 
         const nativeSelect = document.getElementById('trackSelectDropdown');
@@ -3263,10 +3294,14 @@
         tracks.forEach(track => {
           const trackDiff = track.difficulty || 'easy';
 
+          // 2. EXTRAIR O BIOMA DO JSON
+          const trackBiome = (track.track_data && track.track_data.biome) ? track.track_data.biome : 'grass';
+
           // 1. Adiciona no Modo Solo
           const option = document.createElement('option');
           option.value = track.id;
           option.setAttribute('data-difficulty', trackDiff);
+          option.dataset.biome = trackBiome; // <--- SALVA O BIOMA AQUI
           option.innerText = `🛠️ ${track.name}`;
           nativeSelect.appendChild(option);
 
@@ -3274,6 +3309,7 @@
           customOpt.className = 'customDropdownOption';
           customOpt.setAttribute('data-value', track.id);
           customOpt.setAttribute('data-difficulty', trackDiff);
+          customOpt.dataset.biome = trackBiome; // <--- SALVA O BIOMA AQUI
           customOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
           customMenu.appendChild(customOpt);
 
@@ -3282,6 +3318,7 @@
             const multiOption = document.createElement('option');
             multiOption.value = track.id;
             multiOption.setAttribute('data-difficulty', trackDiff);
+            multiOption.dataset.biome = trackBiome; // <--- SALVA O BIOMA AQUI
             multiOption.innerText = `🛠️ ${track.name}`;
             multiNativeSelect.appendChild(multiOption);
 
@@ -3289,6 +3326,7 @@
             multiCustomOpt.className = 'customDropdownOption';
             multiCustomOpt.setAttribute('data-value', track.id);
             multiCustomOpt.setAttribute('data-difficulty', trackDiff);
+            multiCustomOpt.dataset.biome = trackBiome; // <--- SALVA O BIOMA AQUI
             multiCustomOpt.innerHTML = `🛠️ &nbsp; <span class="yellow">${track.name}</span>`;
 
             // Se for a primeira pista carregada, deixa ela selecionada por padrão

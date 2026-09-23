@@ -1,5 +1,6 @@
 BUGS
-
+Ao finalizar o ultimo andar da torre está aparecendo o botão de seguir para o proximo andar, onde deveria ser para finalizar e receber a insignias
+No ultimo andar da torre deve ser somente 1 kart (o lider da torre) e com a dificuldade mais dificil, atualmente está vindo 4 karts
 
 AJUSTES
 
@@ -12,7 +13,6 @@ NOVIDADES
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
 - Adicionar uma area no perfil do jogador de itens obtidos para poder equipar ou desequipar.;
 - Adicionar no filtro na garagem por região dos pokemons (talvez necessario add no banco as regioes pra cada kart)
-- Adicionar na tela de admin as opçoes para balancear todos os karts (seria algo de um dropdown para selecionar o kart e qnd selecionar trazer o json do banco para eu atualizar e salvar)
 - Loja de consumiveis (Revives para torre, bordas para o perfil, avatares especiais)
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
 - Ver a possibilidade de escolher para onde jogar a habilidade

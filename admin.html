@@ -145,6 +145,15 @@
 
         <!-- O painel só aparece se o usuário for admin -->
         <div id="adminPanel" style="display: none;">
+            <div class="config-block">
+                <h3>🏎️ Balanceamento de Karts (Física e Status)</h3>
+                <select id="kartSelector"
+                    style="width: 100%; padding: 12px; margin-bottom: 12px; background: #020617; color: #a7f3d0; border: 1px solid var(--line); border-radius: 8px; outline: none; font-size: 14px; cursor: pointer;">
+                    <option value="">Selecione um Kart para balancear...</option>
+                </select>
+                <textarea id="jsonKartStats" placeholder="O JSON do kart aparecerá aqui após a seleção..."></textarea>
+                <button class="btn-save" onclick="salvarKart()">Salvar Balanceamento</button>
+            </div>
 
             <div class="config-block">
                 <h3>🎟️ Passe de Batalha (Níveis, XP e Prêmios)</h3>

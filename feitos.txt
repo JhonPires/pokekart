@@ -5,6 +5,8 @@ Adicionado cores na fumaça do drift e efeitos ao vencer uma corrida.;
 Adicionado novos karts.;
 Alterado: O filtro padrão da lista de karts da garagem agora segue a ordem da Pokedex.;
 Adicionado reações na sala do multiplayer.;
+Adicionado outros tipos de biomas (grass, ice, lava, dirt, water, ghost, city e poison) para as pistas.;
+
 
 
 
