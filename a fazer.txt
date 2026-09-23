@@ -1,12 +1,10 @@
 BUGS
-Ao finalizar o ultimo andar da torre está aparecendo o botão de seguir para o proximo andar, onde deveria ser para finalizar e receber a insignias
-No ultimo andar da torre deve ser somente 1 kart (o lider da torre) e com a dificuldade mais dificil, atualmente está vindo 4 karts
+
 
 AJUSTES
 
 
 NOVIDADES
-- Perfil do jogador mostrar quantas corridas já correu, quantas vitorias e derrotas o jogador tem.
 - FASE 4 - Adicionar para visualizar o perfil de um outro jogador (Na tela de ranking ser possivel abrir um modal com o perfil do jogador)
 - FASE 4 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game_3.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - FASE 4 - Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
@@ -27,3 +25,12 @@ FUTURO
 
 proximos 3d:
 Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D
+
+
+{
+  "floor": 5,
+  "gymId": "pewter",
+  "leader": "BROCK",
+  "maxFloors": 5,
+  "leaderKart": "onix"
+}

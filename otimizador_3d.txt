@@ -1,1 +1,1 @@
-gltf-transform resize primeape.glb t1.glb --width 1024 --height 1024 ; gltf-transform webp t1.glb t2.glb ; gltf-transform draco t2.glb primeape2.glb ; rm t1.glb, t2.glb
+gltf-transform resize exeggutor.glb t1.glb --width 1024 --height 1024 ; gltf-transform webp t1.glb t2.glb ; gltf-transform draco t2.glb exeggutor2.glb ; rm t1.glb, t2.glb

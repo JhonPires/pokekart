@@ -6,11 +6,8 @@ Adicionado novos karts.;
 Alterado: O filtro padrão da lista de karts da garagem agora segue a ordem da Pokedex.;
 Adicionado reações na sala do multiplayer.;
 Adicionado outros tipos de biomas (grass, ice, lava, dirt, water, ghost, city e poison) para as pistas.;
-
-
-
-
-
+Correção do modo torre.;
+Adicionado ao perfil do jogador Vitorias/Derrotas e WinRate (%) de corridas.;
 
 
 

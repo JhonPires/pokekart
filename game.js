@@ -111,6 +111,75 @@ function createCloudSkyTexture() {
   return texture;
 }
 
+const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
+
+const urlParams = new URLSearchParams(window.location.search);
+let aiDifficultyParam = urlParams.get('ai') || 'none';
+const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
+const selectedKartId = urlParams.get('kart') || 'jolteon';
+const roomCodeParam = urlParams.get('room');
+const customTrackParam = urlParams.get('customTrack');
+const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
+let totalPlayersParam = parseInt(urlParams.get('players') || '1', 10);
+
+// --- SISTEMA DE SEGURANÇA DA TORRE ---
+let secureTowerState = {
+  floor: 1,
+  maxFloors: 5,
+  gymId: 'ginasio_pedra',
+  leader: 'LÍDER',
+  leaderKart: 'jolteon'
+};
+
+function loadSecureTowerState() {
+  const modeParam = urlParams.get('mode');
+  if (modeParam !== 'tower') return;
+
+  let loadedState = null;
+
+  // 1. Tenta ler a verdade absoluta do perfil do Supabase
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.tower_state) {
+    loadedState = currentUserProfile.tower_state;
+  }
+  // 2. Fallback para o LocalStorage gerido internamente
+  else {
+    const localState = localStorage.getItem('pkart_tower_state');
+    if (localState) {
+      try { loadedState = JSON.parse(localState); } catch (e) { }
+    }
+  }
+
+  // Se encontrou dados salvos, funde-os. Se não, resgata da URL (útil para criar o 1º andar)
+  if (loadedState) {
+    secureTowerState = { ...secureTowerState, ...loadedState };
+  } else {
+    secureTowerState.floor = parseInt(urlParams.get('floor') || '1', 10);
+    secureTowerState.maxFloors = parseInt(urlParams.get('maxFloors') || '5', 10);
+    secureTowerState.gymId = urlParams.get('gym') || 'ginasio_pedra';
+    secureTowerState.leader = decodeURIComponent(urlParams.get('leader') || 'LÍDER');
+    secureTowerState.leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || 'jolteon';
+  }
+}
+
+loadSecureTowerState();
+
+// --- FORÇA AS REGRAS BLINDADAS DA TORRE ---
+const modeParam = urlParams.get('mode');
+
+if (modeParam === 'tower') {
+  const isBossFloor = secureTowerState.floor === secureTowerState.maxFloors;
+
+  if (isBossFloor) {
+    // REGRAS DO CHEFÃO: 1v1 e IA no Difícil
+    totalPlayersParam = 2;
+    aiDifficultyParam = 'hard';
+  } else {
+    // REGRAS DOS ANDARES NORMAIS: Corrida com 4 karts no Normal
+    totalPlayersParam = 4; // Altere este número se a sua corrida normal tiver mais bots
+    aiDifficultyParam = 'normal';
+  }
+}
+
 function setupEnhancedEnvironment(scene) {
   // Gera um céu com gradiente
   function createSkyTexture() {
@@ -140,11 +209,14 @@ function setupEnhancedEnvironment(scene) {
   sun.shadow.camera.top = 110; sun.shadow.camera.bottom = -110;
   scene.add(sun);
 
-  if (currentBiome === 'ghost') {
-    spawnGhostDecorations();
-  } else {
-    respawnTreesForTrack(); // Padrão original
-  }
+  if (currentBiome === 'ghost') spawnGhostDecorations();
+  else if (currentBiome === 'ice') spawnIceDecorations();
+  else if (currentBiome === 'lava') spawnLavaDecorations();
+  else if (currentBiome === 'dirt') spawnDirtDecorations();
+  else if (currentBiome === 'water') spawnWaterDecorations();
+  else if (currentBiome === 'city') spawnCityDecorations();
+  else if (currentBiome === 'poison') spawnPoisonDecorations();
+  else respawnTreesForTrack(); // Grama (Padrão)
 
   // Adiciona as nuvens e pedras ao redor da pista
   spawnClouds(scene);
@@ -327,16 +399,7 @@ async function loadKartsFromDatabase() {
 }
 
 
-const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
 
-const urlParams = new URLSearchParams(window.location.search);
-const aiDifficultyParam = urlParams.get('ai') || 'none';
-const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
-const selectedKartId = urlParams.get('kart') || 'jolteon';
-const roomCodeParam = urlParams.get('room');
-const customTrackParam = urlParams.get('customTrack');
-const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
-const totalPlayersParam = parseInt(urlParams.get('players') || '1', 10);
 
 // Variáveis para controle de punição e estado ativo da partida
 let corridaAtivaParaPunicao = true;
@@ -795,6 +858,554 @@ function addGhostBarriers() {
   }
 }
 
+function addIceBarriers() {
+  const iceGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
+  const iceMat = new THREE.MeshStandardMaterial({
+    color: 0xa5f3fc,
+    transparent: true,
+    opacity: 0.85,
+    roughness: 0.1,
+    metalness: 0.2
+  });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+
+      const iceBlock = new THREE.Mesh(iceGeo, iceMat);
+      iceBlock.position.set(pos.x, 0.7, pos.z);
+
+      // Dá uma leve rotação caótica para parecerem blocos esculpidos irregularmente
+      iceBlock.rotation.y = (Math.random() - 0.5) * 0.5;
+      iceBlock.rotation.x = (Math.random() - 0.5) * 0.1;
+      iceBlock.rotation.z = (Math.random() - 0.5) * 0.1;
+
+      iceBlock.castShadow = true;
+      trackElementsGroup.add(iceBlock);
+    }
+  }
+}
+
+function spawnIceDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+
+  // Geometria dos Cristais de Gelo
+  const crystalGeo = new THREE.ConeGeometry(1.5, 6, 5);
+  const crystalMat = new THREE.MeshStandardMaterial({
+    color: 0xe0f2fe,
+    roughness: 0.2,
+    metalness: 0.5,
+    transparent: true,
+    opacity: 0.9
+  });
+
+  // Geometria dos Pinheiros Nevados
+  const pineGeo = new THREE.ConeGeometry(2.2, 5.5, 6);
+  const pineMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 }); // Neve branca nas folhas
+  const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 2.5, 6);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3b32, roughness: 1.0 });
+
+  const crystalInstanced = new THREE.InstancedMesh(crystalGeo, crystalMat, decorCount);
+  const pineInstanced = new THREE.InstancedMesh(pineGeo, pineMat, decorCount);
+  const trunkInstanced = new THREE.InstancedMesh(trunkGeo, trunkMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0;
+  let attempts = 0;
+  const MIN_DISTANCE_FROM_TRACK = (trackWidth / 2) + 14.0;
+
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    const { sample } = nearestTrackSample(pos);
+    if (sample.point.distanceTo(pos) >= MIN_DISTANCE_FROM_TRACK) {
+      const scale = 0.8 + Math.random() * 0.7;
+
+      // 50% de probabilidade de ser um cristal, 50% de ser um pinheiro nevado
+      const isCrystal = Math.random() > 0.5;
+
+      if (isCrystal) {
+        dummy.position.set(x, 3.0 * scale, z);
+        dummy.scale.setScalar(scale);
+        // Cristais nascem com ângulos dramáticos espetados no chão
+        dummy.rotation.set((Math.random() - 0.5) * 0.5, Math.random() * Math.PI, (Math.random() - 0.5) * 0.5);
+        dummy.updateMatrix();
+        crystalInstanced.setMatrixAt(spawned, dummy.matrix);
+
+        // Oculta o pinheiro
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        pineInstanced.setMatrixAt(spawned, dummy.matrix);
+        trunkInstanced.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, 1.25 * scale, z); // Tronco
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(0, Math.random() * Math.PI, 0);
+        dummy.updateMatrix();
+        trunkInstanced.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.position.set(x, 4.5 * scale, z); // Folhas nevadas
+        dummy.updateMatrix();
+        pineInstanced.setMatrixAt(spawned, dummy.matrix);
+
+        // Oculta o cristal
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        crystalInstanced.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+
+  crystalInstanced.count = spawned;
+  pineInstanced.count = spawned;
+  trunkInstanced.count = spawned;
+
+  crystalInstanced.instanceMatrix.needsUpdate = true;
+  pineInstanced.instanceMatrix.needsUpdate = true;
+  trunkInstanced.instanceMatrix.needsUpdate = true;
+
+  currentTreeGroup.add(crystalInstanced);
+  currentTreeGroup.add(pineInstanced);
+  currentTreeGroup.add(trunkInstanced);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 🔥 BIOMA: LAVA
+// ==========================================
+function addLavaBarriers() {
+  const rockGeo = new THREE.DodecahedronGeometry(0.8, 0);
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, flatShading: true });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const rock = new THREE.Mesh(rockGeo, rockMat);
+      rock.position.set(pos.x, 0.4, pos.z);
+      rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+      rock.castShadow = true;
+      trackElementsGroup.add(rock);
+    }
+  }
+}
+
+function spawnLavaDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const treeGeo = new THREE.CylinderGeometry(0.4, 0.7, 4.5, 5);
+  const treeMat = new THREE.MeshStandardMaterial({ color: 0x292524, roughness: 1.0 }); // Árvore carbonizada
+  const magmaGeo = new THREE.DodecahedronGeometry(1.2, 0);
+  const magmaMat = new THREE.MeshStandardMaterial({ color: 0xea580c, emissive: 0x991b1b }); // Rocha vulcânica
+
+  const treeInst = new THREE.InstancedMesh(treeGeo, treeMat, decorCount);
+  const magmaInst = new THREE.InstancedMesh(magmaGeo, magmaMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.8 + Math.random() * 0.5;
+
+      if (Math.random() > 0.5) {
+        dummy.position.set(x, 2.25 * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
+        dummy.updateMatrix();
+        treeInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        magmaInst.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, 0.8 * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(Math.random(), Math.random(), Math.random());
+        dummy.updateMatrix();
+        magmaInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        treeInst.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+  treeInst.count = spawned; magmaInst.count = spawned;
+  treeInst.instanceMatrix.needsUpdate = true; magmaInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(treeInst); currentTreeGroup.add(magmaInst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 🪨 BIOMA: TERRA (DIRT)
+// ==========================================
+function addDirtBarriers() {
+  const barrelGeo = new THREE.CylinderGeometry(0.6, 0.6, 1.2, 8);
+  const barrelMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const barrel = new THREE.Mesh(barrelGeo, barrelMat);
+      barrel.position.set(pos.x, 0.6, pos.z);
+      barrel.rotation.y = Math.random() * Math.PI;
+      barrel.castShadow = true;
+      trackElementsGroup.add(barrel);
+    }
+  }
+}
+
+function spawnDirtDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const cactusGeo = new THREE.CylinderGeometry(0.5, 0.5, 5, 8);
+  const cactusMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.9 });
+  const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x8b4513, roughness: 1.0 });
+
+  const cactusInst = new THREE.InstancedMesh(cactusGeo, cactusMat, decorCount);
+  const rockInst = new THREE.InstancedMesh(rockGeo, rockMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.8 + Math.random() * 0.6;
+
+      if (Math.random() > 0.4) { // Mais cactos do que pedras
+        dummy.position.set(x, 2.5 * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set((Math.random() - 0.5) * 0.1, Math.random() * Math.PI, (Math.random() - 0.5) * 0.1);
+        dummy.updateMatrix();
+        cactusInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        rockInst.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, 0.8 * scale, z);
+        dummy.scale.set(scale, scale * 0.5, scale); // Pedras achatadas
+        dummy.rotation.set(Math.random(), Math.random(), Math.random());
+        dummy.updateMatrix();
+        rockInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        cactusInst.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+  cactusInst.count = spawned; rockInst.count = spawned;
+  cactusInst.instanceMatrix.needsUpdate = true; rockInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(cactusInst); currentTreeGroup.add(rockInst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 💧 BIOMA: AQUÁTICO (WATER)
+// ==========================================
+function addWaterBarriers() {
+  const buoyGeo = new THREE.TorusGeometry(0.5, 0.2, 8, 16);
+  const mat1 = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.6 }); // Vermelho
+  const mat2 = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 }); // Branco
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const currentMat = (i % 2 === 0) ? mat1 : mat2;
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const buoy = new THREE.Mesh(buoyGeo, currentMat);
+      buoy.rotation.x = Math.PI / 2; // Boia deitada no chão
+      buoy.position.set(pos.x, 0.2, pos.z);
+      buoy.castShadow = true;
+      trackElementsGroup.add(buoy);
+    }
+  }
+}
+
+function spawnWaterDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, 5, 6);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0xd97706, roughness: 0.9 }); // Palmeira tronco
+  const leavesGeo = new THREE.ConeGeometry(3, 2, 5);
+  const leavesMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.8 }); // Palmeira folhas
+
+  const trunkInst = new THREE.InstancedMesh(trunkGeo, trunkMat, decorCount);
+  const leavesInst = new THREE.InstancedMesh(leavesGeo, leavesMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.8 + Math.random() * 0.5;
+
+      // Monta a palmeira (tronco e folhas sempre juntos neste bioma)
+      dummy.position.set(x, 2.5 * scale, z);
+      dummy.scale.setScalar(scale);
+      // Inclinação suave para parecer coqueiro
+      const rotZ = (Math.random() - 0.5) * 0.3;
+      dummy.rotation.set(0, Math.random() * Math.PI, rotZ);
+      dummy.updateMatrix();
+      trunkInst.setMatrixAt(spawned, dummy.matrix);
+
+      // Ajusta a copa das folhas acompanhando a inclinação
+      const leafOffsetX = Math.sin(rotZ) * 2.5 * scale;
+      const leafOffsetY = Math.cos(rotZ) * 2.5 * scale;
+      dummy.position.set(x + leafOffsetX, (2.5 * scale) + leafOffsetY, z);
+      dummy.updateMatrix();
+      leavesInst.setMatrixAt(spawned, dummy.matrix);
+
+      spawned++;
+    }
+  }
+  trunkInst.count = spawned; leavesInst.count = spawned;
+  trunkInst.instanceMatrix.needsUpdate = true; leavesInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(trunkInst); currentTreeGroup.add(leavesInst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 🏙️ BIOMA: CIDADE (CITY)
+// ==========================================
+function addCityBarriers() {
+  const coneGeo = new THREE.ConeGeometry(0.4, 1.2, 8);
+  const mat1 = new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.4 }); // Laranja vivo
+  const mat2 = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 }); // Branco
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const currentMat = (i % 2 === 0) ? mat1 : mat2;
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const cone = new THREE.Mesh(coneGeo, currentMat);
+      cone.position.set(pos.x, 0.6, pos.z);
+      cone.castShadow = true;
+      trackElementsGroup.add(cone);
+    }
+  }
+}
+
+function spawnCityDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const build1Geo = new THREE.BoxGeometry(3, 12, 3);
+  const build1Mat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.8 });
+  const build2Geo = new THREE.BoxGeometry(2.5, 8, 2.5);
+  const build2Mat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.8 });
+
+  const build1Inst = new THREE.InstancedMesh(build1Geo, build1Mat, decorCount);
+  const build2Inst = new THREE.InstancedMesh(build2Geo, build2Mat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 16.0) {
+      const scale = 0.8 + Math.random() * 0.8;
+
+      if (Math.random() > 0.5) {
+        dummy.position.set(x, 6.0 * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(0, Math.random() * Math.PI, 0); // Prédios retos
+        dummy.updateMatrix();
+        build1Inst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        build2Inst.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, 4.0 * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(0, Math.random() * Math.PI, 0);
+        dummy.updateMatrix();
+        build2Inst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        build1Inst.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+  build1Inst.count = spawned; build2Inst.count = spawned;
+  build1Inst.instanceMatrix.needsUpdate = true; build2Inst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(build1Inst); currentTreeGroup.add(build2Inst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// ☣️ BIOMA: VENENOSO (POISON)
+// ==========================================
+function addPoisonBarriers() {
+  const barrelGeo = new THREE.CylinderGeometry(0.5, 0.5, 1.2, 12);
+  const mat1 = new THREE.MeshStandardMaterial({ color: 0x4c1d95, roughness: 0.5 }); // Roxo tóxico
+  const mat2 = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.5 }); // Verde ácido
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const currentMat = (i % 2 === 0) ? mat1 : mat2;
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const barrel = new THREE.Mesh(barrelGeo, currentMat);
+      barrel.position.set(pos.x, 0.6, pos.z);
+      barrel.castShadow = true;
+      trackElementsGroup.add(barrel);
+    }
+  }
+}
+
+function spawnPoisonDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const stalkGeo = new THREE.CylinderGeometry(0.4, 0.6, 3, 8);
+  const stalkMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.8 }); // Caule amarelo doente
+  const capGeo = new THREE.SphereGeometry(2, 12, 12, 0, Math.PI * 2, 0, Math.PI / 2); // Meia-esfera
+  const capMat = new THREE.MeshStandardMaterial({ color: 0x84cc16, roughness: 0.5 }); // Cogumelo verde tóxico
+
+  const stalkInst = new THREE.InstancedMesh(stalkGeo, stalkMat, decorCount);
+  const capInst = new THREE.InstancedMesh(capGeo, capMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.7 + Math.random() * 0.6;
+
+      // Tronco do cogumelo
+      dummy.position.set(x, 1.5 * scale, z);
+      dummy.scale.setScalar(scale);
+      dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
+      dummy.updateMatrix();
+      stalkInst.setMatrixAt(spawned, dummy.matrix);
+
+      // Cabeça do cogumelo (Cap)
+      dummy.position.set(x, 3.0 * scale, z);
+      // Não rotaciona o eixo X e Z para a meia-esfera ficar plana embaixo
+      dummy.rotation.set(0, Math.random() * Math.PI, 0);
+      dummy.updateMatrix();
+      capInst.setMatrixAt(spawned, dummy.matrix);
+
+      spawned++;
+    }
+  }
+  stalkInst.count = spawned; capInst.count = spawned;
+  stalkInst.instanceMatrix.needsUpdate = true; capInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(stalkInst); currentTreeGroup.add(capInst);
+  scene.add(currentTreeGroup);
+}
+
 function addStartFinishLine() {
   const point = trackCurve.getPointAt(0);
   const tangent = trackCurve.getTangentAt(0).normalize();
@@ -861,11 +1472,14 @@ function checkBoostPads() {
 
 buildAndAddTrackMesh();
 addTrackKerbs();
-if (currentBiome === 'ghost') {
-  addGhostBarriers();
-} else {
-  addTires(); // Padrão original
-}
+if (currentBiome === 'ghost') addGhostBarriers();
+else if (currentBiome === 'ice') addIceBarriers();
+else if (currentBiome === 'lava') addLavaBarriers();
+else if (currentBiome === 'dirt') addDirtBarriers();
+else if (currentBiome === 'water') addWaterBarriers();
+else if (currentBiome === 'city') addCityBarriers();
+else if (currentBiome === 'poison') addPoisonBarriers();
+else addTires(); // Grama (Padrão)
 addStartFinishLine();
 // spawnDynamicSpectators();
 setupEnhancedEnvironment(scene);
@@ -1197,19 +1811,25 @@ async function loadCustomTrack(trackParam) {
     buildAndAddTrackMesh();
     addTrackKerbs();
     // VERIFICAÇÃO SEGURA DOS PNEUS / BARREIRAS
-    if (currentBiome === 'ghost') {
-      addGhostBarriers();
-    } else {
-      addTires(); // Padrão original
-    }
+    if (currentBiome === 'ghost') addGhostBarriers();
+    else if (currentBiome === 'ice') addIceBarriers();
+    else if (currentBiome === 'lava') addLavaBarriers();
+    else if (currentBiome === 'dirt') addDirtBarriers();
+    else if (currentBiome === 'water') addWaterBarriers();
+    else if (currentBiome === 'city') addCityBarriers();
+    else if (currentBiome === 'poison') addPoisonBarriers();
+    else addTires(); // Grama (Padrão)
     addStartFinishLine();
     // spawnDynamicSpectators();
     spawnItemBoxes(trackData.items);
-    if (currentBiome === 'ghost') {
-      spawnGhostDecorations();
-    } else {
-      respawnTreesForTrack(); // Padrão original
-    }
+    if (currentBiome === 'ghost') spawnGhostDecorations();
+    else if (currentBiome === 'ice') spawnIceDecorations();
+    else if (currentBiome === 'lava') spawnLavaDecorations();
+    else if (currentBiome === 'dirt') spawnDirtDecorations();
+    else if (currentBiome === 'water') spawnWaterDecorations();
+    else if (currentBiome === 'city') spawnCityDecorations();
+    else if (currentBiome === 'poison') spawnPoisonDecorations();
+    else respawnTreesForTrack(); // Grama (Padrão)
     if (kart) {
       const grid = getGridPosition(playerSlotParam);
       kart.position.copy(grid.pos);
@@ -2110,20 +2730,28 @@ let finishLeaderboardEl = null;
 async function showFinishOverlay(place) {
   corridaAtivaParaPunicao = false; // Desativa punição ao terminar corretamente
 
-  // --- COLOQUE ESTE BLOCO LOGO AQUI ---
+  // --- SALVAMENTO BLINDADO DO MODO TORRE ---
   const modeParam = urlParams.get('mode');
   if (modeParam === 'tower') {
-    const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
-    const currentGymId = urlParams.get('gym') || '';
-    const maxFloorsVal = parseInt(urlParams.get('maxFloors') || '5', 10);
-    const leader = urlParams.get('leader') || '';
-    const leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || '';
+    const currentFloor = secureTowerState.floor;
+    const currentGymId = secureTowerState.gymId;
+    const maxFloorsVal = secureTowerState.maxFloors;
+    const leaderName = secureTowerState.leader;
+    const leaderKartId = secureTowerState.leaderKart;
 
     if (place === 1) {
       localStorage.setItem('pkart_tower_result', 'win');
 
       const nextFloor = currentFloor + 1;
-      const towerState = { gymId: currentGymId, floor: nextFloor, maxFloors: maxFloorsVal };
+
+      // Agora passamos TODOS os dados para o próximo andar não esquecer quem é o líder
+      const towerState = {
+        gymId: currentGymId,
+        floor: nextFloor,
+        maxFloors: maxFloorsVal,
+        leader: leaderName,
+        leaderKart: leaderKartId
+      };
 
       // 🛡️ Salva local e cria a "encomenda" garantida para o Lobby enviar ao Supabase
       localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
@@ -2233,27 +2861,39 @@ async function showFinishOverlay(place) {
     // --- MODO SOLO / TORRE ---
     const isTower = modeParam === 'tower';
 
-    // 🛡️ CORREÇÃO: Usa diretamente a variável "place === 1", ignorando delay do localStorage
+    // 🛡️ CORREÇÃO: Usa diretamente a variável "place === 1" e o Estado Seguro
     if (isTower && place === 1) {
-      const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
-      const gymId = urlParams.get('gym') || '';
-      const leader = urlParams.get('leader') || '';
-      // Correção do case-sensitive para pegar o kart do líder corretamente
-      const leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || '';
-      const maxFloorsVal = parseInt(urlParams.get('maxFloors') || '5', 10);
+      const currentFloor = secureTowerState.floor;
+      const maxFloorsVal = secureTowerState.maxFloors;
 
-      const btnNextFloor = document.createElement('button');
-      btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
-      btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
-      btnNextFloor.onmousedown = () => btnNextFloor.style.transform = 'translateY(4px)';
-      btnNextFloor.onmouseup = () => btnNextFloor.style.transform = 'translateY(0)';
+      // VERIFICA SE AINDA TEM ANDARES PARA SUBIR
+      if (currentFloor < maxFloorsVal) {
+        const btnNextFloor = document.createElement('button');
+        btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
+        btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
+        btnNextFloor.onmousedown = () => btnNextFloor.style.transform = 'translateY(4px)';
+        btnNextFloor.onmouseup = () => btnNextFloor.style.transform = 'translateY(0)';
 
-      btnNextFloor.onclick = () => {
-        // Envia direto para o andar +1
-        const targetFloor = currentFloor + 1;
-        window.location.href = `game.html?nick=${urlParams.get('nick')}&kart=${urlParams.get('kart')}&slot=0&ai=hard&players=1&mode=tower&floor=${targetFloor}&gym=${gymId}&maxFloors=${maxFloorsVal}&leader=${encodeURIComponent(leader)}&leaderkart=${leaderKart}`;
-      };
-      buttonsContainer.appendChild(btnNextFloor);
+        btnNextFloor.onclick = () => {
+          // O estado do andar +1 já foi salvo no LocalStorage/Supabase acima desta linha.
+          // Só precisamos recarregar o jogo limpo!
+          window.location.href = `game.html?nick=${urlParams.get('nick')}&kart=${urlParams.get('kart')}&mode=tower`;
+        };
+        buttonsContainer.appendChild(btnNextFloor);
+
+      } else {
+        // É O ÚLTIMO ANDAR! MOSTRA O BOTÃO DE FINALIZAR
+        const btnFinishTower = document.createElement('button');
+        btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
+        btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
+        btnFinishTower.onmousedown = () => btnFinishTower.style.transform = 'translateY(4px)';
+        btnFinishTower.onmouseup = () => btnFinishTower.style.transform = 'translateY(0)';
+
+        btnFinishTower.onclick = () => {
+          window.location.href = 'index.html';
+        };
+        buttonsContainer.appendChild(btnFinishTower);
+      }
     }
 
     // 🔥 NOVO: Botão "Jogar Novamente" (Aparece no Solo normal, ou se perder na Torre)
@@ -2369,6 +3009,29 @@ async function showFinishOverlay(place) {
     if (typeof unlockedAchvs === 'string') {
       try { unlockedAchvs = JSON.parse(unlockedAchvs); } catch (e) { unlockedAchvs = []; }
     }
+
+    // --- NOVO: ESTATÍSTICAS DE CORRIDA ---
+    const totalCorridas = (currentUserProfile.races_played || 0) + 1;
+    let totalVitorias = currentUserProfile.races_won || 0;
+    let totalDerrotas = currentUserProfile.races_lost || 0;
+
+    if (place === 1) {
+      totalVitorias += 1;
+    } else {
+      totalDerrotas += 1;
+    }
+
+    // Atualiza o objeto local para refletir na UI imediatamente
+    currentUserProfile.races_played = totalCorridas;
+    currentUserProfile.races_won = totalVitorias;
+    currentUserProfile.races_lost = totalDerrotas;
+
+    // Prepara o payload para o Supabase
+    updatePayload.races_played = totalCorridas;
+    updatePayload.races_won = totalVitorias;
+    updatePayload.races_lost = totalDerrotas;
+
+
     let achvsModified = false;
 
     const checkUnlock = (id) => {
@@ -4063,18 +4726,17 @@ function spawnBots() {
   const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
   const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
-  // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder
+  // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder no último andar
   if (modeParam === 'tower') {
     const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
-    const totalFloors = parseInt(urlParams.get('totalFloors') || '10', 10);
+
+    // CORREÇÃO AQUI: O parâmetro correto lido da URL é 'maxFloors' e não 'totalFloors'
+    const maxFloors = parseInt(urlParams.get('maxFloors') || '5', 10);
 
     // Se NÃO for o último andar, fazemos o fluxo normal (vários bots)
-    if (currentFloor !== totalFloors) {
+    if (currentFloor < maxFloors) {
       const maxSlots = 4;
       const botCount = maxSlots - totalPlayersParam;
-
-      const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
-      const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
       for (let i = 0; i < botCount; i++) {
         const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
@@ -4112,11 +4774,12 @@ function spawnBots() {
       return; // Sai da função para não duplicar os bots da torre
     }
 
-    // Se FOR o último andar, spawna apenas o Líder de Ginásio exclusivo
+    // --- É O ÚLTIMO ANDAR! SPAWNA APENAS O LÍDER ---
     const leaderName = decodeURIComponent(urlParams.get('leader') || 'LÍDER DE GINÁSIO');
-    const leaderKartId = urlParams.get('leaderkart') || 'jolteon';
+    const leaderKartId = urlParams.get('leaderkart') || urlParams.get('leaderKart') || 'jolteon';
     const leaderKartData = KART_DATABASE.find(k => k.id === leaderKartId) || KART_DATABASE[0];
-    const botSlot = 1; // Slot 1 para o bot na torre
+
+    const botSlot = 1; // Slot 1 para o bot largar logo atrás de você
     const obj = createKart(0x555555);
 
     loadKartTemplate(leaderKartData, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
@@ -4126,6 +4789,10 @@ function spawnBots() {
     obj.group.rotation.y = grid.heading;
 
     const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+
+    // CORREÇÃO: Força o Líder a ter a dificuldade máxima extrema (1.15 ou 15% mais rápido)
+    const leaderDiffMult = 1.15;
+
     remoteKarts.set('bot-leader', {
       isBot: true,
       obj: obj,
@@ -4135,7 +4802,7 @@ function spawnBots() {
       speed: 0,
       heading: grid.heading,
       laneOffset: laneOffset,
-      diffMult: diffMult,
+      diffMult: leaderDiffMult, // Dificuldade do Chefão
       progress: 0,
       lapCount: 1,
       finished: false,
@@ -4146,6 +4813,7 @@ function spawnBots() {
     return;
   }
 
+  // --- Resto da função para quando NÃO é modo torre (Corridas Normais Solo) ---
   const maxSlots = 4;
   const botCount = maxSlots - totalPlayersParam;
 
@@ -4165,10 +4833,11 @@ function spawnBots() {
 
     const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
     const randomLeaderName = GYM_LEADERS[Math.floor(Math.random() * GYM_LEADERS.length)];
+
     remoteKarts.set(botId, {
       isBot: true,
       obj: obj,
-      nickname: randomLeaderName,//+ ' ' + randomKart.name.split(' ')[0].toUpperCase(),
+      nickname: randomLeaderName,
       kartId: randomKart.id,
       stats: randomKart.stats,
       speed: 0,

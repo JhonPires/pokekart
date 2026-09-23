@@ -104,25 +104,37 @@ async function updateSelectedKart(kartId) {
   }
 }
 
-// Adicionar Moedas e Troféus após a corrida
-async function addRewards(coinsEarned, trophiesEarned) {
+// Adicionar Moedas, Troféus e Estatísticas após a corrida
+async function addRewards(coinsEarned, trophiesEarned, isWin = false, isLoss = false) {
   if (!currentUserProfile) return;
 
   const newCoins = currentUserProfile.coins + coinsEarned;
   const newTrophies = Math.max(0, currentUserProfile.trophies + trophiesEarned);
+
+  // Usa os nomes corretos do Supabase
+  const newWins = (currentUserProfile.races_won || 0) + (isWin ? 1 : 0);
+  const newLosses = (currentUserProfile.races_lost || 0) + (isLoss ? 1 : 0);
+  const newPlayed = (currentUserProfile.races_played || 0) + 1; // Atualiza o total de corridas
 
   const { error } = await supabaseClient
     .from('profiles')
     .update({
       coins: newCoins,
       trophies: newTrophies,
+      races_won: newWins,
+      races_lost: newLosses,
+      races_played: newPlayed,
       updated_at: new Date()
     })
     .eq('id', currentUserProfile.id);
 
   if (!error) {
+    // Atualiza a cache local instantaneamente
     currentUserProfile.coins = newCoins;
     currentUserProfile.trophies = newTrophies;
+    currentUserProfile.races_won = newWins;
+    currentUserProfile.races_lost = newLosses;
+    currentUserProfile.races_played = newPlayed;
   }
 }
 
