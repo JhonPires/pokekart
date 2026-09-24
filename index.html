@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PokéKart — Lobby</title>
+  <title>PokeKart</title>
   <link rel="icon" type="image/png" href="img/favicon.png">
   <style>
     :root {
@@ -5354,20 +5354,23 @@
       }
 
       async function renderTowerPanel() {
-        const unlockedBadges = JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
-
-        // 🛡️ SINCRONIZAÇÃO INTELIGENTE: Pega o andar mais alto entre o Local e o Banco
-        let localState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
         let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
-        let dbState = dbProfile ? dbProfile.tower_state : null;
 
-        let towerState = null;
-        if (localState && dbState && localState.gymId === dbState.gymId) {
-          towerState = localState.floor > dbState.floor ? localState : dbState;
+        // 1. A VERDADE ABSOLUTA: Puxa insígnias do Supabase primeiro!
+        let unlockedBadges = [];
+        if (dbProfile && dbProfile.unlocked_badges) {
+          unlockedBadges = dbProfile.unlocked_badges;
         } else {
-          towerState = localState || dbState;
+          unlockedBadges = JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
         }
 
+        // 2. A VERDADE ABSOLUTA: Puxa o estado da torre do Supabase primeiro!
+        let dbState = dbProfile ? dbProfile.tower_state : null;
+        let localState = JSON.parse(localStorage.getItem('pkart_tower_state') || 'null');
+
+        let towerState = dbState || localState; // Prioridade total ao Supabase
+
+        // 3. Descobre qual é o Ginásio Atual baseado nas insígnias que o jogador já tem
         let currentGym = GYM_TOWERS.find(g => !unlockedBadges.includes(g.id));
 
         if (!currentGym) {
@@ -5375,8 +5378,8 @@
           return;
         }
 
+        // 4. Verifica se precisa reiniciar a torre (se não houver estado, ou se o estado for de um ginásio diferente)
         if (!towerState || towerState.gymId !== currentGym.id) {
-          // CRIAR NOVA TORRE COM TODOS OS DADOS
           towerState = {
             gymId: currentGym.id,
             floor: 1,
@@ -5386,18 +5389,13 @@
           };
           await saveTowerStateToDB(towerState);
         } else {
-          if (!towerState.maxFloors) {
-            towerState.maxFloors = currentGym.maxFloors;
-          }
-          if (!towerState.floor || towerState.floor < 1) {
-            towerState.floor = 1;
-          }
-
-          // INJETAR O LÍDER E O KART NO ESTADO RECUPERADO (Correção)
+          // Apenas valida se falta algum dado
+          if (!towerState.maxFloors) towerState.maxFloors = currentGym.maxFloors;
+          if (!towerState.floor || towerState.floor < 1) towerState.floor = 1;
           towerState.leader = currentGym.leader;
           towerState.leaderKart = currentGym.kartId;
 
-          // Garante que o navegador e o perfil local assumam o andar correto e mais alto
+          // Mantém a memória local atualizada com o banco
           localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
           if (dbProfile) dbProfile.tower_state = towerState;
         }
@@ -5412,7 +5410,7 @@
           </div>
           
           <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
+            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de${towerState.maxFloors}`}</strong>
             <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
           </div>
           
@@ -5429,8 +5427,6 @@
         document.getElementById('btnEnterTowerFloor').onclick = () => {
           const nick = getNickname();
           const kart = KART_DATABASE[selectedIndex].id;
-
-          // Apenas o básico. O game.js vai ler o andar, ginásio e líder através do LocalStorage/Supabase
           window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${kart}&mode=tower`;
         };
         document.getElementById('btnResetTower').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
