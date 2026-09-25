@@ -1876,7 +1876,7 @@
         </div>
 
         <!-- COLUNA DIREITA: Conquistas -->
-        <div style="display: flex; flex-direction: column; justify-content: flex-start;">
+        <div style="display: flex; flex-direction: column; justify-content: flex-start; height: 100%;">
           <div style="display: flex; align-items: center; justify-content: space-between; margin: 0 0 5px 0;">
             <h3 style="color: #fff; font-size: 14px; margin: 0;">🎯 Conquistas</h3>
             <div style="display: flex; gap: 6px;">
@@ -1886,9 +1886,29 @@
                 style="background: rgba(12, 28, 48, .9); border: 1px solid #1e3a57; color: #38bdf8; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;">▶</button>
             </div>
           </div>
+
+          <!-- Lista de Conquistas (Altura ajustada e flex:1 removido) -->
           <div class="region-container" id="achievementsContainer"
-            style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
+            style="height: 233px; display: flex; flex-direction: column; justify-content: center; margin-bottom: 20px;">
             <!-- Injetado via JS -->
+          </div>
+
+          <!-- NOVA SEÇÃO: MOCHILA -->
+          <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+              <span style="font-size: 16px;">🎒</span>
+              <h3 style="color: #fff; font-size: 14px; margin: 0; text-transform: uppercase; letter-spacing: 1px;">
+                Mochila (Consumíveis)</h3>
+            </div>
+
+            <!-- Fundo da Mochila agora usa a classe region-container -->
+            <div class="region-container"
+              style="min-height: 130px; margin-bottom: 0; display: flex; flex-direction: column; padding: 12px;">
+              <div id="inventoryGrid"
+                style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; flex: 1; align-content: flex-start;">
+                <!-- Itens serão injetados aqui via JS -->
+              </div>
+            </div>
           </div>
         </div>
 
@@ -2316,14 +2336,14 @@
 
   <script>
     const GYM_TOWERS = [
-      { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', maxFloors: 5, kartId: 'golem' },
-      { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', maxFloors: 5, kartId: 'oshawott' },
-      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', maxFloors: 6, kartId: 'jolteon' },
-      { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', maxFloors: 6, kartId: 'tangela' },
-      { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', maxFloors: 7, kartId: 'gengar' },
-      { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', maxFloors: 7, kartId: 'espeon' },
-      { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', maxFloors: 8, kartId: 'charizard' },
-      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', maxFloors: 8, kartId: 'dialga' }
+      { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', maxFloors: 5, kartId: 'onix' },
+      { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', maxFloors: 5, kartId: 'starmie' },
+      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', maxFloors: 6, kartId: 'pikachu' },
+      { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', maxFloors: 6, kartId: 'vileplume' },
+      { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', maxFloors: 7, kartId: 'muk' },
+      { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', maxFloors: 7, kartId: 'alakazam' },
+      { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', maxFloors: 8, kartId: 'arcanine' },
+      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', maxFloors: 8, kartId: 'rhydon' }
     ];
 
     const LEAGUES = [
@@ -3917,7 +3937,7 @@
     }
 
     let currentAchievementsPage = 0;
-    const ACHIEVEMENTS_PER_PAGE = 20; // 4 colunas x 3 linhas por página
+    const ACHIEVEMENTS_PER_PAGE = 12; // 4 colunas x 3 linhas por página
 
     function changeAchievementsPage(direction) {
       const totalPages = Math.ceil(ACHIEVEMENTS_CATALOG.length / ACHIEVEMENTS_PER_PAGE);
@@ -3942,7 +3962,6 @@
       // 🛠️ Estrutura ajustada com display flex para fixar o título em cima e centralizar os ícones no espaço restante
       container.style.display = 'flex';
       container.style.flexDirection = 'column';
-      container.style.height = '230px'; // Altura fixa para manter o padrão idêntico ao das insígnias
 
       let html = `
         <div class="region-title" style="margin-bottom: 8px; flex-shrink: 0;">
@@ -4101,6 +4120,7 @@
 
       // 4. Renderiza as Conquistas
       renderAchievementsModal();
+      renderInventory();
 
       // 5. Renderiza o Carrossel de Ligas (Inicia mostrando a liga atual do jogador)
       currentLeagueCarouselIndex = LEAGUES.findIndex(l => l.name === currentLeague.name);
@@ -4722,10 +4742,9 @@
           storeItemsCache.titles = data.filter(i => i.type === 'title');
           storeItemsCache.borders = data.filter(i => i.type === 'border');
           storeItemsCache.avatars = data.filter(i => i.type === 'avatar');
-
-          // NOVOS COSMÉTICOS: Rastros e Efeitos de Vitória
           storeItemsCache.trail = data.filter(i => i.type === 'trail');
           storeItemsCache.victory = data.filter(i => i.type === 'victory');
+          storeItemsCache.consumables = data.filter(i => i.type === 'consumable');
 
         } else {
           // Fallback local caso a tabela esteja vazia inicialmente
@@ -4734,7 +4753,8 @@
             borders: [{ id: 'border_fire', name: 'Borda em Chamas', type: 'border', price: 1200, icon: '🔥' }],
             avatars: [{ id: 'avatar_red', name: 'Lenda Red', type: 'avatar', price: 3000, icon: '🧢' }],
             trail: [],
-            victory: []
+            victory: [],
+            consumables: []
           };
         }
       } catch (err) {
@@ -4765,14 +4785,20 @@
 
       const items = storeItemsCache[category] || [];
 
-      // Pega os cosméticos desbloqueados do perfil do jogador
+      // Puxar inventário e cosméticos
       let myCosmetics = [];
-      if (currentUserProfile && currentUserProfile.unlocked_cosmetics) {
-        try {
-          myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics)
-            ? currentUserProfile.unlocked_cosmetics
-            : JSON.parse(currentUserProfile.unlocked_cosmetics);
-        } catch (e) { myCosmetics = []; }
+      let myInventory = {};
+      if (currentUserProfile) {
+        if (currentUserProfile.unlocked_cosmetics) {
+          try {
+            myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics) ? currentUserProfile.unlocked_cosmetics : JSON.parse(currentUserProfile.unlocked_cosmetics);
+          } catch (e) { myCosmetics = []; }
+        }
+        if (currentUserProfile.inventory) {
+          try {
+            myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : currentUserProfile.inventory;
+          } catch (e) { myInventory = {}; }
+        }
       }
 
       if (items.length === 0) {
@@ -4781,24 +4807,27 @@
       }
 
       items.forEach(item => {
-        const isOwned = myCosmetics.includes(item.id);
+        const isConsumable = item.type === 'consumable';
+        const isOwned = !isConsumable && myCosmetics.includes(item.id);
+        const amountOwned = myInventory[item.id] || 0;
 
-        // Verifica se já está equipado (com proteção para garantir que o perfil existe)
         let isEquipped = false;
-        if (currentUserProfile) {
+        if (!isConsumable && currentUserProfile) {
           if (item.type === 'title' && currentUserProfile.equipped_title === item.id) isEquipped = true;
           if (item.type === 'border' && currentUserProfile.equipped_border === item.id) isEquipped = true;
           if (item.type === 'trail' && currentUserProfile.equipped_trail === item.id) isEquipped = true;
           if (item.type === 'victory' && currentUserProfile.equipped_victory === item.id) isEquipped = true;
         }
 
-        const cardBg = isOwned ? 'rgba(34, 197, 94, 0.1)' : 'rgba(12, 28, 48, 0.8)';
-        const cardBorder = isOwned ? '#22c55e' : '#1e3a57';
+        const cardBg = (isOwned || (isConsumable && amountOwned > 0)) ? 'rgba(34, 197, 94, 0.1)' : 'rgba(12, 28, 48, 0.8)';
+        const cardBorder = (isOwned || (isConsumable && amountOwned > 0)) ? '#22c55e' : '#1e3a57';
 
-        let btnText = 'COMPRAR';
+        let btnText = `🪙 ${item.price}`;
         let btnStyle = 'background: linear-gradient(135deg, #27c8ff, #078be8); border: 1px solid #52d6ff; color: #031525;';
 
-        if (isOwned) {
+        if (isConsumable) {
+          btnText = `COMPRAR (🪙 ${item.price})`;
+        } else if (isOwned) {
           if (isEquipped) {
             btnText = 'EQUIPADO';
             btnStyle = 'background: #22c55e; border: 1px solid #16a34a; color: #022c22; font-weight: 900;';
@@ -4806,25 +4835,25 @@
             btnText = 'EQUIPAR';
             btnStyle = 'background: transparent; border: 1px solid #22c55e; color: #22c55e;';
           }
-        } else {
-          btnText = `🪙 ${item.price}`;
         }
+
+        const tagText = isConsumable ? `No Inventário: ${amountOwned}` : (item.type === 'title' ? 'Título' : (item.type === 'border' ? 'Borda' : 'Avatar'));
 
         grid.innerHTML += `
       <div style="background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-        
         <div style="height: 70px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 10px;">
           ${item.icon || '🎁'}
         </div>
-        
         <div style="font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 5px;">
           ${item.name}
         </div>
-        <div style="font-size: 11px; color: #91a7be; margin-bottom: 15px; text-transform: uppercase; font-weight: bold;">
-          ${item.type === 'title' ? 'Título' : (item.type === 'border' ? 'Borda' : 'Avatar')}
+        <div style="font-size: 11px; color: ${isConsumable ? '#facc15' : '#91a7be'}; margin-bottom: 5px; text-transform: uppercase; font-weight: bold;">
+          ${tagText}
         </div>
-        
-        <button class="mode-btn" style="margin-top: auto; width: 100%; min-height: 36px; font-size: 12px; ${btnStyle}" onclick="interagirItemLoja('${item.id}', ${item.price}, '${item.type}', ${isOwned}, ${isEquipped})">
+        <div style="font-size: 10px; color: #64748b; margin-bottom: 15px; min-height: 24px; line-height: 1.2;">
+          ${item.description || ''}
+        </div>
+        <button class="mode-btn" style="margin-top: auto; width: 100%; min-height: 36px; font-size: 12px; ${btnStyle}" onclick="interagirItemLoja('${item.id}', ${item.price}, '${item.type}', ${isOwned}, ${isEquipped}, '${item.name}')">
           ${btnText}
         </button>
       </div>
@@ -4833,29 +4862,58 @@
     }
 
     // 5. Ação de Comprar ou Equipar Integrada ao Supabase
-    window.interagirItemLoja = async function (itemId, price, type, isOwned, isEquipped) {
+    // 5. Ação de Comprar ou Equipar Integrada ao Supabase
+    window.interagirItemLoja = async function (itemId, price, type, isOwned, isEquipped, itemName) {
       if (!currentUserProfile) return;
 
+      // --- TRATAMENTO PARA CONSUMÍVEIS (Pode comprar várias vezes) ---
+      if (type === 'consumable') {
+        const userCoins = currentUserProfile.coins || 0;
+        if (userCoins < price) {
+          alert("Moedas insuficientes para comprar este item!");
+          return;
+        }
+
+        const confirmar = confirm(`Deseja comprar 1x ${itemName || 'Consumível'} por ${price} moedas?`);
+        if (!confirmar) return;
+
+        let myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : (currentUserProfile.inventory || {});
+
+        // Adiciona 1 à quantidade existente
+        myInventory[itemId] = (myInventory[itemId] || 0) + 1;
+        const novasMoedas = userCoins - price;
+
+        currentUserProfile.coins = novasMoedas;
+        currentUserProfile.inventory = myInventory;
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({ coins: novasMoedas, inventory: myInventory }).eq('id', currentUserProfile.id);
+        }
+
+        document.getElementById('storeUserCoins').innerText = novasMoedas;
+        document.getElementById('playerCoinsText').innerText = novasMoedas;
+        renderStoreItems(currentStoreCategory);
+        return;
+      }
+
+      // --- TRATAMENTO PARA COSMÉTICOS TRADICIONAIS ---
       let myCosmetics = [];
       if (currentUserProfile.unlocked_cosmetics) {
         try {
-          myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics)
-            ? currentUserProfile.unlocked_cosmetics
-            : JSON.parse(currentUserProfile.unlocked_cosmetics);
+          myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics) ? currentUserProfile.unlocked_cosmetics : JSON.parse(currentUserProfile.unlocked_cosmetics);
         } catch (e) { myCosmetics = []; }
       }
 
       let updateData = {};
 
       if (!isOwned) {
-        // Processo de Compra
         const userCoins = currentUserProfile.coins || 0;
         if (userCoins < price) {
           alert("Moedas insuficientes para realizar esta compra!");
           return;
         }
 
-        const confirmar = confirm(`Deseja comprar este item por ${price} moedas?`);
+        const confirmar = confirm(`Deseja comprar este cosmético por ${price} moedas?`);
         if (!confirmar) return;
 
         const novasMoedas = userCoins - price;
@@ -4863,16 +4921,12 @@
 
         currentUserProfile.coins = novasMoedas;
         currentUserProfile.unlocked_cosmetics = myCosmetics;
-
         updateData.coins = novasMoedas;
         updateData.unlocked_cosmetics = myCosmetics;
 
         document.getElementById('storeUserCoins').innerText = novasMoedas;
         document.getElementById('playerCoinsText').innerText = novasMoedas;
       } else {
-        // Processo de Equipar / Desequipar
-
-        // Mapeia o tipo do item para a coluna correspondente no Supabase
         let colunaEquipamento = null;
         if (type === 'title') colunaEquipamento = 'equipped_title';
         if (type === 'border') colunaEquipamento = 'equipped_border';
@@ -4890,27 +4944,15 @@
         }
       }
 
-      // Salva alterações no Supabase
       if (typeof supabaseClient !== 'undefined') {
-        const { error } = await supabaseClient
-          .from('profiles')
-          .update(updateData)
-          .eq('id', currentUserProfile.id);
-
-        if (error) {
-          alert("Erro ao atualizar dados na base de dados.");
-          console.error(error);
-          return;
-        }
+        const { error } = await supabaseClient.from('profiles').update(updateData).eq('id', currentUserProfile.id);
+        if (error) { alert("Erro ao atualizar dados na base de dados."); return; }
       }
 
-      // Atualiza o grid da loja para refletir o novo estado
       renderStoreItems(currentStoreCategory);
-      // NOVA LINHA AQUI: Atualiza o menu lateral na mesma hora!
       updateLeagueUI(currentUserProfile.trophies || 0);
-      // --- SINCRONIZAÇÃO EM TEMPO REAL NO MULTIPLAYER ---
+
       if (typeof roomCode !== 'undefined' && roomCode) {
-        // Se fores o Host, atualiza os teus dados na lista e faz o broadcast
         if (typeof lobbyPlayers !== 'undefined' && lobbyPlayers.length > 0) {
           lobbyPlayers[0].title = currentUserProfile.equipped_title;
           lobbyPlayers[0].border = currentUserProfile.equipped_border;
@@ -4918,13 +4960,9 @@
           if (typeof renderLobbySlots === 'function') renderLobbySlots('lobbyPlayersHost', lobbyPlayers);
         }
       } else if (typeof hostLobbyConn !== 'undefined' && hostLobbyConn && hostLobbyConn.open) {
-        // Se fores Convidado, envia um pacote ao Host a avisar da mudança de cosméticos
         hostLobbyConn.send({
-          t: 'update_profile',
-          nick: currentUserProfile.nickname,
-          avatar: currentUserProfile.avatar,
-          title: currentUserProfile.equipped_title,
-          border: currentUserProfile.equipped_border
+          t: 'update_profile', nick: currentUserProfile.nickname, avatar: currentUserProfile.avatar,
+          title: currentUserProfile.equipped_title, border: currentUserProfile.equipped_border
         });
       }
     };
@@ -5007,7 +5045,8 @@
       'borders': '🖼️ Bordas',
       'avatars': '👤 Avatares',
       'trail': '💨 Rastros',
-      'victory': '🏆 Efeitos'
+      'victory': '🏆 Efeitos',
+      'consumables': '🎒 Consumíveis'
     };
 
     // Função para gerar as abas dinamicamente
@@ -5427,7 +5466,33 @@
         document.getElementById('btnEnterTowerFloor').onclick = () => {
           const nick = getNickname();
           const kart = KART_DATABASE[selectedIndex].id;
-          window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${kart}&mode=tower`;
+
+          // 1. Mapeamento de Biomas e Pistas por Ginásio
+          const configuracaoGinasios = {
+            'pewter': { biome: 'dirt', customTrack: '4bb32f4b-54af-45cb-a9ef-b7148e414bdb' },
+            'cerulean': { biome: 'water', customTrack: 'ce4e2c73-df90-41dd-b0a0-514fecafb8b8' },
+            'vermilion': { biome: 'city', track: 'circuitoE' },
+            'celadon': { biome: 'grass', track: 'circuitoOval' },
+            'fuchsia': { biome: 'poison', track: 'circuitoZigueZague' },
+            'saffron': { biome: 'ghost', track: 'circuitoE' },
+            'cinnabar': { biome: 'lava', customTrack: '90f62ba0-44af-4e6c-a60e-e0f74756bff0' },
+            'viridian': { biome: 'dirt', customTrack: '0cc57312-d3dd-4641-a433-8f5f0b8cda84' }
+          };
+
+          // 2. Puxa a configuração baseada no ginásio atual
+          const gymConfig = configuracaoGinasios[currentGym.id] || { biome: 'grass', track: 'circuitoE' };
+
+          // 3. Monta a URL base
+          let urlDestino = `game.html?nick=${encodeURIComponent(nick)}&kart=${kart}&mode=tower&players=1&slot=0&biome=${gymConfig.biome}`;
+
+          // 4. Injeta 'customTrack' se for do banco de dados, ou 'track' se for padrão
+          if (gymConfig.customTrack) {
+            urlDestino += `&customTrack=${gymConfig.customTrack}`;
+          } else {
+            urlDestino += `&track=${gymConfig.track}`;
+          }
+
+          window.location.href = urlDestino;
         };
         document.getElementById('btnResetTower').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
       }
@@ -5494,8 +5559,42 @@
             showResultModal('win', 'ANDAR CONCLUÍDO!', `Você avançou para o Andar ${towerState.floor} da Torre.`);
           }
         } else {
-          await saveTowerStateToDB(null);
-          showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+          // --- NOVIDADE: LÓGICA DE CONSUMO DO REVIVE ---
+          let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+          let myInventory = {};
+
+          if (dbProfile && dbProfile.inventory) {
+            myInventory = typeof dbProfile.inventory === 'string' ? JSON.parse(dbProfile.inventory) : dbProfile.inventory;
+          }
+
+          const revivesCount = myInventory['revive'] || 0;
+
+          // Verifica se o jogador tem Revives na mochila
+          if (revivesCount > 0) {
+            const usarRevive = confirm(`⚠️ DERROTA!\n\nVocê tem ${revivesCount}x 💊 Revive(s) na sua mochila.\nDeseja gastar 1 Revive para continuar no Andar ${towerState.floor} e não perder o progresso da Torre?`);
+
+            if (usarRevive) {
+              // 1. Desconta o item da mochila
+              myInventory['revive'] -= 1;
+              dbProfile.inventory = myInventory;
+
+              // 2. Atualiza no Supabase
+              if (typeof supabaseClient !== 'undefined') {
+                await supabaseClient.from('profiles').update({ inventory: myInventory }).eq('id', dbProfile.id);
+              }
+
+              // 3. Mostra mensagem de salvação (Note que NÃO chamamos saveTowerStateToDB(null) para manter o progresso!)
+              showResultModal('win', '💊 REVIVE UTILIZADO!', `Progresso salvo! Você gastou um Revive e pode tentar o Andar ${towerState.floor} novamente.`);
+            } else {
+              // Tem Revive mas escolheu não usar (cai da torre)
+              await saveTowerStateToDB(null);
+              showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+            }
+          } else {
+            // Não tem Revive (cai da torre)
+            await saveTowerStateToDB(null);
+            showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+          }
         }
 
         // LÓGICA DE RETORNO DO MULTIPLAYER (Rematch)
@@ -5604,6 +5703,119 @@
         supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
       }
     });
+
+    // --- SISTEMA DA MOCHILA (INVENTÁRIO) ---
+    function renderInventory() {
+      const inventoryContainer = document.getElementById('inventoryGrid');
+      if (!inventoryContainer) return;
+
+      let myInventory = {};
+      if (currentUserProfile && currentUserProfile.inventory) {
+        myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : currentUserProfile.inventory;
+      }
+
+      // Filtra apenas itens com quantidade > 0
+      const itemsOwned = Object.entries(myInventory).filter(([id, qty]) => qty > 0);
+
+      if (itemsOwned.length === 0) {
+        inventoryContainer.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #64748b; font-size: 11px; padding: 20px;">Sua mochila está vazia.<br>Compre consumíveis na Loja!</div>';
+        return;
+      }
+
+      inventoryContainer.innerHTML = '';
+
+      itemsOwned.forEach(([id, qty]) => {
+        // Busca os detalhes no cache da loja
+        let itemDef = { name: id, icon: '📦' };
+        if (typeof storeItemsCache !== 'undefined' && storeItemsCache.consumables) {
+          const found = storeItemsCache.consumables.find(i => i.id === id);
+          if (found) itemDef = found;
+        }
+
+        inventoryContainer.innerHTML += `
+      <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 10px 5px; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: all 0.2s;" 
+           onclick="usarItemInventario('${id}', '${itemDef.name}')" 
+           onmouseover="this.style.borderColor='#38bdf8'; this.style.transform='translateY(-2px)';" 
+           onmouseout="this.style.borderColor='#334155'; this.style.transform='translateY(0)';">
+        <div style="font-size: 24px; margin-bottom: 4px;">${itemDef.icon}</div>
+        <div style="font-size: 9px; color: #fff; font-weight: bold; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${itemDef.name}</div>
+        <div style="font-size: 11px; color: #facc15; font-weight: 900; margin-top: 4px; background: rgba(0,0,0,0.5); padding: 2px 8px; border-radius: 10px;">x${qty}</div>
+      </div>
+    `;
+      });
+    }
+
+    window.usarItemInventario = async function (itemId, itemName) {
+      // Lê o inventário atual do jogador
+      let myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : currentUserProfile.inventory;
+
+      // 🍬 DOCE RARO (Consumo Instantâneo)
+      if (itemId === 'rare_candy') {
+        const confirmar = confirm(`Deseja consumir 1x 🍬 Doce Raro?\nIsso vai te dar +20 XP no Passe de Batalha instantaneamente!`);
+        if (!confirmar) return;
+
+        myInventory[itemId] -= 1;
+        const xpGanha = 20;
+        currentUserProfile.xp = (currentUserProfile.xp || 0) + xpGanha;
+        currentUserProfile.inventory = myInventory;
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({ inventory: myInventory, xp: currentUserProfile.xp }).eq('id', currentUserProfile.id);
+        }
+        alert(`🍬 Você comeu um Doce Raro e ganhou ${xpGanha} XP!`);
+        renderInventory();
+        if (typeof updateLevelUI === 'function') updateLevelUI();
+      }
+
+      // 🪙 MOEDA AMULETO (Ativação Pré-Corrida)
+      else if (itemId === 'amulet_coin') {
+        if (localStorage.getItem('pkart_buff_coins') === 'true') {
+          alert("⚠️ Você JÁ TEM uma Moeda Amuleto ativada para a próxima corrida!");
+          return;
+        }
+        const confirmar = confirm(`Deseja ativar 1x 🪙 Moeda Amuleto?\nAs moedas da sua PRÓXIMA corrida serão DOBRADAS (ganhando ou perdendo)!`);
+        if (!confirmar) return;
+
+        myInventory[itemId] -= 1;
+        currentUserProfile.inventory = myInventory;
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({ inventory: myInventory }).eq('id', currentUserProfile.id);
+        }
+
+        localStorage.setItem('pkart_buff_coins', 'true'); // Guarda o buff na memória
+        alert("🪙 Moeda Amuleto ativada com sucesso! Prepare-se para a corrida!");
+        renderInventory();
+      }
+
+      // 🥚 OVO DA SORTE (Ativação Pré-Corrida)
+      else if (itemId === 'lucky_egg') {
+        if (localStorage.getItem('pkart_buff_xp') === 'true') {
+          alert("⚠️ Você JÁ TEM um Ovo da Sorte ativado para a próxima corrida!");
+          return;
+        }
+        const confirmar = confirm(`Deseja ativar 1x 🥚 Ovo da Sorte?\nO XP da sua PRÓXIMA corrida será DOBRADO (ganhando ou perdendo)!`);
+        if (!confirmar) return;
+
+        myInventory[itemId] -= 1;
+        currentUserProfile.inventory = myInventory;
+
+        if (typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('profiles').update({ inventory: myInventory }).eq('id', currentUserProfile.id);
+        }
+
+        localStorage.setItem('pkart_buff_xp', 'true'); // Guarda o buff na memória
+        alert("🥚 Ovo da Sorte ativado com sucesso! Prepare-se para a corrida!");
+        renderInventory();
+      }
+
+      // OUTROS ITENS (Ex: Revive, Corda de Fuga)
+      else {
+        alert(`O item ${itemName} tem um funcionamento automático ou é usado num menu específico durante a corrida.`);
+      }
+    };
+
+
   </script>
 
   <script src="auth.js"></script>

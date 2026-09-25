@@ -171,11 +171,11 @@ if (modeParam === 'tower') {
 
   if (isBossFloor) {
     // REGRAS DO CHEFÃO: 1v1 e IA no Difícil
-    totalPlayersParam = 2;
+    totalPlayersParam = 1; // 1 Jogador humano
     aiDifficultyParam = 'hard';
   } else {
     // REGRAS DOS ANDARES NORMAIS: Corrida com 4 karts no Normal
-    totalPlayersParam = 4; // Altere este número se a sua corrida normal tiver mais bots
+    totalPlayersParam = 1; // 1 Jogador humano (o sistema fará 4 vagas - 1 = 3 bots)
     aiDifficultyParam = 'normal';
   }
 }
@@ -2732,6 +2732,25 @@ async function showFinishOverlay(place) {
 
   // --- SALVAMENTO BLINDADO DO MODO TORRE ---
   const modeParam = urlParams.get('mode');
+
+  // Lê o inventário para ver se temos o Revive
+  let myInventory = {};
+  let reviveCount = 0;
+  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : (currentUserProfile.inventory || {});
+
+    // DEBUG: Isto vai mostrar no Console (F12) o que está realmente na mochila
+    console.log("🎒 Inventário lido no fim da corrida:", myInventory);
+
+    // Tenta procurar pelos IDs mais comuns. Mude aqui se o seu ID for diferente!
+    reviveCount = myInventory['tower_revive'] || myInventory['revive'] || myInventory['revive_torre'] || 0;
+
+    console.log("💊 Quantidade de Revives encontrados:", reviveCount);
+  } else {
+    console.warn("⚠️ currentUserProfile não está definido no momento da derrota!");
+  }
+
+
   if (modeParam === 'tower') {
     const currentFloor = secureTowerState.floor;
     const currentGymId = secureTowerState.gymId;
@@ -2761,9 +2780,6 @@ async function showFinishOverlay(place) {
         currentUserProfile.tower_state = towerState;
         supabaseClient.from('profiles').update({ tower_state: towerState }).eq('id', currentUserProfile.id);
       }
-    } else {
-      localStorage.setItem('pkart_tower_result', 'lose');
-      localStorage.removeItem('pkart_tower_state');
     }
   }
   // -------------------------------------
@@ -2861,62 +2877,102 @@ async function showFinishOverlay(place) {
     // --- MODO SOLO / TORRE ---
     const isTower = modeParam === 'tower';
 
-    // 🛡️ CORREÇÃO: Usa diretamente a variável "place === 1" e o Estado Seguro
-    if (isTower && place === 1) {
-      const currentFloor = secureTowerState.floor;
-      const maxFloorsVal = secureTowerState.maxFloors;
+    if (isTower) {
+      if (place === 1) {
+        const currentFloor = secureTowerState.floor;
+        const maxFloorsVal = secureTowerState.maxFloors;
 
-      // VERIFICA SE AINDA TEM ANDARES PARA SUBIR
-      if (currentFloor < maxFloorsVal) {
-        const btnNextFloor = document.createElement('button');
-        btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
-        btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
-        btnNextFloor.onmousedown = () => btnNextFloor.style.transform = 'translateY(4px)';
-        btnNextFloor.onmouseup = () => btnNextFloor.style.transform = 'translateY(0)';
+        if (currentFloor < maxFloorsVal) {
+          const btnNextFloor = document.createElement('button');
+          btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
+          btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
 
-        btnNextFloor.onclick = () => {
-          // O estado do andar +1 já foi salvo no LocalStorage/Supabase acima desta linha.
-          // Só precisamos recarregar o jogo limpo!
-          window.location.href = `game.html?nick=${urlParams.get('nick')}&kart=${urlParams.get('kart')}&mode=tower`;
-        };
-        buttonsContainer.appendChild(btnNextFloor);
+          // O SEGREDO: Em vez de forçar uma URL nova que perde a pista, usamos um reload.
+          // O jogo mantém a pista (lendo da URL intacta) e avança o andar (lendo do LocalStorage).
+          btnNextFloor.onclick = () => window.location.reload();
 
+          buttonsContainer.appendChild(btnNextFloor);
+        } else {
+          const btnFinishTower = document.createElement('button');
+          btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
+          btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
+          btnFinishTower.onclick = () => window.location.href = 'index.html';
+          buttonsContainer.appendChild(btnFinishTower);
+        }
       } else {
-        // É O ÚLTIMO ANDAR! MOSTRA O BOTÃO DE FINALIZAR
-        const btnFinishTower = document.createElement('button');
-        btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
-        btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
-        btnFinishTower.onmousedown = () => btnFinishTower.style.transform = 'translateY(4px)';
-        btnFinishTower.onmouseup = () => btnFinishTower.style.transform = 'translateY(0)';
+        // PERDEU NA TORRE! Vamos verificar o Revive
+        if (reviveCount > 0) {
+          const btnRevive = document.createElement('button');
+          btnRevive.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ec4899, #be185d); color: #fff; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); margin-bottom: 4px;';
+          btnRevive.innerHTML = `💊 Usar Revive (${reviveCount} restantes)`;
+          btnRevive.onmousedown = () => btnRevive.style.transform = 'translateY(4px)';
+          btnRevive.onmouseup = () => btnRevive.style.transform = 'translateY(0)';
 
-        btnFinishTower.onclick = () => {
-          window.location.href = 'index.html';
-        };
-        buttonsContainer.appendChild(btnFinishTower);
+          btnRevive.onclick = async () => {
+            myInventory['revive'] -= 1;
+            currentUserProfile.inventory = myInventory;
+            if (typeof supabaseClient !== 'undefined') {
+              await supabaseClient.from('profiles').update({ inventory: myInventory }).eq('id', currentUserProfile.id);
+            }
+            alert('💊 Revive ativado! O seu progresso foi protegido. Boa sorte!');
+            window.location.reload();
+          };
+          buttonsContainer.appendChild(btnRevive);
+
+          // Botão Sombrio (Só aparece se o jogador TIVER um Revive para rejeitar)
+          const btnGiveUp = document.createElement('button');
+          btnGiveUp.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
+          btnGiveUp.innerText = 'Aceitar Derrota e Sair';
+          btnGiveUp.onclick = () => {
+            localStorage.setItem('pkart_tower_result', 'lose');
+            localStorage.removeItem('pkart_tower_state');
+            if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+              supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
+            }
+            window.location.href = 'index.html';
+          };
+          buttonsContainer.appendChild(btnGiveUp);
+
+        } else {
+          // NÃO TEM REVIVE! Mostra o botão normal "Voltar ao Lobby" (mas aplica a derrota na mesma)
+          const btnBackLobby = document.createElement('button');
+          btnBackLobby.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
+          btnBackLobby.innerText = 'Voltar ao Lobby';
+          btnBackLobby.onmousedown = () => btnBackLobby.style.transform = 'translateY(4px)';
+          btnBackLobby.onmouseup = () => btnBackLobby.style.transform = 'translateY(0)';
+
+          btnBackLobby.onclick = () => {
+            localStorage.setItem('pkart_tower_result', 'lose');
+            localStorage.removeItem('pkart_tower_state');
+            if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+              supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
+            }
+            window.location.href = 'index.html';
+          };
+          buttonsContainer.appendChild(btnBackLobby);
+        }
       }
     }
 
-    // 🔥 NOVO: Botão "Jogar Novamente" (Aparece no Solo normal, ou se perder na Torre)
+    // 🔥 MODO SOLO NORMAL (Estes botões NÃO aparecem na Torre)
     if (!isTower) {
       const btnPlayAgain = document.createElement('button');
       btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
       btnPlayAgain.onmousedown = () => btnPlayAgain.style.transform = 'translateY(4px)';
       btnPlayAgain.onmouseup = () => btnPlayAgain.style.transform = 'translateY(0)';
-
-      // Recarrega a página exatamente como está (mesma pista, kart e dificuldade)
       btnPlayAgain.onclick = () => window.location.reload();
       buttonsContainer.appendChild(btnPlayAgain);
-    }
 
-    const btnRestart = document.createElement('button');
-    btnRestart.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
-    btnRestart.innerText = 'Voltar ao Lobby';
-    btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
-    btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';
-    btnRestart.onclick = () => window.location.href = 'index.html';
-    buttonsContainer.appendChild(btnRestart);
-  }
+      const btnRestart = document.createElement('button');
+      btnRestart.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
+      btnRestart.innerText = 'Voltar ao Lobby';
+      btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
+      btnRestart.onmouseup = () => btnRestart.style.transform = 'translateY(0)';
+      btnRestart.onclick = () => window.location.href = 'index.html';
+      buttonsContainer.appendChild(btnRestart);
+    }
+  } // <-- Fim do bloco else (Modo Solo/Torre)
 
   card.appendChild(buttonsContainer);
   overlay.appendChild(card);
@@ -2985,11 +3041,31 @@ async function showFinishOverlay(place) {
 
   const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
   const baseCoins = baseCoinsByPosition[place] || 20;
-  const totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
+
+  // ALTERADO PARA LET: Permite que os valores sejam modificados pelos buffs
+  let totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
 
   // Define XP baseado na posição e multiplica pela dificuldade
   const baseXPByPosition = { 1: 5, 2: 3, 3: 2, 4: 1 };
-  const earnedXP = Math.round((baseXPByPosition[place] || 1) * trackMultiplier);
+  let earnedXP = Math.round((baseXPByPosition[place] || 1) * trackMultiplier);
+
+  // --- APLICAÇÃO DOS BUFFS DA MOCHILA (PRÉ-CORRIDA) ---
+  let usouMoedaAmuleto = false;
+  let usouOvoDaSorte = false;
+
+  // 1. Dobra Moedas
+  if (localStorage.getItem('pkart_buff_coins') === 'true') {
+    totalCoinsEarned = totalCoinsEarned * 2;
+    usouMoedaAmuleto = true;
+    localStorage.removeItem('pkart_buff_coins'); // Consome o efeito
+  }
+
+  // 2. Dobra XP
+  if (localStorage.getItem('pkart_buff_xp') === 'true') {
+    earnedXP = earnedXP * 2;
+    usouOvoDaSorte = true;
+    localStorage.removeItem('pkart_buff_xp'); // Consome o efeito
+  }
 
   let updatePayload = {}; // Objeto para atualizar o Supabase em 1 única chamada!
 
@@ -3030,7 +3106,6 @@ async function showFinishOverlay(place) {
     updatePayload.races_played = totalCorridas;
     updatePayload.races_won = totalVitorias;
     updatePayload.races_lost = totalDerrotas;
-
 
     let achvsModified = false;
 
@@ -3085,10 +3160,18 @@ async function showFinishOverlay(place) {
     }
   }
 
-  // Monta o HTML base de recompensas visuais
+  // Monta o HTML base de recompensas visuais COM INDICADORES DE MULTIPLICADOR
   let rewardHTML = `
-    <div style="color:#facc15; font-size:16px;">💰 +${totalCoinsEarned} Moedas <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span></div>
-    <div style="color:#21c7ff; font-size:14px; margin-top: 4px;">⭐ +${earnedXP} XP <span style="font-size:11px; color:#94a3b8;">(Passe)</span></div>
+    <div style="color:#facc15; font-size:16px;">
+      💰 +${totalCoinsEarned} Moedas 
+      <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span>
+      ${usouMoedaAmuleto ? '<span style="color:#22c55e; font-size:12px; font-weight:900; margin-left:6px;">(🪙 x2)</span>' : ''}
+    </div>
+    <div style="color:#21c7ff; font-size:14px; margin-top: 4px;">
+      ⭐ +${earnedXP} XP 
+      <span style="font-size:11px; color:#94a3b8;">(Passe)</span>
+      ${usouOvoDaSorte ? '<span style="color:#22c55e; font-size:12px; font-weight:900; margin-left:6px;">(🥚 x2)</span>' : ''}
+    </div>
   `;
 
   // REQUISITO ATUALIZADO: Apenas ranca/ganha troféus se for sala multiplayer COM EXATAMENTE 4 JOGADORES REAIS
@@ -4728,10 +4811,9 @@ function spawnBots() {
 
   // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder no último andar
   if (modeParam === 'tower') {
-    const currentFloor = parseInt(urlParams.get('floor') || '1', 10);
-
-    // CORREÇÃO AQUI: O parâmetro correto lido da URL é 'maxFloors' e não 'totalFloors'
-    const maxFloors = parseInt(urlParams.get('maxFloors') || '5', 10);
+    // Lê diretamente do estado seguro da base de dados/memória, ignorando a URL
+    const currentFloor = secureTowerState.floor;
+    const maxFloors = secureTowerState.maxFloors;
 
     // Se NÃO for o último andar, fazemos o fluxo normal (vários bots)
     if (currentFloor < maxFloors) {

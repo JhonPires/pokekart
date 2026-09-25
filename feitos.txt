@@ -1,3 +1,9 @@
+Versão 1.9.4
+Novos itens adicionados na loja.;
+Corrigido e adicionado novas funcionalidades no modo Torre.;
+
+
+
 Versão 1.9.3
 Adicionado uma lista de salas abertas multiplayer.;
 Adicionado ao perfil do jogador as bordas, titulos, cores (nicknames e fumaça drift), efeitos e mensagens ao entrar na sala multiplayer.;

@@ -5,6 +5,7 @@ AJUSTES
 
 
 NOVIDADES
+- As salas multiplayer deveria ser fechadas após um tempo para evitar de ficar sala criada sem ninguem
 - Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
 - FASE 4 - Adicionar para visualizar o perfil de um outro jogador (Na tela de ranking ser possivel abrir um modal com o perfil do jogador)
@@ -35,62 +36,3 @@ Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon 
   "maxFloors": 5,
   "leaderKart": "onix"
 }
-
-
-
-A ideia de introduzir itens consumíveis é excelente para criar uma nova camada de economia no jogo ("coin sinks") e aumentar a retenção dos jogadores. O Revive no modo Torre encaixa perfeitamente no tema de Pokémon e Kart.
-
-Aqui estão mais algumas ideias de consumíveis temáticos e um cronograma passo-a-passo para implementar este sistema.
-
-Ideias para Itens Consumíveis
-Revive (Reviver): A sua ideia. Permite repetir um andar da Torre após uma derrota sem perder o progresso.
-
-Amulet Coin (Moeda Amuleto): Dobra a quantidade de moedas ganhas nas próximas 3 (ou 5) corridas. Ideal para jogadores que querem acelerar a compra de karts ou cosméticos caros.
-
-Lucky Egg (Ovo da Sorte): Duplica os pontos de experiência (XP) ganhos para o Passe de Batalha durante 30 minutos ou nas próximas 5 corridas.
-
-Rare Candy (Doce Raro): Sobe instantaneamente 1 Nível completo no Passe de Batalha, sem precisar de correr.
-
-Escape Rope (Corda de Fuga): Permite abandonar uma corrida a meio (Solo ou Torre) sem que conte como derrota ou quebre uma sequência de vitórias (Win Streak).
-
-Turbo Start (Bateria Porygon / Cogumelo Extra): O jogador consome este item no Lobby e, na próxima corrida que fizer, começa a prova com 1 item de Turbo já guardado no inventário do kart.
-
-Cronograma de Implementação
-Para que o código não fique confuso, o ideal é dividir a implementação em 4 fases distintas.
-
-Fase 1: Preparação da Base de Dados (Supabase)
-Adicionar os Itens à Loja: Inserir os consumíveis na tabela store_items (com type: 'consumable').
-
-Atualizar a Tabela profiles: Criar uma nova coluna chamada inventory (do tipo jsonb com valor por defeito {}) para guardar as quantidades. Exemplo de como ficará guardado: {"revive": 2, "amulet_coin": 1}.
-
-Atualizar as Funções de Backend: Garantir que quando o jogador compra um consumível, a quantidade na coluna inventory soma +1, em vez de apenas verificar se já o possui (como acontece com os cosméticos).
-
-Fase 2: Interface Visual no Lobby (index.html)
-Nova Aba na Loja: Adicionar a aba "💊 Consumíveis" no modal da Loja, aproveitando o sistema dinâmico que já criámos. A lógica dos botões deve mudar de "EQUIPAR" para "COMPRAR (Quantidade: X)".
-
-A Mochila do Piloto: Criar um pequeno botão "Inventário" ou "Mochila" no menu lateral ou dentro do perfil, para o jogador conseguir ver quantos Revives ou Moedas Amuleto tem guardados.
-
-Fase 3: Lógica do Revive no Modo Torre
-Intercetar o Ecrã de Derrota: No ficheiro index.html, localizar a função processTowerResult(). Quando o resultado for lose, verificar se o jogador tem revive > 0 no inventário.
-
-Modal de Decisão: Em vez de mostrar diretamente o ecrã vermelho "DERROTADO!", abrir um modal perguntando: "Foste derrotado! Queres usar 1x Revive para tentar de novo? (Tens: 2)".
-
-Ação Sim/Não:
-
-Se Sim: Subtrai 1 Revive no Supabase, mantém o towerState intacto e reinicia a corrida.
-
-Se Não: Aplica a derrota normal, apaga o towerState e volta o andar para o nível 1.
-
-Fase 4: Lógica dos Boosters (Moeda Amuleto / Ovo da Sorte)
-Sistema de Ativação: Permitir que o jogador clique no item na Mochila e escolha "Ativar".
-
-Estado Temporário: Guardar no localStorage ou no Supabase (numa coluna active_boosters) que o jogador tem um multiplicador ativo e quantas cargas/corridas lhe restam.
-
-Alterar a Distribuição de Prémios: No ficheiro auth.js, localizar a função addRewards. Antes de somar as moedas, adicionar a matemática do multiplicador:
-
-JavaScript
-if (boosterAtivo === 'amulet_coin') {
-  coinsEarned = coinsEarned * 2;
-  // Lógica para subtrair 1 carga da Moeda Amuleto
-}
-Pode escolher por qual fase quer começar. Recomendo começar pela Fase 1, configurando a coluna inventory na base de dados para que possamos começar a injetar os consumíveis.
