@@ -1,10 +1,11 @@
 BUGS
-
+O retorno de quando volta do modo torre
 
 AJUSTES
 
 
 NOVIDADES
+- Habilidade nova igual a caixa do TNT do Crash
 - As salas multiplayer deveria ser fechadas após um tempo para evitar de ficar sala criada sem ninguem
 - Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem

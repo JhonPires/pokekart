@@ -5449,7 +5449,7 @@
           </div>
           
           <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de${towerState.maxFloors}`}</strong>
+            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
             <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
           </div>
           
@@ -5482,17 +5482,33 @@
           // 2. Puxa a configuração baseada no ginásio atual
           const gymConfig = configuracaoGinasios[currentGym.id] || { biome: 'grass', track: 'circuitoE' };
 
-          // 3. Monta a URL base
-          let urlDestino = `game.html?nick=${encodeURIComponent(nick)}&kart=${kart}&mode=tower&players=1&slot=0&biome=${gymConfig.biome}`;
+          // 3. Recupera o estado atual da torre (para não apagar o andar em que ele está)
+          let towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
 
-          // 4. Injeta 'customTrack' se for do banco de dados, ou 'track' se for padrão
+          // 4. Atualiza ou injeta o gymId, o bioma e as propriedades vitais preservando o andar atual
+          towerState.gymId = currentGym.id;
+          towerState.biome = gymConfig.biome;
+          towerState.leader = currentGym.leader;
+          towerState.maxFloors = currentGym.maxFloors;
+          towerState.mode = 'tower';
+
+          // Se o andar ainda não estiver definido por algum motivo, garante que começa no 1
+          if (!towerState.floor) towerState.floor = 1;
+
+          // Salva a pista correta (customizada ou padrão)
           if (gymConfig.customTrack) {
-            urlDestino += `&customTrack=${gymConfig.customTrack}`;
+            towerState.customTrack = gymConfig.customTrack;
+            delete towerState.track;
           } else {
-            urlDestino += `&track=${gymConfig.track}`;
+            towerState.track = gymConfig.track;
+            delete towerState.customTrack;
           }
 
-          window.location.href = urlDestino;
+          // Grava permanentemente na gaveta
+          localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
+
+          // 5. Redireciona para o Hub com a URL 100% limpa
+          window.location.href = 'hub.html';
         };
         document.getElementById('btnResetTower').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
       }

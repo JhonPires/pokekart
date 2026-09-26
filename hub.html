@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    <title>PokeKart — Torre</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Inter, system-ui, sans-serif;
+            user-select: none;
+        }
+
+        /* TELA DE CARREGAMENTO */
+        #loadingScreen {
+            position: absolute;
+            inset: 0;
+            background: #050b16;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #38bdf8;
+            font-weight: 900;
+            z-index: 9999;
+            transition: opacity 0.5s;
+        }
+
+        /* CONTAINER DA HUD */
+        #ui-container {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        /* BOTÃO DE SAÍDA (Esquerda) */
+        .btn-back {
+            pointer-events: auto;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid #ef4444;
+            color: #f87171;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 12px;
+            cursor: pointer;
+            text-transform: uppercase;
+            backdrop-filter: blur(8px);
+            transition: 0.2s;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-back:hover {
+            background: #ef4444;
+            color: #fff;
+            transform: scale(1.05);
+        }
+
+        /* PAINEL DA TORRE (Direita) */
+        .hud-panel {
+            background: linear-gradient(135deg, rgba(12, 28, 48, 0.9), rgba(5, 15, 30, 0.95));
+            border: 1px solid #1e3a57;
+            border-radius: 16px;
+            padding: 15px 20px;
+            color: #fff;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(56, 189, 248, 0.1);
+            backdrop-filter: blur(12px);
+            min-width: 220px;
+            text-align: right;
+        }
+
+        .hud-title {
+            color: #facc15;
+            font-size: 18px;
+            font-weight: 900;
+            margin: 0 0 2px 0;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
+        }
+
+        .hud-leader {
+            color: #91a7be;
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .hud-leader b {
+            color: #fff;
+        }
+
+        /* BARRA DE PROGRESSO */
+        .hud-floor-text {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            font-weight: 900;
+            color: #38bdf8;
+            margin-bottom: 4px;
+        }
+
+        .hud-progress-bg {
+            width: 100%;
+            height: 8px;
+            background: #0f172a;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #1e3a57;
+        }
+
+        .hud-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #10b981);
+            width: 0%;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* DICA DE CONTROLO (Em baixo, centro) */
+        .controls-hint {
+            align-self: center;
+            background: rgba(9, 23, 42, 0.7);
+            border: 1px solid #38bdf8;
+            padding: 8px 18px;
+            border-radius: 20px;
+            color: #dcecff;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+            animation: pulseGlow 2s infinite;
+        }
+
+        @keyframes pulseGlow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loadingScreen">
+        <div style="font-size: 40px; margin-bottom: 15px; animation: pulseGlow 1s infinite;">🚗</div>
+        <div>GERANDO MUNDO...</div>
+    </div>
+
+    <div id="ui-container">
+        <div class="hud-top">
+            <button class="btn-back" id="btnAbandonar" onclick="window.location.href='index.html'">↩ Voltar ao Lobby
+            </button>
+
+            <div class="hud-panel">
+                <h1 class="hud-title" id="hudGymName">Ginásio</h1>
+                <div class="hud-leader">Líder: <b id="hudLeaderName">???</b></div>
+
+                <div class="hud-floor-text">
+                    <span>PROGRESSO</span>
+                    <span id="hudFloorCount">Andar 1/5</span>
+                </div>
+                <div class="hud-progress-bg">
+                    <div class="hud-progress-fill" id="hudProgressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-hint">
+            WASD / Setas para Dirigir 🏎️
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <!-- Injeta a música do jogo -->
+    <script src="music.js"></script>
+    <script src="hub.js"></script>
+</body>
+
+</html>

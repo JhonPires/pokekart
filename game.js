@@ -2883,16 +2883,18 @@ async function showFinishOverlay(place) {
         const maxFloorsVal = secureTowerState.maxFloors;
 
         if (currentFloor < maxFloorsVal) {
-          const btnNextFloor = document.createElement('button');
-          btnNextFloor.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
-          btnNextFloor.innerHTML = '<span>Próximo Andar ➡️</span>';
+          const btnVoltarHub = document.createElement('button');
+          btnVoltarHub.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
+          btnVoltarHub.innerHTML = '<span>Voltar ao Mapa 🗺️</span>';
 
-          // O SEGREDO: Em vez de forçar uma URL nova que perde a pista, usamos um reload.
-          // O jogo mantém a pista (lendo da URL intacta) e avança o andar (lendo do LocalStorage).
-          btnNextFloor.onclick = () => window.location.reload();
+          // A MÁGICA: Pega a URL atual (com nick, bioma, etc.) e apenas troca "game.html" por "hub.html"
+          btnVoltarHub.onclick = () => {
+            window.location.href = 'hub.html' + window.location.search;
+          };
 
-          buttonsContainer.appendChild(btnNextFloor);
+          buttonsContainer.appendChild(btnVoltarHub);
         } else {
+          // Venceu o Boss (Líder do Ginásio)
           const btnFinishTower = document.createElement('button');
           btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
           btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
