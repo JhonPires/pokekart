@@ -245,7 +245,7 @@ async function loadLeaderboardData(trackId = 'default') {
       // 1. Ranking Geral por Troféus
       const { data, error } = await supabaseClient
         .from('profiles')
-        .select('nickname, trophies, avatar')
+        .select('id, nickname, trophies, avatar')
         .order('trophies', { ascending: false })
         .limit(20);
 
@@ -263,7 +263,7 @@ async function loadLeaderboardData(trackId = 'default') {
         else if (index === 2) posBadge = '🥉 3º';
 
         html += `
-          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+          <div onclick="window.abrirPerfilJogador('${row.id}')" style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; transition: filter 0.2s;" onmouseover="this.style.filter='brightness(1.2)';" onmouseout="this.style.filter='brightness(1)';">
             <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
               <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
               <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(row.nickname || 'Piloto')}</span>
@@ -280,7 +280,7 @@ async function loadLeaderboardData(trackId = 'default') {
       // 2. Recordes de Pista (Tempo Total)
       const { data, error } = await supabaseClient
         .from('track_records')
-        .select('best_time_ms, kart_id, profiles(nickname)')
+        .select('best_time_ms, kart_id, profiles(id, nickname)')
         .eq('track_id', trackId)
         .order('best_time_ms', { ascending: true })
         .limit(20);
@@ -300,9 +300,10 @@ async function loadLeaderboardData(trackId = 'default') {
 
         const timeFormatted = formatRecordTime(row.best_time_ms);
         const nick = row.profiles?.nickname || 'Piloto';
+        const profileId = row.profiles?.id || '';
 
         html += `
-          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+          <div onclick="window.abrirPerfilJogador('${profileId}')" style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; transition: filter 0.2s;" onmouseover="this.style.filter='brightness(1.2)';" onmouseout="this.style.filter='brightness(1)';">
             <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
               <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
               <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(nick)}</span>
@@ -319,7 +320,7 @@ async function loadLeaderboardData(trackId = 'default') {
       // 3. Recordes de Volta Mais Rápida (best_lap_ms)
       const { data, error } = await supabaseClient
         .from('track_records')
-        .select('best_lap_ms, profiles(nickname)')
+        .select('best_lap_ms, profiles(id, nickname)')
         .eq('track_id', trackId)
         .order('best_lap_ms', { ascending: true })
         .limit(20);
@@ -339,9 +340,10 @@ async function loadLeaderboardData(trackId = 'default') {
 
         const lapFormatted = formatRecordTime(row.best_lap_ms);
         const nick = row.profiles?.nickname || 'Piloto';
+        const profileId = row.profiles?.id || '';
 
         html += `
-          <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px;">
+          <div onclick="window.abrirPerfilJogador('${profileId}')" style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; font-size: 14px; cursor: pointer; transition: filter 0.2s;" onmouseover="this.style.filter='brightness(1.2)';" onmouseout="this.style.filter='brightness(1)';">
             <div style="display: flex; align-items: center; gap: 8px; font-weight: bold;">
               <span style="font-size: 13px; color: #94a3b8; min-width: 38px;">${posBadge}</span>
               <span style="color: #f8fafc; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; max-width: 130px;">${escapeHtml(nick)}</span>

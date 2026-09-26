@@ -262,7 +262,7 @@
       display: flex;
       width: 100%;
       height: 100vh;
-      padding: 90px 25px 25px 25px;
+      padding: 15px 25px 25px 25px;
       gap: 20px;
     }
 
@@ -614,13 +614,13 @@
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main>
-      <div class="topbar">
+      <!-- <div class="topbar">
         <div class="stat"><span>🪙</span><b id="playerCoins">0</b></div>
-        <!-- <div class="stat rank">
+        <div class="stat rank">
           <div class="avatar">🏁</div>
           <strong id="playerNickname">Piloto</strong>
-        </div> -->
-      </div>
+        </div>
+      </div> -->
 
       <div class="garage-layout">
 
@@ -643,17 +643,32 @@
 
           <div class="card" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
 
-            <!-- CABEÇALHO DA LISTA COM O FILTRO DE ORDENAÇÃO -->
+            <!-- CABEÇALHO DA LISTA COM O FILTRO DE ORDENAÇÃO E REGIÃO -->
             <div
               style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 0;">
               <div class="section-label" style="margin: 0;">MODELOS DISPONÍVEIS</div>
-              <select id="garageSortSelect" onchange="renderKartGrid()"
-                style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
-                <option value="default">Ordem Padrão</option>
-                <option value="owned">Ativos Primeiro</option>
-                <option value="price_asc">Menor Preço</option>
-                <option value="price_desc">Maior Preço</option>
-              </select>
+              <div style="display: flex; gap: 8px;">
+                <select id="garageRegionSelect" onchange="renderKartGrid()"
+                  style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
+                  <option value="all">Todas as Regiões</option>
+                  <option value="Kanto">Kanto (1-151)</option>
+                  <option value="Johto">Johto (152-251)</option>
+                  <option value="Hoenn">Hoenn (252-386)</option>
+                  <option value="Sinnoh">Sinnoh (387-493)</option>
+                  <option value="Unova">Unova (494-649)</option>
+                  <option value="Kalos">Kalos (650-721)</option>
+                  <option value="Alola">Alola (722-809)</option>
+                  <option value="Galar">Galar (810-898)</option>
+                  <option value="Paldea">Paldea (906-1025)</option>
+                </select>
+                <select id="garageSortSelect" onchange="renderKartGrid()"
+                  style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
+                  <option value="default">Ordem Padrão</option>
+                  <option value="owned">Ativos Primeiro</option>
+                  <option value="price_asc">Menor Preço</option>
+                  <option value="price_desc">Maior Preço</option>
+                </select>
+              </div>
             </div>
 
             <div class="kart-grid-container">

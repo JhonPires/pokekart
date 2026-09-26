@@ -46,7 +46,10 @@ const biomeColors = {
     city: { sky: 0x1a1a2e, ground: 0x333333 },
     poison: { sky: 0x4a148c, ground: 0x2e003e },
     ghost: { sky: 0x000000, ground: 0x1c1c1c },
-    lava: { sky: 0x3e1010, ground: 0x1a0505 }
+    lava: { sky: 0x3e1010, ground: 0x1a0505 },
+    electric: { sky: 0x0f172a, ground: 0x1e293b }, // Céu noturno escuro com chão metálico
+    rock: { sky: 0x57534e, ground: 0x44403c },     // Tons de cascalho e poeira
+    psychic: { sky: 0x3b0764, ground: 0x2e1065 }   // Tons de roxo profundo/espacial
 };
 
 const currentBiomeColors = biomeColors[biome] || biomeColors['grass'];
@@ -578,7 +581,33 @@ function criarObjetoProcedural(x, z, tipoBioma) {
         rocha.rotation.set(Math.random(), Math.random(), Math.random());
         objeto.add(rocha);
 
-    } else {
+    } else if (tipoBioma === 'electric') {
+        // Poste elétrico com bobina luminosa amarela
+        const mPoste = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.8 });
+        const mBrilho = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xdddd00, emissiveIntensity: 1 });
+        const poste = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 4), mPoste);
+        poste.position.y = 2;
+        const bobina = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 1, 8), mBrilho);
+        bobina.position.y = 4;
+        objeto.add(poste, bobina);
+
+    } else if (tipoBioma === 'rock') {
+        // Pedregulhos cinzentos brutos
+        const mPedra = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9 });
+        const rocha = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8 + Math.random()), mPedra);
+        rocha.position.y = 1;
+        rocha.rotation.set(Math.random(), Math.random(), Math.random());
+        objeto.add(rocha);
+
+    } else if (tipoBioma === 'psychic') {
+        // Pirâmides flutuantes rosa/roxo
+        const mPsiquico = new THREE.MeshStandardMaterial({ color: 0xff69b4, emissive: 0x8a2be2, emissiveIntensity: 0.4 });
+        const piramide = new THREE.Mesh(new THREE.TetrahedronGeometry(2), mPsiquico);
+        piramide.position.y = 3 + Math.random() * 3; // Flutua entre 3 e 6 de altura
+        piramide.rotation.set(Math.random(), Math.random(), Math.random());
+        objeto.add(piramide);
+    }
+    else {
         // // PINHEIROS / GRASS / DIRT / CITY (Estilo da sua imagem 3)
         // const mTronco = new THREE.MeshStandardMaterial({ color: 0x5c4033 });
         // const mFolha = new THREE.MeshStandardMaterial({ color: 0x2e8b57 });
@@ -592,11 +621,10 @@ function criarObjetoProcedural(x, z, tipoBioma) {
         // objeto.add(tronco, copa1, copa2, copa3);
     }
 
-    // Deslocamento natural: para não ficarem perfeitamente alinhados como robôs
+    // Deslocamento natural: para não ficarem perfeitamente alinhados
     objeto.position.set(x + (Math.random() * 6 - 3), 0, z + (Math.random() * 6 - 3));
     objeto.rotation.y = Math.random() * Math.PI * 2;
 
-    // Aleatoriedade no tamanho das árvores/pedras
     const scaleRandom = 0.7 + Math.random() * 0.5;
     objeto.scale.set(scaleRandom, scaleRandom, scaleRandom);
 

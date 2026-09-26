@@ -6,10 +6,23 @@ let garageRequestId = 0;
 
 const POKEAPI_SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
 
+function getRegionByDex(dexId) {
+  if (!dexId) return 'Desconhecida';
+  if (dexId <= 151) return 'Kanto';
+  if (dexId <= 251) return 'Johto';
+  if (dexId <= 386) return 'Hoenn';
+  if (dexId <= 493) return 'Sinnoh';
+  if (dexId <= 649) return 'Unova';
+  if (dexId <= 721) return 'Kalos';
+  if (dexId <= 809) return 'Alola';
+  if (dexId <= 905) return 'Galar';
+  return 'Paldea';
+}
 
 function getKartUrl(filename) {
   return `./models/${filename}`;
 }
+
 // Catálogo Completo
 let KART_CATALOG = [];
 
@@ -263,6 +276,14 @@ function renderKartGrid() {
 
   // 🔄 4. SISTEMA DE ORDENAÇÃO (FILTRO)
   let catalogToRender = [...KART_CATALOG]; // Cria uma cópia para não estragar a lista original
+
+  // 🌍 4.1. FILTRO POR REGIÃO
+  const regionSelect = document.getElementById('garageRegionSelect');
+  const regionMode = regionSelect ? regionSelect.value : 'all';
+  if (regionMode !== 'all') {
+    catalogToRender = catalogToRender.filter(k => getRegionByDex(k.dexId) === regionMode);
+  }
+
   const sortSelect = document.getElementById('garageSortSelect');
   const sortMode = sortSelect ? sortSelect.value : 'default';
 
@@ -284,6 +305,12 @@ function renderKartGrid() {
   } else {
     // 🌟 ORDENAÇÃO PADRÃO POR POKÉDEX (dexId)
     catalogToRender.sort((a, b) => (a.dexId || 9999) - (b.dexId || 9999));
+  }
+
+  // Mostra mensagem se nenhum kart na região
+  if (catalogToRender.length === 0) {
+    gridEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-size: 13px; padding: 30px 0;">Nenhum kart encontrado nesta região.</div>';
+    return;
   }
 
   // 5. Renderiza os cartões na ordem escolhida

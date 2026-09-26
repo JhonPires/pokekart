@@ -218,6 +218,9 @@ function setupEnhancedEnvironment(scene) {
   else if (currentBiome === 'water') spawnWaterDecorations();
   else if (currentBiome === 'city') spawnCityDecorations();
   else if (currentBiome === 'poison') spawnPoisonDecorations();
+  else if (currentBiome === 'electric') spawnElectricDecorations();
+  else if (currentBiome === 'rock') spawnRockDecorations();
+  else if (currentBiome === 'psychic') spawnPsychicDecorations();
   else respawnTreesForTrack(); // Grama (Padrão)
 
   // Adiciona as nuvens e pedras ao redor da pista
@@ -599,6 +602,28 @@ const BIOME_CONFIGS = {
     track: '#27272a', trackLines: 'rgba(34,197,94,0.7)', // Pista cinza asfalto com linhas verde tóxico
     kerb: ['#22c55e', '#4c1d95'], // Zebras Verde Ácido e Roxo Profundo
     trackRoughness: 0.7, trackMetalness: 0.1, groundRoughness: 0.4 // Chão meio liso para simular pântano pegajoso
+  },
+
+  electric: { // Elétrico (Pikachu, Jolteon)
+    ground: ['#1e293b', '#0f172a'], // Chão metálico/escuro
+    noiseL: 'rgba(255,255,0,0.15)', noiseD: 'rgba(0,0,0,0.5)',
+    track: '#334155', trackLines: 'rgba(250,204,21,0.8)', // Asfalto cinza com linhas amarelas
+    kerb: ['#facc15', '#000000'], // Zebras Amarelo e Preto
+    trackRoughness: 0.5, trackMetalness: 0.6, groundRoughness: 0.6
+  },
+  rock: { // Pedra (Onix, Geodude)
+    ground: ['#78716c', '#57534e'], // Tons de pedra e cascalho
+    noiseL: 'rgba(255,255,255,0.05)', noiseD: 'rgba(0,0,0,0.3)',
+    track: '#44403c', trackLines: 'rgba(168,162,158,0.5)', // Asfalto rústico marrom-acinzentado
+    kerb: ['#a8a29e', '#292524'], // Zebras Cinza Claro e Escuro
+    trackRoughness: 0.9, trackMetalness: 0.0, groundRoughness: 0.95
+  },
+  psychic: { // Psíquico (Mewtwo, Alakazam)
+    ground: ['#4c1d95', '#3b0764'], // Chão Roxo Profundo/Espacial
+    noiseL: 'rgba(236,72,153,0.15)', noiseD: 'rgba(0,0,0,0.4)',
+    track: '#2e1065', trackLines: 'rgba(217,70,239,0.8)', // Asfalto roxo com neon
+    kerb: ['#d946ef', '#172554'], // Zebras Rosa Neon e Azul Marinho
+    trackRoughness: 0.3, trackMetalness: 0.5, groundRoughness: 0.4 // Chão levemente reflexivo
   }
 };
 
@@ -827,9 +852,13 @@ function addTires() {
 }
 
 function addGhostBarriers() {
-  const tombstoneGeo = new THREE.BoxGeometry(1.2, 1.8, 0.3);
   const mat1 = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.95 }); // Pedra clara
   const mat2 = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.95 }); // Pedra escura
+
+  // Geometrias idênticas às usadas no Hub
+  const baseGeo = new THREE.BoxGeometry(3, 0.5, 2);
+  const corpoGeo = new THREE.BoxGeometry(2.5, 3, 1.2);
+  const topoGeo = new THREE.CylinderGeometry(1.25, 1.25, 1.2, 16);
 
   const barrierCount = 120;
   for (let i = 0; i < barrierCount; i++) {
@@ -844,18 +873,36 @@ function addGhostBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
 
-      const tombstone = new THREE.Mesh(tombstoneGeo, currentMat);
-      tombstone.position.set(pos.x, 0.9, pos.z);
+      const tombstoneGroup = new THREE.Group();
+
+      const base = new THREE.Mesh(baseGeo, currentMat);
+      base.position.y = 0.25;
+      base.castShadow = true;
+
+      const corpo = new THREE.Mesh(corpoGeo, currentMat);
+      corpo.position.y = 2.0;
+      corpo.castShadow = true;
+
+      const topo = new THREE.Mesh(topoGeo, currentMat);
+      topo.rotation.x = Math.PI / 2; // Faz o cilindro deitar para criar a curva do topo
+      topo.position.y = 3.5;
+      topo.castShadow = true;
+
+      tombstoneGroup.add(base, corpo, topo);
+
+      // Reduz o tamanho do grupo todo para caber perfeitamente na borda da pista
+      tombstoneGroup.scale.setScalar(0.4);
+
+      tombstoneGroup.position.set(pos.x, 0, pos.z);
 
       // Gira a lápide para ficar virada de frente para a pista
-      tombstone.rotation.y = Math.atan2(tangent.x, tangent.z) + (Math.PI / 2);
+      tombstoneGroup.rotation.y = Math.atan2(tangent.x, tangent.z) + (Math.PI / 2);
 
-      // Dá uma ligeira inclinação aleatória para parecerem velhas e abandonadas
-      tombstone.rotation.z = (Math.random() - 0.5) * 0.2;
-      tombstone.rotation.x = (Math.random() - 0.5) * 0.2;
+      // Ligeira inclinação aleatória para parecerem velhas e abandonadas
+      tombstoneGroup.rotation.z = (Math.random() - 0.5) * 0.2;
+      tombstoneGroup.rotation.x = (Math.random() - 0.5) * 0.2;
 
-      tombstone.castShadow = true;
-      trackElementsGroup.add(tombstone);
+      trackElementsGroup.add(tombstoneGroup);
     }
   }
 }
@@ -1408,6 +1455,254 @@ function spawnPoisonDecorations() {
   scene.add(currentTreeGroup);
 }
 
+// ==========================================
+// ⚡ BIOMA: ELÉTRICO
+// ==========================================
+function addElectricBarriers() {
+  // Poste mais curto e fino
+  const poleGeo = new THREE.CylinderGeometry(0.15, 0.3, 1.8, 8);
+  const poleMat = new THREE.MeshStandardMaterial({
+    color: 0x222222,
+    metalness: 0.9,
+    roughness: 0.2
+  });
+
+  // Globo de energia ligeiramente menor
+  const orbGeo = new THREE.SphereGeometry(0.5, 16, 16);
+  const orbMat = new THREE.MeshStandardMaterial({
+    color: 0xffff00,
+    emissive: 0xffffaa,
+    emissiveIntensity: 1.2,
+    wireframe: true
+  });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+
+      const poleGroup = new THREE.Group();
+
+      const poleMesh = new THREE.Mesh(poleGeo, poleMat);
+      poleMesh.position.y = 0.9; // Metade da altura (1.8 / 2) para encostar no chão
+      poleMesh.castShadow = true;
+
+      const orbMesh = new THREE.Mesh(orbGeo, orbMat);
+      orbMesh.position.y = 1.9; // Posicionado exatamente no topo do poste
+
+      poleGroup.add(poleMesh, orbMesh);
+      poleGroup.position.set(pos.x, 0, pos.z);
+
+      trackElementsGroup.add(poleGroup);
+    }
+  }
+}
+
+function spawnElectricDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const poleGeo = new THREE.CylinderGeometry(0.2, 0.5, 12, 8);
+  const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9 });
+  const orbGeo = new THREE.SphereGeometry(1.5, 16, 16);
+  const orbMat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffffaa, emissiveIntensity: 1.2, wireframe: true });
+
+  const poleInst = new THREE.InstancedMesh(poleGeo, poleMat, decorCount);
+  const orbInst = new THREE.InstancedMesh(orbGeo, orbMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.8 + Math.random() * 0.5;
+
+      dummy.position.set(x, 6.0 * scale, z);
+      dummy.scale.setScalar(scale);
+      dummy.rotation.set(0, 0, 0);
+      dummy.updateMatrix();
+      poleInst.setMatrixAt(spawned, dummy.matrix);
+
+      dummy.position.set(x, 12.0 * scale, z);
+      dummy.updateMatrix();
+      orbInst.setMatrixAt(spawned, dummy.matrix);
+
+      spawned++;
+    }
+  }
+  poleInst.count = spawned; orbInst.count = spawned;
+  poleInst.instanceMatrix.needsUpdate = true; orbInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(poleInst); currentTreeGroup.add(orbInst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 🪨 BIOMA: PEDRA
+// ==========================================
+function addRockBarriers() {
+  const geo = new THREE.DodecahedronGeometry(1.5, 0);
+  const mat = new THREE.MeshStandardMaterial({ color: 0x6e6e6e, roughness: 0.9, metalness: 0.0 });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const barrier = new THREE.Mesh(geo, mat);
+      barrier.position.set(pos.x, 0.5, pos.z);
+      barrier.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+      barrier.castShadow = true;
+      trackElementsGroup.add(barrier);
+    }
+  }
+}
+
+function spawnRockDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const rockGeo = new THREE.ConeGeometry(4, 15, 5);
+  const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a4d41, roughness: 1.0, flatShading: true });
+
+  const rockInst = new THREE.InstancedMesh(rockGeo, rockMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 16.0) {
+      const scale = 0.8 + Math.random() * 1.5;
+      dummy.position.set(x, 7.5 * scale, z);
+      dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.5), scale);
+      dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
+      dummy.updateMatrix();
+      rockInst.setMatrixAt(spawned, dummy.matrix);
+      spawned++;
+    }
+  }
+  rockInst.count = spawned;
+  rockInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(rockInst);
+  scene.add(currentTreeGroup);
+}
+
+// ==========================================
+// 🔮 BIOMA: PSÍQUICO
+// ==========================================
+function addPsychicBarriers() {
+  const geo = new THREE.SphereGeometry(1.2, 16, 16);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0x8a2be2, emissive: 0x4b0082, emissiveIntensity: 0.4, transparent: true, opacity: 0.85
+  });
+
+  const barrierCount = 120;
+  for (let i = 0; i < barrierCount; i++) {
+    const t = i / barrierCount;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    for (const side of [1, -1]) {
+      const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      const barrier = new THREE.Mesh(geo, mat);
+      barrier.position.set(pos.x, 2.0, pos.z); // Flutua
+      barrier.castShadow = true;
+      trackElementsGroup.add(barrier);
+    }
+  }
+}
+
+function spawnPsychicDecorations() {
+  if (currentTreeGroup) {
+    scene.remove(currentTreeGroup);
+    currentTreeGroup.traverse(child => { if (child.geometry) child.geometry.dispose(); });
+    currentTreeGroup = null;
+  }
+  currentTreeGroup = new THREE.Group();
+
+  const decorCount = 120;
+  const pyramidGeo = new THREE.TetrahedronGeometry(5, 0);
+  const ringGeo = new THREE.TorusGeometry(7, 0.3, 8, 30);
+  const psychicMat = new THREE.MeshStandardMaterial({ color: 0xff69b4, metalness: 0.3, roughness: 0.2 });
+
+  const pyraInst = new THREE.InstancedMesh(pyramidGeo, psychicMat, decorCount);
+  const ringInst = new THREE.InstancedMesh(ringGeo, psychicMat, decorCount);
+  const dummy = new THREE.Object3D();
+
+  let spawned = 0, attempts = 0;
+  while (spawned < decorCount && attempts < 1500) {
+    attempts++;
+    const radius = 35 + Math.random() * 220;
+    const angle = Math.random() * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const z = Math.sin(angle) * radius;
+    const pos = new THREE.Vector3(x, 0, z);
+
+    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+      const scale = 0.6 + Math.random() * 0.8;
+      const hoverHeight = 12.0 + Math.random() * 6.0; // Objetos voando alto
+
+      if (Math.random() > 0.5) {
+        dummy.position.set(x, hoverHeight * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(Math.PI + (Math.random() - 0.5) * 0.5, Math.random() * Math.PI, (Math.random() - 0.5) * 0.5); // Ponta cabeça
+        dummy.updateMatrix();
+        pyraInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        ringInst.setMatrixAt(spawned, dummy.matrix);
+      } else {
+        dummy.position.set(x, hoverHeight * scale, z);
+        dummy.scale.setScalar(scale);
+        dummy.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.5, 0, Math.random() * Math.PI); // Anéis inclinados
+        dummy.updateMatrix();
+        ringInst.setMatrixAt(spawned, dummy.matrix);
+
+        dummy.scale.setScalar(0);
+        dummy.updateMatrix();
+        pyraInst.setMatrixAt(spawned, dummy.matrix);
+      }
+      spawned++;
+    }
+  }
+  pyraInst.count = spawned; ringInst.count = spawned;
+  pyraInst.instanceMatrix.needsUpdate = true; ringInst.instanceMatrix.needsUpdate = true;
+  currentTreeGroup.add(pyraInst); currentTreeGroup.add(ringInst);
+  scene.add(currentTreeGroup);
+}
+
 function addStartFinishLine() {
   const point = trackCurve.getPointAt(0);
   const tangent = trackCurve.getTangentAt(0).normalize();
@@ -1481,9 +1776,11 @@ else if (currentBiome === 'dirt') addDirtBarriers();
 else if (currentBiome === 'water') addWaterBarriers();
 else if (currentBiome === 'city') addCityBarriers();
 else if (currentBiome === 'poison') addPoisonBarriers();
+else if (currentBiome === 'electric') addElectricBarriers();
+else if (currentBiome === 'rock') addRockBarriers();
+else if (currentBiome === 'psychic') addPsychicBarriers();
 else addTires(); // Grama (Padrão)
 addStartFinishLine();
-// spawnDynamicSpectators();
 setupEnhancedEnvironment(scene);
 
 function respawnTreesForTrack() {
@@ -1626,152 +1923,216 @@ function spawnGhostDecorations() {
   scene.add(currentTreeGroup);
 }
 
-// ============================================================
-// SISTEMA DINÂMICO DE ESPECTADORES POKÉMON (PMD COLLAB)
-// ============================================================
-const spectators = [];
-const spectatorMaterials = [];
-let lastSpectatorAnim = Date.now();
+// --- VARIÁVEIS DA CAIXA ROCKET ---
+let rocketBoxAtiva = false;
+let rocketBoxCliques = 0;
+const CLIQUES_NECESSARIOS = 6;
+let rocketBoxMesh = null;
+let temporizadorRocket = null;
+let intervaloPiscoRocket = null;
 
-// 1. Função que vai buscar a imagem diretamente do GitHub do PMDCollab
-async function loadDynamicPMDPokemon(dexNumber) {
-  const base = `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${dexNumber}`;
-  const imgUrl = `${base}/Idle-Anim.png`;
-  const xmlUrl = `${base}/AnimData.xml`;
+// --- GERADOR DA TEXTURA "R" ---
+function criarTexturaEquipeRocket() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
 
-  // 1. Busca os metadados reais da animação
-  const xmlText = await fetch(xmlUrl).then(r => r.text());
-  const xmlDoc = new DOMParser().parseFromString(xmlText, "application/xml");
+  // Fundo escuro da caixa
+  ctx.fillStyle = '#1e1e1e';
+  ctx.fillRect(0, 0, 256, 256);
 
-  // Acha o bloco <Anim> cujo <Name> é "Idle"
-  const anims = xmlDoc.getElementsByTagName("Anim");
-  let idleAnim = null;
-  for (const anim of anims) {
-    if (anim.getElementsByTagName("Name")[0]?.textContent === "Idle") {
-      idleAnim = anim;
-      break;
-    }
-  }
+  // Letra "R" vermelha no centro
+  ctx.fillStyle = '#ef4444'; // Vermelho vivo
+  ctx.font = 'bold 150px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('R', 128, 135);
 
-  if (!idleAnim) {
-    console.warn(`Sem animação Idle para ${dexNumber}`);
-    return;
-  }
+  // Borda vermelha ao redor da caixa
+  ctx.strokeStyle = '#ef4444';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(5, 5, 246, 246);
 
-  const frameWidth = parseInt(idleAnim.getElementsByTagName("FrameWidth")[0].textContent, 10);
-  const frameHeight = parseInt(idleAnim.getElementsByTagName("FrameHeight")[0].textContent, 10);
-  const totalFrames = idleAnim.getElementsByTagName("Duration").length; // <- número real de frames
-
-  const rows = 8; // direções continuam fixas em 8
-
-  // 2. Só agora carrega a textura, já com os dados corretos
-  const texture = new THREE.TextureLoader().load(imgUrl);
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestFilter;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.set(1 / totalFrames, 1 / rows);
-
-  const material = new THREE.SpriteMaterial({
-    map: texture,
-    transparent: true,
-    alphaTest: 0.5,
-  });
-
-  spectatorMaterials.push({ material, texture, totalFrames, currentFrame: 0, frameWidth, frameHeight });
+  return new THREE.CanvasTexture(canvas);
 }
 
-// Lista de Pokémon populares e testados no PMDCollab
-const todosPokemonPMD = [
-  '0001', '0002', '0003', '0004', '0005', '0006', '0007', '0008', '0009', '0025',
-  '0039', '0052', '0054', '0058', '0059', '0065', '0068', '0079', '0094', '0104',
-  '0130', '0133', '0134', '0135', '0136', '0143', '0149', '0150', '0151', '0154',
-  '0157', '0158', '0162', '0172', '0175', '0196', '0197', '0212', '0214', '0243',
-  '0244', '0245', '0248', '0249', '0250', '0253', '0254', '0257', '0258', '0260',
-  '0282', '0300', '0330', '0359', '0373', '0380', '0382', '0383', '0384', '0385',
-  '0386', '0387', '0430', '0447', '0448', '0471', '0478', '0493'
-];
+function ativarArmadilhaRocket() {
+  if (rocketBoxAtiva) return;
+  rocketBoxAtiva = true;
+  rocketBoxCliques = 0;
 
-// Embaralha a lista e seleciona 14 Pokémon totalmente diferentes a cada corrida
-const pokemonEscolhidos = todosPokemonPMD.sort(() => 0.5 - Math.random()).slice(0, 14);
-pokemonEscolhidos.forEach(dexNum => loadDynamicPMDPokemon(dexNum));
+  const textura = criarTexturaEquipeRocket();
+  const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6); // Tamanho reduzido aqui também
+  const material = new THREE.MeshStandardMaterial({ map: textura });
+  rocketBoxMesh = new THREE.Mesh(geometria, material);
 
-// Substitua a sua função spawnDynamicSpectators atual por esta:
-function spawnDynamicSpectators() {
-  setTimeout(() => {
-    if (spectatorMaterials.length === 0) return;
+  // Altura em Y reduzida de 3.0 para 1.0 (fica colada à cabeça do piloto)
+  rocketBoxMesh.position.set(0, 1.0, 0);
+  kart.add(rocketBoxMesh);
 
-    const totalPontos = 260; // Aumentei um pouco a resolução dos pontos
-    const trackPoints = trackCurve.getSpacedPoints(totalPontos);
+  let estadoPisco = false;
+  intervaloPiscoRocket = setInterval(() => {
+    estadoPisco = !estadoPisco;
+    rocketBoxMesh.material.color.setHex(estadoPisco ? 0xffaaaa : 0xffffff);
+    // Aumenta a agressividade da pulsação para compensar o tamanho pequeno
+    rocketBoxMesh.scale.setScalar(estadoPisco ? 1.3 : 0.7);
+    rocketBoxMesh.rotation.z = (Math.random() - 0.5) * 0.5;
+  }, 150);
 
-    const trackCenter = new THREE.Vector3();
-    trackPoints.forEach(p => trackCenter.add(p));
-    trackCenter.divideScalar(trackPoints.length);
+  temporizadorRocket = setTimeout(() => {
+    explodirRocketBox();
+  }, 2500);
+}
 
-    // Limpa a torcida antiga
-    spectators.length = 0;
+function desarmarRocketBox() {
+  rocketBoxAtiva = false;
+  clearTimeout(temporizadorRocket);
+  clearInterval(intervaloPiscoRocket);
 
-    for (let i = 0; i < trackPoints.length; i++) {
-      // DENSIDADE DA PISTA: Reduzido de 4 para 3 (nascerão mais grupos ao longo da pista)
-      if (i % 3 !== 0) continue;
+  if (rocketBoxMesh) {
+    // Remove a caixa do 'kart'
+    kart.remove(rocketBoxMesh);
+    rocketBoxMesh.geometry.dispose();
+    rocketBoxMesh.material.dispose();
+    rocketBoxMesh = null;
+  }
+}
 
-      // EXCLUSÃO DA LARGADA: Ignora os primeiros e últimos pontos
-      if (i < 10 || i > trackPoints.length - 10) continue;
+function explodirRocketBox() {
+  desarmarRocketBox();
 
-      const point = trackPoints[i];
-      const nextPoint = trackPoints[(i + 1) % trackPoints.length];
+  // 1. Aplica o giro idêntico ao gelo usando o temporizador de spin do seu motor físico
+  if (typeof physics !== 'undefined') {
+    physics.speed = 0;
+    physics.spinTimer = 0.8; // Faz o kart rodopiar exatamente como o gelo
+  }
 
-      const tangent = new THREE.Vector3().subVectors(nextPoint, point).normalize();
-      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+  // 2. Cria a animação de rodopio manual (idêntico ao escorregão no gelo)
+  let framesGiro = 0;
+  const intervaloGiro = setInterval(() => {
+    if (kart) {
+      kart.rotation.y += 0.5; // Faz o modelo 3D rodopiar rapidamente
+    }
+    framesGiro++;
 
-      // TAMANHO DO GRUPO (TORCIDA): Cada ponto de spawn vai gerar de 2 a 4 Pokémon juntos
-      const tamanhoTorcida = 2 + Math.floor(Math.random() * 3);
+    // Para de girar após cerca de 1 segundo (30 frames * 30ms)
+    if (framesGiro > 30) {
+      clearInterval(intervaloGiro);
+    }
+  }, 30);
+}
 
-      for (let j = 0; j < tamanhoTorcida; j++) {
-        // Sorteio TOTALMENTE ALEATÓRIO para cada um dos membros do grupo
-        const randomPoke = spectatorMaterials[Math.floor(Math.random() * spectatorMaterials.length)];
+// Armazena as caixas que estão largadas fisicamente no chão da pista
+let armadilhasRocketNaPista = [];
 
-        // PROFUNDIDADE: 'j' empurra o Pokémon mais para trás, criando "filas" (frente, meio, fundo)
-        const offsetDist = (trackWidth / 2) + 12 + (j * 2.8) + (Math.random() * 2);
+function lancarCaixaRocket() {
+  const textura = criarTexturaEquipeRocket();
+  // Reduzido de 2 para 0.6 (tamanho de uma pokebola grande)
+  const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+  const material = new THREE.MeshStandardMaterial({ map: textura });
+  const caixaMesh = new THREE.Mesh(geometria, material);
 
-        const posA = point.clone().addScaledVector(normal, offsetDist);
-        const posB = point.clone().addScaledVector(normal, -offsetDist);
+  const distanciaAtras = 5;
+  const direcao = new THREE.Vector3(0, 0, 1).applyQuaternion(kart.quaternion);
+  const posicaoAtras = kart.position.clone().sub(direcao.multiplyScalar(distanciaAtras));
 
-        const distA = posA.distanceTo(trackCenter);
-        const distB = posB.distanceTo(trackCenter);
-        const basePos = distA > distB ? posA : posB;
+  // Altura em Y reduzida de 1.0 para 0.3 para encostar no asfalto
+  caixaMesh.position.set(posicaoAtras.x, 0.3, posicaoAtras.z);
+  caixaMesh.rotation.y = kart.rotation.y;
 
-        // ESPALHAMENTO LATERAL: Evita que fiquem em fila indiana perfeita, espalhando-os como uma multidão real
-        const espalhamento = (Math.random() - 0.5) * 4.0;
-        const finalPos = basePos.clone().addScaledVector(tangent, espalhamento);
+  scene.add(caixaMesh);
+  armadilhasRocketNaPista.push(caixaMesh);
+}
 
-        const sprite = new THREE.Sprite(randomPoke.material);
+function verificarColisaoRocketBox() {
+  if (typeof armadilhasRocketNaPista === 'undefined' || armadilhasRocketNaPista.length === 0) return;
 
-        sprite.scale.set(1.0, 1.0, 1);
-        sprite.position.set(finalPos.x, 0.7, finalPos.z);
+  for (let i = armadilhasRocketNaPista.length - 1; i >= 0; i--) {
+    const caixa = armadilhasRocketNaPista[i];
+    let caixaRemovida = false;
 
-        trackElementsGroup.add(sprite);
+    // 1. Verifica colisão com o JOGADOR (se ele não estiver já sob efeito da caixa)
+    if (typeof kart !== 'undefined' && kart && !rocketBoxAtiva) {
+      const posKart2D = new THREE.Vector2(kart.position.x, kart.position.z);
+      const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
 
-        spectators.push({
-          sprite: sprite,
-          texture: randomPoke.texture,
-          totalFrames: randomPoke.totalFrames,
-          currentFrame: Math.floor(Math.random() * randomPoke.totalFrames),
-          animSpeed: 720 + Math.random() * 160,
-          lastUpdate: Date.now() + Math.random() * 1000,
-
-          originPos: finalPos.clone(),
-          // Variáveis para andar em círculos/curvas suaves 2D na grama
-          walkSpeedX: 0.3 + Math.random() * 0.4,
-          walkSpeedZ: 0.3 + Math.random() * 0.4,
-          walkRangeX: 1.0 + Math.random() * 2.0,
-          walkRangeZ: 1.0 + Math.random() * 2.0,
-          walkOffsetX: Math.random() * Math.PI * 2,
-          walkOffsetZ: Math.random() * Math.PI * 2
-        });
+      if (posKart2D.distanceTo(posCaixa2D) < 4.0) {
+        removerCaixaDaPista(i);
+        ativarArmadilhaRocket(); // Ativa em você
+        caixaRemovida = true;
+        continue;
       }
     }
-  }, 1000);
+
+    // 2. Se a caixa ainda não foi pega, verifica colisão com os BOTS
+    if (!caixaRemovida && typeof remoteKarts !== 'undefined') {
+      for (const [id, bot] of remoteKarts.entries()) {
+        if (bot.isBot && bot.obj && bot.obj.group && !bot.rocketBoxAtiva) {
+          const posBot2D = new THREE.Vector2(bot.obj.group.position.x, bot.obj.group.position.z);
+          const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
+
+          if (posBot2D.distanceTo(posCaixa2D) < 4.0) {
+            removerCaixaDaPista(i);
+            ativarArmadilhaBot(bot); // Ativa no bot que passou por cima!
+            caixaRemovida = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+}
+
+// Lógica de desespero do Bot (ele tenta desarmar sozinho ou explode)
+function ativarArmadilhaBot(bot) {
+  if (!bot || bot.rocketBoxAtiva) return;
+  bot.rocketBoxAtiva = true;
+
+  // --- CONFIGURAÇÃO DA CHANCE DO BOT ---
+  // 0.0 = O bot SEMPRE explode e gira (0% chance de escapar)
+  // 0.5 = 50% de chance de escapar ou explodir
+  // 1.0 = O bot NUNCA explode (100% de chance de escapar)
+  const CHANCE_DE_ESCAPAR = 0.5; // 0.0 para garantir o teste do giro
+  // ------------------------------------
+
+  const textura = criarTexturaEquipeRocket();
+  const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+  const material = new THREE.MeshStandardMaterial({ map: textura });
+  const caixaBotMesh = new THREE.Mesh(geometria, material);
+  caixaBotMesh.position.set(0, 1.0, 0);
+
+  const botGroup = bot.obj?.group || bot.mesh || bot.group;
+  if (botGroup) {
+    botGroup.add(caixaBotMesh);
+  }
+
+  // Tempo de desespero do bot antes de detonar (2 segundos)
+  setTimeout(() => {
+    if (botGroup) {
+      botGroup.remove(caixaBotMesh);
+    }
+    caixaBotMesh.geometry.dispose();
+    caixaBotMesh.material.dispose();
+    bot.rocketBoxAtiva = false;
+
+    // Sorteia se o bot conseguiu escapar
+    const conseguiuDesarmar = Math.random() < CHANCE_DE_ESCAPAR;
+
+    if (!conseguiuDesarmar) {
+      // 🧊 IDÊNTICO À HABILIDADE DE GELO: Zera a velocidade e ativa o spinTimer do bot!
+      bot.speed = 0;
+      bot.spinTimer = 0.8;
+    }
+  }, 2000);
+}
+// Função auxiliar limpa para apagar a caixa do Three.js com segurança
+function removerCaixaDaPista(index) {
+  const caixa = armadilhasRocketNaPista[index];
+  scene.remove(caixa);
+  if (caixa.geometry) caixa.geometry.dispose();
+  if (caixa.material) caixa.material.dispose();
+  armadilhasRocketNaPista.splice(index, 1);
 }
 
 async function loadCustomTrack(trackParam) {
@@ -1820,9 +2181,11 @@ async function loadCustomTrack(trackParam) {
     else if (currentBiome === 'water') addWaterBarriers();
     else if (currentBiome === 'city') addCityBarriers();
     else if (currentBiome === 'poison') addPoisonBarriers();
+    else if (currentBiome === 'electric') addElectricBarriers();
+    else if (currentBiome === 'rock') addRockBarriers();
+    else if (currentBiome === 'psychic') addPsychicBarriers();
     else addTires(); // Grama (Padrão)
     addStartFinishLine();
-    // spawnDynamicSpectators();
     spawnItemBoxes(trackData.items);
     if (currentBiome === 'ghost') spawnGhostDecorations();
     else if (currentBiome === 'ice') spawnIceDecorations();
@@ -1831,6 +2194,9 @@ async function loadCustomTrack(trackParam) {
     else if (currentBiome === 'water') spawnWaterDecorations();
     else if (currentBiome === 'city') spawnCityDecorations();
     else if (currentBiome === 'poison') spawnPoisonDecorations();
+    else if (currentBiome === 'electric') spawnElectricDecorations();
+    else if (currentBiome === 'rock') spawnRockDecorations();
+    else if (currentBiome === 'psychic') spawnPsychicDecorations();
     else respawnTreesForTrack(); // Grama (Padrão)
     if (kart) {
       const grid = getGridPosition(playerSlotParam);
@@ -3257,6 +3623,10 @@ const SKILLS = {
     id: 'SOM', name: 'Onda Sonora',
     icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🔊</div>'
   },
+  ROCKET_BOX: {
+    id: 'ROCKET_BOX', name: 'Armadilha Rocket',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 32px; font-weight: 900; font-family: Arial, sans-serif; color: #ef4444; text-shadow: 2px 2px 0px #111;">R</div>'
+  }
 };
 
 let currentItem = null;
@@ -3382,11 +3752,12 @@ function updateItemBoxes(dt) {
     for (const [id, bot] of remoteKarts.entries()) {
       if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.6) {
         disableItemBox(box.id);
-        if (!bot.currentItem) {
-          const skillKeys = Object.keys(SKILLS);
-          bot.currentItem = SKILLS[skillKeys[Math.floor(Math.random() * skillKeys.length)]];
-          bot.itemUseTimer = 1.0 + Math.random() * 2.0;
-        }
+
+        // Sorteia um item para o bot (incluindo a ROCKET_BOX)
+        const skillKeys = Object.keys(SKILLS);
+        const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+        bot.currentItem = SKILLS[randomKey];
+        bot.itemUseTimer = 1.0 + Math.random() * 2.0;
         break;
       }
     }
@@ -4027,12 +4398,24 @@ function updateDigProjectiles(dt) {
 }
 
 window.addEventListener('keydown', (e) => {
+  // Lógica de usar o item (tecla E)
   if (e.code === 'KeyE' && currentItem && raceStarted) {
     useEquippedSkill(currentItem);
     currentItem = null;
 
     const iconEl = document.getElementById('itemIcon');
     if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
+  }
+
+  // --- LÓGICA DE DESARME DA CAIXA ROCKET (tecla R) ---
+  // Utilizamos o toLowerCase() para garantir que funciona mesmo se o Caps Lock estiver ativo
+  if (e.key.toLowerCase() === 'r' && rocketBoxAtiva) {
+    rocketBoxCliques++;
+
+    // Se atingir o número necessário de cliques, desarma antes de o tempo acabar
+    if (rocketBoxCliques >= CLIQUES_NECESSARIOS) {
+      desarmarRocketBox();
+    }
   }
 });
 
@@ -4099,6 +4482,11 @@ function useEquippedSkill(skill) {
         createSonicBoomEffect(kart.position);
         castSonicBoom('local');
       }
+      break;
+
+    // --- NOVA HABILIDADE DA EQUIPA ROCKET ---
+    case 'ROCKET_BOX':
+      lancarCaixaRocket();
       break;
   }
 }
@@ -5150,6 +5538,21 @@ function useBotSkill(botId, bot, skill) {
       createSonicBoomEffect(bot.obj.group.position);
       castSonicBoom(botId);
       break;
+
+    case 'ROCKET_BOX':
+      // O bot solta a caixa atrás dele na pista
+      const backVectorBot = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosBot = bot.obj.group.position.clone().add(backVectorBot);
+
+      // Cria a caixa fisicamente na pista para os outros baterem
+      const texturaBot = criarTexturaEquipeRocket();
+      const geoBot = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+      const matBot = new THREE.MeshStandardMaterial({ map: texturaBot });
+      const caixaBotMesh = new THREE.Mesh(geoBot, matBot);
+      caixaBotMesh.position.set(trapPosBot.x, 0.3, trapPosBot.z);
+      scene.add(caixaBotMesh);
+      armadilhasRocketNaPista.push(caixaBotMesh);
+      break;
   }
 }
 
@@ -5772,6 +6175,7 @@ function animate() {
   updateItemBoxes(dt);
   updateTraps(dt);
   updateTrapParticles(dt);
+  verificarColisaoRocketBox();
   networkTick(dt);
   updateRemoteKarts(dt);
   updateKartEffects(dt);
@@ -5793,48 +6197,7 @@ function animate() {
   const now2 = Date.now();
   const timeSec = now2 * 0.001;
 
-  spectators.forEach(sp => {
-    // 1. Passos
-    if (now2 - sp.lastUpdate > sp.animSpeed) {
-      sp.lastUpdate = now2;
-      sp.currentFrame = (sp.currentFrame + 1) % sp.totalFrames;
-      sp.texture.offset.x = sp.currentFrame * (1 / sp.totalFrames);
-    }
 
-    if (sp.originPos) {
-      // 2. Movimento 2D na grama (X e Z independentes eliminam o efeito "pêndulo")
-      const posX = Math.sin(timeSec * sp.walkSpeedX + sp.walkOffsetX) * sp.walkRangeX;
-      const posZ = Math.cos(timeSec * sp.walkSpeedZ + sp.walkOffsetZ) * sp.walkRangeZ;
-
-      sp.sprite.position.x = sp.originPos.x + posX;
-      sp.sprite.position.z = sp.originPos.z + posZ;
-
-      // 3. Calcula o vetor de velocidade (derivada da posição) para saber para onde está a olhar
-      const velX = sp.walkSpeedX * Math.cos(timeSec * sp.walkSpeedX + sp.walkOffsetX) * sp.walkRangeX;
-      const velZ = -sp.walkSpeedZ * Math.sin(timeSec * sp.walkSpeedZ + sp.walkOffsetZ) * sp.walkRangeZ;
-
-      // Ângulo do corpo no mundo
-      const facingAngle = Math.atan2(velZ, velX);
-
-      // Ângulo da câmara
-      const dx = camera.position.x - sp.sprite.position.x;
-      const dz = camera.position.z - sp.sprite.position.z;
-      const camAngle = Math.atan2(dz, dx);
-
-      // 4. DIREÇÃO DA SPRITE (Câmara MENOS Corpo)
-      // Resolve o balanço! O offset de PI/2 apenas alinha a imagem com os eixos X/Z.
-      let diff = camAngle - facingAngle - (Math.PI / 2);
-
-      // Normaliza rigidamente para ficar entre 0 e 2PI
-      while (diff < 0) diff += Math.PI * 2;
-      while (diff >= Math.PI * 2) diff -= Math.PI * 2;
-
-      const rows = 8;
-      let row = Math.floor((diff / (Math.PI * 2)) * rows) % rows;
-
-      sp.texture.offset.y = (rows - 1 - row) / rows;
-    }
-  });
   composer.render();
 }
 
