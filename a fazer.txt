@@ -1,17 +1,20 @@
 BUGS
-O retorno de quando volta do modo torre
+
 
 AJUSTES
 
 
 NOVIDADES
-- Habilidade nova igual a caixa do TNT do Crash
-- As salas multiplayer deveria ser fechadas após um tempo para evitar de ficar sala criada sem ninguem
 - Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
+- Criar habilidades exclusivas para os lideres pois estão muito fracos
+- Biomas (Eletrico, Pedra, Psiquico)
+- Habilidade nova igual a caixa do TNT do Crash
+- Corrigir a funcionalidade de boots ja existente na criacao de pista
+- As salas multiplayer deveria ser fechadas após um tempo para evitar de ficar sala criada sem ninguem
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
-- FASE 4 - Adicionar para visualizar o perfil de um outro jogador (Na tela de ranking ser possivel abrir um modal com o perfil do jogador)
-- FASE 4 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game_3.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
-- FASE 4 - Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
+- Adicionar para visualizar o perfil de um outro jogador (Na tela de ranking ser possivel abrir um modal com o perfil do jogador)
+- Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game_3.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
+- Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
 - Adicionar uma area no perfil do jogador de itens obtidos para poder equipar ou desequipar.;
 - Adicionar no filtro na garagem por região dos pokemons (talvez necessario add no banco as regioes pra cada kart)
 - Loja de consumiveis (Revives para torre, bordas para o perfil, avatares especiais)

@@ -588,7 +588,7 @@ function setupUIEvents() {
   const toolBtns = [
     { id: 'toolNodes', mode: 'nodes' },
     { id: 'toolItems', mode: 'items' },
-    // { id: 'toolBoosts', mode: 'boosts' }
+    { id: 'toolBoosts', mode: 'boosts' }
   ];
 
   toolBtns.forEach(t => {
@@ -622,20 +622,20 @@ function setupUIEvents() {
   };
 
   // Testar Pista no Jogo
-  document.getElementById('btnTest').onclick = () => {
-    if (!validateTrack()) return;
+  // document.getElementById('btnTest').onclick = () => {
+  //   if (!validateTrack()) return;
 
-    const trackData = getTrackExportData();
-    sessionStorage.setItem('pkart_custom_track_data', JSON.stringify(trackData));
+  //   const trackData = getTrackExportData();
+  //   sessionStorage.setItem('pkart_custom_track_data', JSON.stringify(trackData));
 
-    const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
-    const nick = (sessionStorage.getItem('pkart_nickname') || 'PILOTO').toUpperCase();
+  //   const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+  //   const nick = (sessionStorage.getItem('pkart_nickname') || 'PILOTO').toUpperCase();
 
-    // Passa o bioma na URL para o game.js aplicar a textura correta
-    const biome = trackData.biome || 'grass';
+  //   // Passa o bioma na URL para o game.js aplicar a textura correta
+  //   const biome = trackData.biome || 'grass';
 
-    window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=preview&biome=${biome}`;
-  };
+  //   window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=preview&biome=${biome}`;
+  // };
 
   // Salvar Pista (Abre Modal)
   document.getElementById('btnSave').onclick = () => {

@@ -1,6 +1,7 @@
 Versão 1.9.4
 Novos itens adicionados na loja.;
 Corrigido e adicionado novas funcionalidades no modo Torre.;
+Corrida multiplayer agora somente é iniciada caso tenha pelo menos 2 jogadores.;
 
 
 

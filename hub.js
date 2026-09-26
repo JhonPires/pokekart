@@ -515,14 +515,13 @@ function entrarNaCorrida(floorNumber) {
     document.body.style.opacity = '0';
 
     setTimeout(() => {
-        let urlDestino = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&mode=tower&players=1&slot=0&biome=${biome}`;
-        if (towerState.customTrack) {
-            urlDestino += `&customTrack=${towerState.customTrack}`;
-        } else if (towerState.track) {
-            urlDestino += `&track=${towerState.track}`;
-        }
+        // Atualiza o andar exato em que o jogador clicou no Hub
+        let towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
+        towerState.floor = floorNumber;
+        localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
 
-        window.location.href = urlDestino;
+        // Redireciona 100% LIMPO! Nenhuma informação na URL.
+        window.location.href = 'game.html';
     }, 500);
 }
 

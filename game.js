@@ -113,14 +113,26 @@ function createCloudSkyTexture() {
 
 const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
 
+// 1. Puxa dados do Jogador (Lobby)
+const playerNickname = (sessionStorage.getItem('pkart_nickname') || 'JOGADOR').toUpperCase();
+const selectedKartId = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+
+// 2. Puxa a configuração da partida (Torre ou Hub)
+const matchConfig = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
+
 const urlParams = new URLSearchParams(window.location.search);
-let aiDifficultyParam = urlParams.get('ai') || 'none';
-const playerNickname = (urlParams.get('nick') || 'JOGADOR').toUpperCase();
-const selectedKartId = urlParams.get('kart') || 'jolteon';
-const roomCodeParam = urlParams.get('room');
-const customTrackParam = urlParams.get('customTrack');
-const playerSlotParam = parseInt(urlParams.get('slot') || '0', 10);
-let totalPlayersParam = parseInt(urlParams.get('players') || '1', 10);
+
+// Pega a sala da URL ou, se não houver, busca direto na gaveta de memória!
+const roomCodeParam = urlParams.get('room') || matchConfig.room || null;
+
+if (roomCodeParam && (!matchConfig.mode || matchConfig.mode === 'solo')) {
+  matchConfig.mode = 'multi';
+}
+
+let aiDifficultyParam = matchConfig.ai || 'none';
+const customTrackParam = matchConfig.customTrack || null;
+const playerSlotParam = matchConfig.slot !== undefined ? parseInt(matchConfig.slot, 10) : 0;
+let totalPlayersParam = matchConfig.players !== undefined ? parseInt(matchConfig.players, 10) : 1;
 
 // --- SISTEMA DE SEGURANÇA DA TORRE ---
 let secureTowerState = {
@@ -132,39 +144,29 @@ let secureTowerState = {
 };
 
 function loadSecureTowerState() {
-  const modeParam = urlParams.get('mode');
-  if (modeParam !== 'tower') return;
+  if (matchConfig.mode !== 'tower') return;
 
   let loadedState = null;
 
-  // 1. Tenta ler a verdade absoluta do perfil do Supabase
+  // 1. Tenta ler do perfil do Supabase
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.tower_state) {
     loadedState = currentUserProfile.tower_state;
   }
-  // 2. Fallback para o LocalStorage gerido internamente
+  // 2. Fallback imediato para a memória local
   else {
-    const localState = localStorage.getItem('pkart_tower_state');
-    if (localState) {
-      try { loadedState = JSON.parse(localState); } catch (e) { }
-    }
+    loadedState = matchConfig;
   }
 
-  // Se encontrou dados salvos, funde-os. Se não, resgata da URL (útil para criar o 1º andar)
-  if (loadedState) {
+  // Funde os dados salvos com o estado de segurança
+  if (loadedState && Object.keys(loadedState).length > 0) {
     secureTowerState = { ...secureTowerState, ...loadedState };
-  } else {
-    secureTowerState.floor = parseInt(urlParams.get('floor') || '1', 10);
-    secureTowerState.maxFloors = parseInt(urlParams.get('maxFloors') || '5', 10);
-    secureTowerState.gymId = urlParams.get('gym') || 'ginasio_pedra';
-    secureTowerState.leader = decodeURIComponent(urlParams.get('leader') || 'LÍDER');
-    secureTowerState.leaderKart = urlParams.get('leaderkart') || urlParams.get('leaderKart') || 'jolteon';
   }
 }
 
 loadSecureTowerState();
 
-// --- FORÇA AS REGRAS BLINDADAS DA TORRE ---
-const modeParam = urlParams.get('mode');
+// Define o modo final
+const modeParam = matchConfig.mode || null;
 
 if (modeParam === 'tower') {
   const isBossFloor = secureTowerState.floor === secureTowerState.maxFloors;
@@ -445,7 +447,7 @@ const TRACK_PRESETS = {
 };
 
 // Captura a pista escolhida na URL. Se não houver, usa o circuitoE por padrão.
-const selectedTrackParam = urlParams.get('track') || 'circuitoE';
+const selectedTrackParam = matchConfig.track || 'circuitoE';
 
 function getTrackCurve() {
   const trackPoints = TRACK_PRESETS[selectedTrackParam] || TRACK_PRESETS.circuitoE;
@@ -601,7 +603,7 @@ const BIOME_CONFIGS = {
 };
 
 // Lê da URL (ex: ?biome=lava), se não tiver, usa 'grass'
-const currentBiome = urlParams.get('biome') || 'grass';
+const currentBiome = matchConfig.biome || 'grass';
 const biome = BIOME_CONFIGS[currentBiome] || BIOME_CONFIGS.grass;
 
 // ------------------------------------------------------------
@@ -2171,7 +2173,7 @@ window.addEventListener('keydown', (e) => {
 
 // --- NOVA FUNÇÃO DE PUNIÇÃO DA TORRE ---
 function registrarDerrotaTorre() {
-  const modeLocal = urlParams.get('mode');
+  const modeLocal = matchConfig.mode;
   // Só pune se estiver no modo torre e a corrida ainda não tiver acabado legitimamente
   if (modeLocal === 'tower' && corridaAtivaParaPunicao) {
     localStorage.setItem('pkart_tower_result', 'lose');
@@ -2731,7 +2733,7 @@ async function showFinishOverlay(place) {
   corridaAtivaParaPunicao = false; // Desativa punição ao terminar corretamente
 
   // --- SALVAMENTO BLINDADO DO MODO TORRE ---
-  const modeParam = urlParams.get('mode');
+  const modeParam = matchConfig.mode;
 
   // Lê o inventário para ver se temos o Revive
   let myInventory = {};
@@ -2763,15 +2765,16 @@ async function showFinishOverlay(place) {
 
       const nextFloor = currentFloor + 1;
 
-      // Agora passamos TODOS os dados para o próximo andar não esquecer quem é o líder
-      const towerState = {
-        gymId: currentGymId,
-        floor: nextFloor,
-        maxFloors: maxFloorsVal,
-        leader: leaderName,
-        leaderKart: leaderKartId
-      };
+      // Recupera o estado atual completo para não perder o bioma e a pista!
+      let towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
 
+      // Atualiza apenas os dados essenciais para o próximo andar
+      towerState.gymId = currentGymId;
+      towerState.floor = nextFloor;
+      towerState.maxFloors = maxFloorsVal;
+      towerState.leader = leaderName;
+      towerState.leaderKart = leaderKartId;
+      // O bioma, track e customTrack já estão lá dentro e continuam intactos!
       // 🛡️ Salva local e cria a "encomenda" garantida para o Lobby enviar ao Supabase
       localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
       localStorage.setItem('pkart_pending_tower_save', JSON.stringify(towerState));
@@ -2889,7 +2892,7 @@ async function showFinishOverlay(place) {
 
           // A MÁGICA: Pega a URL atual (com nick, bioma, etc.) e apenas troca "game.html" por "hub.html"
           btnVoltarHub.onclick = () => {
-            window.location.href = 'hub.html' + window.location.search;
+            window.location.href = 'hub.html';
           };
 
           buttonsContainer.appendChild(btnVoltarHub);
@@ -3037,7 +3040,7 @@ async function showFinishOverlay(place) {
       <span style="color:#94a3b8; font-size: 11px;">Volta mais rápida: <span style="color:#fff;">${formattedBestLap}</span> ${isNewLapRecord ? '<span style="color:#38bdf8;">⚡ RECORDE DE VOLTA!</span>' : ''}</span>
     `;
   // --- CÁLCULO DE MOEDAS E XP (PASSE DE BATALHA) ---
-  const currentTrackDifficulty = urlParams.get('difficulty') || 'easy'; // 'easy', 'normal', 'hard'
+  const currentTrackDifficulty = matchConfig.difficulty || 'easy'; // 'easy', 'normal', 'hard'
   const TRACK_DIFFICULTY_MULTIPLIERS = { easy: 1.0, normal: 1.5, hard: 2.0 };
   const trackMultiplier = TRACK_DIFFICULTY_MULTIPLIERS[currentTrackDifficulty] || 1.0;
 
@@ -3120,7 +3123,7 @@ async function showFinishOverlay(place) {
 
     if (place === 1) checkUnlock('first_win');
     if (typeof roomCodeParam !== 'undefined' && roomCodeParam) checkUnlock('social');
-    if (urlParams.get('mode') === 'tower' && place === 1) checkUnlock('tower_climber');
+    if (matchConfig.mode === 'tower' && place === 1) checkUnlock('tower_climber');
     if (novoSaldoCoins >= 2000) checkUnlock('rich');
 
     if (achvsModified) {
@@ -3131,7 +3134,7 @@ async function showFinishOverlay(place) {
     // 4. Progresso de Missões Diárias
     if (currentUserProfile.daily_missions && currentUserProfile.daily_missions.list) {
       let missionsModified = false;
-      const modeLocalParam = urlParams.get('mode');
+      const modeLocalParam = matchConfig.mode;
 
       currentUserProfile.daily_missions.list.forEach(mission => {
         if (mission.claimed) return; // Se já resgatou, ignora
@@ -4108,9 +4111,9 @@ let racePeer = null;
 let hostConn = null;
 const activeGuestConns = new Map();
 
-const _urlParams = new URLSearchParams(window.location.search);
-const _roomParam = _urlParams.get('room');
-const _slotParam = _urlParams.has('slot') ? parseInt(_urlParams.get('slot'), 10) : 0;
+
+const _roomParam = urlParams.get('room') || matchConfig.room || null;
+const _slotParam = matchConfig.slot !== undefined ? parseInt(matchConfig.slot, 10) : (urlParams.has('slot') ? parseInt(urlParams.get('slot'), 10) : 0);
 
 const isHost = Boolean(_roomParam) && _slotParam === 0;
 
@@ -4805,7 +4808,7 @@ function drawMinimap() {
 // ------------------------------------------------------------
 function spawnBots() {
   if (roomCodeParam && !isHost) return;
-  const modeParam = urlParams.get('mode');
+  const modeParam = matchConfig.mode;
   if (!roomCodeParam && aiDifficultyParam === 'none' && modeParam !== 'tower') return;
 
   const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
@@ -4859,8 +4862,8 @@ function spawnBots() {
     }
 
     // --- É O ÚLTIMO ANDAR! SPAWNA APENAS O LÍDER ---
-    const leaderName = decodeURIComponent(urlParams.get('leader') || 'LÍDER DE GINÁSIO');
-    const leaderKartId = urlParams.get('leaderkart') || urlParams.get('leaderKart') || 'jolteon';
+    const leaderName = matchConfig.leader || 'LÍDER DE GINÁSIO';
+    const leaderKartId = matchConfig.leaderKart || matchConfig.leaderkart || 'jolteon';
     const leaderKartData = KART_DATABASE.find(k => k.id === leaderKartId) || KART_DATABASE[0];
 
     const botSlot = 1; // Slot 1 para o bot largar logo atrás de você
@@ -5373,7 +5376,7 @@ window.addEventListener('keydown', (e) => {
       executarSaidaDaSala();
       corridaAtivaParaPunicao = false;
       setTimeout(() => { window.location.href = 'index.html'; }, 50);
-    } else if (urlParams.get('mode') === 'tower') {
+    } else if (matchConfig.mode === 'tower') {
       registrarDerrotaTorre(); // Reseta a torre ao dar F5
       corridaAtivaParaPunicao = false;
     }
@@ -5385,7 +5388,7 @@ window.addEventListener('pagehide', () => {
   if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     executarSaidaDaSala();
   }
-  if (urlParams.get('mode') === 'tower') {
+  if (matchConfig.mode === 'tower') {
     registrarDerrotaTorre(); // Reseta a torre ao fechar o navegador
   }
 });

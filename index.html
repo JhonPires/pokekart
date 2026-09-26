@@ -2888,6 +2888,25 @@
         }
         container.appendChild(slot);
       }
+      // --- TRAVA PARA IMPEDIR INICIAR SOLO NO MULTIPLAYER ---
+      const btnStartRace = document.getElementById('btnStartRace');
+      const statusHost = document.getElementById('lobbyStatusHost');
+
+      if (containerId === 'lobbyPlayersHost' && btnStartRace) {
+        if (players.length < 2) {
+          // Se houver apenas o Host (1 jogador), desativa o botão
+          btnStartRace.disabled = true;
+          btnStartRace.style.opacity = '0.5';
+          btnStartRace.style.cursor = 'not-allowed';
+          if (statusHost) statusHost.textContent = 'Aguardando mais jogadores para iniciar...';
+        } else {
+          // Se houver 2 ou mais, libera o botão
+          btnStartRace.disabled = false;
+          btnStartRace.style.opacity = '1';
+          btnStartRace.style.cursor = 'pointer';
+          if (statusHost) statusHost.textContent = 'Pronto para iniciar!';
+        }
+      }
     }
 
     function initHost(forcedCode = null) {
@@ -3124,33 +3143,43 @@
       const trackSelectEl = document.getElementById('trackSelect');
       const chosenTrack = trackId || (trackSelectEl ? trackSelectEl.value : 'circuitoE');
 
-      // NOVIDADE: Descobrir qual bioma usar
-      let finalBiome = 'grass'; // Grass é o padrão caso não encontre nada
+      let activePlayersCount = totalPlayers;
+      if (typeof lobbyPlayers !== 'undefined' && lobbyPlayers && lobbyPlayers.length > 0) {
+        activePlayersCount = lobbyPlayers.length;
+      }
 
+      let finalBiome = 'grass';
       if (paramBiome) {
-        // 1. Se o bioma foi passado diretamente como parâmetro na função
         finalBiome = paramBiome;
       } else if (!trackId && trackSelectEl) {
-        // 2. Se a pista veio do dropdown (select), tentamos ler o atributo "data-biome"
         const selectedOption = trackSelectEl.options[trackSelectEl.selectedIndex];
         if (selectedOption && selectedOption.dataset.biome) {
           finalBiome = selectedOption.dataset.biome;
         }
       }
 
-      // NOVIDADE: Adicionamos o &biome=${finalBiome} na URL base
-      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=${slot}&players=${totalPlayers}&biome=${finalBiome}`;
-
-      if (cleanRoom !== '') target += `&room=${cleanRoom}`;
+      // 1. Grava TUDO na memória, incluindo a 'room' oficial da partida!
+      const multiConfig = {
+        mode: 'multi',
+        room: cleanRoom, // <--- GUARDA A SALA AQUI TAMBÉM
+        players: activePlayersCount,
+        slot: slot,
+        biome: finalBiome
+      };
 
       if (chosenTrack) {
-        // Se for um dos circuitos padrão, envia &track=. Se for customizado do Supabase, envia &customTrack=
         if (['circuitoE', 'circuitoOval', 'circuitoZigueZague'].includes(chosenTrack)) {
-          target += `&track=${chosenTrack}`;
+          multiConfig.track = chosenTrack;
         } else {
-          target += `&customTrack=${chosenTrack}`;
+          multiConfig.customTrack = chosenTrack;
         }
       }
+
+      localStorage.setItem('pkart_tower_state', JSON.stringify(multiConfig));
+
+      // 2. URL 100% limpa apenas com a sala
+      let target = `game.html`;
+      if (cleanRoom !== '') target += `?room=${cleanRoom}`;
 
       window.location.href = target;
     }
@@ -3224,7 +3253,13 @@
     document.addEventListener('click', (e) => {
       const startBtn = e.target.closest('#btnStartRace');
       if (startBtn) {
-        e.preventDefault(); enableMobileExperience();
+        e.preventDefault();
+        // TRAVA DE SEGURANÇA: Se houver menos de 2 jogadores, cancela e avisa
+        if (lobbyPlayers.length < 2) {
+          alert("Você precisa de pelo menos mais 1 jogador na sala para iniciar o Multiplayer!");
+          return;
+        }
+        enableMobileExperience();
         const trackSelectEl = document.getElementById('trackSelect');
         const chosenTrack = trackSelectEl ? trackSelectEl.value : 'circuitoE';
 
@@ -3272,17 +3307,35 @@
       const selectedTrackOption = document.getElementById('trackSelectDropdown')?.selectedOptions[0];
       const trackDifficulty = selectedTrackOption ? selectedTrackOption.getAttribute('data-difficulty') : null;
 
-      // NOVIDADE: Lê o bioma escondido na opção selecionada
+      // Lê o bioma escondido na opção selecionada
       const trackBiome = selectedTrackOption && selectedTrackOption.dataset.biome ? selectedTrackOption.dataset.biome : 'grass';
 
-      let target = `game.html?nick=${encodeURIComponent(nick)}&kart=${kartId}&slot=0&ai=${diff}&players=1`;
-      if (chosenTrack) target += `&customTrack=${chosenTrack}`;
-      if (trackDifficulty) target += `&difficulty=${trackDifficulty}`;
+      // 1. Cria o objeto de configuração idêntico ao da torre, mas para o modo Solo
+      const soloConfig = {
+        mode: 'solo',
+        ai: diff,
+        players: 1,
+        slot: 0,
+        biome: trackBiome,
+        difficulty: trackDifficulty || 'easy'
+      };
 
-      // NOVIDADE: Adiciona o bioma na URL final
-      target += `&biome=${trackBiome}`;
+      // Define se é pista customizada ou oficial
+      if (chosenTrack) {
+        if (['circuitoE', 'circuitoOval', 'circuitoZigueZague'].includes(chosenTrack)) {
+          soloConfig.track = chosenTrack;
+        } else {
+          soloConfig.customTrack = chosenTrack;
+        }
+      } else {
+        soloConfig.track = 'circuitoE';
+      }
 
-      window.location.href = target;
+      // 2. Grava na gaveta de memória que o game.js lê
+      localStorage.setItem('pkart_tower_state', JSON.stringify(soloConfig));
+
+      // 3. Redireciona com a URL 100% LIMPA (apenas game.html)
+      window.location.href = 'game.html';
     };
 
     const changelogModal = document.getElementById('changelogModalOverlay');
@@ -5489,6 +5542,7 @@
           towerState.gymId = currentGym.id;
           towerState.biome = gymConfig.biome;
           towerState.leader = currentGym.leader;
+          towerState.leaderKart = currentGym.kartId;
           towerState.maxFloors = currentGym.maxFloors;
           towerState.mode = 'tower';
 
