@@ -1,15 +1,16 @@
 BUGS
-
+f5 ou atualizar tela dentro da corrida deve remover da corrida
 
 AJUSTES
-
+- Sinalizar que precisamos apertar a tecla R para escapar de algumas traps
+- Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
 
 NOVIDADES
-- Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
 - Criar habilidades exclusivas para os lideres pois estão muito fracos
 - Corrigir a funcionalidade de boots ja existente na criacao de pista
 - O boost colocado na pista deve ser em somente uma parte da pista igual é a pokebola onde devemos passar em uma parte para pegar
 - As salas multiplayer deveria ser fechadas após um tempo para evitar de ficar sala criada sem ninguem
+- Colocar para venda na loja os emojis, deixas alguns livres e outros sendo compraveis
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
@@ -35,3 +36,20 @@ Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon 
   "maxFloors": 5,
   "leaderKart": "onix"
 }
+
+
+Brock: Soltar "pedras" igual a gente soltamos a caixa R porem as pedras ao colidir para o Kart. Apos colidir ou X tempo a pedra some da pista. O lider não é atingido
+
+Misty: Poça d'agua ao passar por cima o kart fica X tempo com as curvas do kart muito MUITO leve, onde ao fazer uma curva ficaria dificil de completar. O lider não é atingido
+
+Lt. Surge: Ele solta uma descarga eletrica (um circulo eletrico na pista) onde quem passar toma stun. O lider não é atingido
+
+Erika: Solta raizes pela pista, ao passar com o kart dá lentidão e para remover a lentidão devemos apertar a tecla R varias vezes para remover. O lider não é atingido
+
+Koga: Libera uma cortina de fumaça ROXA (igual a que temos porem roxa) que pega a pista inteira, inverter o acelerador com a ré. O lider não é atingido
+
+Sabrina: Cria um vortex onde te puxa para o centro ao passar por perto dele. O lider não é atingido
+
+Blaine: O lider sempre vai ter um boost ao pegar a caixa na pista
+
+Giovanni: O lider sempre pega a caixa R ao pegar as caixas na pista. O lider não é atingido

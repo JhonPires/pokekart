@@ -2,10 +2,6 @@
 // POKEKART - MOTOR DO MODO HUB (hub.js)
 // =======================================================
 
-// =======================================================
-// POKEKART - MOTOR DO MODO HUB (hub.js)
-// =======================================================
-
 // 1. LER PARÂMETROS E ESTADO (Via Storage, sem URL)
 const nick = sessionStorage.getItem('pkart_nickname') || 'Player';
 const kartId = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
@@ -76,7 +72,7 @@ ctxCeu.fillRect(0, 0, 2, 512);
 const texturaCeu = new THREE.CanvasTexture(canvasCeu);
 
 // Cria um domo gigante à volta do mapa para o céu
-const ceuGeo = new THREE.SphereGeometry(180, 32, 16);
+const ceuGeo = new THREE.SphereGeometry(40 * maxFloors, 32, 16);
 const ceuMat = new THREE.MeshBasicMaterial({ map: texturaCeu, side: THREE.BackSide, fog: false });
 const domoCeu = new THREE.Mesh(ceuGeo, ceuMat);
 scene.add(domoCeu);
@@ -200,7 +196,7 @@ scene.add(mainRoad);
 // --- FAIXA BRANCA CENTRAL NA RUA ---
 // Cria várias pequenas faixas brancas ao longo da rua para formar a linha tracejada
 const faixaGeo = new THREE.PlaneGeometry(0.8, 4);
-const faixaMat = new THREE.MeshBasicMaterial({ color: (biome == 'water') ? 0x0a0a0a : 0xffffff });
+const faixaMat = new THREE.MeshBasicMaterial({ color: (biome == 'water' || biome == 'psychic') ? 0x0a0a0a : 0xffffff });
 
 const espacamentoFaixas = 16;
 const totalFaixas = Math.floor(compEstrada / espacamentoFaixas);
@@ -271,8 +267,8 @@ function carregarMundo() {
 
             playerKart.position.set(0, 0, -(espacamento) + 25);
             scene.add(playerKart);
+            setTimeout(() => esconderLoading(), 6000);
 
-            esconderLoading();
         },
         undefined,
         (err) => {

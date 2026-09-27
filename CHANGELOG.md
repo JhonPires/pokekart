@@ -1,5 +1,15 @@
 # Changelog - PokéKart
 
+## [1.9.4] - 27/09/2026
+- Adicionados novos itens à loja
+- Corrigidas e adicionadas novas funcionalidades ao modo Torre
+- A corrida multiplayer agora só será iniciada caso tenha pelo menos 2 jogadores
+- Adicionada a opção de visualizar o perfil de outro jogador
+- Adicionado um filtro na Garagem por região dos Pokémon
+- Adicionada uma nova habilidade: Caixa Rocket
+- Atualizada a HUD da corrida
+- Adicionadas novas habilidades exclusivas para os Líderes de Ginásio.
+
 ## [1.9.3] - 23/09/2026
 - Adicionado uma lista de salas abertas multiplayer.
 - Adicionado ao perfil do jogador as bordas, titulos, cores (nicknames e fumaça drift), efeitos e mensagens ao entrar na sala multiplayer.

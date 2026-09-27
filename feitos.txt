@@ -1,12 +1,12 @@
 Versão 1.9.4
-Novos itens adicionados na loja.;
-Corrigido e adicionado novas funcionalidades no modo Torre.;
-Corrida multiplayer agora somente é iniciada caso tenha pelo menos 2 jogadores.;
-Adicionado opção para visualizar o perfil de um outro jogador.;
-Adicionado um filtro na garagem por região dos pokemons.;
-Adicionado uma nova habilidade (Caixa Rocket).;
-Atualizado a HUD da corrida.;
-
+Adicionados novos itens à loja;
+Corrigidas e adicionadas novas funcionalidades ao modo Torre;
+A corrida multiplayer agora só será iniciada caso tenha pelo menos 2 jogadores;
+Adicionada a opção de visualizar o perfil de outro jogador;
+Adicionado um filtro na Garagem por região dos Pokémon;
+Adicionada uma nova habilidade: Caixa Rocket;
+Atualizada a HUD da corrida;
+Adicionadas novas habilidades exclusivas para os Líderes de Ginásio.
 
 
 

@@ -2005,6 +2005,10 @@ let rocketBoxMesh = null;
 let temporizadorRocket = null;
 let intervaloPiscoRocket = null;
 
+let isRooted = false;
+let rootClicks = 0;
+const ROOT_CLIQUES_NECESSARIOS = 6;
+
 // --- GERADOR DA TEXTURA "R" ---
 function criarTexturaEquipeRocket() {
   const canvas = document.createElement('canvas');
@@ -2139,7 +2143,7 @@ function verificarColisaoRocketBox() {
       const posKart2D = new THREE.Vector2(kart.position.x, kart.position.z);
       const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
 
-      if (posKart2D.distanceTo(posCaixa2D) < 4.0) {
+      if (posKart2D.distanceTo(posCaixa2D) < 2) {
         removerCaixaDaPista(i);
         ativarArmadilhaRocket(); // Ativa em você
         caixaRemovida = true;
@@ -2155,6 +2159,9 @@ function verificarColisaoRocketBox() {
           const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
 
           if (posBot2D.distanceTo(posCaixa2D) < 4.0) {
+            if (bot.nickname === 'GIOVANNI') {
+              continue; // Ignora o Giovanni, não remove a caixa e não ativa o efeito nele
+            }
             removerCaixaDaPista(i);
             ativarArmadilhaBot(bot); // Ativa no bot que passou por cima!
             caixaRemovida = true;
@@ -2859,15 +2866,30 @@ function updatePhysics(dt) {
     return;
   }
 
+  // EFEITO ERIKA: O kart fica com força de atrito extrema, mal conseguindo andar
+  if (isRooted) {
+    physics.speed *= 0.4; // Corta a velocidade drasticamente a cada frame
+  }
+
   if (isControlInverted) {
     controlInvertTimer -= dt;
     if (controlInvertTimer <= 0) isControlInverted = false;
   }
+  // 1. Atualiza o novo temporizador
+  if (isGasBrakeInverted) {
+    gasBrakeInvertTimer -= dt;
+    if (gasBrakeInvertTimer <= 0) isGasBrakeInverted = false;
+  }
 
   const raceOver = raceTrackers.get('local')?.finished;
 
-  const forward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
-  const backward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
+  // 2. Lê os botões originais cruzados com a variável de inversão
+  const rawForward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
+  const rawBackward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
+
+  // 3. Inverte Acelerador e Freio/Ré se o efeito estiver ativo
+  const forward = isGasBrakeInverted ? rawBackward : rawForward;
+  const backward = isGasBrakeInverted ? rawForward : rawBackward;
 
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
@@ -2899,6 +2921,11 @@ function updatePhysics(dt) {
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
   let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
+  // EFEITO MISTY: Aquaplanagem (direção extremamente sensível/deslizante)
+  if (physics.aquaplaneTimer > 0) {
+    physics.aquaplaneTimer -= dt;
+    turnInput *= 3.8; // Multiplica quase 4x a resposta da curva!
+  }
 
   if (physics.speed < -0.1) {
     turnInput *= -1;
@@ -3743,6 +3770,40 @@ const SKILLS = {
   ROCKET_BOX: {
     id: 'ROCKET_BOX', name: 'Armadilha Rocket',
     icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 32px; font-weight: 900; font-family: Arial, sans-serif; color: #ef4444; text-shadow: 2px 2px 0px #111;">R</div>'
+  },
+  // NOVA HABILIDADE DO BROCK
+  BROCK_ROCK: {
+    id: 'BROCK_ROCK', name: 'Pedra do Brock',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🪨</div>'
+  },
+  // NOVA HABILIDADE DA MISTY
+  MISTY_WATER: {
+    id: 'MISTY_WATER', name: 'Poça da Misty',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">💧</div>'
+  },
+  // NOVA HABILIDADE DO LT. SURGE
+  SURGE_SHOCK: {
+    id: 'SURGE_SHOCK', name: 'Armadilha Elétrica',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">⚡</div>'
+  },
+  // NOVA HABILIDADE DA ERIKA
+  ERIKA_ROOTS: {
+    id: 'ERIKA_ROOTS', name: 'Raízes Emaranhadas',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌿</div>'
+  },
+  // NOVA HABILIDADE DO KOGA
+  KOGA_SMOKE: {
+    id: 'KOGA_SMOKE', name: 'Névoa Tóxica',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🟣</div>'
+  },
+  // NOVA HABILIDADE DA SABRINA
+  SABRINA_VORTEX: {
+    id: 'SABRINA_VORTEX', name: 'Vórtice Psíquico',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌀</div>'
+  },
+  BLAINE_BOOST: {
+    id: 'BLAINE_BOOST', name: 'Boost de Fogo',
+    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🔥</div>'
   }
 };
 
@@ -3750,6 +3811,9 @@ let currentItem = null;
 let isShieldActive = false;
 let isControlInverted = false;
 let controlInvertTimer = 0;
+// NOVAS VARIÁVEIS PARA O EFEITO DO KOGA
+let isGasBrakeInverted = false;
+let gasBrakeInvertTimer = 0;
 
 function createPokeballTexture() {
   const canvas = document.createElement('canvas');
@@ -3871,9 +3935,34 @@ function updateItemBoxes(dt) {
         disableItemBox(box.id);
 
         // Sorteia um item para o bot (incluindo a ROCKET_BOX)
-        const skillKeys = Object.keys(SKILLS);
-        const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
-        bot.currentItem = SKILLS[randomKey];
+        let selectedSkill = null;
+
+        // SISTEMA DE HABILIDADES EXCLUSIVAS DOS LÍDERES
+        if (bot.nickname === 'BROCK') {
+          selectedSkill = SKILLS.BROCK_ROCK;
+        } else if (bot.nickname === 'MISTY') {
+          selectedSkill = SKILLS.MISTY_WATER;
+        } else if (bot.nickname === 'LT. SURGE') {
+          selectedSkill = SKILLS.SURGE_SHOCK;
+        } else if (bot.nickname === 'ERIKA') {
+          selectedSkill = SKILLS.ERIKA_ROOTS;
+        } else if (bot.nickname === 'KOGA') {
+          selectedSkill = SKILLS.KOGA_SMOKE;
+        } else if (bot.nickname === 'SABRINA') {
+          selectedSkill = SKILLS.SABRINA_VORTEX;
+        } else if (bot.nickname === 'BLAINE') {
+          selectedSkill = SKILLS.BLAINE_BOOST;
+        } else if (bot.nickname === 'GIOVANNI') {
+          selectedSkill = SKILLS.ROCKET_BOX;
+        }
+        // Se não for líder, pega item aleatório
+        else {
+          const skillKeys = Object.keys(SKILLS);
+          const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+          selectedSkill = SKILLS[randomKey];
+        }
+
+        bot.currentItem = selectedSkill;
         bot.itemUseTimer = 1.0 + Math.random() * 2.0;
         break;
       }
@@ -3882,7 +3971,14 @@ function updateItemBoxes(dt) {
 }
 
 function getItemFromBox() {
+  // Pega todas as chaves de habilidades
   let skillKeys = Object.keys(SKILLS);
+
+  // LISTA DE HABILIDADES EXCLUSIVAS DOS LÍDERES (Removidas do sorteio geral do jogador)
+  const liderSkills = ['BROCK_ROCK', 'MISTY_WATER', 'SURGE_SHOCK', 'ERIKA_ROOTS', 'KOGA_SMOKE', 'SABRINA_VORTEX', 'BLAINE_BOOST'];
+
+  // Filtra para remover as habilidades de líderes do array de sorteio
+  skillKeys = skillKeys.filter(key => !liderSkills.includes(key));
 
   // Calcula a posição atual do jogador na corrida
   const racers = updateStandings();
@@ -3934,7 +4030,189 @@ function createTrapMesh(trapData) {
     });
     return;
   } else {
-    // Se for LODO
+    // Se for a PEDRA DO BROCK
+    if (trapData.type === 'ROCK') {
+      const rockGeo = new THREE.DodecahedronGeometry(0.8, 0); // Formato de pedregulho
+      const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.9, flatShading: true });
+      const rockMesh = new THREE.Mesh(rockGeo, rockMat);
+
+      rockMesh.position.set(trapData.x, 0.4, trapData.z);
+      rockMesh.rotation.set(Math.random(), Math.random(), Math.random());
+      scene.add(rockMesh);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: rockMesh,
+        type: trapData.type,
+        active: true,
+        life: 60.0, // A pedra some sozinha após 8 segundos
+        owner: trapData.owner // O líder dono da pedra
+      });
+      return;
+    }
+    // Se for a POÇA DA MISTY
+    if (trapData.type === 'WATER') {
+      const group = new THREE.Group();
+      // Material de água translúcido com prevenção de Z-fighting no asfalto
+      const waterMat = new THREE.MeshBasicMaterial({
+        color: 0x0ea5e9, transparent: true, opacity: 0.7,
+        depthWrite: false, side: THREE.DoubleSide,
+        polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
+      });
+
+      // Cria 3 círculos sobrepostos para parecer uma poça irregular
+      for (let i = 0; i < 3; i++) {
+        const radius = i === 0 ? 1.4 : 0.8 + Math.random() * 0.5;
+        const geo = new THREE.CircleGeometry(radius, 16);
+        geo.rotateX(-Math.PI / 2);
+        const mesh = new THREE.Mesh(geo, waterMat);
+
+        const angle = Math.random() * Math.PI * 2;
+        const dist = i === 0 ? 0 : 0.5;
+        mesh.position.set(Math.cos(angle) * dist, 0.05, Math.sin(angle) * dist);
+        group.add(mesh);
+      }
+
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        life: 60.0,
+        owner: trapData.owner
+      });
+      return;
+    }
+    // Se for a ARMADILHA ELÉTRICA DO SURGE
+    if (trapData.type === 'SHOCK') {
+      const group = new THREE.Group();
+
+      // Anel no chão
+      const ringGeo = new THREE.RingGeometry(1.2, 1.8, 16);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: 0xffff00, transparent: true, opacity: 0.8,
+        side: THREE.DoubleSide, depthWrite: false
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.rotation.x = -Math.PI / 2;
+      ringMesh.position.y = 0.05;
+      group.add(ringMesh);
+
+      // Núcleo de energia flutuante
+      const coreGeo = new THREE.OctahedronGeometry(0.5, 0);
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+      coreMesh.position.y = 0.6;
+      group.add(coreMesh);
+
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        life: 60.0, // Fica 10 segundos na pista
+        owner: trapData.owner,
+        coreMesh: coreMesh // Guardamos o núcleo para o fazer piscar na animação
+      });
+      return;
+    }
+
+    // Se forem as RAÍZES DA ERIKA
+    if (trapData.type === 'ROOTS') {
+      const group = new THREE.Group();
+      const rootGeo = new THREE.CylinderGeometry(0.12, 0.12, 3.5, 6);
+      const rootMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.9 }); // Verde escuro rústico
+
+      // Cria 4 galhos cruzados formando um emaranhado
+      for (let i = 0; i < 4; i++) {
+        const mesh = new THREE.Mesh(rootGeo, rootMat);
+        mesh.rotation.set(Math.PI / 2, 0, Math.random() * Math.PI); // Deitado no chão em ângulos aleatórios
+        mesh.position.set((Math.random() - 0.5) * 0.5, 0.1, (Math.random() - 0.5) * 0.5);
+        group.add(mesh);
+      }
+
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        life: 60.0,
+        owner: trapData.owner
+      });
+      return;
+    }
+
+    // Se for a NÉVOA DO KOGA
+    if (trapData.type === 'PURPLE_SMOKE') {
+      const group = new THREE.Group();
+      group.position.set(trapData.x, 0, trapData.z);
+      scene.add(group);
+
+      // Gera a nuvem volumétrica forçando a cor roxa e uma grande expansão
+      for (let p = 0; p < 40; p++) {
+        spawnAmbientPuff(new THREE.Vector3(trapData.x, 0.2, trapData.z), {
+          color: 0x7e22ce,       // Roxo escuro/tóxico
+          opacity: 0.65,
+          scale: 4.5,            // Partículas grandes
+          scaleVariance: 2.0,
+          riseSpeed: 0.15,
+          riseVariance: 0.2,
+          growth: 0.7,
+          life: 3.5,
+          spread: 9.0            // O segredo para cobrir a pista inteira!
+        });
+      }
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        type: trapData.type,
+        active: true,
+        puffTimer: 0,
+        life: 4.0,
+        owner: trapData.owner
+      });
+      return;
+    }
+
+    if (trapData.type === 'VORTEX') {
+      const group = new THREE.Group();
+      group.position.set(trapData.x, 0.1, trapData.z);
+
+      // Cria um anel roxo escuro/preto para o vórtice
+      const geometry = new THREE.TorusGeometry(2, 0.4, 16, 100);
+      const material = new THREE.MeshBasicMaterial({
+        color: 0x4a0072,
+        transparent: true,
+        opacity: 0.8
+      });
+      const vortexRing = new THREE.Mesh(geometry, material);
+      vortexRing.rotation.x = Math.PI / 2; // Deita o anel no chão
+      group.add(vortexRing);
+
+      scene.add(group);
+
+      placedTraps.push({
+        id: trapData.id,
+        mesh: group,
+        coreMesh: vortexRing, // Guardamos para rodar na animação
+        type: trapData.type,
+        active: true,
+        life: 6.0, // O Vórtice dura 6 segundos na pista
+        owner: trapData.owner
+      });
+      return;
+    }
+
     if (trapData.type === 'LODO') {
       const group = new THREE.Group();
       const count = 6;
@@ -4032,22 +4310,67 @@ function dropTrapOnTrack(type) {
 function removeTrapMesh(trapId) {
   const index = placedTraps.findIndex(t => t.id === trapId);
   if (index !== -1) {
-    scene.remove(placedTraps[index].mesh);
+    const trap = placedTraps[index];
+
+    // Força a desativação imediata para travar qualquer colisão pendente
+    trap.active = false;
+
+    if (trap.mesh) {
+      scene.remove(trap.mesh);
+      // Desfaz a geometria e materiais de todos os filhos do grupo para limpar a memória
+      trap.mesh.traverse((child) => {
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) {
+          if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
+          else child.material.dispose();
+        }
+      });
+    }
+
     placedTraps.splice(index, 1);
   }
 }
 
 function updateTraps(dt) {
-  placedTraps.forEach((trap) => {
-    if (!trap.active) return;
-    // Faz a fumaça (ou armadilha com tempo) sumir após expirar
+  // O loop reverso evita erros ao remover itens do array durante a execução
+  for (let i = placedTraps.length - 1; i >= 0; i--) {
+    const trap = placedTraps[i];
+    if (!trap || !trap.active) continue;
+
+    // 1. Faz a fumaça (ou armadilha com tempo) sumir após expirar
     if (trap.life !== undefined) {
       trap.life -= dt;
       if (trap.life <= 0) {
         trap.active = false;
         removeTrapMesh(trap.id);
-        return; // Sai do loop para essa armadilha
+        continue; // Vai para a próxima armadilha em vez de dar erro
       }
+    }
+
+    // 2. Animações e Emissão de Partículas
+    if (trap.type === 'SHOCK' && trap.coreMesh) {
+      trap.mesh.rotation.y += dt * 8; // Roda rápido
+      // Pisca entre branco e amarelo
+      trap.coreMesh.material.color.setHex(Math.random() > 0.5 ? 0xffff00 : 0xffffff);
+    }
+
+    if (trap.type === 'PURPLE_SMOKE') {
+      trap.puffTimer += dt;
+      if (trap.puffTimer > 0.2) {
+        trap.puffTimer = 0;
+        spawnAmbientPuff(trap.mesh.position.clone().setY(0.15), {
+          color: 0x7e22ce, opacity: 0.7, scale: 2.5, scaleVariance: 1.5,
+          riseSpeed: 0.4, riseVariance: 0.25, growth: 1.0, growthVariance: 0.8,
+          life: 2.0, lifeVariance: 0.9, spread: 8.5
+        });
+      }
+    }
+
+    if (trap.type === 'VORTEX' && trap.coreMesh) {
+      trap.coreMesh.rotation.z -= dt * 6; // Gira o anel rapidamente
+      // Efeito de pulsar o tamanho
+      const scale = 1.0 + Math.sin(Date.now() * 0.01) * 0.2;
+      trap.mesh.scale.set(scale, scale, scale);
     }
 
     if (trap.type === 'FUMACA') {
@@ -4072,38 +4395,105 @@ function updateTraps(dt) {
       }
     }
 
-    const hitRadius = trap.type === 'FUMACA' ? 2.0 : 1.8;
+    // 3. Raio de Colisão
+    const hitRadius = trap.type === 'PURPLE_SMOKE' ? 7.0 :
+      (trap.type === 'VORTEX' ? 4.0 :
+        (trap.type === 'FUMACA' ? 2.0 :
+          (trap.type === 'ROCK' || trap.type === 'WATER' || trap.type === 'ROOTS' ? 1.6 :
+            (trap.type === 'SHOCK' ? 1.7 : 1.8))));
 
+    // 4. Verificação de colisão com o JOGADOR
     if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
-      if (trap.type !== 'FUMACA') {
+
+      if (trap.type === 'PURPLE_SMOKE' && !trap.isDissipating) {
+        trap.isDissipating = true;
+        trap.life = 1.0; // Força o tempo de vida restante para 1 segundo
+        sendNetworkEvent({ t: 'dissipate_trap', trapId: trap.id });
+      } else if (trap.type === 'ROCK' || trap.type === 'ICE' || trap.type === 'WATER' || trap.type === 'SHOCK' || trap.type === 'ROOTS') {
         trap.active = false;
         removeTrapMesh(trap.id);
         sendNetworkEvent({ t: 'destroy_trap', trapId: trap.id });
       }
+
       if (!isShieldActive) {
         if (trap.type === 'ICE') { physics.speed = 0; physics.spinTimer = 0.8; }
         else if (trap.type === 'LODO') { isControlInverted = true; controlInvertTimer = 3.0; }
         else if (trap.type === 'FUMACA') { physics.speed *= 0.85; }
+        else if (trap.type === 'ROCK') {
+          physics.speed = 0;
+          physics.stunTimer = 1.0;
+          triggerSparkEffect(kart.position);
+        } else if (trap.type === 'WATER') {
+          physics.aquaplaneTimer = 3.5;
+        } else if (trap.type === 'SHOCK') {
+          physics.speed = 0;
+          physics.stunTimer = 1.5;
+          triggerSparkEffect(kart.position);
+        } else if (trap.type === 'ROOTS') {
+          isRooted = true;
+          rootClicks = 0;
+          if (typeof digWarningContainer !== 'undefined') {
+            digWarningContainer.innerHTML = '🌿 PRESO! APERTE "R" VÁRIAS VEZES! 🌿';
+            digWarningContainer.style.background = 'rgba(20, 83, 45, 0.9)';
+            digWarningContainer.style.display = 'block';
+          }
+        } else if (trap.type === 'PURPLE_SMOKE') {
+          // Garante que a penalidade aplique apenas uma vez no momento do impacto
+          if (!trap.affectedKart) {
+            trap.affectedKart = true;
+            isGasBrakeInverted = true; // Inverte apenas o acelerador e ré!
+            gasBrakeInvertTimer = 2.5; // Duração da confusão de motor
+          }
+        } else if (trap.type === 'VORTEX') {
+          // Calcula a distância exata entre o kart e o centro do vórtice
+          const dist = kart.position.distanceTo(trap.mesh.position);
+
+          if (dist < 1.5) {
+            // Se chegou no centro, destrói o vórtice e liberta o kart
+            trap.active = false;
+            removeTrapMesh(trap.id);
+          } else {
+            // Se ainda não chegou no centro, continua puxando mais fraco
+            physics.speed *= 0.85;
+            kart.rotation.y += 0.15;
+
+            const pullDir = new THREE.Vector3().subVectors(trap.mesh.position, kart.position).normalize();
+            kart.position.addScaledVector(pullDir, 5 * dt); // Força reduzida de 8 para 5
+          }
+        }
       }
     }
 
+    // 5. Verificação de colisão com BOTS
     for (const [id, bot] of remoteKarts.entries()) {
       if (!bot.isBot || bot.finished || !trap.active) continue;
 
+      // IMUNIDADE: Se o bot for o dono da armadilha, ignora a colisão
+      if (trap.owner === id) continue;
+
       if (trap.mesh.position.distanceTo(bot.obj.group.position) < hitRadius) {
-        if (trap.type !== 'FUMACA') {
+
+        // Dissipa a fumaça se o bot encostar
+        if (trap.type === 'PURPLE_SMOKE' && !trap.isDissipating) {
+          trap.isDissipating = true;
+          trap.life = 1.0;
+        } else if (trap.type !== 'FUMACA' && trap.type !== 'PURPLE_SMOKE') {
+          // Destrói as outras no primeiro toque
           trap.active = false;
           removeTrapMesh(trap.id);
         }
+
         if (bot.shieldTimer <= 0) {
           if (trap.type === 'ICE') { bot.speed = 0; bot.spinTimer = 0.8; }
           else if (trap.type === 'LODO') { bot.speed *= 0.4; bot.poisonTimer = 3.0; }
           else if (trap.type === 'FUMACA') { bot.speed *= 0.85; }
+          else if (trap.type === 'ROCK') { bot.speed = 0; bot.stunTimer = 0.5; }
+          else if (trap.type === 'WATER') { bot.aquaplaneTimer = 3.5; }
         }
         break;
       }
     }
-  });
+  }
 }
 
 function triggerSparkEffect(targetPos) {
@@ -4526,12 +4916,26 @@ window.addEventListener('keydown', (e) => {
 
   // --- LÓGICA DE DESARME DA CAIXA ROCKET (tecla R) ---
   // Utilizamos o toLowerCase() para garantir que funciona mesmo se o Caps Lock estiver ativo
-  if (e.key.toLowerCase() === 'r' && rocketBoxAtiva) {
-    rocketBoxCliques++;
+  if (e.key.toLowerCase() === 'r') {
+    if (rocketBoxAtiva) {
+      rocketBoxCliques++;
+      if (rocketBoxCliques >= CLIQUES_NECESSARIOS) {
+        desarmarRocketBox();
+      }
+    }
 
-    // Se atingir o número necessário de cliques, desarma antes de o tempo acabar
-    if (rocketBoxCliques >= CLIQUES_NECESSARIOS) {
-      desarmarRocketBox();
+    if (isRooted) {
+      rootClicks++;
+      if (rootClicks >= ROOT_CLIQUES_NECESSARIOS) {
+        isRooted = false; // Soltou-se!
+
+        // Restaura a UI do alerta de volta ao normal (para quando o ataque DIG vier)
+        if (typeof digWarningContainer !== 'undefined') {
+          digWarningContainer.style.display = 'none';
+          digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
+          digWarningContainer.style.background = 'rgba(185, 28, 28, 0.85)';
+        }
+      }
     }
   }
 });
@@ -4539,7 +4943,7 @@ window.addEventListener('keydown', (e) => {
 function useEquippedSkill(skill) {
   switch (skill.id) {
     case 'TURBO':
-      physics.turboTimer = 2.5 * (physics.turboBonus || 1.0);
+      physics.turboTimer = 2.0 * (physics.turboBonus || 1.0);
       break;
 
     case 'SHIELD':
@@ -5620,7 +6024,7 @@ function updateBots(dt) {
 function useBotSkill(botId, bot, skill) {
   switch (skill.id) {
     case 'TURBO':
-      bot.turboTimer = 2.5 * (bot.stats.turboBonus || 1.0);
+      bot.turboTimer = 2.0 * (bot.stats.turboBonus || 1.0);
       break;
     case 'SHIELD':
       bot.shieldTimer = 5.0;
@@ -5732,6 +6136,43 @@ function useBotSkill(botId, bot, skill) {
       caixaBotMesh.position.set(trapPosBot.x, 0.3, trapPosBot.z);
       scene.add(caixaBotMesh);
       armadilhasRocketNaPista.push(caixaBotMesh);
+      break;
+
+    case 'BROCK_ROCK':
+      // O bot solta a pedra atrás dele na pista
+      const backVectorRock = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosRock = bot.obj.group.position.clone().add(backVectorRock);
+
+      // Passamos o 'owner: botId' para ele ficar imune à própria armadilha
+      createTrapMesh({ id: botId + '-rock-' + Math.random(), x: trapPosRock.x, z: trapPosRock.z, type: 'ROCK', owner: botId });
+      break;
+    case 'MISTY_WATER':
+      const backVectorWater = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosWater = bot.obj.group.position.clone().add(backVectorWater);
+      createTrapMesh({ id: botId + '-water-' + Math.random(), x: trapPosWater.x, z: trapPosWater.z, type: 'WATER', owner: botId });
+      break;
+    case 'SURGE_SHOCK':
+      const backVectorShock = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosShock = bot.obj.group.position.clone().add(backVectorShock);
+      createTrapMesh({ id: botId + '-shock-' + Math.random(), x: trapPosShock.x, z: trapPosShock.z, type: 'SHOCK', owner: botId });
+      break;
+    case 'ERIKA_ROOTS':
+      const backVectorRoots = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosRoots = bot.obj.group.position.clone().add(backVectorRoots);
+      createTrapMesh({ id: botId + '-roots-' + Math.random(), x: trapPosRoots.x, z: trapPosRoots.z, type: 'ROOTS', owner: botId });
+      break;
+    case 'KOGA_SMOKE':
+      const backVectorKoga = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosKoga = bot.obj.group.position.clone().add(backVectorKoga);
+      createTrapMesh({ id: botId + '-koga-' + Math.random(), x: trapPosKoga.x, z: trapPosKoga.z, type: 'PURPLE_SMOKE', owner: botId });
+      break;
+    case 'SABRINA_VORTEX':
+      const backVectorVortex = new THREE.Vector3(0, 0, -2.5).applyAxisAngle(new THREE.Vector3(0, 1, 0), bot.heading);
+      const trapPosVortex = bot.obj.group.position.clone().add(backVectorVortex);
+      createTrapMesh({ id: botId + '-vortex-' + Math.random(), x: trapPosVortex.x, z: trapPosVortex.z, type: 'VORTEX', owner: botId });
+      break;
+    case 'BLAINE_BOOST':
+      bot.turboTimer = 1.5 * (bot.stats.turboBonus || 1.0);
       break;
   }
 }

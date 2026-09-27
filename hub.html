@@ -19,7 +19,13 @@
         #loadingScreen {
             position: absolute;
             inset: 0;
-            background: #050b16;
+
+            /* Imagem de fundo com uma leve máscara escura para destacar o texto */
+            background: linear-gradient(rgba(5, 11, 22, 0.7), rgba(5, 11, 22, 0.7)), url('img/fundo2.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -148,6 +154,160 @@
             animation: pulseGlow 2s infinite;
         }
 
+
+
+        /* NOVO CONTÊINER INFERIOR PARA O LOADING */
+        #loading-wrapper {
+            position: absolute;
+            bottom: 8%;
+            /* Fica na parte inferior */
+            left: 50%;
+            transform: translateX(-50%);
+            /* Centraliza perfeitamente */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            z-index: 10000;
+        }
+
+        /* TÍTULO CARREGANDO CORRIDA */
+        .loading-title {
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* BARRA EXTERNA (Borda Azul Neon) */
+        .loading-bar-container {
+            position: relative;
+            width: 550px;
+            max-width: 85vw;
+            height: 30px;
+            background: rgba(4, 15, 35, 0.85);
+            border: 2px solid #00e5ff;
+            border-radius: 20px;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.3);
+            display: flex;
+            align-items: center;
+            padding: 3px;
+            /* Espaço para o preenchimento interno */
+        }
+
+        /* LINHAS LATERAIS NEON (Estilo Corrida) */
+        .loading-bar-container::before,
+        .loading-bar-container::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            height: 2px;
+            background: #00e5ff;
+            box-shadow: 0 0 8px #00e5ff;
+        }
+
+        .loading-bar-container::before {
+            left: -60px;
+        }
+
+        .loading-bar-container::after {
+            right: -60px;
+        }
+
+        /* PREENCHIMENTO CIANO (Efeito de Vidro/Brilho) */
+        /* PREENCHIMENTO CIANO (Sincronizado em 6.5 segundos) */
+        .loading-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(180deg, #a6f5ff 0%, #00d4ff 40%, #0088cc 100%);
+            border-radius: 15px;
+            box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.8);
+            /* Duração exata de 6.5s, parando em 98% para aguardar o fechamento do mundo */
+            animation: fakeLoad 8.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        }
+
+        /* POKÉBOLA EM CSS PURO NA DIREITA */
+        .pokeball-icon {
+            position: absolute;
+            right: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background-color: white;
+            border: 3px solid #001f3f;
+            border-radius: 50%;
+            overflow: hidden;
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.8);
+            z-index: 2;
+        }
+
+        .pokeball-icon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50%;
+            background: #ff0000;
+            /* Parte vermelha */
+            border-bottom: 3px solid #001f3f;
+        }
+
+        .pokeball-icon::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px;
+            height: 12px;
+            background: white;
+            /* Botão central */
+            border: 3px solid #001f3f;
+            border-radius: 50%;
+            box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        /* DICA EM CARROSSEL EMBAIXO DA BARRA */
+        #loadingTip {
+            margin-top: 15px;
+            font-size: 15px;
+            color: #d6f9ff;
+            font-weight: 500;
+            text-align: center;
+            transition: opacity 0.5s ease-in-out;
+            opacity: 1;
+            text-shadow: 0 0 5px rgba(0, 229, 255, 0.4);
+        }
+
+        .fade-oculto {
+            opacity: 0 !important;
+        }
+
+        /* Adicione esta classe para o controle do JS */
+        .fade-oculto {
+            opacity: 0 !important;
+        }
+
+        @keyframes fadeInOut {
+            0% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
         @keyframes pulseGlow {
 
             0%,
@@ -159,14 +319,49 @@
                 box-shadow: 0 0 20px rgba(56, 189, 248, 0.6);
             }
         }
+
+        /* ANIMAÇÃO DE PREENCHIMENTO EM 6.5 SEGUNDOS */
+        @keyframes fakeLoad {
+            0% {
+                width: 0%;
+            }
+
+            30% {
+                width: 45%;
+            }
+
+            70% {
+                width: 78%;
+            }
+
+            95% {
+                width: 96%;
+            }
+
+            100% {
+                width: 98%;
+            }
+        }
     </style>
 </head>
 
 <body>
 
     <div id="loadingScreen">
-        <div style="font-size: 40px; margin-bottom: 15px; animation: pulseGlow 1s infinite;">🚗</div>
-        <div>GERANDO MUNDO...</div>
+
+        <!-- O NOVO GRUPO QUE FICA NA PARTE DE BAIXO -->
+        <div id="loading-wrapper">
+            <div class="loading-title">🏁 CARREGANDO... 🏁</div>
+
+            <div class="loading-bar-container">
+                <div class="loading-bar-fill"></div>
+                <div class="pokeball-icon"></div> <!-- Desenhada via CSS -->
+            </div>
+
+            <!-- As dicas continuarão funcionando aqui com o seu script -->
+            <div id="loadingTip">Preparando a pista para a sua aventura...</div>
+        </div>
+
     </div>
 
     <div id="ui-container">
@@ -199,6 +394,45 @@
     <!-- Injeta a música do jogo -->
     <script src="music.js"></script>
     <script src="hub.js"></script>
+    <!-- Script das Dicas de Loading -->
+    <!-- Script das Dicas de Loading em Carrossel -->
+    <!-- Script das Dicas de Loading em Carrossel (Corrigido) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dicas = [
+                "DICA: Ficou preso? Pressione a tecla 'R' rapidamente para escapar de armadilhas!",
+                "DICA: O Vórtice da Sabrina te puxa para o centro. Tente manter a distância!",
+                "DICA: Giovanni é o chefe da Máfia e é imune às Caixas Rocket. Cuidado!",
+                "A corrida não é apenas sobre velocidade, mas sobre quem domina as curvas.",
+                "Mantenha o foco. A vitória está logo após a próxima ultrapassagem.",
+                "Um verdadeiro mestre das pistas não desiste na primeira derrapada.",
+                "DICA: Líderes de Ginásio usam habilidades únicas que podem mudar o rumo da corrida."
+            ];
+
+            const tipElement = document.getElementById('loadingTip');
+
+            if (tipElement) {
+                let currentIndex = Math.floor(Math.random() * dicas.length);
+                tipElement.innerText = dicas[currentIndex];
+
+                setInterval(() => {
+                    // 1. Adiciona a classe que joga a opacidade para 0 (inicia o fade-out)
+                    tipElement.classList.add('fade-oculto');
+
+                    // 2. Aguarda 0.5s para o texto sumir totalmente, troca a frase e remove a classe
+                    setTimeout(() => {
+                        currentIndex = (currentIndex + 1) % dicas.length;
+                        tipElement.innerText = dicas[currentIndex];
+
+                        // 3. Remove a classe, voltando a opacidade para 1 (inicia o fade-in)
+                        tipElement.classList.remove('fade-oculto');
+                    }, 500);
+
+                }, 2500);
+            }
+        });
+    </script>
+    </script>
 </body>
 
 </html>
