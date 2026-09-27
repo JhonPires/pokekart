@@ -28,192 +28,6 @@
             user-select: none;
         }
 
-        /* Contêiner Global das Janelas */
-        .hud-panel {
-            background: var(--panel-bg);
-            border: var(--panel-border);
-            backdrop-filter: blur(12px) saturate(130%);
-            border-radius: 16px;
-            color: var(--text);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            position: absolute;
-            z-index: 100;
-        }
-
-        /* 1. Classificação (Movido para o Canto Superior Direito) */
-        #standingsContainer {
-            top: 20px;
-            right: 20px;
-            left: auto;
-            padding: 16px;
-            min-width: 220px;
-        }
-
-        .hud-title {
-            font-size: 11px;
-            color: var(--muted);
-            font-weight: 900;
-            margin-bottom: 10px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        #standingsList {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        /* 2. Informativo de Tempo e Volta (Movido para o Canto Superior Esquerdo) */
-        #infoContainer {
-            top: 20px;
-            left: 20px;
-            right: auto;
-            padding: 12px 24px;
-            display: flex;
-            gap: 24px;
-        }
-
-        .info-box {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .info-box span:first-child {
-            font-size: 11px;
-            color: var(--muted);
-            font-weight: 900;
-            text-transform: uppercase;
-            margin-bottom: 2px;
-        }
-
-        .info-box .highlight {
-            font-size: 24px;
-            font-weight: 900;
-            color: var(--cyan);
-            text-shadow: 0 0 12px rgba(40, 201, 255, 0.4);
-            font-family: monospace, monospace;
-            letter-spacing: -0.5px;
-        }
-
-        /* Trava a largura da caixa do tempo para zerar a trepidação */
-        #hud-race-timer {
-            display: inline-block;
-            width: 115px;
-            text-align: center;
-        }
-
-        /* 3. Velocímetro (Canto Inferior Direito) */
-        #speedContainer {
-            bottom: 25px;
-            right: 25px;
-            padding: 16px;
-            width: 220px;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .speed-number {
-            font-size: 36px;
-            font-weight: 900;
-            font-style: italic;
-            color: #fff;
-            line-height: 1;
-        }
-
-        .speed-number span {
-            font-size: 14px;
-            color: var(--muted);
-            font-style: normal;
-            margin-left: 4px;
-        }
-
-        .speed-bar-bg {
-            width: 100%;
-            height: 8px;
-            background: #0b1c30;
-            border-radius: 4px;
-            border: 1px solid #1e3a57;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-
-        #speedfill {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #27c8ff, #ffd43b, #ff4b55);
-            /* Azul -> Amarelo -> Vermelho */
-            box-shadow: 0 0 10px rgba(39, 200, 255, 0.6);
-            transition: width 0.1s linear, background 0.2s ease;
-        }
-
-        /* 4. Caixa de Habilidade / Item (Centro Inferior) */
-        #itemContainer {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 75px;
-            height: 75px;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            font-size: 32px;
-            background: rgba(7, 20, 37, 0.85);
-            border: 2px solid var(--cyan);
-            box-shadow: 0 0 25px rgba(40, 201, 255, 0.35), inset 0 0 15px rgba(40, 201, 255, 0.2);
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-
-        #itemIcon {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            height: 100%;
-        }
-
-        #itemHint {
-            position: absolute;
-            top: -25px;
-            color: #38bdf8;
-            font-size: 11px;
-            font-weight: 800;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid #334155;
-            padding: 3px 10px;
-            border-radius: 6px;
-            letter-spacing: 0.5px;
-            white-space: nowrap;
-        }
-
-        /* 5. Minimapa (Canto Inferior Esquerdo) */
-        #minimapContainer {
-            position: absolute;
-            bottom: 25px;
-            left: 25px;
-            width: 180px;
-            height: 180px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 2px solid rgba(67, 173, 232, 0.6);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(40, 201, 255, 0.15);
-            background: rgba(5, 11, 22, 0.6);
-            backdrop-filter: blur(8px);
-            z-index: 100;
-        }
-
-        #minimapCanvas {
-            width: 100%;
-            height: 100%;
-        }
 
         /* CONTADOR DE LARGADA */
         #countdownOverlay {
@@ -263,6 +77,11 @@
             transition: all 0.2s;
         }
 
+        #minimapCanvas {
+            background: transparent !important;
+            background-color: rgba(0, 0, 0, 0) !important;
+        }
+
         .lobbyBtn:hover {
             filter: brightness(1.1);
             transform: translateY(-1px);
@@ -273,13 +92,13 @@
 
 <body>
     <!-- Classificação -->
-    <div id="standingsContainer" class="hud-panel">
+    <!-- <div id="standingsContainer" class="hud-panel">
         <div class="hud-title">Classificação</div>
         <div id="standingsList"></div>
-    </div>
+    </div> -->
 
     <!-- Tempo e Volta -->
-    <div id="infoContainer" class="hud-panel">
+    <!-- <div id="infoContainer" class="hud-panel">
         <div class="info-box">
             <span>Volta</span>
             <div><span id="hud-current-lap" class="highlight">1</span><span
@@ -289,32 +108,32 @@
         <div class="info-box">
             <span>Tempo</span>
             <span id="hud-race-timer" class="highlight">00:00.000</span>
-        </div>
-        <!-- Mantido oculto para não quebrar a lógica do game.js -->
-        <span id="hud-player-name" style="display:none;">-</span>
-    </div>
+        </div> -->
+    <!-- Mantido oculto para não quebrar a lógica do game.js -->
+    <!-- <span id="hud-player-name" style="display:none;">-</span>
+    </div> -->
 
     <!-- Velocímetro -->
-    <div id="speedContainer" class="hud-panel">
+    <!-- <div id="speedContainer" class="hud-panel">
         <div class="speed-number"><span id="hud-speed">0</span> <span>km/h</span></div>
         <div class="speed-bar-bg">
             <div id="speedfill"></div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Item (Armadilhas) -->
-    <div id="itemContainer">
+    <!-- <div id="itemContainer">
         <div id="itemHint">Pressione [E]</div>
         <div id="itemIcon"><svg viewBox="0 0 24 24" width="30" height="30">
                 <circle cx="12" cy="12" r="10" fill="none" stroke="#3a5a78" stroke-width="1.6" /><text x="12" y="16.5"
                     text-anchor="middle" font-size="12" font-weight="800" fill="#8da5bd"
                     font-family="Arial, sans-serif">?</text>
             </svg></div>
-    </div>
+    </div> -->
 
     <!-- Minimapa -->
     <div id="minimapContainer">
-        <canvas id="minimapCanvas" width="180" height="180"></canvas>
+        <canvas id="minimapCanvas" width="350" height="350"></canvas>
     </div>
 
     <!-- CONTADOR DE LARGADA -->
@@ -363,10 +182,10 @@
 
     <!-- CONTROLES VIRTUAIS PARA DISPOSITIVOS MÓVEIS -->
     <!-- Nota: A posição 'bottom' foi elevada para não sobrepor o minimapa e o velocímetro nas laterais -->
-    <div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;">
+    <!-- <div id="mobileHudContainer" style="position: fixed; inset: 0; pointer-events: none; z-index: 500; display: none;"> -->
 
-        <!-- LADO ESQUERDO: FREIO / RÉ E DRIFT -->
-        <div
+    <!-- LADO ESQUERDO: FREIO / RÉ E DRIFT -->
+    <!-- <div
             style="position: absolute; bottom: 225px; left: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
             <button id="btnMobileBrake"
                 style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239, 68, 68, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 13px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
@@ -376,10 +195,10 @@
                 style="width: 62px; height: 62px; border-radius: 50%; background: rgba(56, 189, 248, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 DRIFT
             </button>
-        </div>
+        </div> -->
 
-        <!-- LADO DIREITO: USAR ITEM E ACELERAR -->
-        <div
+    <!-- LADO DIREITO: USAR ITEM E ACELERAR -->
+    <!-- <div
             style="position: absolute; bottom: 155px; right: 25px; display: flex; align-items: flex-end; gap: 14px; pointer-events: auto;">
             <button id="btnMobileItem"
                 style="width: 62px; height: 62px; border-radius: 50%; background: rgba(250, 204, 21, 0.9); color: #0f172a; font-weight: 900; border: 3px solid #ffffff; font-size: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
@@ -389,14 +208,14 @@
                 style="width: 85px; height: 85px; border-radius: 50%; background: rgba(34, 197, 94, 0.85); color: #fff; font-weight: 900; border: 3px solid #ffffff; font-size: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
                 GO!
             </button>
-        </div>
+        </div> -->
 
-        <!-- BOTÃO DE ATIVAÇÃO / CALIBRAGEM DO GIROSCÓPIO -->
-        <button id="btnEnableGyro"
+    <!-- BOTÃO DE ATIVAÇÃO / CALIBRAGEM DO GIROSCÓPIO -->
+    <!-- <button id="btnEnableGyro"
             style="position: absolute; top: 16px; left: 50%; transform: translateX(-50%); pointer-events: auto; background: #0f172a; border: 2px solid #38bdf8; color: #38bdf8; padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.4);">
             📱 Ativar Giroscópio
         </button>
-    </div>
+    </div> -->
 
     <!-- DEPENDÊNCIAS E CARREGADORES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

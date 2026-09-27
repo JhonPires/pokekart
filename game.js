@@ -23,12 +23,14 @@ const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth,
 composer.addPass(bloomPass);
 
 // --- CRIAÇÃO DA BARRA DE DRIFT NA TELA ---
-const driftBarContainer = document.createElement('div');
-driftBarContainer.style.cssText = 'position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); width: 180px; height: 10px; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.8); border-radius: 8px; display: none; z-index: 100; overflow: hidden;';
-const driftBarFill = document.createElement('div');
-driftBarFill.style.cssText = 'width: 0%; height: 100%; background: #facc15; transition: width 0.1s, background-color 0.2s; box-shadow: 0 0 8px #facc15;';
-driftBarContainer.appendChild(driftBarFill);
-document.body.appendChild(driftBarContainer);
+// const driftBarContainer = document.createElement('div');
+// driftBarContainer.style.cssText = 'position: absolute; bottom: 25%; left: 50%; transform: translateX(-50%); width: 180px; height: 10px; background: rgba(0,0,0,0.6); border: 2px solid rgba(255,255,255,0.8); border-radius: 8px; display: none; z-index: 100; overflow: hidden;';
+// const driftBarFill = document.createElement('div');
+// driftBarFill.style.cssText = 'width: 0%; height: 100%; background: #facc15; transition: width 0.1s, background-color 0.2s; box-shadow: 0 0 8px #facc15;';
+// driftBarContainer.appendChild(driftBarFill);
+// document.body.appendChild(driftBarContainer);
+
+
 
 // --- CRIAÇÃO DO ALERTA DE ATAQUE (DIG) ---
 const digWarningContainer = document.createElement('div');
@@ -165,6 +167,126 @@ function loadSecureTowerState() {
 
 loadSecureTowerState();
 
+// --- NOVA HUD ESTILO CRASH TEAM RACING CORRIGIDA ---
+function setupCTRHud() {
+  const fontLink = document.createElement('link');
+  fontLink.href = "https://fonts.googleapis.com/css2?family=Bangers&display=swap";
+  fontLink.rel = "stylesheet";
+  document.head.appendChild(fontLink);
+
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .ctr-hud {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 100;
+      font-family: 'Bangers', cursive; color: white;
+      text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+    }
+    .ctr-timer-box { position: absolute; top: 20px; left: 30px; }
+    .ctr-main-timer { font-size: 48px; color: #ffaa00; letter-spacing: 2px; }
+    .ctr-lap-times { font-size: 22px; color: #aaddff; margin-left: 5px; line-height: 1.2; }
+    
+    .ctr-lap-counter { position: absolute; top: 20px; right: 30px; font-size: 54px; }
+    
+    .ctr-item-slot {
+      position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
+      width: 80px; height: 80px; background: rgba(0,0,0,0.6);
+      border: 4px solid #555; border-radius: 12px;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);
+      display: flex; justify-content: center; align-items: center;
+    }
+    
+    .ctr-standings { position: absolute; top: 280px; left: 50px; display: flex; flex-direction: column; gap: 12px; }
+    .ctr-standing-item {
+      display: flex;
+      align-items: center;
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .ctr-portrait {
+      width: 60px; height: 60px; background: #1e293b; border: 3px solid #38bdf8;
+      border-radius: 10px; display: flex; justify-content: center; align-items: center;
+      box-shadow: 3px 3px 8px rgba(0,0,0,0.7); overflow: hidden; position: relative;
+    }
+    .ctr-standing-icon, .ctr-standing-icon img {
+      width: 80% !important;
+      height: 80% !important;
+      object-fit: contain !important;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .ctr-portrait-pos {
+      position: absolute; bottom: -10px; left: -14px; font-size: 36px; color: #fff;
+      text-shadow: 3px 3px 0 #000, -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000;
+      z-index: 10;
+    }
+    
+    .ctr-giant-pos {
+      position: absolute; bottom: 30px; left: 30px;
+      font-size: 140px; line-height: 0.75; color: #ffaa00;
+      transform: rotate(-8deg);
+      text-shadow: 8px 8px 0px rgba(0,0,0,0.8), -3px -3px 0 #000, 3px -3px 0 #000, -3px -3px 0 #000, 3px 3px 0 #000;
+    }
+    .ctr-giant-pos-suffix { font-size: 55px; vertical-align: top; color: #ffcc00; }
+    
+    /* ORGANIZAÇÃO FIXA DO MINI MAPA E DO BOOST PARA PARAR DE PULAR */
+    .ctr-minimap-box { 
+      position: absolute; bottom: 50px; right: 20px; 
+      display: flex; flex-direction: column; align-items: center; gap: 12px; 
+      pointer-events: auto; opacity: 0.8;
+    }
+    .ctr-minimap-canvas {
+      width: 350px !important; height: 350px !important; !important;
+      position: static !important; margin: 0 !important; transform: none !important;
+    }
+    
+    /* BARRA DE BOOST ESTILO JOGO DE CORRIDA (ABAIXO DO MINI MAPA) */
+    .ctr-drift-bar { 
+      width: 180px; height: 16px; background: rgba(15, 23, 42, 0.9); 
+      border: 2px solid #38bdf8; border-radius: 8px; overflow: hidden; 
+      opacity: 0; visibility: hidden; transition: opacity 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    .ctr-drift-fill { height: 100%; width: 0%; background: #22c55e; transition: width 0.1s; }
+  `;
+  document.head.appendChild(style);
+
+  const defaultIconSvg = '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="10" fill="none" stroke="#3a5a78" stroke-width="1.6"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="#8da5bd" font-family="Arial, sans-serif">?</text></svg>';
+
+  const hudHTML = document.createElement('div');
+  hudHTML.className = 'ctr-hud';
+  hudHTML.innerHTML = `
+    <div class="ctr-timer-box">
+      <div class="ctr-main-timer" id="hud-race-timer">00:00.000</div>
+      <div class="ctr-lap-times" id="hud-lap-times"></div>
+    </div>
+    <div class="ctr-lap-counter">LAP <span id="hud-current-lap">1</span>/3</div>
+    <div class="ctr-item-slot" id="itemIcon">${defaultIconSvg}</div>
+    <div class="ctr-standings" id="standingsList"></div>
+    <div class="ctr-giant-pos" id="hud-giant-pos">1<span class="ctr-giant-pos-suffix">st</span></div>
+    <div class="ctr-minimap-box">
+      <div id="minimapContainerBox"></div> 
+      <div class="ctr-drift-bar" id="ctrDriftBar"><div class="ctr-drift-fill" id="ctrDriftFill"></div></div>
+    </div>
+  `;
+  document.body.appendChild(hudHTML);
+
+  setTimeout(() => {
+    const oldCanvas = document.getElementById('minimapCanvas');
+    if (oldCanvas) {
+      oldCanvas.className = 'ctr-minimap-canvas';
+      const containerBox = document.getElementById('minimapContainerBox');
+      if (containerBox) {
+        containerBox.appendChild(oldCanvas);
+      }
+    }
+  }, 100);
+}
+
+setupCTRHud();
+
 // Define o modo final
 const modeParam = matchConfig.mode || null;
 
@@ -227,56 +349,6 @@ function setupEnhancedEnvironment(scene) {
   spawnClouds(scene);
   // spawnRocks(scene);
 }
-
-// function spawnRocks(targetScene) {
-//   const rockGeo = new THREE.DodecahedronGeometry(1.2, 0);
-//   const rockMat = new THREE.MeshStandardMaterial({
-//     color: 0x6e7a85,
-//     roughness: 0.9,
-//     flatShading: true
-//   });
-
-//   const pointsSource = (typeof trackCheckpoints !== 'undefined' && trackCheckpoints.length > 0) ? trackCheckpoints : [];
-//   if (pointsSource.length === 0) return;
-
-//   // Percorre o traçado e posiciona as pedras nas laterais exatas usando vetores perpendiculares
-//   for (let i = 0; i < pointsSource.length; i += 2) {
-//     const p1 = pointsSource[i];
-//     const p2 = pointsSource[(i + 1) % pointsSource.length];
-
-//     // Direção do segmento da pista
-//     const dirX = p2.x - p1.x;
-//     const dirZ = (p2.z || p2.y) - (p1.z || p1.y);
-//     const len = Math.hypot(dirX, dirZ);
-//     if (len === 0) continue;
-
-//     // Normalização
-//     const nx = dirX / len;
-//     const nz = dirZ / len;
-
-//     // Vetor perpendicular (joga para a lateral da pista)
-//     const perpX = -nz;
-//     const perpZ = nx;
-
-//     // Escolhe o lado (esquerdo ou direito) e uma distância segura na grama (entre 48 e 75 unidades para fora)
-//     const side = Math.random() > 0.5 ? 1 : -1;
-//     const distance = 48 + Math.random() * 27;
-
-//     const rx = p1.x + perpX * (side * distance);
-//     const rz = (p1.z || p1.y) + perpZ * (side * distance);
-
-//     const rock = new THREE.Mesh(rockGeo, rockMat);
-//     rock.position.set(rx, 0, rz);
-
-//     const s = 0.6 + Math.random() * 1.2;
-//     rock.scale.set(s, s * 0.6, s);
-//     rock.rotation.y = Math.random() * Math.PI;
-//     rock.castShadow = true;
-//     rock.receiveShadow = true;
-
-//     targetScene.add(rock);
-//   }
-// }
 
 const maxDustParticles = 40;
 
@@ -379,7 +451,7 @@ async function loadKartsFromDatabase() {
   try {
     const { data, error } = await supabaseClient
       .from('karts')
-      .select('id, name, stats, physics');
+      .select('id, name, stats, physics, pokemon_dex_id');
 
     if (error) throw error;
 
@@ -390,7 +462,8 @@ async function loadKartsFromDatabase() {
         id: dbKart.id,
         name: dbKart.name,
         modelUrl: getKartUrl(`${dbKart.id}.glb`),
-        stats: { ...dbKart.stats, ...dbKart.physics }
+        stats: { ...dbKart.stats, ...dbKart.physics },
+        dexId: dbKart.pokemon_dex_id || null
       };
     });
   } catch (err) {
@@ -398,7 +471,8 @@ async function loadKartsFromDatabase() {
     // Fallback de segurança usando getKartUrl também
     KART_DATABASE = [{
       id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
-      stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
+      stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
+      dexId: 135
     }];
   }
 }
@@ -1963,19 +2037,27 @@ function ativarArmadilhaRocket() {
   rocketBoxCliques = 0;
 
   const textura = criarTexturaEquipeRocket();
-  const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6); // Tamanho reduzido aqui também
-  const material = new THREE.MeshStandardMaterial({ map: textura });
-  rocketBoxMesh = new THREE.Mesh(geometria, material);
+  const texturaEmissiva = criarTexturaEmissivaRocket(); // Carrega a máscara
 
-  // Altura em Y reduzida de 3.0 para 1.0 (fica colada à cabeça do piloto)
+  const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6);
+
+  const material = new THREE.MeshStandardMaterial({
+    map: textura,
+    emissiveMap: texturaEmissiva, // Aplica a máscara para isolar a luz
+    emissive: 0xff0000, // A luz será vermelha
+    emissiveIntensity: 0.0
+  });
+
+  rocketBoxMesh = new THREE.Mesh(geometria, material);
   rocketBoxMesh.position.set(0, 1.0, 0);
   kart.add(rocketBoxMesh);
 
   let estadoPisco = false;
   intervaloPiscoRocket = setInterval(() => {
     estadoPisco = !estadoPisco;
-    rocketBoxMesh.material.color.setHex(estadoPisco ? 0xffaaaa : 0xffffff);
-    // Aumenta a agressividade da pulsação para compensar o tamanho pequeno
+
+    // Altera APENAS a intensidade da luz (o "R" acende) e o tamanho
+    rocketBoxMesh.material.emissiveIntensity = estadoPisco ? 4.0 : 0.0;
     rocketBoxMesh.scale.setScalar(estadoPisco ? 1.3 : 0.7);
     rocketBoxMesh.rotation.z = (Math.random() - 0.5) * 0.5;
   }, 150);
@@ -2089,16 +2171,20 @@ function ativarArmadilhaBot(bot) {
   if (!bot || bot.rocketBoxAtiva) return;
   bot.rocketBoxAtiva = true;
 
-  // --- CONFIGURAÇÃO DA CHANCE DO BOT ---
-  // 0.0 = O bot SEMPRE explode e gira (0% chance de escapar)
-  // 0.5 = 50% de chance de escapar ou explodir
-  // 1.0 = O bot NUNCA explode (100% de chance de escapar)
-  const CHANCE_DE_ESCAPAR = 0.5; // 0.0 para garantir o teste do giro
-  // ------------------------------------
+  const CHANCE_DE_ESCAPAR = 0.0;
 
   const textura = criarTexturaEquipeRocket();
+  const texturaEmissiva = criarTexturaEmissivaRocket(); // Carrega a máscara
+
   const geometria = new THREE.BoxGeometry(0.6, 0.6, 0.6);
-  const material = new THREE.MeshStandardMaterial({ map: textura });
+
+  const material = new THREE.MeshStandardMaterial({
+    map: textura,
+    emissiveMap: texturaEmissiva,
+    emissive: 0xff0000,
+    emissiveIntensity: 0.0
+  });
+
   const caixaBotMesh = new THREE.Mesh(geometria, material);
   caixaBotMesh.position.set(0, 1.0, 0);
 
@@ -2107,8 +2193,19 @@ function ativarArmadilhaBot(bot) {
     botGroup.add(caixaBotMesh);
   }
 
-  // Tempo de desespero do bot antes de detonar (2 segundos)
+  let estadoPisco = false;
+  const intervaloPiscoBot = setInterval(() => {
+    estadoPisco = !estadoPisco;
+
+    // Altera APENAS a intensidade da luz e tamanho no bot
+    caixaBotMesh.material.emissiveIntensity = estadoPisco ? 4.0 : 0.0;
+    caixaBotMesh.scale.setScalar(estadoPisco ? 1.3 : 0.7);
+    caixaBotMesh.rotation.z = (Math.random() - 0.5) * 0.5;
+  }, 150);
+
   setTimeout(() => {
+    clearInterval(intervaloPiscoBot);
+
     if (botGroup) {
       botGroup.remove(caixaBotMesh);
     }
@@ -2116,16 +2213,15 @@ function ativarArmadilhaBot(bot) {
     caixaBotMesh.material.dispose();
     bot.rocketBoxAtiva = false;
 
-    // Sorteia se o bot conseguiu escapar
     const conseguiuDesarmar = Math.random() < CHANCE_DE_ESCAPAR;
 
     if (!conseguiuDesarmar) {
-      // 🧊 IDÊNTICO À HABILIDADE DE GELO: Zera a velocidade e ativa o spinTimer do bot!
       bot.speed = 0;
       bot.spinTimer = 0.8;
     }
   }, 2000);
 }
+
 // Função auxiliar limpa para apagar a caixa do Three.js com segurança
 function removerCaixaDaPista(index) {
   const caixa = armadilhasRocketNaPista[index];
@@ -2133,6 +2229,27 @@ function removerCaixaDaPista(index) {
   if (caixa.geometry) caixa.geometry.dispose();
   if (caixa.material) caixa.material.dispose();
   armadilhasRocketNaPista.splice(index, 1);
+}
+
+// --- GERADOR DA MÁSCARA DE BRILHO (Apenas o R) ---
+function criarTexturaEmissivaRocket() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Fundo totalmente preto (zero brilho)
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, 256, 256);
+
+  // Letra "R" branca nas exatas mesmas coordenadas (vai acender)
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 150px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('R', 128, 135);
+
+  return new THREE.CanvasTexture(canvas);
 }
 
 async function loadCustomTrack(trackParam) {
@@ -4927,15 +5044,25 @@ function updateStandings() {
   if (!standingsEl || !kart) return [];
 
   const racers = [
-    { key: 'local', name: playerNickname, tr: raceTrackers.get('local') }
+    {
+      key: 'local',
+      name: playerNickname,
+      kartId: selectedKartId,
+      dexId: KART_DATABASE.find(k => k.id === selectedKartId)?.dexId || 25, // Puxa o dexId do banco
+      tr: raceTrackers.get('local')
+    }
   ];
 
   if (typeof remoteKarts !== 'undefined' && remoteKarts) {
     for (const [pid, entry] of remoteKarts.entries()) {
       const tr = raceTrackers.get(pid) || { progress: 0, lapCount: 1, finished: false, finishTime: Infinity };
+      const botKartData = KART_DATABASE.find(k => k.id === entry.kartId);
+
       racers.push({
         key: pid,
         name: entry.nickname || friendLabel(pid),
+        kartId: entry.kartId || 'jolteon',
+        dexId: botKartData?.dexId || entry.dexId || 25, // Puxa o dexId do bot ou usa 25 como fallback
         tr: tr
       });
     }
@@ -4946,26 +5073,40 @@ function updateStandings() {
   });
 
   racers.sort((a, b) => {
-    // Se ambos finalizaram, quem tem o menor finishTime (chegou primeiro) fica na frente
     if (a.tr.finished && b.tr.finished) {
       return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
     }
-    // Quem já finalizou tem prioridade absoluta sobre quem ainda está correndo
     if (a.tr.finished) return -1;
     if (b.tr.finished) return 1;
 
-    // Se ninguém finalizou, ordena pelo progresso na pista
     const progA = typeof a.tr.progress === 'number' ? a.tr.progress : 0;
     const progB = typeof b.tr.progress === 'number' ? b.tr.progress : 0;
-
     return progB - progA;
   });
 
   standingsEl.innerHTML = racers.map((r, index) => {
     const isMe = r.key === 'local';
-    const highlightStyle = isMe ? 'color: #FFD54F; font-weight: bold;' : 'color: #cbd5e1;';
-    const finishedFlag = r.tr.finished ? ' 🏁' : '';
-    return `<div style="${highlightStyle}">${index + 1}º ${r.name}${finishedFlag}</div>`;
+    const borderColor = isMe ? '#ffaa00' : '#cbd5e1';
+
+    // Usa diretamente o número oficial do dexId vindo do banco de dados (ex: 135, 25, 4)
+    const dexNumber = r.dexId || 25;
+
+    // Caminho formatado com 'poke_[número].gif' apontando para a sua pasta local
+    const spriteUrl = `pokemons/poke_${dexNumber}.gif`;
+    const fallbackUrl = `pokemons/poke_25.gif`;
+
+    const content = r.tr.finished
+      ? '<span style="font-size: 20px;">🏁</span>'
+      : `<img src="${spriteUrl}" alt="${r.name}" onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
+
+    return `
+      <div class="ctr-standing-item" style="margin-bottom: 14px;">
+        <div class="ctr-portrait" style="border-color: ${borderColor};">
+          <div class="ctr-standing-icon">${content}</div>
+        </div>
+        <div class="ctr-portrait-pos">${index + 1}</div>
+      </div>
+    `;
   }).join('');
 
   return racers;
@@ -4977,17 +5118,21 @@ function updateHUD() {
 
   if (kart) {
     const tr = updateRaceTracker('local', kart.position);
-
     const racers = updateStandings();
     const myRank = racers.findIndex(r => r.key === 'local') + 1;
 
+    // Elementos da interface (antigos mantidos por segurança + novos do CTR)
     const lapEl = document.getElementById('hud-current-lap');
     const speedEl = document.getElementById('hud-speed');
     const speedFillEl = document.getElementById('speedfill');
     const timerEl = document.getElementById('hud-race-timer');
+    const giantPosEl = document.getElementById('hud-giant-pos');
+    const lapTimesEl = document.getElementById('hud-lap-times');
 
-    if (lapEl) lapEl.innerText = tr.lapCount;
+    // 1. Atualiza a Volta Atual
+    if (lapEl) lapEl.innerText = Math.min(tr.lapCount, TOTAL_LAPS);
 
+    // 2. Velocímetro original (mantido caso a barra ainda exista no HTML base)
     const currentSpeedKmH = Math.floor(Math.abs(physics.speed) * 3.6);
     if (speedEl) speedEl.innerText = currentSpeedKmH;
 
@@ -4996,7 +5141,6 @@ function updateHUD() {
       const speedPercent = Math.min(100, (currentSpeedKmH / maxPossibleSpeed) * 100);
 
       speedFillEl.style.width = `${speedPercent}%`;
-
       if (speedPercent > 85) {
         speedFillEl.style.boxShadow = '0 0 12px rgba(255, 75, 85, 0.8)';
       } else {
@@ -5004,50 +5148,83 @@ function updateHUD() {
       }
     }
 
-    // Lógica da Barra de Drift
-    if (physics.isDrifting && physics.driftCharge > 0) {
-      driftBarContainer.style.display = 'block';
-      const maxCharge = 0.8; // Valor exato que ativa o turbo no seu código
-      let percent = Math.min(100, (physics.driftCharge / maxCharge) * 100);
-      driftBarFill.style.width = percent + '%';
+    // 3. Número Gigante da Posição (Estilo CTR)
+    if (giantPosEl) {
+      let suffix = 'th';
+      if (myRank === 1) suffix = 'st';
+      else if (myRank === 2) suffix = 'nd';
+      else if (myRank === 3) suffix = 'rd';
 
-      // Muda a cor da barra dependendo do nível de carga
-      if (percent >= 100) {
-        driftBarFill.style.background = '#22c55e'; // Verde brilhante quando o turbo tá pronto
-        driftBarFill.style.boxShadow = '0 0 12px #22c55e';
-      } else if (percent > 50) {
-        driftBarFill.style.background = '#f97316'; // Laranja na metade
-        driftBarFill.style.boxShadow = '0 0 10px #f97316';
-      } else {
-        driftBarFill.style.background = '#facc15'; // Amarelo no início
-        driftBarFill.style.boxShadow = '0 0 8px #facc15';
+      let color = '#ff2222'; // Vermelho para 4º lugar em diante
+      if (myRank === 1) color = '#ffaa00'; // Ouro
+      else if (myRank === 2) color = '#e2e8f0'; // Prata
+      else if (myRank === 3) color = '#cd7f32'; // Bronze
+
+      giantPosEl.style.color = color;
+      giantPosEl.innerHTML = `${myRank}<span class="ctr-giant-pos-suffix">${suffix}</span>`;
+    }
+
+    // 4. Histórico de Tempos das Voltas (L1, L2, L3)
+    if (lapTimesEl) {
+      lapTimesEl.innerHTML = localLapTimes.map((timeMs, idx) => {
+        return `<div>L${idx + 1} ${formatTime(timeMs)}</div>`;
+      }).join('');
+    }
+
+    // 5. Lógica da Barra de Drift (Ligada à nova estrutura CTR)
+    const ctrDriftBar = document.getElementById('ctrDriftBar') || (typeof driftBarContainer !== 'undefined' ? driftBarContainer : null);
+    const ctrDriftFill = document.getElementById('ctrDriftFill') || (typeof driftBarFill !== 'undefined' ? driftBarFill : null);
+
+    if (physics.isDrifting && physics.driftCharge > 0) {
+      if (ctrDriftBar) {
+        ctrDriftBar.style.opacity = '1';
+        ctrDriftBar.style.visibility = 'visible';
+      }
+      const maxCharge = 0.8;
+      let percent = Math.min(100, (physics.driftCharge / maxCharge) * 100);
+
+      if (ctrDriftFill) {
+        ctrDriftFill.style.width = percent + '%';
+        if (percent >= 100) {
+          ctrDriftFill.style.background = '#22c55e';
+          ctrDriftFill.style.boxShadow = '0 0 12px #22c55e';
+        } else if (percent > 50) {
+          ctrDriftFill.style.background = '#f97316';
+          ctrDriftFill.style.boxShadow = '0 0 10px #f97316';
+        } else {
+          ctrDriftFill.style.background = '#facc15';
+          ctrDriftFill.style.boxShadow = '0 0 8px #facc15';
+        }
       }
     } else {
-      driftBarContainer.style.display = 'none';
-      driftBarFill.style.width = '0%';
+      if (ctrDriftBar) {
+        ctrDriftBar.style.opacity = '0';
+        ctrDriftBar.style.visibility = 'hidden';
+      }
+      if (ctrDriftFill) ctrDriftFill.style.width = '0%';
     }
 
-    // Verifica se existe algum poder DIG ativo cujo alvo seja o jogador local
+    // 6. Aviso do Ataque DIG
     const isDigIncoming = activeDigs.some(dig => dig.targetId === 'local');
-
-    // Mostra o aviso apenas se o jogador for o alvo e a corrida ainda não tiver acabado
     if (isDigIncoming && !tr.finished) {
-      digWarningContainer.style.display = 'block';
+      if (typeof digWarningContainer !== 'undefined') digWarningContainer.style.display = 'block';
     } else {
-      digWarningContainer.style.display = 'none';
+      if (typeof digWarningContainer !== 'undefined') digWarningContainer.style.display = 'none';
     }
 
+    // 7. Relógio Principal
     if (raceStarted && !tr.finished) {
       totalRaceTimeMs = performance.now() - raceStartTime;
       if (timerEl) timerEl.innerText = formatTime(totalRaceTimeMs);
     }
 
+    // 8. Fim de Corrida
     if (tr.finished && !localFinishNotified) {
       localFinishNotified = true;
       showFinishOverlay(myRank);
     }
 
-    if (finishLeaderboardEl) {
+    if (typeof finishLeaderboardEl !== 'undefined' && finishLeaderboardEl) {
       finishLeaderboardEl.innerHTML = racers.map((r, index) => {
         const isMe = r.key === 'local';
         const bgColor = isMe ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.7)';
@@ -5103,23 +5280,14 @@ function drawMinimap() {
 
   const width = canvas.width;
   const height = canvas.height;
-  const radius = width / 2;
 
+  // Limpa totalmente o canvas deixando-o transparente (sem fundo escuro)
   ctx.clearRect(0, 0, width, height);
 
   ctx.save();
-  ctx.beginPath();
-  ctx.arc(radius, radius, radius - 2, 0, Math.PI * 2);
-  ctx.clip();
-
-  const bgGrad = ctx.createRadialGradient(radius, radius, 10, radius, radius, radius);
-  bgGrad.addColorStop(0, '#1e293b');
-  bgGrad.addColorStop(1, '#0b1329');
-  ctx.fillStyle = bgGrad;
-  ctx.fillRect(0, 0, width, height);
 
   const bounds = getTrackBounds(currentTrackPoints);
-  const mapSize = Math.min(width, height);
+  const mapSize = Math.min(width, height) * 0.90;
   const scale = mapSize / Math.max(bounds.width, bounds.height);
   const offsetX = (width - bounds.width * scale) / 2;
   const offsetY = (height - bounds.height * scale) / 2;
@@ -5131,9 +5299,10 @@ function drawMinimap() {
     };
   }
 
+  // 1. Desenha a pista principal (traçado)
   ctx.beginPath();
-  ctx.strokeStyle = '#020617';
-  ctx.lineWidth = 8;
+  ctx.strokeStyle = '#cbd5e1';
+  ctx.lineWidth = 14;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   currentTrackPoints.forEach((pt, i) => {
@@ -5144,9 +5313,10 @@ function drawMinimap() {
   ctx.closePath();
   ctx.stroke();
 
+  // Borda interna para dar profundidade à pista
   ctx.beginPath();
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 3.5;
+  ctx.strokeStyle = '#afabab';
+  ctx.lineWidth = 12;
   currentTrackPoints.forEach((pt, i) => {
     const pos = worldToMinimap(pt.x, pt.z);
     if (i === 0) ctx.moveTo(pos.x, pos.y);
@@ -5155,40 +5325,50 @@ function drawMinimap() {
   ctx.closePath();
   ctx.stroke();
 
-  // Renderiza karts remotos e BOTS no minimapa corretamente (usando group.position se for bot)
-  for (const entry of remoteKarts.values()) {
+  // Função para desenhar o avatar circular dos Pokémon
+  const drawMiniAvatar = (x, z, dexId, isPlayer) => {
+    const pos = worldToMinimap(x, z);
+    const radius = isPlayer ? 14 : 12;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+    ctx.lineWidth = 3;
+    // ctx.strokeStyle = isPlayer ? '#ffaa00' : '#ffffff';
+    // ctx.stroke();
+    ctx.clip();
+
+    const imgKey = `minimap_img_${dexId}`;
+    let img = window[imgKey];
+    if (!img) {
+      img = new Image();
+      img.src = `pokemons/poke_${dexId}.gif`;
+      window[imgKey] = img;
+    }
+
+    if (img.complete && img.naturalWidth !== 0) {
+      ctx.drawImage(img, pos.x - radius, pos.y - radius, radius * 2, radius * 2);
+    }
+    ctx.restore();
+  };
+
+  // 2. Desenha bots e jogadores remotos
+  for (const [pid, entry] of remoteKarts.entries()) {
     const posReal = entry.isBot ? entry.obj.group.position : entry.target.pos;
     if (posReal) {
-      const pos = worldToMinimap(posReal.x, posReal.z);
-
-      ctx.fillStyle = '#ef4444';
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
+      const botKartData = KART_DATABASE.find(k => k.id === entry.kartId);
+      const dexId = botKartData?.dexId || entry.dexId || 25;
+      drawMiniAvatar(posReal.x, posReal.z, dexId, false);
     }
   }
 
+  // 3. Desenha o jogador local
   if (kart) {
-    const pos = worldToMinimap(kart.position.x, kart.position.z);
-    ctx.fillStyle = '#facc15';
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    const localDexId = KART_DATABASE.find(k => k.id === selectedKartId)?.dexId || 25;
+    drawMiniAvatar(kart.position.x, kart.position.z, localDexId, true);
   }
 
   ctx.restore();
-
-  ctx.strokeStyle = '#38bdf8';
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(radius, radius, radius - 1.5, 0, Math.PI * 2);
-  ctx.stroke();
 }
 
 // ------------------------------------------------------------

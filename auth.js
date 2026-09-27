@@ -156,12 +156,18 @@ async function updateLobbyUI() {
       updateLeagueUI(profile.trophies || 0);
     }
 
-    if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {
-      const equippedIndex = KART_DATABASE.findIndex(k => k.id === profile.selected_kart);
-      if (equippedIndex !== -1 && typeof selectedIndex !== 'undefined') {
-        selectedIndex = equippedIndex;
-        if (typeof updatePreview === 'function') updatePreview();
+    // Tenta atualizar o modelo 3D do kart no lobby de forma segura
+    try {
+      if (typeof KART_DATABASE !== 'undefined' && profile.selected_kart) {
+        const equippedIndex = KART_DATABASE.findIndex(k => k.id === profile.selected_kart);
+        if (equippedIndex !== -1 && typeof selectedIndex !== 'undefined') {
+          selectedIndex = equippedIndex;
+          if (typeof updatePreview === 'function') updatePreview();
+        }
       }
+    } catch (e) {
+      // Ignora o erro silenciosamente caso a base de dados de karts ainda não exista na página
+      console.warn("Aviso: KART_DATABASE não processado nesta tela, ignorando preview.");
     }
   }
 

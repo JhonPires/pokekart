@@ -2,7 +2,7 @@ BUGS
 
 
 AJUSTES
-- Tentar colocar um brilho pulsante para simular que a caixa Rocket vai explodir
+
 
 NOVIDADES
 - Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria

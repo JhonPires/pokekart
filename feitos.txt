@@ -5,6 +5,7 @@ Corrida multiplayer agora somente é iniciada caso tenha pelo menos 2 jogadores.
 Adicionado opção para visualizar o perfil de um outro jogador.;
 Adicionado um filtro na garagem por região dos pokemons.;
 Adicionado uma nova habilidade (Caixa Rocket).;
+Atualizado a HUD da corrida.;
 
 
 
