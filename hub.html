@@ -234,6 +234,25 @@
             animation: fakeLoad 8.0s cubic-bezier(0.25, 1, 0.5, 1) forwards;
         }
 
+        /* LOGO NO CENTRO SUPERIOR DO LOADING */
+        .loading-logo {
+            position: absolute;
+            top: 8%;
+            /* Distância da parte superior da tela */
+            left: 50%;
+            transform: translateX(-50%);
+            /* Centraliza perfeitamente */
+            max-width: 480px;
+            /* Tamanho máximo para não exagerar */
+            width: 40vw;
+            /* Responsivo em telas menores */
+            opacity: 0.7;
+            height: auto;
+            z-index: 10001;
+            filter: drop-shadow(0 0 15px rgba(0, 229, 255, 0.5));
+            /* Efeito de brilho opcional */
+        }
+
         /* POKÉBOLA EM CSS PURO NA DIREITA */
         .pokeball-icon {
             position: absolute;
@@ -349,16 +368,18 @@
 
     <div id="loadingScreen">
 
-        <!-- O NOVO GRUPO QUE FICA NA PARTE DE BAIXO -->
+        <!-- LOGO CENTRALIZADA NO TOPO -->
+        <img src="img/logo.png" alt="Logo PokeKart" class="loading-logo">
+
+        <!-- O GRUPO DA BARRA E DICAS (Fica na base) -->
         <div id="loading-wrapper">
             <div class="loading-title">🏁 CARREGANDO... 🏁</div>
 
             <div class="loading-bar-container">
                 <div class="loading-bar-fill"></div>
-                <div class="pokeball-icon"></div> <!-- Desenhada via CSS -->
+                <div class="pokeball-icon"></div>
             </div>
 
-            <!-- As dicas continuarão funcionando aqui com o seu script -->
             <div id="loadingTip">Preparando a pista para a sua aventura...</div>
         </div>
 
