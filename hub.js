@@ -196,7 +196,7 @@ scene.add(mainRoad);
 // --- FAIXA BRANCA CENTRAL NA RUA ---
 // Cria várias pequenas faixas brancas ao longo da rua para formar a linha tracejada
 const faixaGeo = new THREE.PlaneGeometry(0.8, 4);
-const faixaMat = new THREE.MeshBasicMaterial({ color: (biome == 'water' || biome == 'psychic') ? 0x0a0a0a : 0xffffff });
+const faixaMat = new THREE.MeshBasicMaterial({ color: (biome == 'water' || biome == 'psychic' || biome == 'grass') ? 0x0a0a0a : 0xffffff });
 
 const espacamentoFaixas = 16;
 const totalFaixas = Math.floor(compEstrada / espacamentoFaixas);
