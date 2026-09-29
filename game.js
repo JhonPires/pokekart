@@ -113,7 +113,7 @@ function createCloudSkyTexture() {
   return texture;
 }
 
-const GYM_LEADERS = ['BROCK', 'MISTY', 'LT. SURGE', 'ERIKA', 'KOGA', 'SABRINA', 'BLAINE', 'GIOVANNI', 'FALKNER', 'BUGSY', 'WHITNEY', 'MORTY'];
+const GYM_LEADERS = ['GARY', 'SILVER', 'MAY', 'ASH', 'N', 'RED', 'DAWN', 'TRACEY', 'JESSIE', 'JAMES', 'SERENA', 'MAX'];
 
 // 1. Puxa dados do Jogador (Lobby)
 const playerNickname = (sessionStorage.getItem('pkart_nickname') || 'JOGADOR').toUpperCase();
@@ -1777,6 +1777,49 @@ function spawnPsychicDecorations() {
   scene.add(currentTreeGroup);
 }
 
+function createBoostTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+
+  // Fundo escuro (preto/esverdeado)
+  ctx.fillStyle = '#051505';
+  ctx.fillRect(0, 0, 512, 512);
+
+  // Bordas laterais amarelas/verdes claras
+  ctx.fillStyle = '#b3ff00';
+  ctx.fillRect(0, 0, 24, 512);
+  ctx.fillRect(488, 0, 24, 512);
+
+  // Efeito de neon/brilho nas setas
+  ctx.shadowColor = '#00ff00';
+  ctx.shadowBlur = 15;
+
+  // Desenhar as setas (Chevrons)
+  ctx.lineWidth = 50;
+  ctx.strokeStyle = '#00ff00';
+  ctx.lineJoin = 'miter';
+
+
+  // Repetição das setas com um espaçamento exato (128) para um loop perfeito
+  for (let y = -128; y <= 512; y += 128) {
+    ctx.beginPath();
+    ctx.moveTo(80, y);
+    ctx.lineTo(256, y + 100);
+    ctx.lineTo(432, y);
+    ctx.stroke();
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  // Repete mais vezes no eixo Y para a proporção ficar correta
+  texture.repeat.set(1, 1.5);
+
+  return texture;
+}
+
 function addStartFinishLine() {
   const point = trackCurve.getPointAt(0);
   const tangent = trackCurve.getTangentAt(0).normalize();
@@ -1804,12 +1847,16 @@ function addStartFinishLine() {
 }
 
 const boostPadsList = [];
-const boostPadMat = new THREE.MeshStandardMaterial({
-  color: 0xfacc15,
-  emissive: 0xca8a04,
-  roughness: 0.3
+// Cria a textura e aplica no material
+const boostTexture = createBoostTexture();
+const boostPadMat = new THREE.MeshBasicMaterial({
+  map: boostTexture,
+  transparent: true,
+  opacity: 0.95
 });
-const boostPadGeo = new THREE.PlaneGeometry(trackWidth * 0.75, 3.2);
+// Ajuste o tamanho: a largura pega quase toda a pista (trackWidth * 0.95)
+// A profundidade cai de 3.2 (ou mais) para 4.5, criando um retângulo estreito e largo.
+const boostPadGeo = new THREE.PlaneGeometry(trackWidth * 0.35, 4.5);
 
 function spawnBoostPads(customBoosts) {
   boostPadsList.length = 0;
@@ -1818,24 +1865,30 @@ function spawnBoostPads(customBoosts) {
   customBoosts.forEach(b => {
     const pt = trackCurve.getPointAt(b.t);
     const tangent = trackCurve.getTangentAt(b.t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
     const heading = Math.atan2(tangent.x, tangent.z);
+
+    // Aplica o deslocamento guardado
+    const offset = b.offset || 0;
+    const finalPt = pt.clone().addScaledVector(normal, offset);
 
     const pad = new THREE.Mesh(boostPadGeo, boostPadMat);
     pad.rotation.x = -Math.PI / 2;
     pad.rotation.z = heading;
-    pad.position.set(pt.x, 0.045, pt.z);
+    pad.position.set(finalPt.x, 0.045, finalPt.z);
     trackElementsGroup.add(pad);
 
-    boostPadsList.push({ position: new THREE.Vector3(pt.x, 0, pt.z) });
+    boostPadsList.push({ position: new THREE.Vector3(finalPt.x, 0, finalPt.z) });
   });
 }
 
 function checkBoostPads() {
   if (!kart) return;
   for (const pad of boostPadsList) {
-    if (kart.position.distanceTo(pad.position) < 3.5) {
+    // Reduzimos o raio de colisão de 3.5 para 2.5
+    if (kart.position.distanceTo(pad.position) < 2.5) {
       if (physics.turboTimer < 1.0) {
-        physics.turboTimer = 1.3 * (physics.turboBonus || 1.0);
+        physics.turboTimer = 1.1 * (physics.turboBonus || 1.0);
       }
     }
   }
@@ -2040,6 +2093,13 @@ function ativarArmadilhaRocket() {
   rocketBoxAtiva = true;
   rocketBoxCliques = 0;
 
+  // --- MOSTRAR AVISO NA TELA ---
+  if (typeof digWarningContainer !== 'undefined') {
+    digWarningContainer.innerHTML = '💣 CAIXA ROCKET! APERTE "R" VÁRIAS VEZES! 💣';
+    digWarningContainer.style.background = 'rgba(185, 28, 28, 0.95)'; // Fundo vermelho escuro
+    digWarningContainer.style.display = 'block';
+  }
+
   const textura = criarTexturaEquipeRocket();
   const texturaEmissiva = criarTexturaEmissivaRocket(); // Carrega a máscara
 
@@ -2075,6 +2135,13 @@ function desarmarRocketBox() {
   rocketBoxAtiva = false;
   clearTimeout(temporizadorRocket);
   clearInterval(intervaloPiscoRocket);
+
+  // --- ESCONDER AVISO DA TELA E RESETAR ---
+  if (typeof digWarningContainer !== 'undefined') {
+    digWarningContainer.style.display = 'none';
+    digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
+    digWarningContainer.style.background = 'rgba(185, 28, 28, 0.85)';
+  }
 
   if (rocketBoxMesh) {
     // Remove a caixa do 'kart'
@@ -2311,6 +2378,7 @@ async function loadCustomTrack(trackParam) {
     else addTires(); // Grama (Padrão)
     addStartFinishLine();
     spawnItemBoxes(trackData.items);
+    spawnBoostPads(trackData.boosts);
     if (currentBiome === 'ghost') spawnGhostDecorations();
     else if (currentBiome === 'ice') spawnIceDecorations();
     else if (currentBiome === 'lava') spawnLavaDecorations();
@@ -3934,32 +4002,36 @@ function updateItemBoxes(dt) {
       if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.6) {
         disableItemBox(box.id);
 
-        // Sorteia um item para o bot (incluindo a ROCKET_BOX)
+        // Sorteia um item para o bot
         let selectedSkill = null;
 
-        // SISTEMA DE HABILIDADES EXCLUSIVAS DOS LÍDERES
-        if (bot.nickname === 'BROCK') {
-          selectedSkill = SKILLS.BROCK_ROCK;
-        } else if (bot.nickname === 'MISTY') {
-          selectedSkill = SKILLS.MISTY_WATER;
-        } else if (bot.nickname === 'LT. SURGE') {
-          selectedSkill = SKILLS.SURGE_SHOCK;
-        } else if (bot.nickname === 'ERIKA') {
-          selectedSkill = SKILLS.ERIKA_ROOTS;
-        } else if (bot.nickname === 'KOGA') {
-          selectedSkill = SKILLS.KOGA_SMOKE;
-        } else if (bot.nickname === 'SABRINA') {
-          selectedSkill = SKILLS.SABRINA_VORTEX;
-        } else if (bot.nickname === 'BLAINE') {
-          selectedSkill = SKILLS.BLAINE_BOOST;
-        } else if (bot.nickname === 'GIOVANNI') {
-          selectedSkill = SKILLS.ROCKET_BOX;
+        // 1. Define QUAIS itens são comuns e podem ser pegos por qualquer um (exclui os de líder)
+        const HABILIDADES_COMUNS = [
+          SKILLS.TURBO, SKILLS.ICE, SKILLS.LODO, SKILLS.SHIELD,
+          SKILLS.CHOQUE, SKILLS.FUMACA, SKILLS.SURF, SKILLS.LAMA,
+          SKILLS.DIG, SKILLS.SOM
+        ];
+
+        // 2. Verifica se estamos no ÚLTIMO ANDAR da torre (Boss Fight)
+        const isBossFloor = (typeof secureTowerState !== 'undefined' && secureTowerState.floor === secureTowerState.maxFloors);
+
+        // 3. Só permite a habilidade exclusiva se for o último andar E o nome bater
+        if (isBossFloor) {
+          if (bot.nickname === 'BROCK') selectedSkill = SKILLS.BROCK_ROCK;
+          else if (bot.nickname === 'MISTY') selectedSkill = SKILLS.MISTY_WATER;
+          else if (bot.nickname === 'LT. SURGE') selectedSkill = SKILLS.SURGE_SHOCK;
+          else if (bot.nickname === 'ERIKA') selectedSkill = SKILLS.ERIKA_ROOTS;
+          else if (bot.nickname === 'KOGA') selectedSkill = SKILLS.KOGA_SMOKE;
+          else if (bot.nickname === 'SABRINA') selectedSkill = SKILLS.SABRINA_VORTEX;
+          else if (bot.nickname === 'BLAINE') selectedSkill = SKILLS.BLAINE_BOOST;
+          else if (bot.nickname === 'GIOVANNI') selectedSkill = SKILLS.ROCKET_BOX;
         }
-        // Se não for líder, pega item aleatório
-        else {
-          const skillKeys = Object.keys(SKILLS);
-          const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
-          selectedSkill = SKILLS[randomKey];
+
+        // 4. Se o selectedSkill ainda for nulo (porque não é o líder OU não é o último andar),
+        // sorteia APENAS da lista de habilidades comuns!
+        if (!selectedSkill) {
+          const randomIndex = Math.floor(Math.random() * HABILIDADES_COMUNS.length);
+          selectedSkill = HABILIDADES_COMUNS[randomIndex];
         }
 
         bot.currentItem = selectedSkill;
@@ -5608,10 +5680,20 @@ function updateHUD() {
       if (ctrDriftFill) ctrDriftFill.style.width = '0%';
     }
 
-    // 6. Aviso do Ataque DIG
+    // 6. Aviso do Ataque DIG ou Armadilhas
     const isDigIncoming = activeDigs.some(dig => dig.targetId === 'local');
-    if (isDigIncoming && !tr.finished) {
-      if (typeof digWarningContainer !== 'undefined') digWarningContainer.style.display = 'block';
+
+    // Agora verifica se alguma das 3 ameaças está ativa!
+    if ((isDigIncoming || isRooted || rocketBoxAtiva) && !tr.finished) {
+      if (typeof digWarningContainer !== 'undefined') {
+        digWarningContainer.style.display = 'block';
+
+        // Garante que o texto do DIG apareça corretamente se for ele
+        if (isDigIncoming && !isRooted && !rocketBoxAtiva) {
+          digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
+          digWarningContainer.style.background = 'rgba(185, 28, 28, 0.85)';
+        }
+      }
     } else {
       if (typeof digWarningContainer !== 'undefined') digWarningContainer.style.display = 'none';
     }
@@ -6796,6 +6878,7 @@ function animate() {
   updateItemBoxes(dt);
   updateTraps(dt);
   updateTrapParticles(dt);
+  checkBoostPads();
   verificarColisaoRocketBox();
   networkTick(dt);
   updateRemoteKarts(dt);
@@ -6818,7 +6901,10 @@ function animate() {
   const now2 = Date.now();
   const timeSec = now2 * 0.001;
 
-
+  // Faz as setas do painel de boost se moverem para frente
+  if (typeof boostTexture !== 'undefined') {
+    boostTexture.offset.y += 0.01; // Aumente ou diminua para ajustar a velocidade da animação
+  }
   composer.render();
 }
 

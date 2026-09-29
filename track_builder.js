@@ -273,21 +273,27 @@ function drawStartFinish(curve) {
 function drawBoosts(curve) {
   boosts.forEach(b => {
     const pt = curve.getPointAt(b.t);
-    const tangent = curve.getTangentAt(b.t);
-    const scr = worldToScreen(pt.x, pt.z);
+    const tangent = curve.getTangentAt(b.t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    const offset = b.offset || 0;
+    const finalX = pt.x + normal.x * offset;
+    const finalZ = pt.z + normal.z * offset;
+
+    const scr = worldToScreen(finalX, finalZ);
     const angle = Math.atan2(tangent.z, tangent.x);
 
     ctx.save();
     ctx.translate(scr.x, scr.y);
     ctx.rotate(angle);
 
-    // Chevron Pad Amarelo/Verde
+    // Chevron Pad Amarelo/Verde (desenho um pouco menor)
     ctx.fillStyle = '#eab308';
     ctx.beginPath();
-    ctx.moveTo(10, 0);
-    ctx.lineTo(-4, -10);
+    ctx.moveTo(8, 0);
+    ctx.lineTo(-4, -6);
     ctx.lineTo(0, 0);
-    ctx.lineTo(-4, 10);
+    ctx.lineTo(-4, 6);
     ctx.closePath();
     ctx.fill();
 
@@ -421,7 +427,20 @@ function setupCanvasEvents() {
         const curve = getSplineCurve();
         if (curve) {
           const t = findNearestTOnCurve(mx, my, curve);
-          boosts.push({ t });
+
+          // Calcula o deslocamento lateral exato de onde o mouse clicou
+          const pt = curve.getPointAt(t);
+          const tangent = curve.getTangentAt(t).normalize();
+          const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+          const worldPos = screenToWorld(mx, my);
+
+          const offsetVector = new THREE.Vector3(worldPos.x - pt.x, 0, worldPos.z - pt.z);
+          let offset = offsetVector.dot(normal);
+
+          // Trava o offset para não colocar o boost fora da pista
+          offset = Math.max(-trackWidth / 2 + 1.5, Math.min(trackWidth / 2 - 1.5, offset));
+
+          boosts.push({ t, offset });
           render();
         }
       }
@@ -550,7 +569,14 @@ function findNearestBoost(sx, sy) {
 
   for (let i = 0; i < boosts.length; i++) {
     const pt = curve.getPointAt(boosts[i].t);
-    const scr = worldToScreen(pt.x, pt.z);
+    const tangent = curve.getTangentAt(boosts[i].t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+    const offset = boosts[i].offset || 0;
+    const finalX = pt.x + normal.x * offset;
+    const finalZ = pt.z + normal.z * offset;
+
+    const scr = worldToScreen(finalX, finalZ);
     if (Math.hypot(scr.x - sx, scr.y - sy) <= threshold) {
       return i;
     }
@@ -752,7 +778,10 @@ function getTrackExportData() {
     width: trackWidth,
     points: points.map(p => ({ x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 })),
     items: items.map(it => ({ t: Math.round(it.t * 1000) / 1000 })),
-    boosts: boosts.map(b => ({ t: Math.round(b.t * 1000) / 1000 }))
+    boosts: boosts.map(b => ({
+      t: Math.round(b.t * 1000) / 1000,
+      offset: b.offset ? Math.round(b.offset * 100) / 100 : 0
+    }))
   };
 }
 

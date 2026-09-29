@@ -4817,9 +4817,30 @@
 
         if (error) throw error;
 
-        // --- NOVA LÓGICA DE FILTRO ---
+        // --- NOVA LÓGICA DE FILTRO E FAXINEIRO DE SALAS FANTASMAS ---
         const meuNick = getNickname();
-        const salasValidas = data.filter(room => room.host_name !== meuNick);
+        const agora = new Date();
+        const limiteMinutos = 15; // Salas criadas há mais de 15 minutos expiram
+
+        const salasValidas = [];
+        const salasFantasmas = [];
+
+        data.forEach(room => {
+          // Calcula quanto tempo faz que a sala foi criada
+          const tempoCriacao = new Date(room.created_at).getTime();
+          const diferencaMin = (agora.getTime() - tempoCriacao) / (1000 * 60);
+
+          if (diferencaMin > limiteMinutos) {
+            salasFantasmas.push(room.room_code); // Marca como fantasma
+          } else if (room.host_name !== meuNick) {
+            salasValidas.push(room); // É válida e não é do próprio jogador
+          }
+        });
+
+        // Limpeza silenciosa: o jogador que está buscando deleta as salas antigas do servidor
+        if (salasFantasmas.length > 0) {
+          supabaseClient.from('public_rooms').delete().in('room_code', salasFantasmas).then();
+        }
 
         if (!salasValidas || salasValidas.length === 0) {
           container.innerHTML = '<div style="text-align: center; color: #94a3b8; font-size: 11px; padding: 10px;">Nenhuma sala aberta no momento. Tente criar uma!</div>';
@@ -5902,6 +5923,13 @@
       // Se ele tem um código de sala e estava na aba de Host, deleta a sala no banco
       if (roomCode && typeof supabaseClient !== 'undefined' && document.getElementById('btnTabHost')?.classList.contains('active')) {
         // Envia comando rápido (sem await) para limpar a sujeira antes de a página morrer
+        supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
+      }
+    });
+
+    // O evento pagehide é muito mais agressivo e confiável em navegadores modernos e celulares
+    window.addEventListener('pagehide', () => {
+      if (roomCode && typeof supabaseClient !== 'undefined' && document.getElementById('btnTabHost')?.classList.contains('active')) {
         supabaseClient.from('public_rooms').delete().eq('room_code', roomCode).then();
       }
     });

@@ -1,3 +1,12 @@
+Versão 1.9.5
+Sinalização da necessidade de apertar a tecla R em algumas habilidades.;
+Alterado os nomes dos corredores (BOTS).;
+Alterado para que as salas multiplayer são fechadas após um tempo vazias.;
+Adicionado na criação e nas corridas os boosts de mapa.;
+Balanceamento dos Karts da Região de Kanto.;
+
+
+
 Versão 1.9.4
 Adicionados novos itens à loja;
 Corrigidas e adicionadas novas funcionalidades ao modo Torre;
