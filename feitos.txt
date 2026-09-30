@@ -4,6 +4,9 @@ Alterado os nomes dos corredores (BOTS).;
 Alterado para que as salas multiplayer são fechadas após um tempo vazias.;
 Adicionado na criação e nas corridas os boosts de mapa.;
 Balanceamento dos Karts da Região de Kanto.;
+Adicionado na loja de consumiveis os emojis para o chat do multiplayer.;
+Funcionalidade para os karts ficarem inativos para compra/corrida/bots.;
+
 
 
 

@@ -451,7 +451,7 @@ async function loadKartsFromDatabase() {
   try {
     const { data, error } = await supabaseClient
       .from('karts')
-      .select('id, name, stats, physics, pokemon_dex_id');
+      .select('id, name, stats, physics, pokemon_dex_id, activated');
 
     if (error) throw error;
 
@@ -463,7 +463,8 @@ async function loadKartsFromDatabase() {
         name: dbKart.name,
         modelUrl: getKartUrl(`${dbKart.id}.glb`),
         stats: { ...dbKart.stats, ...dbKart.physics },
-        dexId: dbKart.pokemon_dex_id || null
+        dexId: dbKart.pokemon_dex_id || null,
+        activated: dbKart.activated !== false
       };
     });
   } catch (err) {
@@ -472,7 +473,8 @@ async function loadKartsFromDatabase() {
     KART_DATABASE = [{
       id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
       stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
-      dexId: 135
+      dexId: 135,
+      activated: true
     }];
   }
 }
@@ -5868,6 +5870,9 @@ function spawnBots() {
   const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
   const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
+  // 1. Cria a lista apenas com os karts permitidos
+  const kartsPermitidosParaBots = KART_DATABASE.filter(kart => kart.activated);
+
   // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder no último andar
   if (modeParam === 'tower') {
     // Lê diretamente do estado seguro da base de dados/memória, ignorando a URL
@@ -5880,7 +5885,7 @@ function spawnBots() {
       const botCount = maxSlots - totalPlayersParam;
 
       for (let i = 0; i < botCount; i++) {
-        const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
+        const randomKart = kartsPermitidosParaBots[Math.floor(Math.random() * kartsPermitidosParaBots.length)];
         const botSlot = totalPlayersParam + i;
         const botId = 'bot-' + botSlot;
 
@@ -5961,7 +5966,7 @@ function spawnBots() {
   if (botCount <= 0) return;
 
   for (let i = 0; i < botCount; i++) {
-    const randomKart = KART_DATABASE[Math.floor(Math.random() * KART_DATABASE.length)];
+    const randomKart = kartsPermitidosParaBots[Math.floor(Math.random() * kartsPermitidosParaBots.length)];
     const botSlot = totalPlayersParam + i;
     const botId = 'bot-' + botSlot;
 

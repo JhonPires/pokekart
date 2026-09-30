@@ -2,19 +2,17 @@ BUGS
 f5 ou atualizar tela dentro da corrida deve remover da corrida
 
 AJUSTES
-- Preciso deixar de uma forma pratica e facil de ativa/desativar a compra de um kart da garagem e caso ele esteja desativado nem ser da rotação diaria
 - Trocar todos os icones
+- Trocar os icones dos emojis da loja
 
 NOVIDADES
-- Colocar para venda na loja os emojis, deixas alguns livres e outros sendo compraveis
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
-- Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
-- Música de Perfil: O jogador comprar nos consumiveis um audio em especifico que fica tocando ao abrir o perfil.
 - Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
 - Ver a possibilidade de escolher para onde jogar a habilidade
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 
 FUTURO
+- Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Efeitos sonoros (Aceleração, derrapagem, poderes)

@@ -29,7 +29,7 @@ let KART_CATALOG = [];
 async function carregarKartsDaGaragem() {
   try {
     // Adicionado 'pokemon_dex_id' na query do Supabase
-    const { data, error } = await supabaseClient.from('karts').select('id, name, price, concept_img, stats, pokemon_dex_id');
+    const { data, error } = await supabaseClient.from('karts').select('id, name, price, concept_img, stats, pokemon_dex_id, activated');
     if (error) throw error;
 
     if (data && data.length > 0) {
@@ -40,7 +40,8 @@ async function carregarKartsDaGaragem() {
         conceptImg: dbKart.concept_img || `img/${dbKart.id}.png`,
         modelUrl: getKartUrl(`${dbKart.id}.glb`),
         stats: dbKart.stats || { speed: 80, accel: 80, handling: 80 },
-        dexId: dbKart.pokemon_dex_id || null // <--- Guarda o ID do Pokémon diretamente aqui
+        dexId: dbKart.pokemon_dex_id || null,
+        activated: dbKart.activated !== false
       }));
     }
   } catch (err) {
@@ -52,7 +53,8 @@ async function carregarKartsDaGaragem() {
       conceptImg: 'img/jolteon.png',
       modelUrl: getKartUrl('jolteon.glb'),
       stats: { speed: 75, accel: 90, handling: 85 },
-      dexId: 135
+      dexId: 135,
+      activated: true
     }];
   }
 }
@@ -459,7 +461,7 @@ function updateActionButton(kartData, isFreeRotation) {
   const btnAction = document.getElementById('btnAction');
   if (!btnAction) return;
 
-  // 🛡️ TRAVA DE SEGURANÇA
+  // 🛡️️ TRAVA DE SEGURANÇA
   let userKarts = ['jolteon', 'charizard'];
   if (currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
@@ -493,12 +495,22 @@ function updateActionButton(kartData, isFreeRotation) {
     btnAction.disabled = false;
     btnAction.onclick = () => equipKart(kartData.id);
   } else {
-    btnAction.innerText = `COMPRAR (🪙 ${kartData.price})`;
-    btnAction.style.background = '#facc15';
-    btnAction.style.color = '#0f172a';
-    btnAction.style.cursor = 'pointer';
-    btnAction.disabled = false;
-    btnAction.onclick = () => buyKart(kartData.id, kartData.price);
+    // AQUI ESTÁ A LÓGICA DE BLOQUEIO DA COMPRA
+    if (kartData.activated === false) {
+      btnAction.innerText = 'INDISPONÍVEL';
+      btnAction.style.background = '#475569'; // Cinza escuro para indicar bloqueio
+      btnAction.style.color = '#94a3b8';
+      btnAction.style.cursor = 'not-allowed';
+      btnAction.disabled = true;
+      btnAction.onclick = null;
+    } else {
+      btnAction.innerText = `COMPRAR (🪙 ${kartData.price})`;
+      btnAction.style.background = '#facc15';
+      btnAction.style.color = '#0f172a';
+      btnAction.style.cursor = 'pointer';
+      btnAction.disabled = false;
+      btnAction.onclick = () => buyKart(kartData.id, kartData.price);
+    }
   }
 }
 

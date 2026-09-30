@@ -2521,7 +2521,7 @@
       try {
         const { data, error } = await supabaseClient
           .from('karts')
-          .select('id, name, stats, physics');
+          .select('id, name, stats, physics, activated');
 
         if (error) throw error;
 
@@ -2532,7 +2532,8 @@
             id: dbKart.id,
             name: dbKart.name,
             modelUrl: getKartUrl(`${dbKart.id}.glb`),
-            stats: { ...dbKart.stats, ...dbKart.physics }
+            stats: { ...dbKart.stats, ...dbKart.physics },
+            activated: dbKart.activated !== false
           };
         });
       } catch (err) {
@@ -2668,7 +2669,10 @@
         return s / 233280;
       }
 
-      const availableKarts = KART_DATABASE.map(k => k.id).filter(id => id !== 'jolteon');
+      const availableKarts = KART_DATABASE
+        .filter(k => k.activated) // <-- Bloqueia karts desativados de entrarem no sorteio
+        .map(k => k.id)
+        .filter(id => id !== 'jolteon');
 
       // 3. Ordem alfabética estrita antes de embaralhar, garantindo a mesma base inicial sempre
       availableKarts.sort();
@@ -2721,8 +2725,10 @@
 
       KART_DATABASE.forEach(kart => {
         if (unlockedKarts.includes(kart.id)) {
+          // Se o jogador JÁ TEM o kart, ele continua aparecendo na garagem dele, mesmo se desativado na loja
           availableGroup.push(kart);
-        } else {
+        } else if (kart.activated) {
+          // Se não tem, só aparece a miniatura com o cadeado se o kart estiver ATIVO
           lockedGroup.push(kart);
         }
       });
@@ -4893,7 +4899,11 @@
     let storeItemsCache = {
       titles: [],
       borders: [],
-      avatars: []
+      avatars: [],
+      trail: [],
+      victory: [],
+      consumables: [],
+      emojis: [] // Nova array para Emojis
     };
 
     let currentStoreCategory = 'titles';
@@ -4938,33 +4948,21 @@
     // 2. Buscar itens cadastrados na tabela store_items do Supabase
     async function carregarItensDaLojaDoBanco() {
       if (typeof supabaseClient === 'undefined') return;
-
       try {
         const { data, error } = await supabaseClient.from('store_items').select('*');
         if (error) throw error;
 
         if (data && data.length > 0) {
-          // Cosméticos clássicos (mantidos no plural por compatibilidade com o código antigo)
           storeItemsCache.titles = data.filter(i => i.type === 'title');
           storeItemsCache.borders = data.filter(i => i.type === 'border');
           storeItemsCache.avatars = data.filter(i => i.type === 'avatar');
           storeItemsCache.trail = data.filter(i => i.type === 'trail');
           storeItemsCache.victory = data.filter(i => i.type === 'victory');
           storeItemsCache.consumables = data.filter(i => i.type === 'consumable');
-
-        } else {
-          // Fallback local caso a tabela esteja vazia inicialmente
-          storeItemsCache = {
-            titles: [{ id: 'title_drift', name: 'Rei do Drift', type: 'title', price: 500, icon: '💨' }],
-            borders: [{ id: 'border_fire', name: 'Borda em Chamas', type: 'border', price: 1200, icon: '🔥' }],
-            avatars: [{ id: 'avatar_red', name: 'Lenda Red', type: 'avatar', price: 3000, icon: '🧢' }],
-            trail: [],
-            victory: [],
-            consumables: []
-          };
+          storeItemsCache.emojis = data.filter(i => i.type === 'emoji'); // Filtra os emojis
         }
       } catch (err) {
-        console.warn("Erro ao buscar itens da loja, usando catálogo padrão.", err);
+        console.warn("Erro ao buscar itens da loja.", err);
       }
     }
 
@@ -4994,6 +4992,7 @@
       // Puxar inventário e cosméticos
       let myCosmetics = [];
       let myInventory = {};
+      let myEmojis = ['bulbasaur', 'charmander', 'squirtle', 'pikachu']; // Default
       if (currentUserProfile) {
         if (currentUserProfile.unlocked_cosmetics) {
           try {
@@ -5005,6 +5004,9 @@
             myInventory = typeof currentUserProfile.inventory === 'string' ? JSON.parse(currentUserProfile.inventory) : currentUserProfile.inventory;
           } catch (e) { myInventory = {}; }
         }
+        if (currentUserProfile.unlocked_emojis) {
+          myEmojis = currentUserProfile.unlocked_emojis;
+        }
       }
 
       if (items.length === 0) {
@@ -5014,7 +5016,7 @@
 
       items.forEach(item => {
         const isConsumable = item.type === 'consumable';
-        const isOwned = !isConsumable && myCosmetics.includes(item.id);
+        const isOwned = !isConsumable && (myCosmetics.includes(item.id) || myEmojis.includes(item.id));
         const amountOwned = myInventory[item.id] || 0;
 
         let isEquipped = false;
@@ -5034,7 +5036,10 @@
         if (isConsumable) {
           btnText = `COMPRAR (🪙 ${item.price})`;
         } else if (isOwned) {
-          if (isEquipped) {
+          if (item.type === 'emoji') {
+            btnText = 'OBTIDO';
+            btnStyle = 'background: #1e3a57; border: 1px solid #2a5078; color: #64748b; font-weight: 900;';
+          } else if (isEquipped) {
             btnText = 'EQUIPADO';
             btnStyle = 'background: #22c55e; border: 1px solid #16a34a; color: #022c22; font-weight: 900;';
           } else {
@@ -5109,30 +5114,36 @@
           myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics) ? currentUserProfile.unlocked_cosmetics : JSON.parse(currentUserProfile.unlocked_cosmetics);
         } catch (e) { myCosmetics = []; }
       }
+      let myEmojis = currentUserProfile.unlocked_emojis || ['bulbasaur', 'charmander', 'squirtle', 'pikachu'];
 
       let updateData = {};
 
       if (!isOwned) {
         const userCoins = currentUserProfile.coins || 0;
-        if (userCoins < price) {
-          alert("Moedas insuficientes para realizar esta compra!");
-          return;
-        }
-
-        const confirmar = confirm(`Deseja comprar este cosmético por ${price} moedas?`);
+        if (userCoins < price) { alert("Moedas insuficientes!"); return; }
+        const confirmar = confirm(`Deseja comprar este item por ${price} moedas?`);
         if (!confirmar) return;
 
         const novasMoedas = userCoins - price;
-        myCosmetics.push(itemId);
+
+        // Verifica se é emoji para salvar na coluna correta
+        if (type === 'emoji') {
+          myEmojis.push(itemId);
+          currentUserProfile.unlocked_emojis = myEmojis;
+          updateData.unlocked_emojis = myEmojis;
+        } else {
+          myCosmetics.push(itemId);
+          currentUserProfile.unlocked_cosmetics = myCosmetics;
+          updateData.unlocked_cosmetics = myCosmetics;
+        }
 
         currentUserProfile.coins = novasMoedas;
-        currentUserProfile.unlocked_cosmetics = myCosmetics;
         updateData.coins = novasMoedas;
-        updateData.unlocked_cosmetics = myCosmetics;
 
         document.getElementById('storeUserCoins').innerText = novasMoedas;
         document.getElementById('playerCoinsText').innerText = novasMoedas;
       } else {
+        if (type === 'emoji') return;
         let colunaEquipamento = null;
         if (type === 'title') colunaEquipamento = 'equipped_title';
         if (type === 'border') colunaEquipamento = 'equipped_border';
@@ -5252,7 +5263,8 @@
       'avatars': '👤 Avatares',
       'trail': '💨 Rastros',
       'victory': '🏆 Efeitos',
-      'consumables': '🎒 Consumíveis'
+      'consumables': '🎒 Consumíveis',
+      'emojis': '💬 Emojis'
     };
 
     // Função para gerar as abas dinamicamente
@@ -5299,80 +5311,63 @@
     }
 
     // --- SISTEMA DE STICKERS NO LOBBY ---
-    // const LOBBY_EMOJIS = ['🔥', '😂', '💀', '💩', '🏁', '🚀', '❤️', '🤬'];
-
-    const LOBBY_STICKERS = [
-      'emojis/bulbasaur.png',
-      'emojis/bulbasaur2.png',
-      'emojis/bulbasaur3.png',
-      'emojis/charizard.png',
-      'emojis/charmander.png',
-      'emojis/charmander2.png',
-      'emojis/charmander3.png',
-      'emojis/chikorita.png',
-      'emojis/cyndaquill.png',
-      'emojis/dragonite.png',
-      'emojis/eevee.png',
-      'emojis/espeon.png',
-      'emojis/gardevoir.png',
-      'emojis/gengar.png',
-      'emojis/glaceon.png',
-      'emojis/gyarados.png',
-      'emojis/lapras.png',
-      'emojis/leafeon.png',
-      'emojis/lucario.png',
-      'emojis/mewtwo.png',
-      'emojis/mudkip.png',
-      'emojis/pikachu.png',
-      'emojis/pikachu2.png',
-      'emojis/pokeball.png',
-      'emojis/psyduck.png',
-      'emojis/snorlax.png',
-      'emojis/squirtle.png',
-      'emojis/squirtle2.png',
-      'emojis/torchic.png',
-      'emojis/umbreon.png',
-    ];
-
+    // --- SISTEMA DE STICKERS NO LOBBY (DINÂMICO) ---
     let currentStickerPage = 0;
-    const STICKERS_PER_PAGE = 8; // Limite exato por página
+    const STICKERS_PER_PAGE = 8;
 
-    // Função para navegar entre as páginas de stickers
+    function getPlayerEmojis() {
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_emojis) {
+        return currentUserProfile.unlocked_emojis;
+      }
+      return ['bulbasaur', 'charmander', 'squirtle', 'pikachu']; // Fallback Padrão
+    }
+
     function changeStickerPage(direction) {
-      const totalPages = Math.ceil(LOBBY_STICKERS.length / STICKERS_PER_PAGE);
+      const playerEmojis = getPlayerEmojis();
+      const totalPages = Math.ceil(playerEmojis.length / STICKERS_PER_PAGE) || 1;
       currentStickerPage += direction;
 
       if (currentStickerPage < 0) currentStickerPage = totalPages - 1;
       if (currentStickerPage >= totalPages) currentStickerPage = 0;
 
-      initStickerChat(); // Re-renderiza a grelha
+      initStickerChat();
     }
 
-    // Função para renderizar os stickers da página atual
     function initStickerChat() {
       const grid = document.getElementById('emojiGrid');
       const indicator = document.getElementById('stickerPageIndicator');
       if (!grid) return;
 
       grid.innerHTML = '';
+      const playerEmojis = getPlayerEmojis();
 
-      const totalPages = Math.ceil(LOBBY_STICKERS.length / STICKERS_PER_PAGE) || 1;
+      // Monta os links das imagens baseados no que o jogador possui
+      const dynamicStickers = playerEmojis.map(emojiId => {
+        if (typeof storeItemsCache !== 'undefined' && storeItemsCache.emojis) {
+          const shopItem = storeItemsCache.emojis.find(e => e.id === emojiId);
+          if (shopItem && shopItem.metadata && shopItem.metadata.filename) {
+            return `emojis/${shopItem.metadata.filename}`;
+          }
+        }
+        return `emojis/${emojiId}.png`; // fallback
+      });
+
+      const totalPages = Math.ceil(dynamicStickers.length / STICKERS_PER_PAGE) || 1;
       if (indicator) indicator.innerText = `Pág. ${currentStickerPage + 1}/${totalPages}`;
 
-      // Fatiar a lista de stickers para mostrar apenas os 8 da página atual
       const startIndex = currentStickerPage * STICKERS_PER_PAGE;
-      const paginatedStickers = LOBBY_STICKERS.slice(startIndex, startIndex + STICKERS_PER_PAGE);
+      const paginatedStickers = dynamicStickers.slice(startIndex, startIndex + STICKERS_PER_PAGE);
 
       paginatedStickers.forEach(stickerUrl => {
         const btn = document.createElement('button');
         btn.className = 'emoji-btn';
 
-        btn.innerHTML = `<img src="${stickerUrl}" style="width: 28px; height: 28px; object-fit: contain; pointer-events: none;">`;
+        btn.innerHTML = `<img src="${stickerUrl}" style="width: 28px; height: 28px; object-fit: contain; pointer-events: none;" onerror="this.src='emojis/pokeball.png'">`;
 
         btn.onclick = () => {
           spawnFloatingSticker(stickerUrl);
           sendStickerToNetwork(stickerUrl);
-          document.getElementById('stickerChatContainer').style.display = 'none'; // Fecha após uso
+          document.getElementById('stickerChatContainer').style.display = 'none';
         };
         grid.appendChild(btn);
       });
