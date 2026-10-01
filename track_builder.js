@@ -6,6 +6,7 @@ let items = [];
 let boosts = [];
 let isClosed = true;
 const trackWidth = 10; // Largura da pista em metros
+let currentEditingTrackId = null;
 
 let currentMode = 'nodes'; // 'nodes' | 'items' | 'boosts'
 let selectedPointIndex = -1;
@@ -40,14 +41,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
 
-  // Inicializa com o traçado padrão
-  loadPreset();
+  // NOVO: Verifica se estamos a editar uma pista através da URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const editTrackId = urlParams.get('editTrack');
 
-  // Configurações de Eventos da Interface
+  if (editTrackId) {
+    await loadTrackForEditing(editTrackId);
+  } else {
+    loadPreset(); // Inicializa com o traçado padrão se não for edição
+  }
+
   setupUIEvents();
   setupCanvasEvents();
 
-  // Verifica Perfil e Permissões de Admin
   if (typeof fetchPlayerProfile === 'function') {
     const profile = await fetchPlayerProfile();
     if (profile && profile.is_admin) {
@@ -58,6 +64,55 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   render();
 });
+
+async function loadTrackForEditing(trackId) {
+  try {
+    const { data: track, error } = await supabaseClient
+      .from('custom_tracks')
+      .select('*')
+      .eq('id', trackId)
+      .single();
+
+    if (error) throw error;
+    if (!track) return;
+
+    currentEditingTrackId = track.id;
+
+    // Carrega os dados da pista
+    const tData = track.track_data;
+    points = tData.points ? tData.points.map(p => ({ ...p })) : [];
+    items = tData.items ? tData.items.map(i => ({ ...i })) : [];
+    boosts = tData.boosts ? tData.boosts.map(b => ({ ...b })) : [];
+    isClosed = true;
+
+    // Preenche o modal de gravação com os dados atuais
+    const nameInput = document.getElementById('trackNameInput');
+    const descInput = document.getElementById('trackDescInput');
+    if (nameInput) nameInput.value = track.name || '';
+    if (descInput) descInput.value = track.description || '';
+
+    // Atualiza o Bioma no interface
+    const biome = tData.biome || 'grass';
+    const hiddenInput = document.getElementById('biomeSelect');
+    if (hiddenInput) {
+      hiddenInput.value = biome;
+      const dropdown = document.getElementById('customBiomeDropdown');
+      if (dropdown) {
+        const opt = dropdown.querySelector(`[data-value="${biome}"]`);
+        if (opt) {
+          dropdown.querySelector('.dropdown-selected').innerHTML = opt.innerHTML;
+        }
+      }
+    }
+
+    updateInfo();
+    render();
+  } catch (err) {
+    console.error('Erro ao carregar pista para edição:', err);
+    alert('Não foi possível carregar a pista para edição.');
+    loadPreset();
+  }
+}
 
 function resizeCanvas() {
   const container = document.getElementById('workspace');
@@ -692,7 +747,7 @@ function setupUIEvents() {
       return;
     }
 
-    statusEl.innerText = 'Salvando pista no banco de dados...';
+    statusEl.innerText = currentEditingTrackId ? 'Atualizando pista...' : 'Salvando pista no banco de dados...';
     statusEl.style.color = '#38bdf8';
 
     try {
@@ -706,26 +761,43 @@ function setupUIEvents() {
       const trackData = getTrackExportData();
       const isAdmin = Boolean(profile.is_admin);
 
-      const { data, error } = await supabaseClient
-        .from('custom_tracks')
-        .insert({
-          creator_id: profile.id,
-          creator_name: profile.nickname || 'Piloto',
-          name: name,
-          description: desc,
-          track_data: trackData,
-          is_approved: isAdmin, // Admins auto-aprovam suas pistas
-          status: isAdmin ? 'approved' : 'pending'
-        })
-        .select()
-        .single();
+      let query;
+
+      if (currentEditingTrackId) {
+        // ATUALIZAR PISTA EXISTENTE
+        query = supabaseClient
+          .from('custom_tracks')
+          .update({
+            name: name,
+            description: desc,
+            track_data: trackData,
+            is_approved: isAdmin,
+            status: isAdmin ? 'approved' : 'pending'
+          })
+          .eq('id', currentEditingTrackId);
+      } else {
+        // INSERIR NOVA PISTA
+        query = supabaseClient
+          .from('custom_tracks')
+          .insert({
+            creator_id: profile.id,
+            creator_name: profile.nickname || 'Piloto',
+            name: name,
+            description: desc,
+            track_data: trackData,
+            is_approved: isAdmin,
+            status: isAdmin ? 'approved' : 'pending'
+          });
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
 
       statusEl.style.color = '#22c55e';
-      statusEl.innerText = isAdmin
-        ? 'Pista salva e aprovada automaticamente com sucesso!'
-        : 'Pista enviada com sucesso! Ela ficará visível no Lobby assim que o Administrador aprovar.';
+      statusEl.innerText = currentEditingTrackId
+        ? 'Pista atualizada com sucesso!'
+        : (isAdmin ? 'Pista salva e aprovada automaticamente com sucesso!' : 'Pista enviada com sucesso! Ela ficará visível no Lobby assim que o Administrador aprovar.');
 
       setTimeout(() => {
         document.getElementById('saveModal').style.display = 'none';
@@ -871,6 +943,7 @@ async function loadModerationList() {
         <td style="vertical-align: middle; padding: 14px 12px;">${statusBadge}</td>
         <td style="vertical-align: middle; padding: 14px 16px 14px 12px; text-align: right;">
           <div style="display: flex; gap: 6px; justify-content: flex-end; align-items: center;">
+            <button class="btn-builder" style="padding: 0 14px; height: 38px; font-size: 12px; background: #3b82f6; border-color: #3b82f6;" onclick="editTrackBuilder('${tr.id}')">✏️ Editar</button>
             <button class="btn-builder" style="padding: 0 14px; height: 38px; font-size: 12px;" onclick="testTrackById('${tr.id}')">🎮 Testar</button>
             <button class="btn-builder btn-primary" style="padding: 0 14px; height: 38px; font-size: 12px;" onclick="moderateTrack('${tr.id}', true)">Aprovar</button>
             <button class="btn-builder" style="background:#ef4444; border-color:#ef4444; padding: 0 14px; height: 38px; font-size: 12px;" onclick="moderateTrack('${tr.id}', false)">Rejeitar</button>
@@ -886,6 +959,11 @@ async function loadModerationList() {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#ef4444;">Erro: ${err.message}</td></tr>`;
   }
 }
+
+window.editTrackBuilder = (trackId) => {
+  // Recarrega a página passando o parâmetro de edição
+  window.location.href = `track_builder.html?editTrack=${trackId}`;
+};
 
 window.toggleCustomDropdown = (trackId) => {
   // Fecha todos os outros abertos

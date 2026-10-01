@@ -7,7 +7,6 @@ AJUSTES
 
 NOVIDADES
 - Colocar uma sinalização nos novos karts adicionados na tela da garagem
-- Pensar em algo relacionado a coletar moedas na pista para dar um buff nos karts (existe no mario kart)
 - Ver a possibilidade de escolher para onde jogar a habilidade
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 
@@ -47,3 +46,10 @@ Sabrina: Cria um vortex onde te puxa para o centro ao passar por perto dele. O l
 Blaine: O lider sempre vai ter um boost ao pegar a caixa na pista
 
 Giovanni: O lider sempre pega a caixa R ao pegar as caixas na pista. O lider não é atingido
+
+
+
+Moeda de Troca da Loja Exclusiva (Meta a Longo Prazo)
+E se as Master Balls que você segura e resgata não virassem apenas moedas comuns, mas sim fossem acumuladas em um saldo separado de "Master Coins" no seu perfil?
+
+Como ficaria: Essas moedas especiais ficariam guardadas para você conseguir comprar karts lendários, visuais raros ou itens de customização exclusivos que não podem ser comprados com as moedas normais de corrida.

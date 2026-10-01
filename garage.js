@@ -71,7 +71,10 @@ function updateDailyFreeKarts() {
     return s / 233280;
   }
 
-  const availableKarts = KART_CATALOG.map(k => k.id).filter(id => id !== 'jolteon');
+  // CORREÇÃO: Filtra para remover o Jolteon e apenas karts ativos
+  const availableKarts = KART_CATALOG
+    .filter(k => k.id !== 'jolteon' && k.activated !== false)
+    .map(k => k.id);
   availableKarts.sort();
 
   for (let i = availableKarts.length - 1; i > 0; i--) {
@@ -80,6 +83,7 @@ function updateDailyFreeKarts() {
   }
 
   dailyFreeKarts = availableKarts.slice(0, 4);
+  sessionStorage.setItem('pkart_daily_free', JSON.stringify(dailyFreeKarts));
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -435,8 +439,17 @@ async function equipKart(kartId) {
   sessionStorage.setItem('pkart_selected_kart', kartId);
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
     currentUserProfile.selected_kart = kartId;
-  }
 
+    // CORREÇÃO: "Tranca" o kart temporariamente no inventário local.
+    // Isso impede que o Lobby ative a segurança e resete pro Jolteon!
+    if (isFreeRotation && !userKarts.includes(kartId)) {
+      if (Array.isArray(currentUserProfile.unlocked_karts)) {
+        currentUserProfile.unlocked_karts.push(kartId);
+      } else {
+        currentUserProfile.unlocked_karts = JSON.stringify([...userKarts, kartId]);
+      }
+    }
+  }
   // 🛡️ 2. CORREÇÃO: Salva no Supabase SEMPRE. 
   // Isso impede que o auth.js do Lobby puxe um dado velho e resete seu kart.
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {

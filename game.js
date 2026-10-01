@@ -188,6 +188,35 @@ function setupCTRHud() {
     
     .ctr-lap-counter { position: absolute; top: 20px; right: 30px; font-size: 54px; }
     
+    /* --- NOVO: CONTADOR DE MASTER BALLS NO TOPO CENTRO --- */
+    .ctr-mb-box {
+      position: absolute; 
+      top: 15px; 
+      left: 50%; 
+      transform: translateX(-50%);
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 5px;
+    }
+    .ctr-mb-icon {
+      width: 55px; 
+      height: 55px;
+      transform: rotate(-15deg); /* Dá um ar mais dinâmico */
+    }
+    .ctr-mb-count {
+      font-size: 40px;
+      color: #ffaa00;
+     text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+      line-height: 1;
+    }
+    .ctr-mb-x {
+      font-size: 28px; /* 'x' size tagginchabaddadi */
+      color: #ffaa00;
+      vertical-align: middle;
+      margin-right: 2px;
+    }
+    
     .ctr-item-slot {
       position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%);
       width: 80px; height: 80px; background: rgba(0,0,0,0.6);
@@ -231,18 +260,16 @@ function setupCTRHud() {
     }
     .ctr-giant-pos-suffix { font-size: 55px; vertical-align: top; color: #ffcc00; }
     
-    /* ORGANIZAÇÃO FIXA DO MINI MAPA E DO BOOST PARA PARAR DE PULAR */
     .ctr-minimap-box { 
       position: absolute; bottom: 50px; right: 20px; 
       display: flex; flex-direction: column; align-items: center; gap: 12px; 
       pointer-events: auto; opacity: 0.8;
     }
     .ctr-minimap-canvas {
-      width: 350px !important; height: 350px !important; !important;
+      width: 350px !important; height: 350px !important;
       position: static !important; margin: 0 !important; transform: none !important;
     }
     
-    /* BARRA DE BOOST ESTILO JOGO DE CORRIDA (ABAIXO DO MINI MAPA) */
     .ctr-drift-bar { 
       width: 180px; height: 16px; background: rgba(15, 23, 42, 0.9); 
       border: 2px solid #38bdf8; border-radius: 8px; overflow: hidden; 
@@ -263,6 +290,13 @@ function setupCTRHud() {
       <div class="ctr-lap-times" id="hud-lap-times"></div>
     </div>
     <div class="ctr-lap-counter">LAP <span id="hud-current-lap">1</span>/3</div>
+    
+    <!-- NOVO: MASTER BALLS NO TOPO -->
+    <div class="ctr-mb-box">
+      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" class="ctr-mb-icon" alt="MB">
+      <div class="ctr-mb-count"><span class="ctr-mb-x">x</span><span id="masterBallCount">0</span></div>
+    </div>
+
     <div class="ctr-item-slot" id="itemIcon">${defaultIconSvg}</div>
     <div class="ctr-standings" id="standingsList"></div>
     <div class="ctr-giant-pos" id="hud-giant-pos">1<span class="ctr-giant-pos-suffix">st</span></div>
@@ -286,6 +320,26 @@ function setupCTRHud() {
 }
 
 setupCTRHud();
+
+function updateMasterBallHUD() {
+  const countEl = document.getElementById('masterBallCount');
+  if (countEl) {
+    countEl.innerText = collectedMasterBalls;
+  }
+}
+
+// --- ADICIONE ESTA NOVA FUNÇÃO AQUI ---
+function loseMasterBalls(amount) {
+  if (collectedMasterBalls > 0) {
+    collectedMasterBalls = Math.max(0, collectedMasterBalls - amount);
+    updateMasterBallHUD();
+
+    // Efeito visual de faíscas ao perder as Master Balls
+    if (typeof kart !== 'undefined' && kart) {
+      triggerSparkEffect(kart.position);
+    }
+  }
+}
 
 // Define o modo final
 const modeParam = matchConfig.mode || null;
@@ -2161,6 +2215,7 @@ function explodirRocketBox() {
   if (typeof physics !== 'undefined') {
     physics.speed = 0;
     physics.spinTimer = 0.8; // Faz o kart rodopiar exatamente como o gelo
+    loseMasterBalls(3);
   }
 
   // 2. Cria a animação de rodopio manual (idêntico ao escorregão no gelo)
@@ -2381,6 +2436,7 @@ async function loadCustomTrack(trackParam) {
     addStartFinishLine();
     spawnItemBoxes(trackData.items);
     spawnBoostPads(trackData.boosts);
+    spawnMasterBalls();
     if (currentBiome === 'ghost') spawnGhostDecorations();
     else if (currentBiome === 'ice') spawnIceDecorations();
     else if (currentBiome === 'lava') spawnLavaDecorations();
@@ -2964,6 +3020,10 @@ function updatePhysics(dt) {
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
 
+  // --- NOVO: BUFF DAS MASTER BALLS (1% por bola) ---
+  let speedBonusMultiplier = 1 + (collectedMasterBalls * 0.01);
+  let currentAccel = physics.accel * speedBonusMultiplier;
+
   const left = isControlInverted ? rawRight : rawLeft;
   const right = isControlInverted ? rawLeft : rawRight;
   const driftKey = !raceOver && keys['Space'];
@@ -2975,14 +3035,16 @@ function updatePhysics(dt) {
   physics.wasDriftKeyPressed = driftKey; // Grava o estado para não pular infinitamente
   // ----------------------------
 
-  if (forward) physics.speed += physics.accel * dt;
+  // Usa a nova aceleração buffada
+  if (forward) physics.speed += currentAccel * dt;
   else if (backward) physics.speed -= physics.brakeDecel * dt;
   else {
     if (physics.speed > 0) physics.speed = Math.max(0, physics.speed - physics.friction * dt);
     else if (physics.speed < 0) physics.speed = Math.min(0, physics.speed + physics.friction * dt);
   }
 
-  let currentMax = physics.maxSpeed;
+  // Aplica o buff na velocidade máxima também
+  let currentMax = physics.maxSpeed * speedBonusMultiplier;
   if (physics.turboTimer > 0) {
     physics.turboTimer -= dt;
     currentMax *= 1.4;
@@ -3627,8 +3689,13 @@ async function showFinishOverlay(place) {
   const baseCoinsByPosition = { 1: 120, 2: 80, 3: 50, 4: 25 };
   const baseCoins = baseCoinsByPosition[place] || 20;
 
-  // ALTERADO PARA LET: Permite que os valores sejam modificados pelos buffs
-  let totalCoinsEarned = Math.round(baseCoins * trackMultiplier);
+  // Moedas base multiplicadas pela dificuldade da pista
+  let calculatedCoins = baseCoins * trackMultiplier;
+
+  // --- NOVO: BÔNUS PERCENTUAL DAS MASTER BALLS ---
+  // Cada Master Ball guardada dá +5% de bônus (ex: 10 bolas = +50% de moedas)
+  const mbBonusPercent = collectedMasterBalls * 0.05;
+  let totalCoinsEarned = Math.round(calculatedCoins * (1 + mbBonusPercent));
 
   // Define XP baseado na posição e multiplica pela dificuldade
   const baseXPByPosition = { 1: 5, 2: 3, 3: 2, 4: 1 };
@@ -3750,6 +3817,7 @@ async function showFinishOverlay(place) {
     <div style="color:#facc15; font-size:16px;">
       💰 +${totalCoinsEarned} Moedas 
       <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span>
+      ${collectedMasterBalls > 0 ? `<span style="color:#a855f7; font-size:12px; margin-left:6px;">(+${Math.round(mbBonusPercent * 100)}\% por${collectedMasterBalls} MBs)</span>` : ''}
       ${usouMoedaAmuleto ? '<span style="color:#22c55e; font-size:12px; font-weight:900; margin-left:6px;">(🪙 x2)</span>' : ''}
     </div>
     <div style="color:#21c7ff; font-size:14px; margin-top: 4px;">
@@ -3903,6 +3971,97 @@ const pokeballMat = new THREE.MeshStandardMaterial({
   metalness: 0.1
 });
 
+// --- SISTEMA DE MASTER BALLS (BUFF) ---
+const MAX_MASTER_BALLS = 10;
+let collectedMasterBalls = 0; // Quantas você tem agora
+const masterBallsOnTrack = []; // Guarda os objetos 3D na pista
+
+// Gera a pintura da Master Ball proceduralmente
+function createMasterBallTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Metade baixo (Branco) e topo (Roxo Escuro)
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = '#5e2d8a'; ctx.fillRect(0, 0, 256, 128);
+
+  // Faixa preta central
+  ctx.fillStyle = '#212121'; ctx.fillRect(0, 120, 256, 16);
+
+  // Círculos Rosa nas laterais superiores
+  ctx.fillStyle = '#e91e63';
+  ctx.beginPath(); ctx.arc(50, 64, 30, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(206, 64, 30, 0, Math.PI * 2); ctx.fill();
+
+  // Botão central
+  ctx.beginPath(); ctx.arc(128, 128, 30, 0, Math.PI * 2); ctx.fillStyle = '#212121'; ctx.fill();
+  ctx.beginPath(); ctx.arc(128, 128, 18, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
+
+  // Letra 'M' branca no topo
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 45px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('M', 128, 50);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+// Material especial que brilha um pouco (emissive)
+const masterBallMat = new THREE.MeshStandardMaterial({
+  map: createMasterBallTexture(),
+  roughness: 0.2,
+  metalness: 0.3,
+  emissive: 0x5e2d8a,
+  emissiveIntensity: 0.2
+});
+
+function spawnMasterBalls() {
+  // Limpa as antigas se estiver recarregando a pista
+  masterBallsOnTrack.forEach(b => { if (b.mesh) scene.remove(b.mesh); });
+  masterBallsOnTrack.length = 0;
+
+  // Pontos ao longo da pista onde os grupos vão aparecer
+  const spawnPoints = [0.08, 0.22, 0.35, 0.55, 0.75, 0.92];
+  let mBallId = 0;
+
+  spawnPoints.forEach((tBase, index) => {
+    // Define o lado da pista para ESTE grupo (Direita ou Esquerda)
+    // O 'index' é o número do grupo. Assim, elas não fazem zigue-zague individualmente.
+    const laneOffset = (index % 2 === 0) ? 1.8 : -1.8;
+
+    // Gera apenas 2 Master Balls por grupo, alinhadas como moedas
+    for (let i = 0; i < 2; i++) {
+      const t = tBase + (i * 0.035); // Espaçamento longitudinal entre a 1ª e a 2ª bola
+      if (t >= 1.0) continue;
+
+      const point = trackCurve.getPointAt(t);
+      const tangent = trackCurve.getTangentAt(t).normalize();
+      const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+
+      // Aplica o MESMO desvio lateral para as duas bolas formarem uma reta
+      const pos = point.clone().addScaledVector(normal, laneOffset);
+
+      const mesh = new THREE.Mesh(masterBallGeo, masterBallMat);
+      mesh.position.set(pos.x, 0.35, pos.z);
+      mesh.castShadow = true;
+      scene.add(mesh);
+
+      masterBallsOnTrack.push({
+        id: 'mb-' + (mBallId++),
+        mesh: mesh,
+        baseY: 0.35,
+        active: true,
+        respawnTimer: 0
+      });
+    }
+  });
+}
+
+// Geometria MENOR que a Pokébola de itens (0.25 vs 0.45)
+const masterBallGeo = new THREE.SphereGeometry(0.25, 16, 16);
+
 const iceTrapMat = new THREE.MeshStandardMaterial({
   map: createIceTexture(), transparent: true, roughness: 0.15, depthWrite: false, side: THREE.DoubleSide,
   polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4
@@ -3970,7 +4129,7 @@ function spawnItemBoxes(customItems) {
   });
 }
 spawnItemBoxes();
-
+spawnMasterBalls();
 function disableItemBox(boxId) {
   const box = itemBoxes.find(b => b.id === boxId);
   if (box && box.active) {
@@ -3978,6 +4137,66 @@ function disableItemBox(boxId) {
     box.mesh.visible = false;
     box.respawnTimer = 5.0;
   }
+}
+
+function updateMasterBalls(dt) {
+  masterBallsOnTrack.forEach(mb => {
+    if (!mb.active) {
+      mb.respawnTimer -= dt;
+      if (mb.respawnTimer <= 0) {
+        mb.active = true;
+        mb.mesh.visible = true;
+      }
+      return;
+    }
+
+    // Giram mais rápido para chamar atenção
+    mb.mesh.rotation.y += dt * 3.0;
+    mb.mesh.position.y = mb.baseY + Math.sin(performance.now() * 0.008 + mb.id.length) * 0.1;
+
+    // Colisão com o kart local
+    if (kart && mb.mesh.position.distanceTo(kart.position) < 0.9) {
+      mb.active = false;
+      mb.mesh.visible = false;
+      mb.respawnTimer = 15.0; // Demora 15s para a Master Ball reaparecer
+
+      // Efeito visual leve ao pegar
+      triggerSparkEffect(mb.mesh.position);
+
+      // Soma na carteira (com limite máximo de 10)
+      if (collectedMasterBalls < MAX_MASTER_BALLS) {
+        collectedMasterBalls++;
+        updateMasterBallHUD(); // Atualiza a tela imediatamente!
+      }
+
+      // TODO: Enviar evento multiplayer para sumir na tela dos outros
+      // sendNetworkEvent({ t: 'take_masterball', mbId: mb.id });
+    }
+
+    // 2. --- NOVO: Colisão com os BOTS da corrida ---
+    if (typeof remoteKarts !== 'undefined') {
+      for (const [id, bot] of remoteKarts.entries()) {
+        if (bot.isBot && !bot.finished && bot.obj && bot.obj.group) {
+          const botPos = bot.obj.group.position;
+
+          if (mb.mesh.position.distanceTo(botPos) < 1.5) {
+            mb.active = false;
+            mb.mesh.visible = false;
+            mb.respawnTimer = 15.0;
+
+            // Inicializa o contador do bot caso não exista e incrementa
+            if (bot.collectedMasterBalls === undefined) {
+              bot.collectedMasterBalls = 0;
+            }
+            if (bot.collectedMasterBalls < MAX_MASTER_BALLS) {
+              bot.collectedMasterBalls++;
+            }
+            break; // Master Ball coletada por este bot, sai do loop de bots
+          }
+        }
+      }
+    }
+  });
 }
 
 function updateItemBoxes(dt) {
@@ -4490,22 +4709,37 @@ function updateTraps(dt) {
       }
 
       if (!isShieldActive) {
-        if (trap.type === 'ICE') { physics.speed = 0; physics.spinTimer = 0.8; }
-        else if (trap.type === 'LODO') { isControlInverted = true; controlInvertTimer = 3.0; }
-        else if (trap.type === 'FUMACA') { physics.speed *= 0.85; }
+        if (trap.type === 'ICE') {
+          physics.speed = 0;
+          physics.spinTimer = 0.8;
+          loseMasterBalls(3);
+        }
+        else if (trap.type === 'LODO') {
+          isControlInverted = true;
+          controlInvertTimer = 3.0;
+          loseMasterBalls(3);
+        }
+        else if (trap.type === 'FUMACA') {
+          physics.speed *= 0.85;
+          loseMasterBalls(3);
+        }
         else if (trap.type === 'ROCK') {
           physics.speed = 0;
           physics.stunTimer = 1.0;
           triggerSparkEffect(kart.position);
+          loseMasterBalls(3);
         } else if (trap.type === 'WATER') {
           physics.aquaplaneTimer = 3.5;
+          loseMasterBalls(3);
         } else if (trap.type === 'SHOCK') {
           physics.speed = 0;
           physics.stunTimer = 1.5;
           triggerSparkEffect(kart.position);
+          loseMasterBalls(3);
         } else if (trap.type === 'ROOTS') {
           isRooted = true;
           rootClicks = 0;
+          loseMasterBalls(3);
           if (typeof digWarningContainer !== 'undefined') {
             digWarningContainer.innerHTML = '🌿 PRESO! APERTE "R" VÁRIAS VEZES! 🌿';
             digWarningContainer.style.background = 'rgba(20, 83, 45, 0.9)';
@@ -4517,11 +4751,12 @@ function updateTraps(dt) {
             trap.affectedKart = true;
             isGasBrakeInverted = true; // Inverte apenas o acelerador e ré!
             gasBrakeInvertTimer = 2.5; // Duração da confusão de motor
+            loseMasterBalls(3);
           }
         } else if (trap.type === 'VORTEX') {
           // Calcula a distância exata entre o kart e o centro do vórtice
           const dist = kart.position.distanceTo(trap.mesh.position);
-
+          loseMasterBalls(3);
           if (dist < 1.5) {
             // Se chegou no centro, destrói o vórtice e liberta o kart
             trap.active = false;
@@ -4716,6 +4951,7 @@ function triggerDigExplosion(targetId) {
   if (targetId === 'local') {
     physics.speed = 0;       // Zera a velocidade completamente
     physics.stunTimer = 1.0; // Fica atordoado por 1s
+    loseMasterBalls(3);
     if (kart) targetKartObj = kart;
   } else if (remoteKarts.has(targetId)) {
     targetKartObj = remoteKarts.get(targetId).obj.group;
@@ -4851,6 +5087,7 @@ function castSonicBoom(casterId) {
       physics.speed *= 0.3; // Perde quase toda a velocidade
       physics.spinTimer = 0.8; // Roda
       triggerSparkEffect(kart.position); // Solta faíscas
+      loseMasterBalls(3);
     }
   }
 }
@@ -6881,6 +7118,7 @@ function animate() {
   updateBots(dt);
   updateCamera(dt);
   updateItemBoxes(dt);
+  updateMasterBalls(dt);
   updateTraps(dt);
   updateTrapParticles(dt);
   checkBoostPads();
