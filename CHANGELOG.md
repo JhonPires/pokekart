@@ -1,5 +1,23 @@
 # Changelog - PokéKart
 
+## [1.9.5] - 01/10/2026
+- Sinalização da necessidade de apertar a tecla R em algumas habilidades.
+- Alterado os nomes dos corredores (BOTS).
+- Alterado para que as salas multiplayer são fechadas após um tempo vazias.
+- Adicionado na criação e nas corridas os boosts de mapa.
+- Balanceamento dos Karts da Região de Kanto.
+- Adicionado na loja de consumiveis os emojis para o chat do multiplayer.
+- Funcionalidade para os karts ficarem inativos para compra/corrida/bots.
+- Adicionado as masterball nas corridas, dão buffs conforme vai juntando.
+- Adicionado a possibilidade de editar e atualizar uma pista já criada.
+- Adicionado na garagem uma sinalização nos novos karts.
+- Reformulado a tela da garagem.
+- Adicionado na garagem a comparação entre os karts equipado e selecionado da garagem.
+- Alterado a funcionalidade das masterballs: Primeiro colocado recebe metade do boost e o último colocado recebe o dobro.
+- Balanceado as recompensas das caixas pokebolas.
+- Adicionado o alerta de notificação no menu lateral (Roleta e Recompensa Diária).
+- Adicionado o Modo Desafio.
+
 ## [1.9.4] - 27/09/2026
 - Adicionados novos itens à loja
 - Corrigidas e adicionadas novas funcionalidades ao modo Torre

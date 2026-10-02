@@ -356,6 +356,9 @@ if (modeParam === 'tower') {
     totalPlayersParam = 1; // 1 Jogador humano (o sistema fará 4 vagas - 1 = 3 bots)
     aiDifficultyParam = 'normal';
   }
+} else if (modeParam === 'desafio') { // <--- ADICIONE ESTE BLOCO INTEIRO
+  totalPlayersParam = 1; // 1 Jogador humano (1v1)
+  aiDifficultyParam = 'hard';
 }
 
 function setupEnhancedEnvironment(scene) {
@@ -2250,6 +2253,8 @@ function lancarCaixaRocket() {
   // Altura em Y reduzida de 1.0 para 0.3 para encostar no asfalto
   caixaMesh.position.set(posicaoAtras.x, 0.3, posicaoAtras.z);
   caixaMesh.rotation.y = kart.rotation.y;
+  caixaMesh.owner = 'local';
+  caixaMesh.creationTime = Date.now();
 
   scene.add(caixaMesh);
   armadilhasRocketNaPista.push(caixaMesh);
@@ -2261,9 +2266,10 @@ function verificarColisaoRocketBox() {
   for (let i = armadilhasRocketNaPista.length - 1; i >= 0; i--) {
     const caixa = armadilhasRocketNaPista[i];
     let caixaRemovida = false;
-
+    const isOwnerPlayer = caixa.owner === 'local';
+    const isSafeTimePlayer = (Date.now() - caixa.creationTime) < 1000; // 1 segundo para se afastar
     // 1. Verifica colisão com o JOGADOR (se ele não estiver já sob efeito da caixa)
-    if (typeof kart !== 'undefined' && kart && !rocketBoxAtiva) {
+    if (typeof kart !== 'undefined' && kart && !rocketBoxAtiva && !(isOwnerPlayer && isSafeTimePlayer)) {
       const posKart2D = new THREE.Vector2(kart.position.x, kart.position.z);
       const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
 
@@ -2278,7 +2284,9 @@ function verificarColisaoRocketBox() {
     // 2. Se a caixa ainda não foi pega, verifica colisão com os BOTS
     if (!caixaRemovida && typeof remoteKarts !== 'undefined') {
       for (const [id, bot] of remoteKarts.entries()) {
-        if (bot.isBot && bot.obj && bot.obj.group && !bot.rocketBoxAtiva) {
+        const isOwnerBot = caixa.owner === id;
+        const isSafeTimeBot = (Date.now() - caixa.creationTime) < 1000;
+        if (bot.isBot && bot.obj && bot.obj.group && !bot.rocketBoxAtiva && !(isOwnerBot && isSafeTimeBot)) {
           const posBot2D = new THREE.Vector2(bot.obj.group.position.x, bot.obj.group.position.z);
           const posCaixa2D = new THREE.Vector2(caixa.position.x, caixa.position.z);
 
@@ -3020,8 +3028,34 @@ function updatePhysics(dt) {
   let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
   let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
 
-  // --- NOVO: BUFF DAS MASTER BALLS (1% por bola) ---
-  let speedBonusMultiplier = 1 + (collectedMasterBalls * 0.01);
+  // --- NOVO: BUFF DAS MASTER BALLS DEPENDENTE DA POSIÇÃO ---
+  let myRank = 1;
+  let totalActiveRacers = 1;
+  const myProgress = raceTrackers.get('local')?.progress || 0;
+
+  // Calcula rapidamente a posição atual baseada no progresso (sem tocar no HTML)
+  if (typeof remoteKarts !== 'undefined') {
+    for (const [pid, entry] of remoteKarts.entries()) {
+      totalActiveRacers++;
+      const theirProgress = raceTrackers.get(pid)?.progress || 0;
+      if (theirProgress > myProgress) {
+        myRank++;
+      }
+    }
+  }
+
+  let mbBoostPercent = collectedMasterBalls * 0.01;
+
+  // Balanceamento: 1º ganha metade, Último ganha o dobro
+  if (totalActiveRacers > 1) {
+    if (myRank === 1) {
+      mbBoostPercent *= 0.5; // 50% do bônus para o líder
+    } else if (myRank === totalActiveRacers) {
+      mbBoostPercent *= 2.0; // 200% do bônus para o lanterna
+    }
+  }
+
+  let speedBonusMultiplier = 1 + mbBoostPercent;
   let currentAccel = physics.accel * speedBonusMultiplier;
 
   const left = isControlInverted ? rawRight : rawLeft;
@@ -3521,6 +3555,7 @@ async function showFinishOverlay(place) {
   } else {
     // --- MODO SOLO / TORRE ---
     const isTower = modeParam === 'tower';
+    const isDesafio = modeParam === 'desafio';
 
     if (isTower) {
       if (place === 1) {
@@ -3601,8 +3636,72 @@ async function showFinishOverlay(place) {
       }
     }
 
+    // ADICIONE A LÓGICA DO DESAFIO AQUI
+    if (isDesafio) {
+      localStorage.removeItem('pkart_tower_state');
+      localStorage.setItem('pkart_desafio_result', place === 1 ? 'win' : 'lose');
+
+      if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+        let updatePayload = {};
+
+        // 1. Estatísticas gerais do perfil
+        const totalCorridas = (currentUserProfile.races_played || 0) + 1;
+        let totalVitorias = currentUserProfile.races_won || 0;
+        let totalDerrotas = currentUserProfile.races_lost || 0;
+
+        if (place === 1) totalVitorias += 1;
+        else totalDerrotas += 1;
+
+        currentUserProfile.races_played = totalCorridas;
+        currentUserProfile.races_won = totalVitorias;
+        currentUserProfile.races_lost = totalDerrotas;
+
+        updatePayload.races_played = totalCorridas;
+        updatePayload.races_won = totalVitorias;
+        updatePayload.races_lost = totalDerrotas;
+
+        // 2. Estatísticas específicas do Líder / Ginásio (leader_stats)
+        let leaderStats = currentUserProfile.leader_stats || {};
+        if (typeof leaderStats === 'string') {
+          try { leaderStats = JSON.parse(leaderStats); } catch (e) { leaderStats = {}; }
+        }
+
+        // Pega o ID do ginásio atual (ex: 'ginasio_pedra' ou o ID salvo na partida)
+        const currentGymKey = matchConfig.gymId || secureTowerState.gymId || 'desafio_geral';
+
+        if (!leaderStats[currentGymKey]) {
+          leaderStats[currentGymKey] = { played: 0, won: 0 };
+        }
+
+        leaderStats[currentGymKey].played += 1;
+        if (place === 1) {
+          leaderStats[currentGymKey].won += 1;
+        }
+
+        currentUserProfile.leader_stats = leaderStats;
+        updatePayload.leader_stats = leaderStats;
+
+        // 3. Moedas de recompensa
+        const moedasDesafio = place === 1 ? 150 : 30;
+        const novoSaldoCoins = (currentUserProfile.coins || 0) + moedasDesafio;
+        currentUserProfile.coins = novoSaldoCoins;
+        updatePayload.coins = novoSaldoCoins;
+
+        // 4. Envia tudo para o Supabase
+        supabaseClient.from('profiles').update(updatePayload).eq('id', currentUserProfile.id).then(({ error }) => {
+          if (error) console.error('Erro ao salvar estatísticas do desafio:', error);
+        });
+      }
+
+      const btnReturn = document.createElement('button');
+      btnReturn.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
+      btnReturn.innerText = place === 1 ? '🏆 Vitória! Voltar ao Lobby' : '❌ Derrota! Voltar ao Lobby';
+      btnReturn.onclick = () => window.location.href = 'index.html';
+      buttonsContainer.appendChild(btnReturn);
+    }
+
     // 🔥 MODO SOLO NORMAL (Estes botões NÃO aparecem na Torre)
-    if (!isTower) {
+    if (!isTower && !isDesafio) {
       const btnPlayAgain = document.createElement('button');
       btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
@@ -4212,7 +4311,7 @@ function updateItemBoxes(dt) {
     box.mesh.rotation.y += dt * 2.0;
     box.mesh.position.y = box.baseY + Math.sin(performance.now() * 0.005) * 0.15;
 
-    if (kart && box.mesh.position.distanceTo(kart.position) < 1.6) {
+    if (kart && box.mesh.position.distanceTo(kart.position) < 1.2) {
       disableItemBox(box.id);
       sendNetworkEvent({ t: 'take_box', boxId: box.id });
       if (!currentItem) getItemFromBox();
@@ -4220,23 +4319,14 @@ function updateItemBoxes(dt) {
     }
 
     for (const [id, bot] of remoteKarts.entries()) {
-      if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.6) {
+      if (bot.isBot && !bot.finished && box.mesh.position.distanceTo(bot.obj.group.position) < 1.2) {
         disableItemBox(box.id);
 
         // Sorteia um item para o bot
         let selectedSkill = null;
 
-        // 1. Define QUAIS itens são comuns e podem ser pegos por qualquer um (exclui os de líder)
-        const HABILIDADES_COMUNS = [
-          SKILLS.TURBO, SKILLS.ICE, SKILLS.LODO, SKILLS.SHIELD,
-          SKILLS.CHOQUE, SKILLS.FUMACA, SKILLS.SURF, SKILLS.LAMA,
-          SKILLS.DIG, SKILLS.SOM
-        ];
+        const isBossFloor = (typeof secureTowerState !== 'undefined' && secureTowerState.floor === secureTowerState.maxFloors) || (matchConfig.mode === 'desafio');
 
-        // 2. Verifica se estamos no ÚLTIMO ANDAR da torre (Boss Fight)
-        const isBossFloor = (typeof secureTowerState !== 'undefined' && secureTowerState.floor === secureTowerState.maxFloors);
-
-        // 3. Só permite a habilidade exclusiva se for o último andar E o nome bater
         if (isBossFloor) {
           if (bot.nickname === 'BROCK') selectedSkill = SKILLS.BROCK_ROCK;
           else if (bot.nickname === 'MISTY') selectedSkill = SKILLS.MISTY_WATER;
@@ -4248,15 +4338,33 @@ function updateItemBoxes(dt) {
           else if (bot.nickname === 'GIOVANNI') selectedSkill = SKILLS.ROCKET_BOX;
         }
 
-        // 4. Se o selectedSkill ainda for nulo (porque não é o líder OU não é o último andar),
-        // sorteia APENAS da lista de habilidades comuns!
+        // 2. NOVA LÓGICA DE POSIÇÃO (Apenas se o bot não for um líder ou não tiver habilidade específica)
         if (!selectedSkill) {
-          const randomIndex = Math.floor(Math.random() * HABILIDADES_COMUNS.length);
-          selectedSkill = HABILIDADES_COMUNS[randomIndex];
+          const botsStandings = updateStandings();
+          const botRank = botsStandings.findIndex(r => r.key === id) + 1;
+          const totalRacers = botsStandings.length;
+
+          let botPool = [];
+
+          if (botRank === 1) {
+            // Bot em 1º lugar: Foco em defesa
+            botPool = ['SHIELD', 'SHIELD', 'ICE', 'LODO', 'FUMACA', 'LAMA', 'ROCKET_BOX'];
+          } else if (botRank === totalRacers && totalRacers > 2) {
+            // Bot em último lugar: Foco em velocidade/ataque
+            botPool = ['TURBO', 'TURBO', 'SURF', 'SURF', 'DIG', 'DIG', 'CHOQUE', 'SOM'];
+          } else {
+            // Bots no meio do pelotão: Balanceado
+            botPool = ['TURBO', 'SHIELD', 'CHOQUE', 'SURF', 'DIG', 'SOM', 'ROCKET_BOX', 'ICE'];
+          }
+
+          // Sorteia da pool baseada na posição
+          const randomKey = botPool[Math.floor(Math.random() * botPool.length)];
+          selectedSkill = SKILLS[randomKey];
         }
 
+        // 3. ATRIBUI O ITEM AO BOT
         bot.currentItem = selectedSkill;
-        bot.itemUseTimer = 1.0 + Math.random() * 2.0;
+        bot.itemUseTimer = 1.0 + Math.random() * 2.0; // Usa o item entre 1 e 3 segundos
         break;
       }
     }
@@ -4264,27 +4372,42 @@ function updateItemBoxes(dt) {
 }
 
 function getItemFromBox() {
-  // Pega todas as chaves de habilidades
-  let skillKeys = Object.keys(SKILLS);
-
-  // LISTA DE HABILIDADES EXCLUSIVAS DOS LÍDERES (Removidas do sorteio geral do jogador)
-  const liderSkills = ['BROCK_ROCK', 'MISTY_WATER', 'SURGE_SHOCK', 'ERIKA_ROOTS', 'KOGA_SMOKE', 'SABRINA_VORTEX', 'BLAINE_BOOST'];
-
-  // Filtra para remover as habilidades de líderes do array de sorteio
-  skillKeys = skillKeys.filter(key => !liderSkills.includes(key));
-
-  // Calcula a posição atual do jogador na corrida
   const racers = updateStandings();
   const myRank = racers.findIndex(r => r.key === 'local') + 1;
+  const totalRacers = racers.length;
 
-  // Se estiver em 1º lugar, remove o 'DIG' da lista de itens disponíveis no sorteio
+  // Pools de itens baseadas na posição. 
+  // Habilidades de líderes NÃO estão listadas aqui, garantindo a exclusividade deles.
+  let pool = [];
+
   if (myRank === 1) {
-    skillKeys = skillKeys.filter(key => key !== 'DIG');
+    // 1º LUGAR: Foco exclusivo em defesa e armadilhas.
+    // O 'DIG' não está nesta lista, respeitando sua regra original.
+    pool = [
+      'SHIELD', 'SHIELD', 'ICE', 'LODO',
+      'FUMACA', 'LAMA', 'ROCKET_BOX'
+    ];
+  }
+  else if (myRank === totalRacers && totalRacers > 2) {
+    // ÚLTIMO LUGAR (Lanterna): Foco extremo em alcance e velocidade.
+    pool = [
+      'TURBO', 'TURBO', 'SURF', 'SURF',
+      'DIG', 'DIG', 'CHOQUE', 'SOM'
+    ];
+  }
+  else {
+    // POSIÇÕES INTERMEDIÁRIAS: Mistura balanceada.
+    pool = [
+      'TURBO', 'SHIELD', 'CHOQUE', 'SURF',
+      'DIG', 'SOM', 'ROCKET_BOX', 'ICE'
+    ];
   }
 
-  const randomKey = skillKeys[Math.floor(Math.random() * skillKeys.length)];
+  // Sorteia da pool selecionada
+  const randomKey = pool[Math.floor(Math.random() * pool.length)];
   currentItem = SKILLS[randomKey];
 
+  // Atualiza a interface
   const iconEl = document.getElementById('itemIcon');
   if (iconEl) iconEl.innerHTML = currentItem.icon;
 }
@@ -6111,13 +6234,13 @@ function spawnBots() {
   const kartsPermitidosParaBots = KART_DATABASE.filter(kart => kart.activated);
 
   // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder no último andar
-  if (modeParam === 'tower') {
+  if (modeParam === 'tower' || modeParam === 'desafio') {
     // Lê diretamente do estado seguro da base de dados/memória, ignorando a URL
     const currentFloor = secureTowerState.floor;
     const maxFloors = secureTowerState.maxFloors;
 
     // Se NÃO for o último andar, fazemos o fluxo normal (vários bots)
-    if (currentFloor < maxFloors) {
+    if (modeParam === 'tower' && currentFloor < maxFloors) {
       const maxSlots = 4;
       const botCount = maxSlots - totalPlayersParam;
 
@@ -6251,15 +6374,21 @@ function updateBots(dt) {
   for (const [id, bot] of remoteKarts.entries()) {
     if (!bot.isBot || bot.finished) continue;
 
+    if (bot.skillCooldown > 0) {
+      bot.skillCooldown -= dt;
+    }
+
     if (bot.shieldTimer > 0) bot.shieldTimer -= dt;
     if (bot.turboTimer > 0) bot.turboTimer -= dt;
     if (bot.poisonTimer > 0) bot.poisonTimer -= dt;
 
     if (bot.itemUseTimer > 0) {
       bot.itemUseTimer -= dt;
-      if (bot.itemUseTimer <= 0 && bot.currentItem) {
+      // Adicione esta condição para respeitar o cooldown (ex: mínimo de 3 segundos entre habilidades)
+      if (bot.itemUseTimer <= 0 && bot.currentItem && (!bot.skillCooldown || bot.skillCooldown <= 0)) {
         useBotSkill(id, bot, bot.currentItem);
         bot.currentItem = null;
+        bot.skillCooldown = 3.0; // Impede usar outra habilidade pelos próximos 3 segundos
       }
     }
 
@@ -6275,9 +6404,36 @@ function updateBots(dt) {
       continue;
     }
 
-    let maxSpd = bot.stats.maxSpeed * bot.diffMult;
+    // --- Lógica de Master Balls para os Bots ---
+    let botRank = 1;
+    let totalRacersBot = 1;
+    const botProgress = bot.progress || 0;
+
+    // Compara com o jogador local
+    const localProg = raceTrackers.get('local')?.progress || 0;
+    if (localProg > botProgress) botRank++;
+    totalRacersBot++;
+
+    // Compara com outros bots/jogadores remotos
+    for (const [otherPid, otherEntry] of remoteKarts.entries()) {
+      if (otherPid !== id) { // Ignora a si mesmo
+        totalRacersBot++;
+        if ((otherEntry.progress || 0) > botProgress) botRank++;
+      }
+    }
+
+    let botMbBonus = (bot.collectedMasterBalls || 0) * 0.01;
+    if (totalRacersBot > 1) {
+      if (botRank === 1) botMbBonus *= 0.5;
+      else if (botRank === totalRacersBot) botMbBonus *= 2.0;
+    }
+
+    let botSpeedBonusMult = 1 + botMbBonus;
+    // -------------------------------------------
+
+    let maxSpd = bot.stats.maxSpeed * bot.diffMult * botSpeedBonusMult;
     if (bot.turboTimer > 0) maxSpd *= 1.4;
-    bot.speed += bot.stats.accel * dt;
+    bot.speed += (bot.stats.accel * botSpeedBonusMult) * dt;
 
     const { sample } = nearestTrackSample(bot.obj.group.position);
     const offsetVec = new THREE.Vector3().subVectors(bot.obj.group.position, sample.point);
@@ -6458,6 +6614,8 @@ function useBotSkill(botId, bot, skill) {
       const matBot = new THREE.MeshStandardMaterial({ map: texturaBot });
       const caixaBotMesh = new THREE.Mesh(geoBot, matBot);
       caixaBotMesh.position.set(trapPosBot.x, 0.3, trapPosBot.z);
+      caixaBotMesh.owner = botId;
+      caixaBotMesh.creationTime = Date.now();
       scene.add(caixaBotMesh);
       armadilhasRocketNaPista.push(caixaBotMesh);
       break;

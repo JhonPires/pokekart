@@ -327,9 +327,14 @@ function renderKartGrid() {
 
     const isFreeRotation = dailyFreeKarts.includes(kart.id) && !userKarts.includes(kart.id);
 
+    // Recupera a lista de karts já visualizados
+    const seenKarts = JSON.parse(localStorage.getItem('pkart_seen_karts') || '[]');
+    const isNew = !seenKarts.includes(kart.id);
+
     const card = document.createElement('div');
     card.className = `kart-card ${isUnlocked ? '' : 'locked'}`;
     card.dataset.kartId = kart.id;
+    card.style.position = 'relative'; // Garante que a etiqueta flutue corretamente no canto
 
     let priceLabelHtml = '';
     if (isFreeRotation) {
@@ -340,7 +345,13 @@ function renderKartGrid() {
       priceLabelHtml = `<div class="kart-card-price">🪙 ${kart.price}</div>`;
     }
 
+    // HTML da etiqueta de NOVO (animada com CSS inline básico)
+    const newBadgeHtml = isNew ?
+      `<div class="kart-card-new-badge" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 12px; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.5); border: 2px solid #0f172a;">NOVO</div>`
+      : '';
+
     card.innerHTML = `
+      ${newBadgeHtml}
       <img src="${thumbSrc}" class="kart-thumb" alt="${kart.name}">
       <div class="kart-card-name">${kart.name.split(' ')[0]}</div>
       ${priceLabelHtml}
@@ -353,6 +364,19 @@ function renderKartGrid() {
 
 function selectKart(kartId) {
   selectedKartId = kartId;
+  // --- NOVO: MARCAR KART COMO VISTO ---
+  let seenKarts = JSON.parse(localStorage.getItem('pkart_seen_karts') || '[]');
+  if (!seenKarts.includes(kartId)) {
+    seenKarts.push(kartId);
+    localStorage.setItem('pkart_seen_karts', JSON.stringify(seenKarts));
+
+    // Remove a etiqueta de "NOVO" em tempo real da interface
+    const selectedCard = document.querySelector(`.kart-card[data-kart-id="${kartId}"]`);
+    if (selectedCard) {
+      const badge = selectedCard.querySelector('.kart-card-new-badge');
+      if (badge) badge.remove();
+    }
+  }
 
   const cards = document.querySelectorAll('.kart-card');
   cards.forEach(card => {
@@ -392,9 +416,37 @@ function selectKart(kartId) {
       const speedBar = document.getElementById('barSpeed');
       const accelBar = document.getElementById('barAccel');
       const handlingBar = document.getElementById('barHandling');
+
       if (speedBar) speedBar.style.width = `${kartData.stats.speed}%`;
       if (accelBar) accelBar.style.width = `${kartData.stats.accel}%`;
       if (handlingBar) handlingBar.style.width = `${kartData.stats.handling}%`;
+
+      // --- NOVO: LÓGICA DE BARRAS PREENCHIDAS PARA COMPARAÇÃO ---
+      const currentlyEquippedId = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.selected_kart)
+        ? currentUserProfile.selected_kart
+        : sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+
+      const equippedData = KART_CATALOG.find(k => k.id === currentlyEquippedId);
+      const isComparing = (kartId !== currentlyEquippedId);
+
+      if (equippedData && equippedData.stats) {
+        const eqSpeed = document.getElementById('barEquippedSpeed');
+        const eqAccel = document.getElementById('barEquippedAccel');
+        const eqHandling = document.getElementById('barEquippedHandling');
+
+        if (eqSpeed) {
+          eqSpeed.style.width = `${equippedData.stats.speed}%`;
+          eqSpeed.style.display = isComparing ? 'block' : 'none'; // Esconde se for o próprio kart equipado
+        }
+        if (eqAccel) {
+          eqAccel.style.width = `${equippedData.stats.accel}%`;
+          eqAccel.style.display = isComparing ? 'block' : 'none';
+        }
+        if (eqHandling) {
+          eqHandling.style.width = `${equippedData.stats.handling}%`;
+          eqHandling.style.display = isComparing ? 'block' : 'none';
+        }
+      }
     }
 
     const conceptImg = document.getElementById('kartConceptImg');

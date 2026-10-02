@@ -624,17 +624,59 @@
 
       <div class="garage-layout">
 
-        <!-- VISUALIZADOR 3D -->
-        <div class="viewport-3d" id="kartViewport">
+        <!-- COLUNA ESQUERDA (3D + STATUS) -->
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 20px;">
+
+          <!-- VISUALIZADOR 3D -->
+          <div class="viewport-3d" id="kartViewport" style="flex: 1; border-radius: 24px;">
+            <div class="spinner" id="loadingSpinner">Carregando modelo 3D...</div>
+            <!-- O aviso "Arraste o mouse..." e a overlay antiga foram removidos daqui -->
+          </div>
+
+          <!-- STATUS DO KART (MOVIDO PARA BAIXO DO PREVIEW) -->
+          <div class="card" style="display: flex; flex-wrap: wrap; align-items: center; gap: 25px; padding: 20px 25px;">
+
+            <!-- NOME DO KART (Substitui o kartNameMirror) -->
+            <h2 id="kartName"
+              style="color: var(--cyan); font-size: 22px; font-weight: 900; margin: 0; min-width: 150px; text-transform: uppercase;">
+              Jolteon Kart</h2>
 
 
-          <div class="spinner" id="loadingSpinner">Carregando modelo 3D...</div>
+            <!-- BARRAS DE STATUS NA HORIZONTAL COM COMPARAÇÃO (BARRAS PREENCHIDAS) -->
+            <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; min-width: 250px;">
 
-          <div class="info-overlay">
-            <!-- Oculto visualmente, mas necessário pro garage.js ler e escrever o nome oficial -->
-            <span id="kartName" style="display:none;">Jolteon Kart</span>
-            <b id="kartNameMirror" style="color: var(--cyan); font-size: 18px;">Jolteon Kart</b>
-            <p>Arraste o mouse para rotacionar o kart</p>
+              <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
+                <div class="stat-head"><span>Velocidade Máx</span></div>
+                <div class="bar-bg" style="position: relative;">
+                  <div class="bar-fill" id="barSpeed" style="position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                  <div id="barEquippedSpeed" title=""
+                    style="position: absolute; top: 0; left: 0; height: 100%; background: rgba(250, 204, 21, 0.35); border-right: 3px solid #facc15; z-index: 3; transition: width 0.4s ease; display: none;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
+                <div class="stat-head"><span>Aceleração</span></div>
+                <div class="bar-bg" style="position: relative;">
+                  <div class="bar-fill" id="barAccel" style="position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                  <div id="barEquippedAccel" title=""
+                    style="position: absolute; top: 0; left: 0; height: 100%; background: rgba(250, 204, 21, 0.35); border-right: 3px solid #facc15; z-index: 3; transition: width 0.4s ease; display: none;">
+                  </div>
+                </div>
+              </div>
+
+              <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
+                <div class="stat-head"><span>Dirigibilidade</span></div>
+                <div class="bar-bg" style="position: relative;">
+                  <div class="bar-fill" id="barHandling" style="position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                  <div id="barEquippedHandling" title=""
+                    style="position: absolute; top: 0; left: 0; height: 100%; background: rgba(250, 204, 21, 0.35); border-right: 3px solid #facc15; z-index: 3; transition: width 0.4s ease; display: none;">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </div>
 
@@ -677,29 +719,7 @@
               </div>
             </div>
           </div>
-          <div class="card">
-            <h2 id="kartNamePanel" style="color: var(--cyan); font-size: 16px; margin-bottom: 12px; font-weight: 900;">
-              Selecione um Kart</h2>
 
-            <div class="stat-group">
-              <div class="stat-head"><span>Velocidade Máxima</span></div>
-              <div class="bar-bg">
-                <div class="bar-fill" id="barSpeed"></div>
-              </div>
-            </div>
-            <div class="stat-group">
-              <div class="stat-head"><span>Aceleração</span></div>
-              <div class="bar-bg">
-                <div class="bar-fill" id="barAccel"></div>
-              </div>
-            </div>
-            <div class="stat-group">
-              <div class="stat-head"><span>Dirigibilidade</span></div>
-              <div class="bar-bg">
-                <div class="bar-fill" id="barHandling"></div>
-              </div>
-            </div>
-          </div>
 
           <div class="card" style="padding: 10px;">
             <div class="concept-preview" style="cursor: pointer;" title="Clique para ampliar"
@@ -846,26 +866,6 @@
       }
 
       updateAudioUI();
-
-      // --- 3. SINCRONIZAÇÃO DO NOME DO KART ---
-      const hiddenName = document.getElementById('kartName');
-      const visibleName = document.getElementById('kartNameMirror');
-
-      const observer = new MutationObserver(() => {
-        if (hiddenName && visibleName) {
-          visibleName.innerText = hiddenName.innerText;
-        }
-      });
-
-      if (hiddenName) {
-        observer.observe(hiddenName, { childList: true, subtree: true, characterData: true });
-
-        setInterval(() => {
-          if (hiddenName.innerText !== visibleName.innerText && hiddenName.innerText.trim() !== '') {
-            visibleName.innerText = hiddenName.innerText;
-          }
-        }, 300);
-      }
     });
   </script>
 </body>

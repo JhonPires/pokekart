@@ -319,11 +319,12 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 30px;
+      padding: 40px 10px;
     }
 
     .content {
-      width: min(1110px, 100%);
+      /* Aumentamos a largura máxima para acomodar 4 cartões confortavelmente */
+      width: min(1500px, 95vw);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -374,9 +375,11 @@
     .modes {
       width: 100%;
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      /* Muda de 3 para 4 colunas de tamanhos iguais */
+      grid-template-columns: repeat(4, 1fr);
       gap: 20px;
     }
+
 
     .mode {
       position: relative;
@@ -413,6 +416,20 @@
       --accent: #ffd21c;
       --glow: rgba(255, 190, 0, .30);
       background-image: linear-gradient(to bottom, rgba(3, 16, 37, 0.4), rgba(3, 16, 37, 0.95)), url('img/torre.png');
+    }
+
+    .mode.desafio {
+      --accent: #ff4b55;
+      /* Vermelho principal */
+      --glow: rgba(255, 75, 85, 0.30);
+      /* Brilho vermelho */
+      background-image: linear-gradient(to bottom, rgba(3, 16, 37, 0.4), rgba(3, 16, 37, 0.95)), url('img/desafio.png');
+    }
+
+    .mode.desafio .mode-btn {
+      color: #ffffff;
+      /* Texto branco contrasta melhor com fundo vermelho */
+      background: linear-gradient(90deg, #ff4b55, #c81e27);
     }
 
     .mode:hover {
@@ -1464,6 +1481,36 @@
       background: #275276;
       border-radius: 4px;
     }
+
+    .nav-badge {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      width: 10px;
+      height: 10px;
+      background: #ef4444;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #ef4444;
+      border: 2px solid #0f172a;
+      animation: pulseBadge 1.5s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes pulseBadge {
+
+      0%,
+      100% {
+        transform: scale(1);
+        opacity: 1;
+        box-shadow: 0 0 8px #ef4444;
+      }
+
+      50% {
+        transform: scale(1.4);
+        opacity: 0.8;
+        box-shadow: 0 0 12px #ef4444;
+      }
+    }
   </style>
 </head>
 
@@ -2013,9 +2060,14 @@
         <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings De Pistas</button>
         <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
           Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
-        <button id="menuBtnRoulette"><span class="icon">🎡</span>Roleta Diária</button>
-        <!-- Botão para o Menu Lateral -->
-        <button id="menuBtnDailyLogin"><span class="icon">🎁</span>Recompensa Diária</button>
+        <button id="menuBtnRoulette" style="position: relative;">
+          <span class="icon">🎡</span>Roleta Diária
+          <span id="badgeRoulette" class="nav-badge" style="display: none;"></span>
+        </button>
+        <button id="menuBtnDailyLogin" style="position: relative;">
+          <span class="icon">🎁</span>Recompensa Diária
+          <span id="badgeDailyLogin" class="nav-badge" style="display: none;"></span>
+        </button>
         <!-- Botão para o Menu Lateral -->
         <button id="menuBtnMissions"><span class="icon">📜</span>Missões Diárias</button>
       </nav>
@@ -2371,6 +2423,61 @@
 
               </div>
             </article>
+            <!-- MODO DESAFIO -->
+            <article class="mode desafio" id="cardDesafio">
+              <div class="mode-art">
+                <div class="art-circle"></div>
+              </div>
+              <div class="mode-content">
+                <div class="mode-divider-badge">
+                  <div class="divider-line"
+                    style="background: linear-gradient(90deg, transparent, rgba(255, 75, 85, 0.8));"></div>
+                  <div class="badge-circle" style="--accent: #ff4b55; --glow: rgba(255, 75, 85, 0.5);">
+                    <span style="font-size: 24px; opacity: 0.8;">⭐</span>
+                  </div>
+                  <div class="divider-line"
+                    style="background: linear-gradient(270deg, transparent, rgba(255, 75, 85, 0.8));"></div>
+                </div>
+                <h2>MODO DESAFIO</h2>
+                <p>Desafie os Líderes de Ginásio e conquiste grandes recompensas!</p>
+
+                <button class="mode-btn" id="btnOpenDesafioConfig"
+                  style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+                  <span style="font-weight: 950;">VER DESAFIOS</span>
+                  <img src="svg/right2.svg" alt="Play"
+                    style="width: 24px; height: 24px; object-fit: contain; filter: invert(1);" />
+                </button>
+
+                <!-- PAINEL INTERNO DO MODO DESAFIO -->
+                <div class="mode-config-panel" id="panelDesafioConfig" style="justify-content: flex-start; gap: 15px;">
+                  <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 10px;">
+                    <button class="back-mode-btn" id="btnCloseDesafioConfig"
+                      style="margin: 0; border-color: #ff4b55; color: #ff4b55;"
+                      onmouseover="this.style.background='#ff4b55'; this.style.color='#fff'"
+                      onmouseout="this.style.background='rgba(7, 24, 48, 0.85)'; this.style.color='#ff4b55'">Voltar</button>
+
+                    <!-- Caixa escura para dar destaque ao texto -->
+                    <div
+                      style="background: rgba(3, 9, 20, 0.9); border: 1px solid rgba(255, 75, 85, 0.4); padding: 10px 12px; border-radius: 8px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+                      <p style="font-size: 13px; color: #f8fafc; font-weight: 700; margin: 0; line-height: 1.4;">
+                        Escolha um líder de ginásio para uma revanche!
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- CAIXA ESCURA PARA DAR CONTRASTE -->
+                  <div
+                    style="background: rgba(5, 12, 22, 0.85); border: 1px solid #1e3a57; border-radius: 12px; padding: 15px 10px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8);">
+                    <!-- Grade de Insígnias Dinâmica (Sem overflow para não gerar barras) -->
+                    <div id="desafioBadgesContainer"
+                      style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px 5px; justify-items: center;">
+                      <!-- Preenchido via JavaScript -->
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </article>
 
           </section>
         </div>
@@ -2388,14 +2495,14 @@
 
   <script>
     const GYM_TOWERS = [
-      { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', maxFloors: 5, kartId: 'onix' },
-      { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', maxFloors: 5, kartId: 'starmie' },
-      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', maxFloors: 6, kartId: 'pikachu' },
-      { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', maxFloors: 6, kartId: 'vileplume' },
-      { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', maxFloors: 7, kartId: 'muk' },
-      { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', maxFloors: 7, kartId: 'alakazam' },
-      { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', maxFloors: 8, kartId: 'arcanine' },
-      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', maxFloors: 9, kartId: 'persian' }
+      { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', badgeImg: 'insig_pewter.png', maxFloors: 5, kartId: 'onix' },
+      { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', badgeImg: 'insig_cerulean.png', maxFloors: 5, kartId: 'starmie' },
+      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', badgeImg: 'insig_vermilion.png', maxFloors: 6, kartId: 'pikachu' },
+      { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', badgeImg: 'insig_celadon.png', maxFloors: 6, kartId: 'vileplume' },
+      { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', badgeImg: 'insig_fuchsia.png', maxFloors: 7, kartId: 'muk' },
+      { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', badgeImg: 'insig_saffron.png', maxFloors: 7, kartId: 'alakazam' },
+      { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', badgeImg: 'insig_cinnabar.png', maxFloors: 8, kartId: 'arcanine' },
+      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', badgeImg: 'insig_viridian.png', maxFloors: 9, kartId: 'rhydon' }
     ];
 
     const LEAGUES = [
@@ -3895,14 +4002,14 @@
         name: 'Região de Kanto',
         active: true,
         gyms: [
-          { id: 'pewter', name: 'Pewter', leader: 'Brock', badge: '🪨' },
-          { id: 'cerulean', name: 'Cerulean', leader: 'Misty', badge: '💧' },
-          { id: 'vermilion', name: 'Vermilion', leader: 'Lt. Surge', badge: '⚡' },
-          { id: 'celadon', name: 'Celadon', leader: 'Erika', badge: '🌿' },
-          { id: 'fuchsia', name: 'Fuchsia', leader: 'Koga', badge: '☠️' },
-          { id: 'saffron', name: 'Saffron', leader: 'Sabrina', badge: '🔮' },
-          { id: 'cinnabar', name: 'Cinnabar', leader: 'Blaine', badge: '🔥' },
-          { id: 'viridian', name: 'Viridian', leader: 'Giovanni', badge: '🌍' }
+          { id: 'pewter', name: 'Pewter', leader: 'Brock', badge: '🪨', badgeImg: 'insig_pewter.png' },
+          { id: 'cerulean', name: 'Cerulean', leader: 'Misty', badge: '💧', badgeImg: 'insig_cerulean.png' },
+          { id: 'vermilion', name: 'Vermilion', leader: 'Lt. Surge', badge: '⚡', badgeImg: 'insig_vermilion.png' },
+          { id: 'celadon', name: 'Celadon', leader: 'Erika', badge: '🌿', badgeImg: 'insig_celadon.png' },
+          { id: 'fuchsia', name: 'Fuchsia', leader: 'Koga', badge: '☠️', badgeImg: 'insig_fuchsia.png' },
+          { id: 'saffron', name: 'Saffron', leader: 'Sabrina', badge: '🔮', badgeImg: 'insig_saffron.png' },
+          { id: 'cinnabar', name: 'Cinnabar', leader: 'Blaine', badge: '🔥', badgeImg: 'insig_cinnabar.png' },
+          { id: 'viridian', name: 'Viridian', leader: 'Giovanni', badge: '🌍', badgeImg: 'insig_viridian.png' }
         ]
       },
       {
@@ -3967,11 +4074,13 @@
         const hasBadge = userBadges.includes(gym.id);
         if (hasBadge) unlockedCount++;
 
+
+
         gridHtml += `
-          <div class="badge-slot ${hasBadge ? 'unlocked' : ''}" title="${gym.name} - Líder: ${gym.leader}">
-            ${gym.badge}
-          </div>
-        `;
+      <div class="badge-slot ${hasBadge ? 'unlocked' : ''}" title="${gym.name} - Líder: ${gym.leader}">
+        <img src="img/${gym.badgeImg}" alt="${gym.name}" style="width: 70%; height: 70%; object-fit: contain;">
+      </div>
+    `;
       });
 
       container.innerHTML = `
@@ -4676,7 +4785,9 @@
           let badgesHtml = '';
           GYM_TOWERS.forEach(gym => {
             if (unlockedBadges.includes(gym.id)) {
-              badgesHtml += `<span class="tower-badge unlocked" style="font-size:24px; filter: grayscale(0) opacity(1); drop-shadow(0 0 4px rgba(255,210,63,0.8)); margin-right:4px;" title="${gym.name}">${gym.badge}</span>`;
+              const badgeContent = `<img src="img/${gym.badgeImg}" style="width: 70%; height: 70%; object-fit: contain;">`;
+
+              badgesHtml += `<span class="tower-badge unlocked" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; filter: grayscale(0) opacity(1); drop-shadow(0 0 4px rgba(255,210,63,0.8)); margin-right:4px;" title="${gym.name}">${badgeContent}</span>`;
             }
           });
           badgesEl.innerHTML = badgesHtml;
@@ -5590,7 +5701,12 @@
           ? currentUserProfile.unlocked_badges
           : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
 
-        badgesContainer.innerHTML = GYM_TOWERS.map(gym => `<span class="tower-badge ${unlockedBadges.includes(gym.id) ? 'unlocked' : ''}" title="${gym.name}">${gym.badge}</span>`).join('');
+        badgesContainer.innerHTML = GYM_TOWERS.map(gym => {
+          const isUnlocked = unlockedBadges.includes(gym.id);
+          const content = `<img src="img/${gym.badgeImg}" alt="${gym.name}" style="width: 22px; height: 22px; object-fit: contain; vertical-align: middle;">`;
+
+          return `<span class="tower-badge ${isUnlocked ? 'unlocked' : ''}" title="${gym.name}" style="display: inline-flex; align-items: center; justify-content: center;">${content}</span>`;
+        }).join('');
       }
 
       async function renderTowerPanel() {
@@ -5644,13 +5760,15 @@
 
         towerContent.innerHTML = `
           <div style="text-align: center; margin-bottom: 15px;">
-            <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));">${currentGym.badge}</div>
+            <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); display: flex; justify-content: center; align-items: center;">
+              <img src="img/${currentGym.badgeImg}" alt="${currentGym.name}" style="width: 50px; height: 50px; object-fit: contain;">
+            </div>
             <h3 style="color: #fff; font-size: 18px; margin-bottom: 2px;">${currentGym.name}</h3>
             <p style="color: #ffffff; font-size: 12px; font-weight: bold;">Líder: <b style="color: var(--yellow);">${currentGym.leader}</b></p>
           </div>
           
           <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
+            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de${towerState.maxFloors}`}</strong>
             <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
           </div>
           
@@ -5670,12 +5788,12 @@
 
           // 1. Mapeamento de Biomas e Pistas por Ginásio
           const configuracaoGinasios = {
-            'pewter': { biome: 'rock', customTrack: '4bb32f4b-54af-45cb-a9ef-b7148e414bdb' }, // <-- Mudou para rock
+            'pewter': { biome: 'rock', customTrack: '4bb32f4b-54af-45cb-a9ef-b7148e414bdb' },
             'cerulean': { biome: 'water', customTrack: 'ce4e2c73-df90-41dd-b0a0-514fecafb8b8' },
-            'vermilion': { biome: 'electric', track: 'circuitoE' }, // <-- Mudou para electric
-            'celadon': { biome: 'grass', track: 'circuitoOval' },
+            'vermilion': { biome: 'electric', customTrack: 'ba99dc7e-e6b9-49de-8819-dcd2a209d442' },
+            'celadon': { biome: 'grass', customTrack: 'b6d4623a-fb7a-4c64-9bea-37a05f206a46' },
             'fuchsia': { biome: 'poison', track: 'circuitoE' },
-            'saffron': { biome: 'psychic', track: 'circuitoE' }, // <-- Mudou para psychic
+            'saffron': { biome: 'psychic', track: 'circuitoE' },
             'cinnabar': { biome: 'lava', customTrack: '90f62ba0-44af-4e6c-a60e-e0f74756bff0' },
             'viridian': { biome: 'dirt', customTrack: '0cc57312-d3dd-4641-a433-8f5f0b8cda84' }
           };
@@ -5841,6 +5959,75 @@
 
         renderBadgesSidebar();
       }
+
+      // --- SISTEMA DE GRAVAÇÃO DO MODO DESAFIO ---
+      async function processDesafioResult() {
+        // O game.js deve retornar o resultado nesses mesmos locais (ou adaptar caso você use nomes diferentes)
+        const result = localStorage.getItem('pkart_tower_result');
+        const stateRaw = localStorage.getItem('pkart_tower_state');
+
+        if (!result || !stateRaw) return;
+
+        const state = JSON.parse(stateRaw);
+
+        // Verifica se a corrida que acabou de terminar era realmente do Modo Desafio
+        if (state.mode !== 'desafio') return;
+
+        // Limpa a memória para não processar a mesma corrida duas vezes
+        localStorage.removeItem('pkart_tower_result');
+        localStorage.removeItem('pkart_tower_state');
+
+        let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+
+        // 1. Puxa as estatísticas atuais (Prioriza o Banco de Dados, fallback para LocalStorage)
+        let leaderStats = {};
+        if (dbProfile && dbProfile.leader_stats) {
+          leaderStats = typeof dbProfile.leader_stats === 'string' ? JSON.parse(dbProfile.leader_stats) : dbProfile.leader_stats;
+        } else {
+          leaderStats = JSON.parse(localStorage.getItem('pkart_leader_stats') || '{}');
+        }
+
+        const gymId = state.gymId;
+
+        // 2. Se for a primeira vez correndo contra esse líder, cria o registro zerado
+        if (!leaderStats[gymId]) {
+          leaderStats[gymId] = { played: 0, won: 0 };
+        }
+
+        // 3. Incrementa o número de partidas jogadas
+        leaderStats[gymId].played += 1;
+
+        // 4. Se venceu, incrementa o número de vitórias
+        if (result === 'win') {
+          leaderStats[gymId].won += 1;
+        }
+
+        // 5. Salva localmente para a interface atualizar instantaneamente
+        localStorage.setItem('pkart_leader_stats', JSON.stringify(leaderStats));
+
+        // 6. Salva de forma definitiva no Supabase (Protegido para o futuro sistema de recompensas)
+        if (dbProfile && typeof supabaseClient !== 'undefined') {
+          dbProfile.leader_stats = leaderStats;
+          await supabaseClient.from('profiles').update({ leader_stats: leaderStats }).eq('id', dbProfile.id);
+        }
+
+        // 7. Exibe o Modal com o resultado e o novo Win Rate
+        const winRateAtual = Math.round((leaderStats[gymId].won / leaderStats[gymId].played) * 100);
+
+        if (result === 'win') {
+          showResultModal('win', 'VITÓRIA NO DESAFIO!', `Você derrotou ${state.leader}! Sua taxa de vitória contra este líder agora é de ${winRateAtual}%.`);
+        } else {
+          showResultModal('lose', 'DERROTA...', `O líder ${state.leader} venceu. Sua taxa de vitória caiu para ${winRateAtual}%.`);
+        }
+
+        // Atualiza as porcentagens no painel visual
+        if (typeof renderDesafioPanel === 'function') {
+          renderDesafioPanel();
+        }
+      }
+
+      // Chama o processador assim que o jogador carregar a página vindo da corrida
+      setTimeout(processDesafioResult, 600);
 
       function showResultModal(type, title, text) {
         const overlay = document.getElementById('resultModalOverlay');
@@ -6040,7 +6227,180 @@
       }
     };
 
+    // --- SISTEMA DE NOTIFICAÇÕES DO MENU LATERAL ---
+    function updateMenuNotifications() {
+      // Verifica se o perfil já foi carregado
+      if (typeof currentUserProfile === 'undefined' || !currentUserProfile) return;
 
+      const d = new Date();
+      // Formato usado pela Recompensa Diária (ex: 2026-10-01)
+      const todayStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+      // Formato usado pela Roleta (ex: 2026-10-1)
+      const todayRoleta = `${d.getUTCFullYear()}-${d.getUTCMonth() + 1}-${d.getUTCDate()}`;
+
+      // Verifica Roleta
+      const badgeRoulette = document.getElementById('badgeRoulette');
+      if (badgeRoulette) {
+        const lastSpin = currentUserProfile.last_spin_date || localStorage.getItem('pkart_last_spin');
+        // Se a última rodada não for hoje, mostra o badge
+        badgeRoulette.style.display = (lastSpin === todayRoleta) ? 'none' : 'block';
+      }
+
+      // Verifica Recompensa Diária
+      const badgeDaily = document.getElementById('badgeDailyLogin');
+      if (badgeDaily) {
+        const lastRewardDate = currentUserProfile.last_reward_date || null;
+        // Se a última recompensa não foi resgatada hoje, mostra o badge
+        badgeDaily.style.display = (lastRewardDate === todayStr) ? 'none' : 'block';
+      }
+    }
+
+    // Atualiza as notificações a cada 3 segundos em segundo plano
+    setInterval(updateMenuNotifications, 3000);
+
+    // Força uma atualização imediata assim que a página carregar
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(updateMenuNotifications, 1000);
+    });
+
+    // --- LÓGICA DO MODO DESAFIO (REVANCHE 1x1) ---
+    const cardDesafio = document.getElementById('cardDesafio');
+    const btnOpenDesafioConfig = document.getElementById('btnOpenDesafioConfig');
+    const btnCloseDesafioConfig = document.getElementById('btnCloseDesafioConfig');
+    const panelDesafioConfig = document.getElementById('panelDesafioConfig');
+
+    // Abre o painel de desafios e fecha os outros modos
+    btnOpenDesafioConfig.addEventListener('click', () => {
+      cardDesafio.classList.add('config-open');
+      panelDesafioConfig.style.display = 'flex';
+
+      // Fecha os cartões Solo, Multi e Torre para não sobrepor
+      document.getElementById('cardSolo').classList.remove('config-open');
+      document.getElementById('panelSoloConfig').style.display = 'none';
+      document.getElementById('cardMulti').classList.remove('config-open');
+      document.getElementById('panelMultiConfig').style.display = 'none';
+      document.getElementById('cardTower').classList.remove('config-open');
+      document.getElementById('panelTowerConfig').style.display = 'none';
+
+      renderDesafioPanel(); // Desenha as insígnias
+    });
+
+    // Fechar painel do Desafio
+    btnCloseDesafioConfig.addEventListener('click', () => {
+      cardDesafio.classList.remove('config-open');
+      panelDesafioConfig.style.display = 'none';
+    });
+
+    // Garante que clicar nos outros modos feche o Modo Desafio
+    document.getElementById('btnOpenSoloConfig').addEventListener('click', () => { cardDesafio.classList.remove('config-open'); panelDesafioConfig.style.display = 'none'; });
+    document.getElementById('btnOpenMultiConfig').addEventListener('click', () => { cardDesafio.classList.remove('config-open'); panelDesafioConfig.style.display = 'none'; });
+    document.getElementById('btnOpenTowerConfig').addEventListener('click', () => { cardDesafio.classList.remove('config-open'); panelDesafioConfig.style.display = 'none'; });
+
+    // Função para calcular e resgatar a Taxa de Vitória (WR)
+    function getLeaderWinRate(gymId) {
+      let stats = JSON.parse(localStorage.getItem('pkart_leader_stats') || '{}');
+
+      // Se houver sync no banco de dados, puxa de lá
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.leader_stats) {
+        stats = typeof currentUserProfile.leader_stats === 'string' ? JSON.parse(currentUserProfile.leader_stats) : currentUserProfile.leader_stats;
+      }
+
+      let gymStats = stats[gymId] || { played: 0, won: 0 };
+      if (gymStats.played === 0) return 0;
+      return Math.round((gymStats.won / gymStats.played) * 100);
+    }
+
+    // Renderizar a grade de insígnias clicáveis e bloqueadas
+    // Renderizar a grade de insígnias clicáveis e bloqueadas
+    function renderDesafioPanel() {
+      const container = document.getElementById('desafioBadgesContainer');
+      if (!container) return;
+
+      let unlockedBadges = [];
+      if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_badges) {
+        unlockedBadges = currentUserProfile.unlocked_badges;
+      } else {
+        unlockedBadges = JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+      }
+
+      let html = '';
+      GYM_TOWERS.forEach(gym => {
+        const hasBadge = unlockedBadges.includes(gym.id);
+        const winRate = getLeaderWinRate(gym.id);
+
+        // Estilos mais definidos para habilitados vs desabilitados
+        const badgeStyle = hasBadge
+          ? 'cursor: pointer; border: 2px solid #ff4b55; opacity: 0.7; background: rgba(255, 75, 85, 0.15); filter: grayscale(0); box-shadow: 0 0 12px rgba(255, 75, 85, 0.5); transform: scale(1); transition: 0.2s;'
+          : 'opacity: 0.4; filter: grayscale(1); border: 2px dashed #334155; background: rgba(0, 0, 0, 0.4); pointer-events: none;';
+
+        const hoverEffect = hasBadge ? `onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'"` : '';
+        const clickAction = hasBadge ? `onclick="iniciarCorridaDesafio('${gym.id}')"` : '';
+
+
+
+        // Texto reduzido para não estourar a largura da tela e criar barra de rolagem
+        const labelHtml = hasBadge
+          ? `<span style="color: #38bdf8;">${winRate}% WR</span>`
+          : `<span style="color: #64748b; font-size: 9px;">🔒 BLOQ.</span>`;
+
+        html += `
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%;">
+        <div class="badge-slot" style="width: 44px; height: 44px; font-size: 22px; display: flex; align-items: center; justify-content: center; ${badgeStyle}" title="${gym.name} - Líder: ${gym.leader}" ${hoverEffect} ${clickAction}>
+          <img src="img/${gym.badgeImg}" alt="${gym.name}" style="width: 70%; height: 70%; object-fit: contain;">
+        </div>
+        <div style="font-size: 10px; font-weight: 900; background: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 6px; border: 1px solid ${hasBadge ? '#128dcc' : '#1e293b'}; white-space: nowrap;">
+          ${labelHtml}
+        </div>
+      </div>
+    `;
+      });
+      container.innerHTML = html;
+    }
+
+    // Função que engatilha a corrida 1x1
+    window.iniciarCorridaDesafio = function (gymId) {
+      const gym = GYM_TOWERS.find(g => g.id === gymId);
+      if (!gym) return;
+
+      const confirmacao = confirm(`🏁 DESAFIO 1x1\n\nDeseja enfrentar o Líder ${gym.leader} ?`);
+      if (!confirmacao) return;
+
+      // Replicando os mapas oficiais de cada ginásio
+      const configuracaoGinasios = {
+        'pewter': { biome: 'rock', customTrack: '4bb32f4b-54af-45cb-a9ef-b7148e414bdb' },
+        'cerulean': { biome: 'water', customTrack: 'ce4e2c73-df90-41dd-b0a0-514fecafb8b8' },
+        'vermilion': { biome: 'electric', customTrack: 'ba99dc7e-e6b9-49de-8819-dcd2a209d442' },
+        'celadon': { biome: 'grass', customTrack: 'b6d4623a-fb7a-4c64-9bea-37a05f206a46' },
+        'fuchsia': { biome: 'poison', track: 'circuitoE' },
+        'saffron': { biome: 'psychic', track: 'circuitoE' },
+        'cinnabar': { biome: 'lava', customTrack: '90f62ba0-44af-4e6c-a60e-e0f74756bff0' },
+        'viridian': { biome: 'dirt', customTrack: '0cc57312-d3dd-4641-a433-8f5f0b8cda84' }
+      };
+
+      const gymConfig = configuracaoGinasios[gymId] || { biome: 'grass', track: 'circuitoE' };
+
+      // Configuração enviada para o game.js ler
+      const desafioConfig = {
+        mode: 'desafio', // Identificador da corrida
+        ai: 'hard', // Líder sempre corre no modo difícil
+        players: 1, // 1x1
+        slot: 0,
+        gymId: gym.id,
+        leader: gym.leader,
+        leaderKart: gym.kartId,
+        biome: gymConfig.biome
+      };
+
+      if (gymConfig.customTrack) {
+        desafioConfig.customTrack = gymConfig.customTrack;
+      } else {
+        desafioConfig.track = gymConfig.track;
+      }
+
+      // Salva a configuração e abre a corrida
+      localStorage.setItem('pkart_tower_state', JSON.stringify(desafioConfig));
+      window.location.href = 'game.html';
+    };
   </script>
 
   <script src="auth.js"></script>

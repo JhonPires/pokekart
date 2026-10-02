@@ -5,16 +5,21 @@ AJUSTES
 - Trocar todos os icones
 - Trocar os icones dos emojis da loja
 
-NOVIDADES
-- Colocar uma sinalização nos novos karts adicionados na tela da garagem
-- Ver a possibilidade de escolher para onde jogar a habilidade
+NOVIDADES 
+- Ter no minimo X partidas e % acima de X para ganhar os kars dos lideres
+- Os karts do lideres não serem comercializados na garagem, porém ao desafiar X vezes o líder do ginasio vc ganhar como recompensa o kart.
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
+- Criar conquista para colecionador de karts por região
+- Ver a possibilidade de escolher para onde jogar a habilidade
 
 FUTURO
+
+
 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Efeitos sonoros (Aceleração, derrapagem, poderes)
+
 
 
 
