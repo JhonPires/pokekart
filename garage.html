@@ -86,6 +86,10 @@
       backdrop-filter: blur(18px) saturate(135%);
       clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
       transition: .3s ease;
+      display: flex;
+      /* <-- ADICIONADO */
+      flex-direction: column;
+      /* <-- ADICIONADO */
     }
 
     .brand-mini {
@@ -213,7 +217,8 @@
 
     .topbar {
       position: absolute;
-      right: 25px;
+      left: 25px;
+      /* <-- Mude de 'right' para 'left' */
       top: 20px;
       display: flex;
       gap: 10px;
@@ -610,18 +615,27 @@
             title="Próxima Música">⏭</button>
         </div>
       </div>
+      <!-- NOVO BLOCO DE MOEDAS NO RODAPÉ -->
+      <div style="margin-top: auto; margin-right: 8px;">
+        <div
+          style="display: flex; align-items: center; justify-content: space-between; padding: 0 15px; min-height: 55px; background: rgba(12, 28, 48, .72); border: 1px solid #1e3a57; border-radius: 13px;">
+
+          <!-- Lado Esquerdo: Ícone e Texto alinhados com o menu -->
+          <div style="display: flex; align-items: center; gap: 13px;">
+            <span class="icon">🪙</span>
+            <span style="font-size: 15px; font-weight: 750; color: #edf5ff;">Moedas</span>
+          </div>
+
+          <!-- Lado Direito: Valor da carteira -->
+          <b id="playerCoins" style="color: var(--yellow); font-size: 17px;">0</b>
+
+        </div>
+      </div>
+
     </aside>
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main>
-      <!-- <div class="topbar">
-        <div class="stat"><span>🪙</span><b id="playerCoins">0</b></div>
-        <div class="stat rank">
-          <div class="avatar">🏁</div>
-          <strong id="playerNickname">Piloto</strong>
-        </div>
-      </div> -->
-
       <div class="garage-layout">
 
         <!-- COLUNA ESQUERDA (3D + STATUS) -->
@@ -638,8 +652,8 @@
 
             <!-- NOME DO KART (Substitui o kartNameMirror) -->
             <h2 id="kartName"
-              style="color: var(--cyan); font-size: 22px; font-weight: 900; margin: 0; min-width: 150px; text-transform: uppercase;">
-              Jolteon Kart</h2>
+              style="color: var(--cyan); font-size: 22px; font-weight: 900; margin: 0; width: 220px; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              Jolteon</h2>
 
 
             <!-- BARRAS DE STATUS NA HORIZONTAL COM COMPARAÇÃO (BARRAS PREENCHIDAS) -->
@@ -668,7 +682,8 @@
               <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
                 <div class="stat-head"><span>Dirigibilidade</span></div>
                 <div class="bar-bg" style="position: relative;">
-                  <div class="bar-fill" id="barHandling" style="position: absolute; top: 0; left: 0; z-index: 2;"></div>
+                  <div class="bar-fill" id="barHandling" style="position: absolute; top: 0; left: 0; z-index: 2;">
+                  </div>
                   <div id="barEquippedHandling" title=""
                     style="position: absolute; top: 0; left: 0; height: 100%; background: rgba(250, 204, 21, 0.35); border-right: 3px solid #facc15; z-index: 3; transition: width 0.4s ease; display: none;">
                   </div>

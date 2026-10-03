@@ -78,6 +78,13 @@
       backdrop-filter: blur(18px) saturate(135%);
       clip-path: polygon(0 0, 100% 0, 96% 100%, 0 100%);
       transition: .3s ease;
+
+      /* ADICIONADO PARA O SCROLL VERTICAL */
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
     .brand-mini {
@@ -185,10 +192,10 @@
     }
 
     .account {
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      bottom: 20px;
+      /* Substituímos o position: absolute por margin-top: auto */
+      margin-top: auto;
+      padding-top: 20px;
+      width: 100%;
     }
 
     .profile {
@@ -373,15 +380,26 @@
     }
 
     .modes {
-      width: 100%;
-      display: grid;
-      /* Muda de 3 para 4 colunas de tamanhos iguais */
-      grid-template-columns: repeat(4, 1fr);
+      width: max-content;
+      /* O contêiner abraça exatamente os 4 cartões */
+      max-width: 100%;
+      /* Garante que não vaze da tela (ativa o scroll) */
+      margin: 0 auto;
+      /* Centraliza o contêiner inteiro no meio da tela */
+      /* Mudamos de Grid para Flex com rolagem horizontal */
+      padding: 30px 10px 50px 10px;
+      display: flex;
+      overflow-x: auto;
+      overflow-y: hidden;
       gap: 20px;
+      padding-bottom: 20px;
+      /* Espaço para a barra de rolagem não cortar a arte */
     }
 
 
     .mode {
+      flex: 0 0 320px;
+      /* Força o cartão a ter 320px e impede que encolha */
       position: relative;
       min-height: 580px;
       padding: 18px;
@@ -1405,11 +1423,7 @@
         margin-left: 220px;
       }
 
-      .modes {
-        grid-template-columns: 1fr;
-        max-width: 425px;
-        margin: auto;
-      }
+
     }
 
     @media(max-width: 850px) {
@@ -1475,6 +1489,7 @@
 
     ::-webkit-scrollbar {
       width: 6px;
+      height: 8px;
     }
 
     ::-webkit-scrollbar-thumb {
@@ -5960,9 +5975,8 @@
         renderBadgesSidebar();
       }
 
-      // --- SISTEMA DE GRAVAÇÃO DO MODO DESAFIO ---
+      // --- SISTEMA DE GRAVAÇÃO DO MODO DESAFIO (COM RECOMPENSA DE KART) ---
       async function processDesafioResult() {
-        // O game.js deve retornar o resultado nesses mesmos locais (ou adaptar caso você use nomes diferentes)
         const result = localStorage.getItem('pkart_tower_result');
         const stateRaw = localStorage.getItem('pkart_tower_state');
 
@@ -5989,33 +6003,70 @@
 
         const gymId = state.gymId;
 
-        // 2. Se for a primeira vez correndo contra esse líder, cria o registro zerado
+        // 2. Cria o registro zerado se for a primeira vez
         if (!leaderStats[gymId]) {
           leaderStats[gymId] = { played: 0, won: 0 };
         }
 
-        // 3. Incrementa o número de partidas jogadas
+        // 3. Incrementa estatísticas
         leaderStats[gymId].played += 1;
-
-        // 4. Se venceu, incrementa o número de vitórias
         if (result === 'win') {
           leaderStats[gymId].won += 1;
         }
 
-        // 5. Salva localmente para a interface atualizar instantaneamente
         localStorage.setItem('pkart_leader_stats', JSON.stringify(leaderStats));
 
-        // 6. Salva de forma definitiva no Supabase (Protegido para o futuro sistema de recompensas)
         if (dbProfile && typeof supabaseClient !== 'undefined') {
           dbProfile.leader_stats = leaderStats;
           await supabaseClient.from('profiles').update({ leader_stats: leaderStats }).eq('id', dbProfile.id);
         }
 
-        // 7. Exibe o Modal com o resultado e o novo Win Rate
         const winRateAtual = Math.round((leaderStats[gymId].won / leaderStats[gymId].played) * 100);
+        let recompensaMsg = "";
 
+        // =========================================================
+        // 4. LÓGICA DE DESBLOQUEIO DO KART DO LÍDER (BALANCEAMENTO)
+        // =========================================================
+        const KART_UNLOCK_REQS = {
+          'pewter': { minMatches: 5, minWR: 55 }, // Ajustado de 3 para 5
+          'cerulean': { minMatches: 8, minWR: 65 }, // Ajustado de 5 para 8
+          'vermilion': { minMatches: 12, minWR: 70 }, // Ajustado de 7 para 12
+          'celadon': { minMatches: 15, minWR: 75 }, // Ajustado de 10 para 15
+          'fuchsia': { minMatches: 18, minWR: 75 },
+          'saffron': { minMatches: 20, minWR: 80 },
+          'cinnabar': { minMatches: 25, minWR: 85 },
+          'viridian': { minMatches: 30, minWR: 90 }
+        };
+
+        const requisitos = KART_UNLOCK_REQS[gymId];
+
+        // Só concede a recompensa numa tela de vitória
+        if (result === 'win' && requisitos && leaderStats[gymId].played >= requisitos.minMatches && winRateAtual >= requisitos.minWR) {
+
+          let userKarts = [];
+          if (dbProfile && dbProfile.unlocked_karts) {
+            userKarts = typeof dbProfile.unlocked_karts === 'string' ? JSON.parse(dbProfile.unlocked_karts) : dbProfile.unlocked_karts;
+          }
+
+          // Confere se o jogador ainda NÃO possui o kart desse líder
+          if (!userKarts.includes(state.leaderKart)) {
+            userKarts.push(state.leaderKart);
+            recompensaMsg = `\n\n🎁 DOMINÂNCIA! Sua dedicação nas pistas lhe rendeu o kart especial: ${state.leaderKart.toUpperCase()}!`;
+
+            // Salva no Perfil e Banco de Dados
+            if (dbProfile) {
+              dbProfile.unlocked_karts = userKarts;
+              if (typeof supabaseClient !== 'undefined') {
+                await supabaseClient.from('profiles').update({ unlocked_karts: userKarts }).eq('id', dbProfile.id);
+              }
+            }
+          }
+        }
+        // =========================================================
+
+        // 5. Exibe o Modal com o resultado
         if (result === 'win') {
-          showResultModal('win', 'VITÓRIA NO DESAFIO!', `Você derrotou ${state.leader}! Sua taxa de vitória contra este líder agora é de ${winRateAtual}%.`);
+          showResultModal('win', 'VITÓRIA NO DESAFIO!', `Você derrotou ${state.leader}! Sua taxa de vitória contra este líder agora é de ${winRateAtual}%.${recompensaMsg}`);
         } else {
           showResultModal('lose', 'DERROTA...', `O líder ${state.leader} venceu. Sua taxa de vitória caiu para ${winRateAtual}%.`);
         }

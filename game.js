@@ -3395,7 +3395,7 @@ function updateRaceTracker(key, position) {
 
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
-    tr.finishTime = Date.now();
+    tr.finishTime = totalRaceTimeMs;
     tr.lapCount = TOTAL_LAPS;
   }
 
@@ -5605,7 +5605,8 @@ function handleRemoteKartState(peerId, data) {
     progress: entry.progress,
     lapCount: entry.lapCount,
     finished: entry.finished,
-    finishTime: data.finishTime || (entry.finished ? Date.now() : Infinity)
+    // AQUI: Usa o tempo enviado pela rede ou o tempo de corrida atual como base
+    finishTime: data.finishTime || (entry.finished ? totalRaceTimeMs : Infinity)
   });
 }
 
@@ -5704,6 +5705,7 @@ function initRaceMultiplayer() {
                 progress: (myTracker && !isNaN(myTracker.progress)) ? myTracker.progress : 0,
                 lapCount: myTracker ? myTracker.lapCount : 1,
                 finished: myTracker ? myTracker.finished : false,
+                finishTime: (myTracker && myTracker.finished && myTracker.finishTime !== Infinity) ? myTracker.finishTime : 0, // AQUI: Adicionado para informar ao Host o tempo exato do fim
                 poisoned: isControlInverted,
                 shield: isShieldActive,
                 turbo: physics.turboTimer > 0

@@ -1,3 +1,12 @@
+Versão 1.9.6
+Corrigido a classificação da corrida multiplayer.;
+Adicionado a quantidade de moedas atuais do jogador na garagem.;
+Corrigido cards de modos de jogo e menu lateral para ter scroll quando necessario.;
+Adicionado recompensa ao modo desafio.;
+Removido da garagem o comercio dos karts de lideres de ginasio.;
+
+
+
 Versão 1.9.5
 Sinalização da necessidade de apertar a tecla R em algumas habilidades.;
 Alterado os nomes dos corredores (BOTS).;
