@@ -2,34 +2,71 @@ BUGS
 f5 ou atualizar tela dentro da corrida deve remover da corrida
 
 AJUSTES
+- Criar hub pra elite Four
+- Criar as pistas que faltam para os lideres de ginasio e as para elite Four
+- Criar os 3D para colocar no novo hub da elite Four
+- Adicionar os karts que faltam da liga de Kanto e inserir os novos da regiao de Johto
 - Trocar todos os icones
 - Trocar os icones dos emojis da loja
 
+
 NOVIDADES 
+- Adicionar o video no loading
+- Ao finalizar todos os ginasio da região a torre deve habilitar a Elite Four + o Campeão daquela região para uma batalha nuzlok (1x1 sequencial que deve ser ganho todas em seguida).
 - Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
 - Criar conquista para colecionador de karts por região
-- Ver a possibilidade de escolher para onde jogar a habilidade
+
 
 FUTURO
 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
-- Efeitos sonoros (Aceleração, derrapagem, poderes)
+- Ver a possibilidade de escolher para onde jogar a habilidade
 
 
 
+Trocar esse POKEKART do menu por uma imagem
 
-proximos 3d:
-Crie uma imagem igual as anteriores de um carrinho de kart no estilo de pokemon Onix e com essa imagem no futuro irei criar um modelo 3D
+GARAGEM
+Troca os icones
+Corrigir os dropdown
 
+LOJA
++ titulos
++ bordas
+Adicionar os avatares já bloqueados no perfil para serem vendidos
++ rastros
++ efeitos
+Repaginar o modal da loja de cosmeticos deixar em um tamanho fixo de altura e largura, criar um menu lateral dentro desse modal com as opçoes 
+Trocar os icones
 
-{
-  "floor": 6,
-  "gymId": "celadon",
-  "leader": "ERIKA",
-  "maxFloors": 6,
-  "leaderKart": "vileplume"
-}
+CRIADOR DE PISTAS
+Troca os icones
+
+PERFIL DO PILOTO
+Trocar os icones
+
+PASSE DE BATALHA
+Rever as recompensas
+Trocar os icones
+Ver possibilidade de aumentar quantidade de niveis
+
+TABELA DE CLASSIFICACAO
+Mudar o icone que abre o modal (hj esta masterball)
+Está com o modal em estilo diferente dos demais
+
+MODO MULTI
+Trocar os icones
+
+MODO TORRE
+Abandonar torre está minusculo
+Alterar o modal de DERROTADO 
+
+HUB
+Trocar os icones
+
+CORRIDA
+Placar quando finalizado está ficando com a bandeira no canto superior esquerdo
 
 
 Brock: Soltar "pedras" igual a gente soltamos a caixa R porem as pedras ao colidir para o Kart. Apos colidir ou X tempo a pedra some da pista. O lider não é atingido
@@ -54,3 +91,26 @@ Moeda de Troca da Loja Exclusiva (Meta a Longo Prazo)
 E se as Master Balls que você segura e resgata não virassem apenas moedas comuns, mas sim fossem acumuladas em um saldo separado de "Master Coins" no seu perfil?
 
 Como ficaria: Essas moedas especiais ficariam guardadas para você conseguir comprar karts lendários, visuais raros ou itens de customização exclusivos que não podem ser comprados com as moedas normais de corrida.
+
+
+
+{
+  "ai": "hard",
+  "mode": "elite_nuzlocke",
+  "slot": 0,
+  "biome": "dirt",
+  "floor": 5,
+  "track": "circuitoE",
+  "leader": "Blue",
+  "players": 1,
+  "eliteFlag": "champ_kanto",
+  "maxFloors": 5,
+  "eliteIndex": 4,
+  "leaderKart": [
+    "pidgeot",
+    "alakazam",
+    "blastoise"
+  ],
+  "lockedKart": "alakazam",
+  "eliteRaceIndex": 4
+}

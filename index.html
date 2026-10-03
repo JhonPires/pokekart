@@ -2510,6 +2510,7 @@
 
   <script>
     const GYM_TOWERS = [
+      // KANTO (Região 1)
       { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', badgeImg: 'insig_pewter.png', maxFloors: 5, kartId: 'onix' },
       { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', badgeImg: 'insig_cerulean.png', maxFloors: 5, kartId: 'starmie' },
       { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', badgeImg: 'insig_vermilion.png', maxFloors: 6, kartId: 'pikachu' },
@@ -2517,8 +2518,45 @@
       { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', badgeImg: 'insig_fuchsia.png', maxFloors: 7, kartId: 'muk' },
       { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', badgeImg: 'insig_saffron.png', maxFloors: 7, kartId: 'alakazam' },
       { id: 'cinnabar', name: 'Ginásio de Cinnabar', leader: 'BLAINE', badge: '🔥', badgeImg: 'insig_cinnabar.png', maxFloors: 8, kartId: 'arcanine' },
-      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', badgeImg: 'insig_viridian.png', maxFloors: 9, kartId: 'rhydon' }
+      { id: 'viridian', name: 'Ginásio de Viridian', leader: 'GIOVANNI', badge: '🌍', badgeImg: 'insig_viridian.png', maxFloors: 9, kartId: 'rhydon' },
+
+      // JOHTO (Região 2)
+      { id: 'violet', name: 'Ginásio de Violet', leader: 'FALKNER', badge: '🪽', badgeImg: 'insig_violet.png', maxFloors: 5, kartId: 'pidgeot' },
+      { id: 'azalea', name: 'Ginásio de Azalea', leader: 'BUGSY', badge: '🐛', badgeImg: 'insig_azalea.png', maxFloors: 5, kartId: 'beedrill' },
+      { id: 'goldenrod', name: 'Ginásio de Goldenrod', leader: 'WHITNEY', badge: '🪙', badgeImg: 'insig_goldenrod.png', maxFloors: 6, kartId: 'mewtwo' },
+      { id: 'ecruteak', name: 'Ginásio de Ecruteak', leader: 'MORTY', badge: '👻', badgeImg: 'insig_ecruteak.png', maxFloors: 6, kartId: 'gengar' },
+      { id: 'cianwood', name: 'Ginásio de Cianwood', leader: 'CHUCK', badge: '🥊', badgeImg: 'insig_cianwood.png', maxFloors: 7, kartId: 'machamp' },
+      { id: 'olivine', name: 'Ginásio de Olivine', leader: 'JASMINE', badge: '⚙️', badgeImg: 'insig_olivine.png', maxFloors: 7, kartId: 'onix' },
+      { id: 'mahogany', name: 'Ginásio de Mahogany', leader: 'PRYCE', badge: '🧊', badgeImg: 'insig_mahogany.png', maxFloors: 8, kartId: 'dewgong' },
+      { id: 'blackthorn', name: 'Ginásio de Blackthorn', leader: 'CLAIR', badge: '🐉', badgeImg: 'insig_blackthorn.png', maxFloors: 9, kartId: 'dragonite' },
+
+      // HOENN (Região 3)
+      { id: 'rustboro', name: 'Ginásio de Rustboro', leader: 'ROXANNE', badge: '🪨', badgeImg: 'insig_rustboro.png', maxFloors: 5, kartId: 'golem' },
+      { id: 'dewford', name: 'Ginásio de Dewford', leader: 'BRAWLY', badge: '🥊', badgeImg: 'insig_dewford.png', maxFloors: 5, kartId: 'machamp' },
+      { id: 'mauville', name: 'Ginásio de Mauville', leader: 'WATTSON', badge: '⚡', badgeImg: 'insig_mauville.png', maxFloors: 6, kartId: 'pikachu' },
+      { id: 'lavaridge', name: 'Ginásio de Lavaridge', leader: 'FLANNERY', badge: '🔥', badgeImg: 'insig_lavaridge.png', maxFloors: 6, kartId: 'arcanine' },
+      { id: 'petalburg', name: 'Ginásio de Petalburg', leader: 'NORMAN', badge: '⚖️', badgeImg: 'insig_petalburg.png', maxFloors: 7, kartId: 'snorlax' },
+      { id: 'fortree', name: 'Ginásio de Fortree', leader: 'WINONA', badge: '🪽', badgeImg: 'insig_fortree.png', maxFloors: 7, kartId: 'pidgeot' },
+      { id: 'mossdeep', name: 'Ginásio de Mossdeep', leader: 'TATE & LIZA', badge: '🔮', badgeImg: 'insig_mossdeep.png', maxFloors: 8, kartId: 'alakazam' },
+      { id: 'sootopolis', name: 'Ginásio de Sootopolis', leader: 'WALLACE', badge: '💧', badgeImg: 'insig_sootopolis.png', maxFloors: 9, kartId: 'lapras' }
     ];
+
+    const ELITE_FOUR_KANTO = [
+      { id: 'lorelei', name: 'Lorelei', type: '🧊', karts: ['dewgong', 'cloyster', 'lapras'], biomes: ['water', 'ice', 'water'] },
+      { id: 'bruno', name: 'Bruno', type: '🥊', karts: ['onix', 'hitmonchan', 'machamp'], biomes: ['rock', 'dirt', 'rock'] },
+      { id: 'agatha', name: 'Agatha', type: '👻', karts: ['gengar', 'golbat', 'gengar'], biomes: ['poison', 'poison', 'ghost'] },
+      { id: 'lance', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['water', 'rock', 'dragon'] },
+      { id: 'champion_kanto', name: 'Blue', type: '👑', karts: ['pidgeot', 'alakazam', 'blastoise'], biomes: ['dirt', 'psychic', 'water'] }
+    ];
+
+    const ELITE_FOUR_JOHTO = [
+      { id: 'will', name: 'Will', type: '🔮', karts: ['jynx', 'slowbro', 'alakazam'], biomes: ['psychic', 'ice', 'psychic'] },
+      { id: 'koga_e4', name: 'Koga', type: '☠️️', karts: ['muk', 'vileplume', 'muk'], biomes: ['poison', 'poison', 'poison'] },
+      { id: 'bruno_j', name: 'Bruno', type: '🥊', karts: ['golem', 'onix', 'machamp'], biomes: ['rock', 'dirt', 'rock'] },
+      { id: 'karen', name: 'Karen', type: '🌙', karts: ['gengar', 'vileplume', 'gengar'], biomes: ['ghost', 'grass', 'ghost'] },
+      { id: 'champion_j', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['water', 'rock', 'dragon'] }
+    ];
+
 
     const LEAGUES = [
       { id: 'pokeball', name: 'POKEBALL', min: 0, max: 499, iconUrl: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png', color: '#ff4b55', title: 'NOVATO' },
@@ -4015,7 +4053,6 @@
       {
         id: 'kanto',
         name: 'Região de Kanto',
-        active: true,
         gyms: [
           { id: 'pewter', name: 'Pewter', leader: 'Brock', badge: '🪨', badgeImg: 'insig_pewter.png' },
           { id: 'cerulean', name: 'Cerulean', leader: 'Misty', badge: '💧', badgeImg: 'insig_cerulean.png' },
@@ -4030,19 +4067,29 @@
       {
         id: 'johto',
         name: 'Região de Johto',
-        active: false,
         gyms: [
-          { badge: '🪙' }, { badge: '🐝' }, { badge: '🔮' }, { badge: '🌊' },
-          { badge: '⚡' }, { badge: '🌿' }, { badge: '🔥' }, { badge: '🧊' }
+          { id: 'violet', name: 'Violet', leader: 'Falkner', badge: '🪽', badgeImg: 'insig_violet.png' },
+          { id: 'azalea', name: 'Azalea', leader: 'Bugsy', badge: '🐛', badgeImg: 'insig_azalea.png' },
+          { id: 'goldenrod', name: 'Goldenrod', leader: 'Whitney', badge: '🪙', badgeImg: 'insig_goldenrod.png' },
+          { id: 'ecruteak', name: 'Ecruteak', leader: 'Morty', badge: '👻', badgeImg: 'insig_ecruteak.png' },
+          { id: 'cianwood', name: 'Cianwood', leader: 'Chuck', badge: '🥊', badgeImg: 'insig_cianwood.png' },
+          { id: 'olivine', name: 'Olivine', leader: 'Jasmine', badge: '⚙️', badgeImg: 'insig_olivine.png' },
+          { id: 'mahogany', name: 'Mahogany', leader: 'Pryce', badge: '🧊', badgeImg: 'insig_mahogany.png' },
+          { id: 'blackthorn', name: 'Blackthorn', leader: 'Clair', badge: '🐉', badgeImg: 'insig_blackthorn.png' }
         ]
       },
       {
         id: 'hoenn',
         name: 'Região de Hoenn',
-        active: false,
         gyms: [
-          { badge: '🪨' }, { badge: '🥊' }, { badge: '⚡' }, { badge: '💧' },
-          { badge: '🔥' }, { badge: '🪽' }, { badge: '🧬' }, { badge: '💧' }
+          { id: 'rustboro', name: 'Rustboro', leader: 'Roxanne', badge: '🪨', badgeImg: 'insig_rustboro.png' },
+          { id: 'dewford', name: 'Dewford', leader: 'Brawly', badge: '🥊', badgeImg: 'insig_dewford.png' },
+          { id: 'mauville', name: 'Mauville', leader: 'Wattson', badge: '⚡', badgeImg: 'insig_mauville.png' },
+          { id: 'lavaridge', name: 'Lavaridge', leader: 'Flannery', badge: '🔥', badgeImg: 'insig_lavaridge.png' },
+          { id: 'petalburg', name: 'Petalburg', leader: 'Norman', badge: '⚖️', badgeImg: 'insig_petalburg.png' },
+          { id: 'fortree', name: 'Fortree', leader: 'Winona', badge: '🪽', badgeImg: 'insig_fortree.png' },
+          { id: 'mossdeep', name: 'Mossdeep', leader: 'Tate & Liza', badge: '🔮', badgeImg: 'insig_mossdeep.png' },
+          { id: 'sootopolis', name: 'Sootopolis', leader: 'Wallace', badge: '💧', badgeImg: 'insig_sootopolis.png' }
         ]
       }
     ];
@@ -4063,39 +4110,44 @@
       const region = REGIONS_CATALOG[currentRegionIndex];
       const userBadges = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? (currentUserProfile.unlocked_badges || []) : [];
 
-      if (!region.active) {
-        // Renderiza região bloqueada / em breve
+      // --- BARREIRA DE CAMPEÃO PARA LIBERAR A PRÓXIMA REGIÃO ---
+      let isRegionUnlocked = false;
+      if (currentRegionIndex === 0) {
+        isRegionUnlocked = true; // Kanto sempre liberada
+      } else if (currentRegionIndex === 1) {
+        isRegionUnlocked = userBadges.includes('champ_kanto'); // Exige Campeão de Kanto para liberar Johto
+      } else if (currentRegionIndex === 2) {
+        isRegionUnlocked = userBadges.includes('champ_johto'); // Exige Campeão de Johto para liberar Hoenn
+      }
+
+      if (!isRegionUnlocked) {
         let slotsHtml = '';
         for (let i = 0; i < 8; i++) {
           slotsHtml += `<div class="badge-slot">?</div>`;
         }
-
         container.innerHTML = `
           <div class="region-container region-locked">
-            <div class="region-title"><span>${region.name}</span> <span style="color: #facc15;">EM BREVE</span></div>
+            <div class="region-title"><span>${region.name}</span> <span style="color: #facc15;">BLOQUEADA</span></div>
             <div class="badges-grid">
               ${slotsHtml}
             </div>
+            <div style="text-align: center; font-size: 10px; color: #94a3b8; margin-top: 8px;">Derrote a Elite 4 da região anterior para desbloquear!</div>
           </div>
         `;
         return;
       }
 
-      // Renderiza Kanto (ativa)
+      // Renderiza Região Desbloqueada
       let unlockedCount = 0;
       let gridHtml = '';
-
       region.gyms.forEach(gym => {
         const hasBadge = userBadges.includes(gym.id);
         if (hasBadge) unlockedCount++;
-
-
-
         gridHtml += `
-      <div class="badge-slot ${hasBadge ? 'unlocked' : ''}" title="${gym.name} - Líder: ${gym.leader}">
-        <img src="img/${gym.badgeImg}" alt="${gym.name}" style="width: 70%; height: 70%; object-fit: contain;">
-      </div>
-    `;
+          <div class="badge-slot ${hasBadge ? 'unlocked' : ''}" title="${gym.name} - Líder: ${gym.leader}">
+            <img src="img/${gym.badgeImg}" alt="${gym.name}" style="width: 70%; height: 70%; object-fit: contain;">
+          </div>
+        `;
       });
 
       container.innerHTML = `
@@ -5742,10 +5794,120 @@
         let towerState = dbState || localState; // Prioridade total ao Supabase
 
         // 3. Descobre qual é o Ginásio Atual baseado nas insígnias que o jogador já tem
-        let currentGym = GYM_TOWERS.find(g => !unlockedBadges.includes(g.id));
+        let currentGymIndex = GYM_TOWERS.findIndex(g => !unlockedBadges.includes(g.id));
+        let currentGym = currentGymIndex !== -1 ? GYM_TOWERS[currentGymIndex] : null;
 
-        if (!currentGym) {
-          towerContent.innerHTML = `<div style="font-size: 60px; margin: 20px 0;">👑</div><h3 style="color: #22c55e; margin-bottom: 5px;">CAMPEÃO DA LIGA</h3><p style="color: #dcecff; font-size: 14px;">Você já derrotou todos os Líderes de Ginásio e conquistou todas as insígnias!</p>`;
+        // --- BARREIRA DA ELITE FOUR ---
+        let activeElite = null;
+        let eliteFlag = '';
+        let regionName = '';
+
+        if (currentGymIndex >= 8 && !unlockedBadges.includes('champ_kanto')) {
+          activeElite = ELITE_FOUR_KANTO;
+          eliteFlag = 'champ_kanto';
+          regionName = 'Kanto';
+          currentGym = null;
+        } else if (currentGymIndex >= 16 && !unlockedBadges.includes('champ_johto')) {
+          activeElite = ELITE_FOUR_JOHTO;
+          eliteFlag = 'champ_johto';
+          regionName = 'Johto';
+          currentGym = null;
+        }
+
+        // Se interceptou, mostra o painel da Elite 4 Nuzlocke (5 andares)
+        if (!currentGym && activeElite) {
+          // O estado local é gravado de forma síncrona ao iniciar/terminar a corrida, então é sempre o mais recente.
+          // O banco só entra se não houver estado local desta Liga.
+          if (localState && localState.mode === 'elite_nuzlocke' && localState.eliteFlag === eliteFlag) {
+            towerState = localState;
+          }
+
+          if (!towerState || towerState.mode !== 'elite_nuzlocke' || towerState.eliteFlag !== eliteFlag) {
+            towerState = {
+              mode: 'elite_nuzlocke',
+              eliteFlag: eliteFlag,
+              eliteIndex: 0, // Vai de 0 a 4 (0-3 = Elite, 4 = Campeão)
+              floor: 1,
+              maxFloors: activeElite.length,
+              lockedKart: null
+            };
+            await saveTowerStateToDB(towerState);
+          }
+
+          const currentElite = activeElite[towerState.eliteIndex];
+          if (!currentElite) return;
+
+          const isChampion = towerState.eliteIndex === activeElite.length - 1;
+          const andarAtual = towerState.eliteIndex + 1;
+
+          // Formata o nome dos 3 oponentes para exibir na tela
+          const oponentesNomes = currentElite.karts.map(k => k.toUpperCase()).join(', ');
+
+          towerContent.innerHTML = `
+              <div style="text-align: center; margin-bottom: 15px;">
+                <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255, 75, 85, 0.4));">${currentElite.type}</div>
+                <h3 style="color: #ff4b55; font-size: 18px; margin-bottom: 2px;">LIGA DE ${regionName.toUpperCase()}</h3>
+                <p style="color: #ffffff; font-size: 12px; font-weight: bold;">${isChampion ? 'Campeão' : 'Elite Four'}: <b style="color: var(--yellow);">${currentElite.name}</b></p>
+              </div>
+              
+              <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #ff4b55; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(255, 75, 85, 0.15);">
+                <strong style="color: #ff4b55; font-size: 16px;">Andar ${andarAtual} de 5</strong>                
+                <p style="color: #91a7be; font-size: 11px; margin-top: 2px;">Oponentes: <b style="color:#ff4b55">${oponentesNomes}</b></p>
+                ${towerState.lockedKart ? `<p style="color: #38bdf8; font-size: 11px; margin-top: 4px; font-weight: bold;">Kart Travado: ${towerState.lockedKart.toUpperCase()}</p>` : ''}
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 75, 85, 0.3);">
+                  <p style="color: #ef4444; font-size: 10px; font-weight: bold;">⚠️ MODO NUZLOCKE (SEM REVIVES / SEM TROCA)</p>
+                </div>
+              </div>
+              
+              <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                <button id="btnEnterElite" class="mode-btn" style="margin: 0; background: linear-gradient(90deg, #ef4444, #b91c1c); color: #fff; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                  ${isChampion ? 'DESAFIAR CAMPEÃO' : 'CORRER ANDAR'}
+                </button>
+                <button id="btnResetElite" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
+                  Abandonar Desafio
+                </button>
+              </div>
+            `;
+
+          document.getElementById('btnEnterElite').onclick = async () => {
+            const playerKart = KART_DATABASE[selectedIndex].id;
+            if (!towerState.lockedKart) {
+              towerState.lockedKart = playerKart;
+            } else if (playerKart !== towerState.lockedKart) {
+              alert(`⚠️ REGRA NUZLOCKE: Você está travado com o kart '${towerState.lockedKart.toUpperCase()}' até vencer a Liga! Selecione-o na garagem antes de correr.`);
+              return;
+            }
+
+            // Estado COMPLETO da corrida atual (o Hub e o game.js leem daqui)
+            towerState.mode = 'elite_nuzlocke';
+            towerState.eliteFlag = eliteFlag;
+            towerState.floor = towerState.eliteIndex + 1;      // andar atual (1 a 5)
+            towerState.maxFloors = activeElite.length;
+            towerState.ai = 'hard';
+            towerState.players = 1; // 1 jogador humano
+            towerState.slot = 0;
+            towerState.leader = currentElite.name;
+            towerState.leaderKart = currentElite.karts;        // ARRAY de karts dos 3 bots
+            towerState.biome = currentElite.biomes[0] || 'grass';
+            towerState.track = 'circuitoE';
+            delete towerState.customTrack;
+
+            // Grava no localStorage E no Supabase antes de sair da página
+            document.getElementById('btnEnterElite').disabled = true;
+            try {
+              await saveTowerStateToDB(towerState);
+            } catch (e) {
+              console.warn('Falha ao sincronizar a Elite com o banco (local já salvo):', e);
+            }
+            window.location.href = 'hub.html';
+          };
+
+          document.getElementById('btnResetElite').onclick = async () => { await saveTowerStateToDB(null); renderTowerPanel(); };
+          return;
+        }
+
+        if (!currentGym && !activeElite) {
+          towerContent.innerHTML = `<div style="font-size: 60px; margin: 20px 0;">👑</div><h3 style="color: #22c55e; margin-bottom: 5px;">MESTRE SUPREMO</h3><p style="color: #dcecff; font-size: 14px;">Você já derrotou todos os Líderes e Campeões disponíveis!</p>`;
           return;
         }
 
@@ -5783,7 +5945,7 @@
           </div>
           
           <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de${towerState.maxFloors}`}</strong>
+            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
             <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
           </div>
           
@@ -5871,9 +6033,11 @@
       async function processTowerResult() {
         const result = localStorage.getItem('pkart_tower_result');
         const pendingStateRaw = localStorage.getItem('pkart_pending_tower_save'); // 🛡️ Intercepta a encomenda
+        const lastRaceRaw = localStorage.getItem('pkart_last_race_state'); // 📸 Foto da corrida (usada na derrota)
 
         if (!result) return;
         localStorage.removeItem('pkart_tower_result');
+        localStorage.removeItem('pkart_last_race_state');
 
         let towerState = null;
 
@@ -5882,6 +6046,10 @@
           towerState = JSON.parse(pendingStateRaw);
           localStorage.removeItem('pkart_pending_tower_save');
           await saveTowerStateToDB(towerState); // Força o envio pro Supabase a partir do Lobby
+        } else if (result === 'lose' && lastRaceRaw) {
+          // Derrota: o game.js já apagou o estado, então usamos a foto da corrida que acabou de acontecer
+          // (o banco ainda pode ter o andar/líder anterior)
+          towerState = JSON.parse(lastRaceRaw);
         } else {
           // Fallback caso não tenha corrida recente pendente
           let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
@@ -5889,6 +6057,52 @@
         }
 
         if (!towerState) return;
+        // --- PROCESSAMENTO DO MODO NUZLOCKE (ELITE 4) ---
+        if (towerState.mode === 'elite_nuzlocke') {
+          if (result === 'win') {
+            // Vitória na corrida = sobe de andar imediatamente
+            const defeatedLeader = towerState.leader; // guarda quem acabou de ser derrotado
+            towerState.eliteIndex += 1;
+            const eliteData = towerState.eliteFlag === 'champ_kanto' ? ELITE_FOUR_KANTO : ELITE_FOUR_JOHTO;
+
+            // Mantém andar/líder/bioma sincronizados com o PRÓXIMO oponente
+            const nextElite = eliteData[towerState.eliteIndex];
+            towerState.floor = towerState.eliteIndex + 1;
+            towerState.maxFloors = eliteData.length;
+            if (nextElite) {
+              towerState.leader = nextElite.name;
+              towerState.leaderKart = nextElite.karts;
+              towerState.biome = nextElite.biomes[0] || 'grass';
+            }
+
+            if (towerState.eliteIndex >= eliteData.length) {
+              // GANHOU TUDO! Derrotou os 4 Elites + Campeão
+              let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
+              let unlocked = dbProfile && dbProfile.unlocked_badges ? [...dbProfile.unlocked_badges] : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+
+              if (!unlocked.includes(towerState.eliteFlag)) {
+                unlocked.push(towerState.eliteFlag);
+                localStorage.setItem('pkart_unlocked_badges', JSON.stringify(unlocked));
+                if (typeof supabaseClient !== 'undefined' && dbProfile) {
+                  dbProfile.unlocked_badges = unlocked;
+                  await supabaseClient.from('profiles').update({ unlocked_badges: unlocked }).eq('id', dbProfile.id);
+                }
+              }
+              await saveTowerStateToDB(null);
+              showResultModal('badge', 'CAMPEÃO DA LIGA!', 'Épico! Você esmagou a Elite Four e o Campeão simultaneamente! A próxima Região foi desbloqueada!');
+            } else {
+              showResultModal('win', 'ANDAR CONCLUÍDO!', `Incrível! Você superou ${defeatedLeader} e seus 3 Karts. Prepare-se para o próximo andar!`);
+              await saveTowerStateToDB(towerState);
+            }
+          } else {
+            // Perdeu 1 corrida, cai no início da Elite 4
+            showResultModal('lose', 'DESAFIO FALHOU!', `Você foi derrotado por ${towerState.leader}. No modo Nuzlocke não há segundas chances nem Revives. A Liga foi totalmente reiniciada!`);
+            await saveTowerStateToDB(null);
+          }
+          renderBadgesSidebar();
+          return;
+        }
+        // --- FIM DO PROCESSAMENTO NUZLOCKE ---
         const gym = GYM_TOWERS.find(g => g.id === towerState.gymId);
 
         if (result === 'win') {
@@ -5934,7 +6148,8 @@
                 await supabaseClient.from('profiles').update({ inventory: myInventory }).eq('id', dbProfile.id);
               }
 
-              // 3. Mostra mensagem de salvação (Note que NÃO chamamos saveTowerStateToDB(null) para manter o progresso!)
+              // 3. Restaura o estado da torre (o game.js já o havia apagado) e mostra a mensagem de salvação
+              await saveTowerStateToDB(towerState);
               showResultModal('win', '💊 REVIVE UTILIZADO!', `Progresso salvo! Você gastou um Revive e pode tentar o Andar ${towerState.floor} novamente.`);
             } else {
               // Tem Revive mas escolheu não usar (cai da torre)
@@ -6366,6 +6581,11 @@
     function renderDesafioPanel() {
       const container = document.getElementById('desafioBadgesContainer');
       if (!container) return;
+
+      // ADICIONAR ESTAS 3 LINHAS PARA ATIVAR O SCROLL:
+      container.style.maxHeight = '280px';
+      container.style.overflowY = 'auto';
+      container.style.paddingRight = '5px';
 
       let unlockedBadges = [];
       if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_badges) {

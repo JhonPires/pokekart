@@ -146,6 +146,19 @@ let secureTowerState = {
 };
 
 function loadSecureTowerState() {
+  // ELITE FOUR: o estado local (gravado pelo lobby imediatamente antes da corrida) é a fonte da verdade.
+  // Antes esta função ignorava a Elite e o jogo ficava com os valores padrão (andar 1, 'LÍDER').
+  if (matchConfig.mode === 'elite_nuzlocke') {
+    const eliteIdx = matchConfig.eliteIndex || 0;
+    secureTowerState = {
+      ...secureTowerState,
+      ...matchConfig,
+      floor: eliteIdx + 1,
+      maxFloors: matchConfig.maxFloors || 5
+    };
+    return;
+  }
+
   if (matchConfig.mode !== 'tower') return;
 
   let loadedState = null;
@@ -2213,6 +2226,7 @@ function desarmarRocketBox() {
 
 function explodirRocketBox() {
   desarmarRocketBox();
+  playHitSfx('ROCKET');
 
   // 1. Aplica o giro idêntico ao gelo usando o temporizador de spin do seu motor físico
   if (typeof physics !== 'undefined') {
@@ -2258,6 +2272,7 @@ function lancarCaixaRocket() {
 
   scene.add(caixaMesh);
   armadilhasRocketNaPista.push(caixaMesh);
+  playSkillSfx('ROCKET_BOX');
 }
 
 function verificarColisaoRocketBox() {
@@ -2794,6 +2809,26 @@ window.addEventListener('keydown', (e) => {
     if (pauseMenuEl) pauseMenuEl.style.display = isPaused ? 'flex' : 'none';
   }
 });
+
+// Derrota na Torre/Elite: guarda uma "foto" da corrida (líder, andar...) para o lobby montar a mensagem
+// correta, apaga o estado local e aguarda o banco antes de navegar (senão a requisição pode ser cancelada).
+async function finalizarDerrotaTorre() {
+  try {
+    const snapshot = { ...secureTowerState, ...matchConfig };
+    localStorage.setItem('pkart_last_race_state', JSON.stringify(snapshot));
+  } catch (e) { console.warn('Falha ao salvar a foto da corrida:', e); }
+
+  localStorage.setItem('pkart_tower_result', 'lose');
+  localStorage.removeItem('pkart_tower_state');
+  localStorage.removeItem('pkart_pending_tower_save');
+
+  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    currentUserProfile.tower_state = null;
+    try {
+      await supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
+    } catch (e) { console.warn('Falha ao limpar tower_state no banco:', e); }
+  }
+}
 
 // --- NOVA FUNÇÃO DE PUNIÇÃO DA TORRE ---
 function registrarDerrotaTorre() {
@@ -3429,29 +3464,32 @@ async function showFinishOverlay(place) {
   }
 
 
-  if (modeParam === 'tower') {
-    const currentFloor = secureTowerState.floor;
-    const currentGymId = secureTowerState.gymId;
-    const maxFloorsVal = secureTowerState.maxFloors;
-    const leaderName = secureTowerState.leader;
-    const leaderKartId = secureTowerState.leaderKart;
+  if (modeParam === 'tower' || modeParam === 'elite_nuzlocke') {
+    const currentFloor = secureTowerState.floor || 1;
+    const maxFloorsVal = secureTowerState.maxFloors || 5;
 
     if (place === 1) {
       localStorage.setItem('pkart_tower_result', 'win');
 
       const nextFloor = currentFloor + 1;
 
-      // Recupera o estado atual completo para não perder o bioma e a pista!
+      // Recupera o estado atual completo
       let towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
 
-      // Atualiza apenas os dados essenciais para o próximo andar
-      towerState.gymId = currentGymId;
-      towerState.floor = nextFloor;
-      towerState.maxFloors = maxFloorsVal;
-      towerState.leader = leaderName;
-      towerState.leaderKart = leaderKartId;
-      // O bioma, track e customTrack já estão lá dentro e continuam intactos!
-      // 🛡️ Salva local e cria a "encomenda" garantida para o Lobby enviar ao Supabase
+      // Atualiza os dados essenciais dependendo do modo
+      if (modeParam === 'elite_nuzlocke') {
+        // Na Elite o andar avança por eliteIndex, processado no lobby (processTowerResult)
+        towerState.floor = currentFloor;
+        towerState.eliteRaceIndex = (towerState.eliteRaceIndex || 0) + 1;
+      } else {
+        towerState.floor = nextFloor;
+        towerState.gymId = secureTowerState.gymId;
+        towerState.maxFloors = maxFloorsVal;
+        towerState.leader = secureTowerState.leader;
+        towerState.leaderKart = secureTowerState.leaderKart;
+      }
+
+      // 🛡️ Salva local e cria a "encomenda" garantida para o Lobby/Hub
       localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
       localStorage.setItem('pkart_pending_tower_save', JSON.stringify(towerState));
 
@@ -3553,23 +3591,32 @@ async function showFinishOverlay(place) {
     buttonsContainer.appendChild(btnKeep);
     buttonsContainer.appendChild(btnLeave);
   } else {
-    // --- MODO SOLO / TORRE ---
+    // --- MODO SOLO / TORRE / ELITE ---
     const isTower = modeParam === 'tower';
+    const isElite = modeParam === 'elite_nuzlocke';
     const isDesafio = modeParam === 'desafio';
 
-    if (isTower) {
+    if (isTower || isElite) {
       if (place === 1) {
-        const currentFloor = secureTowerState.floor;
-        const maxFloorsVal = secureTowerState.maxFloors;
+        const currentFloor = secureTowerState.floor || 1;
+        const maxFloorsVal = secureTowerState.maxFloors || 5;
 
-        if (currentFloor < maxFloorsVal) {
+        // Na Elite, sempre manda de volta para o Hub processar a próxima batalha
+        if (currentFloor < maxFloorsVal || isElite) {
           const btnVoltarHub = document.createElement('button');
           btnVoltarHub.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
-          btnVoltarHub.innerHTML = '<span>Voltar ao Mapa 🗺️</span>';
 
-          // A MÁGICA: Pega a URL atual (com nick, bioma, etc.) e apenas troca "game.html" por "hub.html"
+          // Ícone ajustado para fazer mais sentido com a Elite
+          btnVoltarHub.innerHTML = isElite ? '<span>Avançar na Elite 🏆</span>' : '<span>Voltar ao Mapa 🗺️</span>';
+
           btnVoltarHub.onclick = () => {
-            window.location.href = 'hub.html';
+            if (isElite) {
+              // A progressão e sincronização da Elite ocorrem no Lobby
+              window.location.href = 'index.html';
+            } else {
+              // Ginásios e andares normais continuam voltando ao Hub
+              window.location.href = 'hub.html';
+            }
           };
 
           buttonsContainer.appendChild(btnVoltarHub);
@@ -3582,8 +3629,12 @@ async function showFinishOverlay(place) {
           buttonsContainer.appendChild(btnFinishTower);
         }
       } else {
-        // PERDEU NA TORRE! Vamos verificar o Revive
-        if (reviveCount > 0) {
+        // PERDEU NA TORRE / ELITE!
+
+        // BLOQUEIO DO REVIVE: Verifica se tem revive E se NÃO é a Elite Four
+        const canUseRevive = reviveCount > 0 && !isElite;
+
+        if (canUseRevive) {
           const btnRevive = document.createElement('button');
           btnRevive.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ec4899, #be185d); color: #fff; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); margin-bottom: 4px;';
           btnRevive.innerHTML = `💊 Usar Revive (${reviveCount} restantes)`;
@@ -3601,34 +3652,33 @@ async function showFinishOverlay(place) {
           };
           buttonsContainer.appendChild(btnRevive);
 
-          // Botão Sombrio (Só aparece se o jogador TIVER um Revive para rejeitar)
           const btnGiveUp = document.createElement('button');
           btnGiveUp.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
           btnGiveUp.innerText = 'Aceitar Derrota e Sair';
-          btnGiveUp.onclick = () => {
-            localStorage.setItem('pkart_tower_result', 'lose');
-            localStorage.removeItem('pkart_tower_state');
-            if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-              supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
-            }
+          btnGiveUp.onclick = async () => {
+            await finalizarDerrotaTorre();
             window.location.href = 'index.html';
           };
           buttonsContainer.appendChild(btnGiveUp);
 
         } else {
-          // NÃO TEM REVIVE! Mostra o botão normal "Voltar ao Lobby" (mas aplica a derrota na mesma)
+          // NÃO TEM REVIVE OU É MODO ELITE (REVIVE PROIBIDO)
           const btnBackLobby = document.createElement('button');
-          btnBackLobby.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
-          btnBackLobby.innerText = 'Voltar ao Lobby';
+
+          // Estilo vermelho escuro se for derrota na Elite para dar impacto
+          if (isElite) {
+            btnBackLobby.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ef4444, #b91c1c); color: #fff; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);';
+            btnBackLobby.innerText = 'Eliminado da Elite! Voltar ao Lobby';
+          } else {
+            btnBackLobby.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
+            btnBackLobby.innerText = 'Voltar ao Lobby';
+          }
+
           btnBackLobby.onmousedown = () => btnBackLobby.style.transform = 'translateY(4px)';
           btnBackLobby.onmouseup = () => btnBackLobby.style.transform = 'translateY(0)';
 
-          btnBackLobby.onclick = () => {
-            localStorage.setItem('pkart_tower_result', 'lose');
-            localStorage.removeItem('pkart_tower_state');
-            if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-              supabaseClient.from('profiles').update({ tower_state: null }).eq('id', currentUserProfile.id);
-            }
+          btnBackLobby.onclick = async () => {
+            await finalizarDerrotaTorre();
             window.location.href = 'index.html';
           };
           buttonsContainer.appendChild(btnBackLobby);
@@ -3701,7 +3751,7 @@ async function showFinishOverlay(place) {
     }
 
     // 🔥 MODO SOLO NORMAL (Estes botões NÃO aparecem na Torre)
-    if (!isTower && !isDesafio) {
+    if (!isTower && !isDesafio && !isElite) {
       const btnPlayAgain = document.createElement('button');
       btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
@@ -4266,6 +4316,9 @@ function updateMasterBalls(dt) {
       if (collectedMasterBalls < MAX_MASTER_BALLS) {
         collectedMasterBalls++;
         updateMasterBallHUD(); // Atualiza a tela imediatamente!
+        if (kartAudio) kartAudio.playMasterBall(collectedMasterBalls, true);
+      } else if (kartAudio) {
+        kartAudio.playMasterBall(collectedMasterBalls, false); // já está no limite
       }
 
       // TODO: Enviar evento multiplayer para sumir na tela dos outros
@@ -4314,7 +4367,9 @@ function updateItemBoxes(dt) {
     if (kart && box.mesh.position.distanceTo(kart.position) < 1.2) {
       disableItemBox(box.id);
       sendNetworkEvent({ t: 'take_box', boxId: box.id });
+      const hadItem = !!currentItem;
       if (!currentItem) getItemFromBox();
+      if (kartAudio) kartAudio.playItemBox(!hadItem);
       return;
     }
 
@@ -4416,6 +4471,7 @@ const placedTraps = [];
 let trapNextId = 0;
 
 function createTrapMesh(trapData) {
+  playTrapDropSfx(trapData);
   if (trapData.type === 'FUMACA') {
     const group = new THREE.Group();
     group.position.set(trapData.x, 0, trapData.z);
@@ -4820,6 +4876,7 @@ function updateTraps(dt) {
 
     // 4. Verificação de colisão com o JOGADOR
     if (kart && trap.mesh.position.distanceTo(kart.position) < hitRadius) {
+      playTrapHitSfx(trap);
 
       if (trap.type === 'PURPLE_SMOKE' && !trap.isDissipating) {
         trap.isDissipating = true;
@@ -5069,6 +5126,7 @@ function castDigAbility(casterId = 'local') {
 }
 
 function triggerDigExplosion(targetId) {
+  playHitSfx('DIG', sfxPosOfKart(targetId));
   let targetKartObj = null;
 
   if (targetId === 'local') {
@@ -5125,6 +5183,7 @@ function triggerDigExplosion(targetId) {
 
 // Efeito de argola de som expandindo
 function createSonicBoomEffect(startPos) {
+  playSkillSfx('SOM', startPos);
   const geo = new THREE.RingGeometry(0.5, 2.5, 32);
   const mat = new THREE.MeshBasicMaterial({
     color: 0x38bdf8, // Azul claro/Ciano
@@ -5200,7 +5259,9 @@ function castSonicBoom(casterId) {
   if (casterId !== 'local' && kart) {
     const distToMe = casterPos.distanceTo(kart.position);
 
+    if (distToMe < radius && isShieldActive) playHitSfx('SHIELD');
     if (distToMe < radius && !isShieldActive) {
+      playHitSfx('SONIC');
       // Aplica o empurrão e o atordoamento em si imediatamente
       const origin = new THREE.Vector3(casterPos.x, kart.position.y, casterPos.z);
       const pushDir = new THREE.Vector3().subVectors(kart.position, origin).normalize();
@@ -5249,6 +5310,7 @@ function spawnDigProjectile(casterId, targetId) {
   group.position.copy(startPos);
   group.position.y = 0.05; // Bem colado no chão
   scene.add(group);
+  playSkillSfx('DIG', startPos);
 
   activeDigs.push({ mesh: group, targetId: targetId, casterId: casterId, isLocalCaster: (casterId === 'local') });
 }
@@ -5378,9 +5440,11 @@ function useEquippedSkill(skill) {
   switch (skill.id) {
     case 'TURBO':
       physics.turboTimer = 2.0 * (physics.turboBonus || 1.0);
+      playSkillSfx('TURBO');
       break;
 
     case 'SHIELD':
+      playSkillSfx('SHIELD');
       isShieldActive = true;
       setTimeout(() => { isShieldActive = false; }, 5000);
       break;
@@ -5394,6 +5458,7 @@ function useEquippedSkill(skill) {
       break;
 
     case 'CHOQUE':
+      playSkillSfx('CHOQUE');
       castShockAbility();
       break;
 
@@ -5402,6 +5467,7 @@ function useEquippedSkill(skill) {
       break;
 
     case 'SURF':
+      playSkillSfx('SURF');
       physics.isSurfing = true;
       // Duração de 4.5 segundos apenas mantendo a velocidade na grama
       setTimeout(() => {
@@ -5410,6 +5476,7 @@ function useEquippedSkill(skill) {
       break;
 
     case 'LAMA':
+      playSkillSfx('LAMA');
       castMudAbility();
       break;
 
@@ -5426,6 +5493,7 @@ function useEquippedSkill(skill) {
           if (iconEl) iconEl.innerHTML = SKILLS.DIG.icon;
         }, 10);
         console.warn("Ataque Cavar não pode ser usado pelo 1º colocado!");
+        try { const ka = _ka(); if (ka) ka.playDenied(); } catch (e) { }
         break; // Interrompe a execução sem ativar a habilidade
       }
 
@@ -5494,6 +5562,7 @@ function handleNetworkMessage(data) {
     if (isHost) broadcastEvent(data);
   } else if (data.t === 'apply_stun') {
     if (racePeer && data.targetId === racePeer.id) {
+      playHitSfx(isShieldActive ? 'SHIELD' : 'SHOCK');
       if (!isShieldActive) {
         physics.stunTimer = 1.0;
         if (kart) triggerSparkEffect(kart.position);
@@ -5503,6 +5572,7 @@ function handleNetworkMessage(data) {
     }
   } else if (data.t === 'apply_mud') {
     if (racePeer && data.targetId === racePeer.id) {
+      playHitSfx(isShieldActive ? 'SHIELD' : 'MUD');
       if (!isShieldActive) {
         // Ativa a mancha na tela!
         const mudUI = document.getElementById('mudOverlay');
@@ -5540,7 +5610,9 @@ function handleNetworkMessage(data) {
 
   } else if (data.t === 'apply_push') {
     if (racePeer && data.targetId === racePeer.id) {
+      if (isShieldActive) playHitSfx('SHIELD');
       if (!isShieldActive && kart) {
+        playHitSfx('SONIC');
         // Você foi atingido pela onda de som!
         const origin = new THREE.Vector3(data.originX, kart.position.y, data.originZ);
         const pushDir = new THREE.Vector3().subVectors(kart.position, origin).normalize();
@@ -6227,22 +6299,24 @@ function drawMinimap() {
 function spawnBots() {
   if (roomCodeParam && !isHost) return;
   const modeParam = matchConfig.mode;
-  if (!roomCodeParam && aiDifficultyParam === 'none' && modeParam !== 'tower') return;
+  if (!roomCodeParam && aiDifficultyParam === 'none' && modeParam !== 'tower' && modeParam !== 'elite_nuzlocke') return;
 
   const diffSettings = { easy: 0.75, normal: 0.90, hard: 1.10 };
   const diffMult = diffSettings[aiDifficultyParam] || 0.90;
 
-  // 1. Cria a lista apenas com os karts permitidos
   const kartsPermitidosParaBots = KART_DATABASE.filter(kart => kart.activated);
 
-  // Se for o Modo Torre, queremos EXATAMENTE 1 bot que seja o Líder no último andar
-  if (modeParam === 'tower' || modeParam === 'desafio') {
-    // Lê diretamente do estado seguro da base de dados/memória, ignorando a URL
-    const currentFloor = secureTowerState.floor;
-    const maxFloors = secureTowerState.maxFloors;
+  // CORREÇÃO: Adicionado o modo 'elite_nuzlocke' na verificação
+  if (modeParam === 'tower' || modeParam === 'desafio' || modeParam === 'elite_nuzlocke') {
+    const currentFloor = secureTowerState.floor || 1;
+    const maxFloors = secureTowerState.maxFloors || 5;
 
-    // Se NÃO for o último andar, fazemos o fluxo normal (vários bots)
-    if (modeParam === 'tower' && currentFloor < maxFloors) {
+    const leaderName = matchConfig.leader || secureTowerState.leader || 'LÍDER DE GINÁSIO';
+    const rawLeaderKart = matchConfig.leaderKart || secureTowerState.leaderKart || 'jolteon';
+
+    const isElite = Array.isArray(rawLeaderKart);
+
+    if (modeParam === 'tower' && currentFloor < maxFloors && !isElite) {
       const maxSlots = 4;
       const botCount = maxSlots - totalPlayersParam;
 
@@ -6279,49 +6353,75 @@ function spawnBots() {
           currentItem: null, itemUseTimer: 0
         });
       }
-      return; // Sai da função para não duplicar os bots da torre
+      return;
     }
 
-    // --- É O ÚLTIMO ANDAR! SPAWNA APENAS O LÍDER ---
-    const leaderName = matchConfig.leader || 'LÍDER DE GINÁSIO';
-    const leaderKartId = matchConfig.leaderKart || matchConfig.leaderkart || 'jolteon';
-    const leaderKartData = KART_DATABASE.find(k => k.id === leaderKartId) || KART_DATABASE[0];
+    if (isElite) {
+      rawLeaderKart.forEach((kartName, index) => {
+        const leaderKartData = KART_DATABASE.find(k => k.id === kartName) || KART_DATABASE[0];
+        const botSlot = index + 1;
+        const botId = 'bot-elite-' + index;
 
-    const botSlot = 1; // Slot 1 para o bot largar logo atrás de você
-    const obj = createKart(0x555555);
+        const obj = createKart(0x555555);
+        loadKartTemplate(leaderKartData, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
 
-    loadKartTemplate(leaderKartData, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
+        const grid = getGridPosition(botSlot);
+        obj.group.position.copy(grid.pos);
+        obj.group.rotation.y = grid.heading;
+        const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
 
-    const grid = getGridPosition(botSlot);
-    obj.group.position.copy(grid.pos);
-    obj.group.rotation.y = grid.heading;
+        remoteKarts.set(botId, {
+          isBot: true,
+          obj: obj,
+          nickname: `${leaderName} ${index + 1}`,
+          kartId: leaderKartData.id,
+          stats: leaderKartData.stats,
+          speed: 0,
+          heading: grid.heading,
+          laneOffset: laneOffset,
+          diffMult: 1.15,
+          progress: 0,
+          lapCount: 1,
+          finished: false,
+          target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+          stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
+          currentItem: null, itemUseTimer: 0
+        });
+      });
+    } else {
+      const leaderKartData = KART_DATABASE.find(k => k.id === rawLeaderKart) || KART_DATABASE[0];
+      const botSlot = 1;
+      const obj = createKart(0x555555);
 
-    const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
+      loadKartTemplate(leaderKartData, (template) => { applyModelToGroup(obj.group, template, 0x555555); });
 
-    // CORREÇÃO: Força o Líder a ter a dificuldade máxima extrema (1.15 ou 15% mais rápido)
-    const leaderDiffMult = 1.15;
+      const grid = getGridPosition(botSlot);
+      obj.group.position.copy(grid.pos);
+      obj.group.rotation.y = grid.heading;
+      const laneOffset = (Math.random() - 0.5) * (trackWidth - 3);
 
-    remoteKarts.set('bot-leader', {
-      isBot: true,
-      obj: obj,
-      nickname: leaderName,
-      kartId: leaderKartData.id,
-      stats: leaderKartData.stats,
-      speed: 0,
-      heading: grid.heading,
-      laneOffset: laneOffset,
-      diffMult: leaderDiffMult, // Dificuldade do Chefão
-      progress: 0,
-      lapCount: 1,
-      finished: false,
-      target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
-      currentItem: null, itemUseTimer: 0
-    });
+      remoteKarts.set('bot-leader', {
+        isBot: true,
+        obj: obj,
+        nickname: leaderName,
+        kartId: leaderKartData.id,
+        stats: leaderKartData.stats,
+        speed: 0,
+        heading: grid.heading,
+        laneOffset: laneOffset,
+        diffMult: 1.15,
+        progress: 0,
+        lapCount: 1,
+        finished: false,
+        target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
+        stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
+        currentItem: null, itemUseTimer: 0
+      });
+    }
     return;
   }
 
-  // --- Resto da função para quando NÃO é modo torre (Corridas Normais Solo) ---
+  // --- CORRIDAS SOLO/MULTIPLAYER NORMAIS ---
   const maxSlots = 4;
   const botCount = maxSlots - totalPlayersParam;
 
@@ -6356,13 +6456,8 @@ function spawnBots() {
       lapCount: 1,
       finished: false,
       target: { pos: new THREE.Vector3(), ry: 0, speed: 0 },
-      stunTimer: 0,
-      spinTimer: 0,
-      shieldTimer: 0,
-      turboTimer: 0,
-      poisonTimer: 0,
-      currentItem: null,
-      itemUseTimer: 0
+      stunTimer: 0, spinTimer: 0, shieldTimer: 0, turboTimer: 0, poisonTimer: 0,
+      currentItem: null, itemUseTimer: 0
     });
   }
 }
@@ -6504,6 +6599,10 @@ function updateBots(dt) {
 }
 
 function useBotSkill(botId, bot, skill) {
+  // Armadilhas, Onda Sonora e Cavar tocam o próprio som onde são criadas; as demais tocam aqui
+  if (['TURBO', 'SHIELD', 'BLAINE_BOOST', 'CHOQUE', 'LAMA', 'ROCKET_BOX'].includes(skill.id)) {
+    playSkillSfx(skill.id, bot.obj.group.position);
+  }
   switch (skill.id) {
     case 'TURBO':
       bot.turboTimer = 2.0 * (bot.stats.turboBonus || 1.0);
@@ -6545,6 +6644,7 @@ function useBotSkill(botId, bot, skill) {
         }
       }
 
+      if (targetId === 'local') playHitSfx(isShieldActive ? 'SHIELD' : 'SHOCK');
       if (targetId === 'local' && !isShieldActive) {
         physics.stunTimer = 1.0;
         if (kart) triggerSparkEffect(kart.position);
@@ -6571,6 +6671,7 @@ function useBotSkill(botId, bot, skill) {
         }
       }
 
+      if (mudTargetId === 'local') playHitSfx(isShieldActive ? 'SHIELD' : 'MUD');
       if (mudTargetId === 'local' && !isShieldActive) {
         const mudUI = document.getElementById('mudOverlay');
         if (mudUI) {
@@ -7248,6 +7349,618 @@ async function initGameEngine() {
   initRaceMultiplayer();
 }
 
+// ------------------------------------------------------------
+// ÁUDIO: MOTOR DINÂMICO (sintetizado com Web Audio API, sem arquivos)
+// ------------------------------------------------------------
+const kartAudio = (() => {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+
+  const ctx = new AC();
+  const bus = ctx.createDynamicsCompressor(); // evita estourar com vários karts
+  bus.connect(ctx.destination);
+
+  // Ruído compartilhado (chiado de pneu na derrapagem)
+  const noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+  const nd = noiseBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+
+  function createEngine({ volume = 0.5, drift = true, spatial = false } = {}) {
+    // Timbre mais macio: sub grave (seno) + serra + triângulo, filtro duplo e pouca ressonância
+    const sub = ctx.createOscillator(); sub.type = 'sine';
+    const saw = ctx.createOscillator(); saw.type = 'sawtooth';
+    const tri = ctx.createOscillator(); tri.type = 'triangle'; tri.detune.value = 7;
+    const gSub = ctx.createGain(); gSub.gain.value = 0.10;
+    const gSaw = ctx.createGain(); gSaw.gain.value = 0.34;
+    const gTri = ctx.createGain(); gTri.gain.value = 0.30;
+
+    const filterA = ctx.createBiquadFilter(); filterA.type = 'lowpass'; filterA.Q.value = 0.7;
+    const filterB = ctx.createBiquadFilter(); filterB.type = 'lowpass'; filterB.Q.value = 0.7;
+
+    // Tremolo leve (pulsação do motor)
+    const trem = ctx.createGain(); trem.gain.value = 0.93;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 18;
+    const lfoGain = ctx.createGain(); lfoGain.gain.value = 0.07;
+    lfo.connect(lfoGain).connect(trem.gain);
+
+    const master = ctx.createGain(); master.gain.value = 0;
+    const panner = spatial && ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+
+    sub.connect(gSub).connect(filterA);
+    saw.connect(gSaw).connect(filterA);
+    tri.connect(gTri).connect(filterA);
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 110; hp.Q.value = 0.7; // corta o ronco grave
+    filterA.connect(filterB).connect(hp).connect(trem).connect(master);
+    if (panner) master.connect(panner).connect(bus); else master.connect(bus);
+
+    let noise = null, noiseGain = null, noiseFilter = null;
+    if (drift) {
+      noise = ctx.createBufferSource(); noise.buffer = noiseBuf; noise.loop = true;
+      noiseFilter = ctx.createBiquadFilter(); noiseFilter.type = 'bandpass'; noiseFilter.Q.value = 0.7;
+      noiseGain = ctx.createGain(); noiseGain.gain.value = 0;
+      noise.connect(noiseFilter).connect(noiseGain).connect(bus);
+      noise.start();
+    }
+    sub.start(); saw.start(); tri.start(); lfo.start();
+
+    // ---- Simulação de câmbio ----
+    // Cada marcha cobre uma faixa da velocidade (fração da velocidade máxima).
+    const SHIFT_RPM = 0.93;  // giro em que ocorre a troca
+    const RPM_RISE = 1.1;    // quão rápido o giro sobe (por segundo)
+    const RPM_FALL = 0.8;    // quão rápido o giro desce (por segundo)
+    const IDLE_RPM = 0.3;
+    // Marchas 1-5 cobrem 0 -> velocidade máxima (as 3 últimas faixas só existem como reserva).
+    const edges = [0, 0.15, 0.33, 0.53, 0.72, 1.0, 1.17, 1.34, 1.55];
+    const gears = edges.length - 1;
+
+    // LOOP DE TROCAS: ao chegar na velocidade máxima com o gás pressionado, o motor repete
+    // continuamente o ciclo "sobe o giro -> troca de marcha -> sobe de novo" (marchas 3 a 5),
+    // para o som nunca ficar parado num tom só.
+    const LOOP_START = 0.33;   // onde o ciclo recomeça (início da 3ª marcha)
+    const LOOP_END = 1.0;      // onde o ciclo termina (fim da 5ª marcha)
+    const LOOP_PERIOD_MIN = 6.5, LOOP_PERIOD_MAX = 8.5; // duração de cada ciclo (s), sorteada a cada volta (bem mais lento que a largada)
+    const LOOP_RPM_LOW = 0.52, LOOP_RPM_HIGH = 0.95;    // faixa de giro dentro de cada marcha do loop (sem voltar à marcha lenta)
+    const LOOP_SHIFT_DROP = 0.26;                       // queda de giro nas trocas do loop (mais suave que na largada)
+    const nextLoopRate = () => (LOOP_END - LOOP_START) / (LOOP_PERIOD_MIN + Math.random() * (LOOP_PERIOD_MAX - LOOP_PERIOD_MIN));
+
+    let gear = 0, rpm = IDLE_RPM, thr = 0, lastT = performance.now();
+    let looping = false, loopE = LOOP_START, loopRate = nextLoopRate();
+
+    return {
+      update({ speed = 0, maxSpeed = 1, throttle = 0, drifting = false, boosting = false, mute = false, gain = 1, pan = 0 }) {
+        const t = ctx.currentTime;
+        const nowMs = performance.now();
+        const dt = Math.min(0.1, Math.max(0.001, (nowMs - lastT) / 1000));
+        lastT = nowMs;
+
+        const ratio = Math.abs(speed) / (maxSpeed || 1); // pode passar de 1 com turbo
+        thr += (throttle - thr) * Math.min(1, dt * 8);   // acelerador suavizado
+
+        // Loop de trocas na velocidade máxima (some ao soltar o gás ou perder velocidade)
+        if (looping && (thr < 0.4 || ratio < 0.9)) {
+          looping = false;
+        } else if (!looping && thr > 0.6 && ratio > 0.97) {
+          looping = true;
+          loopE = Math.max(LOOP_START, edges[Math.min(gear, 4)]); // continua de onde a marcha está
+          loopRate = nextLoopRate();
+        }
+        if (looping) {
+          loopE += loopRate * dt;
+          if (loopE >= LOOP_END) {                       // fim do ciclo: recomeça da 3ª marcha
+            loopE = LOOP_START + Math.random() * 0.04;
+            loopRate = nextLoopRate();
+            rpm = Math.max(IDLE_RPM, rpm - LOOP_SHIFT_DROP); // queda de giro, como numa troca
+          }
+        }
+        const eff = looping ? loopE : ratio; // velocidade "efetiva" que o motor sente
+
+        // Câmbio: a marcha "desejada" vem da velocidade, mas o motor leva tempo para girar até o
+        // limite antes de cada troca. Assim o som sempre sobe, troca e sobe de novo,
+        // mesmo que o kart chegue na velocidade máxima em poucos segundos.
+        let wanted = 0;
+        while (wanted < gears - 1 && eff >= edges[wanted + 1]) wanted++;
+
+        if (gear < wanted && rpm >= SHIFT_RPM) {
+          gear++;
+          rpm = Math.max(IDLE_RPM, rpm - (looping ? LOOP_SHIFT_DROP : 0.32)); // queda de RPM na troca
+        } else if (gear > wanted && eff < edges[gear] - 0.03) {
+          gear = wanted;                         // frenou/bateu: desce a marcha
+        }
+
+        let target;
+        if (gear < wanted) {
+          target = 1.0;                          // querendo trocar: gira até o limite
+        } else {
+          const span = edges[gear + 1] - edges[gear];
+          const inGear = Math.min(1, Math.max(0, (eff - edges[gear]) / span));
+          target = looping
+            ? LOOP_RPM_LOW + (LOOP_RPM_HIGH - LOOP_RPM_LOW) * inGear + (boosting ? 0.05 : 0)  // loop: sobe devagar dentro da marcha
+            : IDLE_RPM + 0.62 * inGear
+            + thr * 0.12                                  // pisar fundo aumenta o giro
+            - (1 - thr) * 0.10 * Math.min(1, ratio)        // soltar o gás: freio-motor
+            + (boosting ? 0.1 : 0);
+        }
+        // Pequena variação lenta para o tom nunca ficar "morto"
+        const w = Math.sin(t * 2.7) * 0.012 + Math.sin(t * 6.1 + 1.3) * 0.008;
+        target = Math.min(1.05, Math.max(0.2, target + w));
+
+        // Giro sobe a uma taxa limitada (inércia do motor) e desce um pouco mais devagar
+        if (target > rpm) rpm = Math.min(target, rpm + RPM_RISE * dt);
+        else rpm = Math.max(target, rpm - RPM_FALL * dt);
+
+        const freq = 85 + rpm * 200; // ~145 Hz (parado) até ~290 Hz (limite)
+        sub.frequency.setTargetAtTime(freq * 0.5, t, 0.04);
+        saw.frequency.setTargetAtTime(freq, t, 0.04);
+        tri.frequency.setTargetAtTime(freq * 1.5, t, 0.04);
+        lfo.frequency.setTargetAtTime(12 + rpm * 22, t, 0.08);
+
+        const cutoff = 380 + rpm * 850 + thr * 300;
+        filterA.frequency.setTargetAtTime(cutoff, t, 0.06);
+        filterB.frequency.setTargetAtTime(cutoff, t, 0.06);
+
+        // Marcha lenta bem baixa; volume cresce com acelerador e velocidade
+        const vol = mute ? 0 : (0.04 + thr * 0.16 + Math.min(1, ratio) * 0.08 + Math.max(0, rpm - 0.3) * 0.06) * volume * gain;
+        master.gain.setTargetAtTime(vol, t, 0.08);
+        if (panner) panner.pan.setTargetAtTime(pan, t, 0.05);
+
+        if (noiseGain) {
+          const nv = (drifting && !mute) ? (0.03 + Math.min(1, ratio) * 0.07) * volume : 0;
+          noiseGain.gain.setTargetAtTime(nv, t, 0.08);
+          noiseFilter.frequency.setTargetAtTime(1000 + Math.min(1, ratio) * 700, t, 0.1);
+        }
+      },
+      stop() {
+        const t = ctx.currentTime;
+        master.gain.setTargetAtTime(0, t, 0.05);
+        if (noiseGain) noiseGain.gain.setTargetAtTime(0, t, 0.05);
+        setTimeout(() => {
+          [sub, saw, tri, lfo, noise].forEach(n => { try { n && n.stop(); } catch (e) { } });
+          master.disconnect();
+        }, 300);
+      }
+    };
+  }
+
+  // ---- Efeitos sonoros de coleta (sintetizados, sem arquivos) ----
+  const SFX_VOLUME = 1.0; // volume geral dos efeitos de coleta
+  let sfxOut = bus;       // destino atual dos efeitos (muda para posicionar sons no espaço)
+
+  function sfxTone(freq, start, dur, { type = 'triangle', gain = 0.12, attack = 0.005, slideTo = null } = {}) {
+    const o = ctx.createOscillator(); o.type = type;
+    o.frequency.setValueAtTime(freq, start);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, start + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * SFX_VOLUME), start + attack);
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    o.connect(g).connect(sfxOut);
+    o.start(start); o.stop(start + dur + 0.05);
+  }
+
+  // attack = tempo de subida do volume; sweepTo = frequência final do filtro (varredura)
+  function sfxNoise(start, dur, freq, q, gain, type = 'bandpass', attack = 0.002, sweepTo = null) {
+    const s = ctx.createBufferSource(); s.buffer = noiseBuf;
+    const f = ctx.createBiquadFilter(); f.type = type; f.Q.value = q;
+    f.frequency.setValueAtTime(freq, start);
+    if (sweepTo) f.frequency.exponentialRampToValueAtTime(sweepTo, start + dur);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, start);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gain * SFX_VOLUME), start + Math.max(0.002, attack));
+    g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    s.connect(f).connect(g).connect(sfxOut);
+    s.start(start, Math.random() * 1.5); s.stop(start + dur + 0.02);
+  }
+
+  // Sino suave (parciais inarmônicos) usado na Master Ball
+  function sfxBell(freq, start, dur, gain) {
+    sfxTone(freq, start, dur, { type: 'sine', gain, attack: 0.004 });
+    sfxTone(freq * 2.756, start, dur * 0.5, { type: 'sine', gain: gain * 0.35, attack: 0.003 });
+    sfxTone(freq * 5.4, start, dur * 0.2, { type: 'sine', gain: gain * 0.12, attack: 0.002 });
+  }
+
+  // Caixa de item (pokébola): "pop" + estalo + arpejo ascendente brilhante.
+  // gotItem = false quando o jogador já está segurando um item (som curto e discreto).
+  function playItemBox(gotItem = true) {
+    if (ctx.state !== 'running') return;
+    const t0 = ctx.currentTime + 0.005;
+    if (!gotItem) {
+      sfxTone(330, t0, 0.08, { type: 'triangle', gain: 0.09, slideTo: 220 });
+      sfxNoise(t0, 0.03, 2200, 1.2, 0.06);
+      return;
+    }
+    sfxTone(260, t0, 0.10, { type: 'sine', gain: 0.20, slideTo: 90 });          // "pop" da pokébola abrindo
+    sfxNoise(t0, 0.04, 2800, 1.2, 0.10);                                          // estalo
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => {                  // arpejo ascendente
+      const ts = t0 + 0.06 + i * 0.055;
+      sfxTone(f, ts, 0.24, { type: 'triangle', gain: 0.11 });
+      sfxTone(f * 2, ts, 0.16, { type: 'sine', gain: 0.04 });
+    });
+    sfxTone(2093, t0 + 0.34, 0.40, { type: 'sine', gain: 0.045 });                // brilho final
+    sfxNoise(t0 + 0.30, 0.25, 7000, 0.8, 0.025, 'highpass');                      // brilho
+  }
+
+  // Master Ball: sino duplo (quinta justa). O tom sobe a cada Master Ball coletada.
+  // counted = false quando já está no limite (som curto, sem subir).
+  function playMasterBall(count = 1, counted = true) {
+    if (ctx.state !== 'running') return;
+    const t0 = ctx.currentTime + 0.005;
+    if (!counted) {
+      sfxBell(660, t0, 0.2, 0.07);
+      return;
+    }
+    const base = 880 * Math.pow(2, Math.min(Math.max(count, 1), 10) / 12); // +1 semitom por Master Ball
+    sfxBell(base, t0, 0.75, 0.15);
+    sfxBell(base * 1.5, t0 + 0.09, 0.95, 0.13);
+    sfxTone(base / 2, t0, 0.28, { type: 'sine', gain: 0.06 });                   // corpo grave
+    sfxNoise(t0, 0.07, 6500, 0.8, 0.04, 'highpass');                              // brilho do toque
+    if (count >= 10) sfxBell(base * 2, t0 + 0.2, 1.1, 0.11);                     // floreio ao chegar no máximo
+  }
+
+  // ---- Efeitos das habilidades (uso e impacto), sintetizados ----
+  const rnd = (a, b) => a + Math.random() * (b - a);
+
+  // Cada função recebe o instante inicial (t) e agenda os sons daquela habilidade.
+  const SKILL_SFX = {
+    // Aceleração de Fogo: "fwoomp" de ignição + rajada de ar subindo + motor gritando
+    TURBO(t) {
+      sfxTone(90, t, 0.2, { type: 'sine', gain: 0.18, slideTo: 45 });
+      sfxNoise(t, 0.6, 500, 0.6, 0.16, 'bandpass', 0.06, 3200);
+      sfxTone(120, t, 0.55, { type: 'sawtooth', gain: 0.06, slideTo: 460, attack: 0.05 });
+    },
+    // Boost de Fogo (Blaine): mais pesado que o turbo, com estalos de chama
+    BLAINE_BOOST(t) {
+      sfxTone(80, t, 0.25, { type: 'sine', gain: 0.22, slideTo: 40 });
+      sfxNoise(t, 0.75, 300, 0.5, 0.2, 'bandpass', 0.08, 2500);
+      sfxTone(70, t, 0.7, { type: 'sawtooth', gain: 0.08, slideTo: 200, attack: 0.06 });
+      for (let i = 0; i < 4; i++) sfxNoise(t + 0.1 + i * rnd(0.07, 0.12), 0.04, rnd(2500, 4500), 1.2, 0.08, 'bandpass');
+    },
+    // Proteção: brilho mágico subindo + sinos
+    SHIELD(t) {
+      sfxTone(330, t, 0.32, { type: 'triangle', gain: 0.12, slideTo: 700, attack: 0.02 });
+      sfxTone(220, t, 0.45, { type: 'sine', gain: 0.07, slideTo: 330, attack: 0.05 });
+      sfxBell(1046.5, t + 0.1, 0.5, 0.09);
+      sfxBell(1568, t + 0.2, 0.7, 0.07);
+    },
+    // Gelo na Pista: cristais tilintando
+    ICE(t) {
+      for (let i = 0; i < 6; i++) sfxBell(rnd(2200, 3600), t + i * 0.045 + rnd(0, 0.02), 0.25, 0.045);
+      sfxNoise(t, 0.2, 7000, 0.7, 0.05, 'highpass');
+      sfxTone(500, t, 0.18, { type: 'sine', gain: 0.07, slideTo: 250 });
+    },
+    // Lodo Obscuro: "splat" molhado + bolha
+    LODO(t) {
+      sfxNoise(t, 0.22, 600, 0.7, 0.16, 'lowpass');
+      sfxTone(220, t, 0.16, { type: 'sine', gain: 0.14, slideTo: 80 });
+      sfxTone(180, t + 0.1, 0.1, { type: 'sine', gain: 0.10, slideTo: 420 });
+    },
+    // Trovoada Elétrica: zap descendo + estalos + trovão grave
+    CHOQUE(t) {
+      sfxTone(1800, t, 0.28, { type: 'sawtooth', gain: 0.10, slideTo: 200 });
+      sfxTone(900, t, 0.22, { type: 'square', gain: 0.05, slideTo: 120 });
+      for (let i = 0; i < 4; i++) sfxNoise(t + i * 0.05 + rnd(0, 0.02), 0.03, rnd(3000, 6000), 1.5, 0.09, 'bandpass');
+      sfxNoise(t, 0.5, 220, 0.6, 0.12, 'lowpass', 0.01);
+    },
+    // Cortina de Fumaça: "pssshh" suave
+    FUMACA(t) {
+      sfxNoise(t, 0.6, 1800, 0.5, 0.12, 'bandpass', 0.08, 900);
+      sfxTone(120, t, 0.12, { type: 'sine', gain: 0.12, slideTo: 70 });
+    },
+    // Surf Aquático: onda crescendo + bolhas
+    SURF(t) {
+      sfxNoise(t, 0.9, 300, 0.6, 0.15, 'bandpass', 0.3, 1300);
+      sfxTone(140, t, 0.8, { type: 'sine', gain: 0.10, slideTo: 230, attack: 0.25 });
+      for (let i = 0; i < 3; i++) sfxTone(rnd(450, 700), t + 0.25 + i * rnd(0.1, 0.16), 0.09, { type: 'sine', gain: 0.07, slideTo: rnd(800, 1100) });
+    },
+    // Ataque de Lama: arremesso (swish) + splat
+    LAMA(t) {
+      sfxNoise(t, 0.15, 1500, 0.8, 0.10, 'bandpass', 0.01, 400);
+      sfxNoise(t + 0.18, 0.18, 600, 0.7, 0.16, 'lowpass');
+      sfxTone(200, t + 0.18, 0.12, { type: 'sine', gain: 0.12, slideTo: 70 });
+    },
+    // Ataque Cavar: terra sendo escavada + ronco grave
+    DIG(t) {
+      for (let i = 0; i < 4; i++) sfxNoise(t + i * 0.11, 0.08, rnd(700, 1100), 1.0, 0.12, 'bandpass', 0.005);
+      sfxNoise(t, 0.7, 150, 0.6, 0.18, 'lowpass', 0.05);
+      sfxTone(70, t, 0.6, { type: 'sine', gain: 0.14, slideTo: 45 });
+    },
+    // Onda Sonora: grave + pulsos de sonar com eco
+    SOM(t) {
+      sfxTone(100, t, 0.5, { type: 'sine', gain: 0.24, slideTo: 35 });
+      [1, 0.6, 0.35].forEach((g, i) => sfxTone(900, t + i * 0.13, 0.2, { type: 'sine', gain: 0.12 * g, slideTo: 300 }));
+      sfxNoise(t, 0.12, 1500, 0.7, 0.06, 'bandpass');
+    },
+    // Armadilha Rocket: caixa metálica caindo + dois bipes de armar
+    ROCKET_BOX(t) {
+      sfxTone(160, t, 0.12, { type: 'square', gain: 0.10, slideTo: 80 });
+      sfxNoise(t, 0.06, 1200, 1.2, 0.10, 'bandpass');
+      sfxTone(880, t + 0.18, 0.07, { type: 'square', gain: 0.06 });
+      sfxTone(880, t + 0.32, 0.07, { type: 'square', gain: 0.06 });
+    },
+    // Pedra do Brock: pancada grave + pedregulhos
+    BROCK_ROCK(t) {
+      sfxTone(110, t, 0.22, { type: 'sine', gain: 0.22, slideTo: 45 });
+      sfxNoise(t, 0.16, 400, 0.7, 0.14, 'lowpass');
+      for (let i = 0; i < 3; i++) sfxNoise(t + 0.1 + i * rnd(0.04, 0.08), 0.04, rnd(1200, 2200), 1.4, 0.07, 'bandpass');
+    },
+    // Poça da Misty: respingo + bolhas + gotinhas
+    MISTY_WATER(t) {
+      sfxNoise(t, 0.35, 2500, 0.6, 0.12, 'bandpass', 0.01, 800);
+      for (let i = 0; i < 3; i++) sfxTone(rnd(350, 500), t + 0.05 + i * 0.09, 0.09, { type: 'sine', gain: 0.08, slideTo: rnd(700, 950) });
+      sfxBell(rnd(2400, 3000), t + 0.3, 0.2, 0.04);
+    },
+    // Armadilha Elétrica (Surge): carga subindo + descarga
+    SURGE_SHOCK(t) {
+      for (let i = 0; i < 5; i++) sfxTone(200 + i * 130, t + i * 0.06, 0.05, { type: 'square', gain: 0.06 });
+      sfxTone(2000, t + 0.34, 0.22, { type: 'sawtooth', gain: 0.10, slideTo: 150 });
+      for (let i = 0; i < 3; i++) sfxNoise(t + 0.34 + i * 0.05, 0.03, rnd(3000, 6000), 1.5, 0.08, 'bandpass');
+    },
+    // Raízes Emaranhadas (Erika): farfalhar + rangidos de madeira
+    ERIKA_ROOTS(t) {
+      sfxNoise(t, 0.55, 700, 0.8, 0.10, 'bandpass', 0.15, 1100);
+      sfxTone(180, t + 0.05, 0.3, { type: 'triangle', gain: 0.06, slideTo: 260, attack: 0.05 });
+      sfxTone(320, t + 0.2, 0.25, { type: 'triangle', gain: 0.05, slideTo: 210, attack: 0.04 });
+      sfxTone(100, t, 0.12, { type: 'sine', gain: 0.10, slideTo: 60 });
+    },
+    // Névoa Tóxica (Koga): chiado + bolhas graves + par desafinado sinistro
+    KOGA_SMOKE(t) {
+      sfxNoise(t, 0.8, 1200, 0.5, 0.10, 'bandpass', 0.15, 500);
+      for (let i = 0; i < 4; i++) sfxTone(rnd(130, 190), t + i * rnd(0.1, 0.17), 0.1, { type: 'sine', gain: 0.08, slideTo: rnd(260, 340) });
+      sfxTone(220, t, 0.8, { type: 'sine', gain: 0.045, attack: 0.15 });
+      sfxTone(233, t, 0.8, { type: 'sine', gain: 0.045, attack: 0.15 });
+    },
+    // Vórtice Psíquico (Sabrina): varreduras opostas girando + brilho
+    SABRINA_VORTEX(t) {
+      sfxTone(220, t, 0.75, { type: 'sine', gain: 0.10, slideTo: 880, attack: 0.1 });
+      sfxTone(1320, t, 0.75, { type: 'sine', gain: 0.06, slideTo: 330, attack: 0.1 });
+      sfxNoise(t, 0.7, 3000, 0.8, 0.04, 'highpass', 0.1, 8000);
+      sfxBell(880, t + 0.55, 0.6, 0.07);
+    }
+  };
+
+  // Sons de impacto (quando você é atingido)
+  const HIT_SFX = {
+    SHIELD(t) { // escudo bloqueando: "tink" metálico
+      sfxBell(1760, t, 0.3, 0.12);
+      sfxNoise(t, 0.04, 4000, 1.2, 0.08, 'bandpass');
+      sfxTone(600, t, 0.12, { type: 'triangle', gain: 0.06, slideTo: 1200 });
+    },
+    ICE(t) { // escorregão: apito descendo + cacos de gelo
+      sfxTone(900, t, 0.4, { type: 'sine', gain: 0.12, slideTo: 200 });
+      for (let i = 0; i < 5; i++) sfxBell(rnd(2000, 3400), t + i * 0.05, 0.25, 0.045);
+    },
+    LODO(t) { sfxNoise(t, 0.2, 600, 0.7, 0.18, 'lowpass'); sfxTone(200, t, 0.14, { type: 'sine', gain: 0.14, slideTo: 70 }); },
+    MUD(t) { sfxNoise(t, 0.22, 650, 0.7, 0.2, 'lowpass'); sfxTone(180, t, 0.16, { type: 'sine', gain: 0.16, slideTo: 60 }); sfxNoise(t, 0.08, 1800, 1.0, 0.08, 'bandpass'); },
+    FUMACA(t) { sfxNoise(t, 0.3, 500, 0.6, 0.12, 'lowpass', 0.02); sfxTone(140, t, 0.15, { type: 'sine', gain: 0.10, slideTo: 80 }); },
+    ROCK(t) { // pancada de pedra
+      sfxTone(130, t, 0.25, { type: 'sine', gain: 0.24, slideTo: 40 });
+      sfxNoise(t, 0.2, 900, 0.7, 0.18, 'lowpass');
+      sfxNoise(t, 0.12, 1800, 1.0, 0.10, 'bandpass');
+    },
+    WATER(t) {
+      sfxNoise(t, 0.35, 2200, 0.6, 0.14, 'bandpass', 0.01, 700);
+      for (let i = 0; i < 3; i++) sfxTone(rnd(350, 500), t + 0.04 + i * 0.08, 0.09, { type: 'sine', gain: 0.08, slideTo: rnd(700, 950) });
+    },
+    SHOCK(t) { // choque elétrico
+      sfxTone(1500, t, 0.4, { type: 'sawtooth', gain: 0.12, slideTo: 100 });
+      for (let i = 0; i < 5; i++) sfxNoise(t + i * 0.045, 0.03, rnd(3000, 6000), 1.5, 0.09, 'bandpass');
+      sfxNoise(t, 0.4, 200, 0.6, 0.14, 'lowpass');
+    },
+    ROOTS(t) { // preso: farfalhar + estalo
+      sfxNoise(t, 0.4, 800, 0.8, 0.12, 'bandpass', 0.02, 400);
+      sfxTone(300, t, 0.2, { type: 'triangle', gain: 0.07, slideTo: 160 });
+      sfxNoise(t + 0.18, 0.03, 2500, 1.5, 0.10, 'bandpass');
+    },
+    PURPLE_SMOKE(t) { // confusão: chiado + par dissonante caindo
+      sfxNoise(t, 0.5, 1000, 0.5, 0.10, 'bandpass', 0.05, 400);
+      sfxTone(240, t, 0.45, { type: 'sine', gain: 0.07, slideTo: 170 });
+      sfxTone(252, t, 0.45, { type: 'sine', gain: 0.07, slideTo: 180 });
+    },
+    VORTEX(t) { // sugado: giro descendo
+      sfxTone(1200, t, 0.7, { type: 'sine', gain: 0.10, slideTo: 200 });
+      sfxTone(300, t, 0.7, { type: 'triangle', gain: 0.07, slideTo: 900 });
+      sfxNoise(t, 0.6, 2500, 0.8, 0.05, 'bandpass', 0.05, 500);
+    },
+    SONIC(t) { // onda sonora: pancada grave + zumbido agudo curto
+      sfxTone(70, t, 0.4, { type: 'sine', gain: 0.26, slideTo: 30 });
+      sfxNoise(t, 0.15, 1200, 0.7, 0.12, 'bandpass');
+      sfxTone(3000, t + 0.05, 0.45, { type: 'sine', gain: 0.035 });
+    },
+    DIG(t) { // explosão de terra
+      sfxNoise(t, 0.5, 500, 0.6, 0.20, 'lowpass');
+      sfxTone(90, t, 0.5, { type: 'sine', gain: 0.26, slideTo: 30 });
+      for (let i = 0; i < 4; i++) sfxNoise(t + 0.08 + i * rnd(0.05, 0.1), 0.05, rnd(900, 2000), 1.2, 0.07, 'bandpass');
+    },
+    ROCKET(t) { // explosão + sirene descendo (a caixa Rocket)
+      sfxNoise(t, 0.5, 600, 0.6, 0.20, 'lowpass');
+      sfxTone(100, t, 0.4, { type: 'sine', gain: 0.24, slideTo: 35 });
+      sfxTone(900, t + 0.05, 0.6, { type: 'square', gain: 0.06, slideTo: 150 });
+    }
+  };
+
+  // Toca um efeito; gain/pan permitem posicionar o som (bots e jogadores distantes)
+  function playSfxFn(fn, gain = 1, pan = 0) {
+    if (!fn || ctx.state !== 'running' || gain <= 0.01) return;
+    const t = ctx.currentTime + 0.005;
+    const prev = sfxOut;
+    let tmp = null;
+    if (gain !== 1 || pan !== 0) {
+      tmp = ctx.createGain(); tmp.gain.value = gain;
+      if (ctx.createStereoPanner) {
+        const p = ctx.createStereoPanner(); p.pan.value = pan;
+        tmp.connect(p).connect(bus);
+      } else {
+        tmp.connect(bus);
+      }
+      sfxOut = tmp;
+    }
+    try { fn(t); } finally { sfxOut = prev; }
+    if (tmp) setTimeout(() => { try { tmp.disconnect(); } catch (e) { } }, 2500);
+  }
+  function playSkill(id, opts = {}) { playSfxFn(SKILL_SFX[id], opts.gain, opts.pan); }
+  function playHit(kind, opts = {}) { playSfxFn(HIT_SFX[kind], opts.gain, opts.pan); }
+  function playDenied() { // não pode usar (ex.: Cavar em 1º lugar): dois "bzz" curtos
+    playSfxFn((t) => {
+      sfxTone(220, t, 0.09, { type: 'square', gain: 0.07, slideTo: 160 });
+      sfxTone(220, t + 0.12, 0.09, { type: 'square', gain: 0.07, slideTo: 160 });
+    });
+  }
+
+  // Navegadores só liberam áudio após um gesto do jogador
+  const unlock = () => {
+    if (isPaused) return;
+    ctx.resume().then(() => {
+      if (ctx.state === 'running') {
+        ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev =>
+          window.removeEventListener(ev, unlock, true));
+      }
+    }).catch(() => { });
+  };
+  ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev =>
+    window.addEventListener(ev, unlock, { capture: true, passive: true }));
+
+  return { ctx, createEngine, playItemBox, playMasterBall, playSkill, playHit, playDenied };
+})();
+
+const localEngine = kartAudio ? kartAudio.createEngine({ volume: 0.5, drift: true }) : null;
+const otherEngines = new Map(); // peerId/botId -> engine
+let audioPausedByUs = false;
+let audioWarned = false;
+const _audioCamDir = new THREE.Vector3();
+
+// ------------------------------------------------------------
+// ÁUDIO: efeitos de habilidades (posição, volume e ligação com o jogo)
+// ------------------------------------------------------------
+// Tipo de armadilha -> efeito sonoro de lançamento
+var TRAP_SFX_ID = {
+  ICE: 'ICE', LODO: 'LODO', FUMACA: 'FUMACA', ROCK: 'BROCK_ROCK', WATER: 'MISTY_WATER',
+  SHOCK: 'SURGE_SHOCK', ROOTS: 'ERIKA_ROOTS', PURPLE_SMOKE: 'KOGA_SMOKE', VORTEX: 'SABRINA_VORTEX'
+};
+// Armadilhas que ficam no chão e continuam atingindo você: som de impacto com intervalo maior
+var TRAP_SFX_PERSISTENT = { PURPLE_SMOKE: true, VORTEX: true, FUMACA: true, LODO: true };
+
+// Acesso seguro ao módulo de áudio (nunca derruba o jogo se o áudio não existir)
+function _ka() { try { return kartAudio; } catch (e) { return null; } }
+
+// Volume e pan (estéreo) de um som que acontece numa posição do mundo, em relação ao seu kart/câmera
+function sfxSpatial(pos) {
+  if (!kart || !pos) return { gain: 1, pan: 0 };
+  const dx = pos.x - kart.position.x;
+  const dz = pos.z - kart.position.z;
+  const dist = Math.hypot(dx, dz);
+  const near = Math.max(0, 1 - dist / 80);
+  camera.getWorldDirection(_audioCamDir);
+  let rx = -_audioCamDir.z, rz = _audioCamDir.x;
+  const rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
+  const pan = dist > 0.01 ? Math.max(-1, Math.min(1, ((dx * rx + dz * rz) / dist) * Math.min(1, dist / 12))) : 0;
+  return { gain: near * near, pan };
+}
+
+// Posição de um kart pelo id ('local' = você: som centralizado e com volume cheio)
+function sfxPosOfKart(id) {
+  if (id === 'local') return null;
+  const e = remoteKarts.get(id);
+  if (!e) return null;
+  if (e.isBot) return e.obj && e.obj.group ? e.obj.group.position : null;
+  return e.target ? e.target.pos : null;
+}
+
+function playSkillSfx(id, pos = null) {
+  try { const ka = _ka(); if (ka) ka.playSkill(id, pos ? sfxSpatial(pos) : undefined); } catch (e) { }
+}
+function playHitSfx(kind, pos = null) {
+  try { const ka = _ka(); if (ka) ka.playHit(kind, pos ? sfxSpatial(pos) : undefined); } catch (e) { }
+}
+function playTrapDropSfx(trapData) {
+  const id = TRAP_SFX_ID && TRAP_SFX_ID[trapData.type];
+  if (id) playSkillSfx(id, { x: trapData.x, z: trapData.z });
+}
+// Você encostou numa armadilha: toca o impacto (ou o "tink" do escudo), com intervalo para não repetir todo frame
+function playTrapHitSfx(trap) {
+  const now = performance.now();
+  const gap = TRAP_SFX_PERSISTENT[trap.type] ? 4000 : 800;
+  if (trap._lastHitSfx && now - trap._lastHitSfx < gap) return;
+  trap._lastHitSfx = now;
+  playHitSfx(isShieldActive ? 'SHIELD' : trap.type);
+}
+
+
+function updateKartAudio() {
+  if (!kartAudio || !localEngine) return;
+  try {
+    const ctx = kartAudio.ctx;
+
+    // Pausa (Esc): suspende todo o áudio do motor
+    if (isPaused) {
+      if (ctx.state === 'running') { ctx.suspend(); audioPausedByUs = true; }
+      return;
+    }
+    if (audioPausedByUs) { ctx.resume(); audioPausedByUs = false; }
+
+    const racing = raceStarted || countdownInProgress;
+
+    // --- Kart local ---
+    const tr = raceTrackers.get('local');
+    const raceOver = !!(tr && tr.finished);
+    const fwdKey = keys['KeyW'] || keys['ArrowUp'] || mobileGasActive;
+    const backKey = keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive;
+    const gas = !raceOver && (isGasBrakeInverted ? backKey : fwdKey);
+    const spd = Math.abs(physics.speed);
+
+    localEngine.update({
+      speed: spd,
+      maxSpeed: physics.maxSpeed,
+      throttle: gas ? 1 : 0,
+      drifting: physics.isDrifting && spd > 5,
+      boosting: physics.turboTimer > 0,
+      mute: !kart || !racing || (raceOver && spd < 1)
+    });
+
+    // --- Outros karts (jogadores e bots), com volume e pan pela posição ---
+    camera.getWorldDirection(_audioCamDir);
+    let rx = -_audioCamDir.z, rz = _audioCamDir.x; // vetor "direita" da câmera no plano XZ
+    const rl = Math.hypot(rx, rz) || 1; rx /= rl; rz /= rl;
+
+    for (const [pid, e] of remoteKarts.entries()) {
+      const g = e.obj && e.obj.group;
+      if (!g) continue;
+      let eng = otherEngines.get(pid);
+      if (!eng) {
+        eng = kartAudio.createEngine({ volume: 0.22, drift: false, spatial: true });
+        otherEngines.set(pid, eng);
+      }
+      const eSpeed = Math.abs((e.isBot ? e.speed : (e.target && e.target.speed)) || 0);
+      const eMax = (e.isBot && e.stats && e.stats.maxSpeed) || physics.maxSpeed;
+
+      let gain = 0, pan = 0;
+      if (kart) {
+        const dx = g.position.x - kart.position.x;
+        const dz = g.position.z - kart.position.z;
+        const dist = Math.hypot(dx, dz);
+        const near = Math.max(0, 1 - dist / 70);
+        gain = near * near;
+        if (dist > 0.01) pan = Math.max(-1, Math.min(1, ((dx * rx + dz * rz) / dist) * Math.min(1, dist / 12)));
+      }
+
+      eng.update({
+        speed: eSpeed,
+        maxSpeed: eMax,
+        throttle: eSpeed > 1 ? 0.7 : 0,
+        boosting: (e.turboTimer > 0) || !!e.isTurboActive,
+        mute: !raceStarted || gain <= 0.001,
+        gain,
+        pan
+      });
+    }
+
+    // Remove motores de karts que saíram da corrida
+    for (const [pid, eng] of otherEngines.entries()) {
+      if (!remoteKarts.has(pid)) { eng.stop(); otherEngines.delete(pid); }
+    }
+  } catch (err) {
+    if (!audioWarned) { console.warn('[kartAudio]', err); audioWarned = true; }
+  }
+}
+
 // Inicia a engine
 initGameEngine();
 
@@ -7274,6 +7987,7 @@ function animate() {
   // -------------------------------------------------------
 
   updatePhysics(dt);
+  updateKartAudio();
   updateDriftEffects(dt);
   updateBots(dt);
   updateCamera(dt);
