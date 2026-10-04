@@ -1,5 +1,17 @@
 # Changelog - PokéKart
 
+## [1.9.7] - 03/10/2026
+- Corrigido a classificação da corrida multiplayer.
+- Adicionado a quantidade de moedas atuais do jogador na garagem.
+- Corrigido cards de modos de jogo e menu lateral para ter scroll quando necessario.
+- Adicionado recompensa ao modo desafio.
+- Removido da garagem o comercio dos karts de lideres de ginasio.
+- Adicionado efeitos sonoros na corrida.
+- Alterado o design visual da loja de cosmeticos.
+- Adicionado o video ao loading.
+- Adicionado novos karts.
+- Adicionado 3 novas conquistas (Colecionadores de Karts por Região).
+
 ## [1.9.5] - 01/10/2026
 - Sinalização da necessidade de apertar a tecla R em algumas habilidades.
 - Alterado os nomes dos corredores (BOTS).

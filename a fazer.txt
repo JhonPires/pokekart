@@ -2,19 +2,13 @@ BUGS
 f5 ou atualizar tela dentro da corrida deve remover da corrida
 
 AJUSTES
-- Criar hub pra elite Four
 - Criar as pistas que faltam para os lideres de ginasio e as para elite Four
 - Criar os 3D para colocar no novo hub da elite Four
-- Adicionar os karts que faltam da liga de Kanto e inserir os novos da regiao de Johto
 - Trocar todos os icones
 - Trocar os icones dos emojis da loja
 
 
 NOVIDADES 
-- Adicionar o video no loading
-- Ao finalizar todos os ginasio da região a torre deve habilitar a Elite Four + o Campeão daquela região para uma batalha nuzlok (1x1 sequencial que deve ser ganho todas em seguida).
-- Habilitar novas regiões nas torres assim que o jogador finalizar a região atual
-- Criar conquista para colecionador de karts por região
 
 
 FUTURO
@@ -37,7 +31,6 @@ LOJA
 Adicionar os avatares já bloqueados no perfil para serem vendidos
 + rastros
 + efeitos
-Repaginar o modal da loja de cosmeticos deixar em um tamanho fixo de altura e largura, criar um menu lateral dentro desse modal com as opçoes 
 Trocar os icones
 
 CRIADOR DE PISTAS
@@ -47,9 +40,9 @@ PERFIL DO PILOTO
 Trocar os icones
 
 PASSE DE BATALHA
-Rever as recompensas
+Rever as recompensas (adicionar consumiveis, titulos, bordas, rastros, efeitos, emojis )
 Trocar os icones
-Ver possibilidade de aumentar quantidade de niveis
+Aumentar quantidade de niveis
 
 TABELA DE CLASSIFICACAO
 Mudar o icone que abre o modal (hj esta masterball)
@@ -59,7 +52,6 @@ MODO MULTI
 Trocar os icones
 
 MODO TORRE
-Abandonar torre está minusculo
 Alterar o modal de DERROTADO 
 
 HUB
@@ -69,21 +61,9 @@ CORRIDA
 Placar quando finalizado está ficando com a bandeira no canto superior esquerdo
 
 
-Brock: Soltar "pedras" igual a gente soltamos a caixa R porem as pedras ao colidir para o Kart. Apos colidir ou X tempo a pedra some da pista. O lider não é atingido
 
-Misty: Poça d'agua ao passar por cima o kart fica X tempo com as curvas do kart muito MUITO leve, onde ao fazer uma curva ficaria dificil de completar. O lider não é atingido
 
-Lt. Surge: Ele solta uma descarga eletrica (um circulo eletrico na pista) onde quem passar toma stun. O lider não é atingido
 
-Erika: Solta raizes pela pista, ao passar com o kart dá lentidão e para remover a lentidão devemos apertar a tecla R varias vezes para remover. O lider não é atingido
-
-Koga: Libera uma cortina de fumaça ROXA (igual a que temos porem roxa) que pega a pista inteira, inverter o acelerador com a ré. O lider não é atingido
-
-Sabrina: Cria um vortex onde te puxa para o centro ao passar por perto dele. O lider não é atingido
-
-Blaine: O lider sempre vai ter um boost ao pegar a caixa na pista
-
-Giovanni: O lider sempre pega a caixa R ao pegar as caixas na pista. O lider não é atingido
 
 
 

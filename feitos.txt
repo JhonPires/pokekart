@@ -5,6 +5,10 @@ Corrigido cards de modos de jogo e menu lateral para ter scroll quando necessari
 Adicionado recompensa ao modo desafio.;
 Removido da garagem o comercio dos karts de lideres de ginasio.;
 Adicionado efeitos sonoros na corrida.;
+Alterado o design visual da loja de cosmeticos.;
+Adicionado o video ao loading.;
+Adicionado novos karts.;
+Adicionado 3 novas conquistas (Colecionadores de Karts por Região).;
 
 
 

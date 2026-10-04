@@ -1758,7 +1758,9 @@
 
   <!-- MODAL DA LOJA DE COSMÉTICOS -->
   <div id="storeModalOverlay" class="overlay-general" style="z-index: 3100; display: none;">
-    <div class="lobbyCardModal profile-modal-wide" style="max-height: 90vh; display: flex; flex-direction: column;">
+    <!-- Tamanho fixo adicionado: width: 900px; height: 650px; com limites de segurança (max-width/height) para telas menores -->
+    <div class="lobbyCardModal"
+      style="width: 900px; height: 650px; max-width: 95vw; max-height: 95vh; display: flex; flex-direction: column;">
 
       <!-- BOTÃO X PADRÃO NO CANTO SUPERIOR DIREITO -->
       <button onclick="document.getElementById('storeModalOverlay').style.display='none'"
@@ -1766,7 +1768,7 @@
 
       <!-- TOPO COM TÍTULO E MOEDAS ALINHADOS -->
       <div
-        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-right: 35px;">
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-right: 40px; flex-shrink: 0;">
         <h2 class="modal-title" style="text-align: left; margin: 0;">🛒 LOJA DE COSMÉTICOS</h2>
 
         <div
@@ -1775,16 +1777,21 @@
         </div>
       </div>
 
-      <!-- Abas de Categorias (Dinâmicas) -->
-      <div id="storeTabsContainer"
-        style="display: flex; gap: 8px; margin-bottom: 15px; flex-shrink: 0; overflow-x: auto; padding-bottom: 5px; scrollbar-width: thin;">
-        <!-- As abas serão injetadas aqui via JS -->
-      </div>
+      <!-- CONTAINER PRINCIPAL: MENU LATERAL ESQUERDA + GRID DIREITA -->
+      <div style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
 
-      <!-- Área de Itens (Grid) -->
-      <div id="storeItemsGrid"
-        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 5px; padding-bottom: 10px; flex: 1;">
-        <!-- Os itens serão injetados aqui via JS -->
+        <!-- Menu Lateral (Categorias) -->
+        <div id="storeTabsContainer"
+          style="width: 220px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; overflow-y: auto; padding-right: 10px; border-right: 1px solid rgba(33, 199, 255, 0.15);">
+          <!-- As abas serão injetadas aqui via JS -->
+        </div>
+
+        <!-- Área de Itens (Grid) -->
+        <div id="storeItemsGrid"
+          style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; overflow-y: auto; padding-right: 10px; flex: 1; align-content: flex-start;">
+          <!-- Os itens serão injetados aqui via JS -->
+        </div>
+
       </div>
 
     </div>
@@ -2513,7 +2520,7 @@
       // KANTO (Região 1)
       { id: 'pewter', name: 'Ginásio de Pewter', leader: 'BROCK', badge: '🪨', badgeImg: 'insig_pewter.png', maxFloors: 5, kartId: 'onix' },
       { id: 'cerulean', name: 'Ginásio de Cerulean', leader: 'MISTY', badge: '💧', badgeImg: 'insig_cerulean.png', maxFloors: 5, kartId: 'starmie' },
-      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', badgeImg: 'insig_vermilion.png', maxFloors: 6, kartId: 'pikachu' },
+      { id: 'vermilion', name: 'Ginásio de Vermilion', leader: 'LT. SURGE', badge: '⚡', badgeImg: 'insig_vermilion.png', maxFloors: 6, kartId: 'raichu' },
       { id: 'celadon', name: 'Ginásio de Celadon', leader: 'ERIKA', badge: '🌿', badgeImg: 'insig_celadon.png', maxFloors: 6, kartId: 'vileplume' },
       { id: 'fuchsia', name: 'Ginásio de Fuchsia', leader: 'KOGA', badge: '☠️', badgeImg: 'insig_fuchsia.png', maxFloors: 7, kartId: 'muk' },
       { id: 'saffron', name: 'Ginásio de Saffron', leader: 'SABRINA', badge: '🔮', badgeImg: 'insig_saffron.png', maxFloors: 7, kartId: 'alakazam' },
@@ -2542,11 +2549,11 @@
     ];
 
     const ELITE_FOUR_KANTO = [
-      { id: 'lorelei', name: 'Lorelei', type: '🧊', karts: ['dewgong', 'cloyster', 'lapras'], biomes: ['water', 'ice', 'water'] },
-      { id: 'bruno', name: 'Bruno', type: '🥊', karts: ['onix', 'hitmonchan', 'machamp'], biomes: ['rock', 'dirt', 'rock'] },
-      { id: 'agatha', name: 'Agatha', type: '👻', karts: ['gengar', 'golbat', 'gengar'], biomes: ['poison', 'poison', 'ghost'] },
-      { id: 'lance', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['water', 'rock', 'dragon'] },
-      { id: 'champion_kanto', name: 'Blue', type: '👑', karts: ['pidgeot', 'alakazam', 'blastoise'], biomes: ['dirt', 'psychic', 'water'] }
+      { id: 'lorelei', name: 'Lorelei', type: '🧊', karts: ['dewgong', 'cloyster', 'lapras'], biomes: ['ice'] },
+      { id: 'bruno', name: 'Bruno', type: '🥊', karts: ['onix', 'hitmonchan', 'machamp'], biomes: ['dirt'] },
+      { id: 'agatha', name: 'Agatha', type: '👻', karts: ['gengar', 'golbat', 'gengar'], biomes: ['ghost'] },
+      { id: 'lance', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['city'] },
+      { id: 'champion_kanto', name: 'Blue', type: '👑', karts: ['pidgeot', 'alakazam', 'blastoise'], biomes: ['city'] }
     ];
 
     const ELITE_FOUR_JOHTO = [
@@ -2681,7 +2688,7 @@
       try {
         const { data, error } = await supabaseClient
           .from('karts')
-          .select('id, name, stats, physics, activated');
+          .select('id, name, stats, physics, activated, pokemon_dex_id');
 
         if (error) throw error;
 
@@ -2693,7 +2700,8 @@
             name: dbKart.name,
             modelUrl: getKartUrl(`${dbKart.id}.glb`),
             stats: { ...dbKart.stats, ...dbKart.physics },
-            activated: dbKart.activated !== false
+            activated: dbKart.activated !== false,
+            dexId: dbKart.pokemon_dex_id
           };
         });
       } catch (err) {
@@ -2701,7 +2709,8 @@
         // Fallback de segurança usando getKartUrl também
         KART_DATABASE = [{
           id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
-          stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 }
+          stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
+          dexId: 135
         }];
       }
     }
@@ -4160,17 +4169,14 @@
       `;
     }
 
-    // --- CATÁLOGO DE CONQUISTAS ---
-    let ACHIEVEMENTS_CATALOG = [
-      { id: 'first_win', name: 'Primeira Vitória', desc: 'Chegue em 1º lugar em qualquer corrida.', icon: '🥇' },
-      { id: 'rich', name: 'Mão de Vaca', desc: 'Acumule mais de 2000 moedas.', icon: '💰' },
-      { id: 'tower_climber', name: 'Escalador', desc: 'Derrote seu primeiro Líder de Ginásio.', icon: '🧗' },
-      { id: 'kart_collector', name: 'Colecionador', desc: 'Desbloqueie 3 karts na garagem.', icon: '🏎️' },
-      { id: 'social', name: 'Piloto Social', desc: 'Jogue uma corrida no Multiplayer.', icon: '🌐' },
-      { id: 'track_builder', name: 'Arquiteto', desc: 'Crie e salve uma pista personalizada.', icon: '🛠️' },
-      { id: 'dedication', name: 'Dedicação', desc: 'Complete 7 dias de login seguidos.', icon: '📅' },
-      { id: 'master', name: 'Mestre', desc: 'Chegue na Liga Masterball.', icon: '👑' }
-    ];
+    function getRegionByDex(dexId) {
+      if (!dexId) return 'Desconhecida';
+      if (dexId <= 151) return 'Kanto';
+      if (dexId <= 251) return 'Johto';
+      if (dexId <= 386) return 'Hoenn';
+      if (dexId <= 493) return 'Sinnoh';
+      return 'Outra';
+    }
 
     // --- SISTEMA DE VERIFICAÇÃO E CORREÇÃO DE CONQUISTAS ---
     async function checkAndFixAchievements() {
@@ -4192,18 +4198,45 @@
         mudou = true;
       }
 
-      // 2. CORREÇÃO "Colecionador": Conceder se tiver 3 ou mais karts (Jolteon + comprados)
-      if (!achievements.includes('kart_collector')) {
-        let userKarts = currentUserProfile.unlocked_karts || [];
-        if (typeof userKarts === 'string') {
-          try { userKarts = JSON.parse(userKarts); } catch (e) { userKarts = []; }
+      let userKarts = currentUserProfile.unlocked_karts || [];
+      if (typeof userKarts === 'string') {
+        try { userKarts = JSON.parse(userKarts); } catch (e) { userKarts = []; }
+      }
+
+      // Lista única com o Jolteon base e todos os karts desbloqueados
+      const allUserKarts = Array.from(new Set(['jolteon', ...userKarts]));
+
+      if (!achievements.includes('kart_collector') && allUserKarts.length >= 3) {
+        achievements.push('kart_collector');
+        mudou = true;
+      }
+
+      // --- NOVA LÓGICA: CONQUISTAS DE COLECIONADOR POR REGIÃO ---
+      let kantoCount = 0, johtoCount = 0, hoennCount = 0;
+
+      allUserKarts.forEach(kartId => {
+        const kartInfo = KART_DATABASE.find(k => k.id === kartId);
+        if (kartInfo && kartInfo.dexId) {
+          const region = getRegionByDex(kartInfo.dexId);
+          if (region === 'Kanto') kantoCount++;
+          if (region === 'Johto') johtoCount++;
+          if (region === 'Hoenn') hoennCount++;
+        } else if (kartId === 'jolteon') {
+          kantoCount++; // O Jolteon é de Kanto, garante fallback de segurança
         }
-        // Conta karts únicos que o jogador possui de facto
-        const totalKarts = new Set(['jolteon', ...userKarts]).size;
-        if (totalKarts >= 3) {
-          achievements.push('kart_collector');
-          mudou = true;
-        }
+      });
+
+      if (!achievements.includes('kanto_collector') && kantoCount >= 65) {
+        achievements.push('kanto_collector');
+        mudou = true;
+      }
+      if (!achievements.includes('johto_collector') && johtoCount >= 35) {
+        achievements.push('johto_collector');
+        mudou = true;
+      }
+      if (!achievements.includes('hoenn_collector') && hoennCount >= 16) {
+        achievements.push('hoenn_collector');
+        mudou = true;
       }
 
       // 3. Validações extra automáticas para garantir fluidez no jogo
@@ -5445,7 +5478,7 @@
       'emojis': '💬 Emojis'
     };
 
-    // Função para gerar as abas dinamicamente
+    // Função para gerar as abas dinamicamente no Menu Lateral
     function renderStoreTabs() {
       const tabsContainer = document.getElementById('storeTabsContainer');
       if (!tabsContainer || typeof storeItemsCache === 'undefined') return;
@@ -5460,6 +5493,11 @@
         const btn = document.createElement('button');
         // Aplica a classe 'tab-btn' e 'active' se for a selecionada
         btn.className = `tab-btn ${currentStoreCategory === typeKey ? 'active' : ''}`;
+
+        // OVERRIDES PARA MENU LATERAL: Impede o botão de esticar na vertical e alinha à esquerda
+        btn.style.flex = "none";
+        btn.style.justifyContent = "flex-start";
+        btn.style.paddingLeft = "15px";
 
         // Busca o nome formatado ou usa a chave bruta em maiúsculas
         btn.innerText = storeCategoryNames[typeKey] || storeCategoryNames[typeKey + 's'] || typeKey.toUpperCase();
@@ -5954,7 +5992,7 @@
               ${isBoss ? 'DESAFIAR LÍDER' : 'CORRER ANDAR'}
             </button>
             <button id="btnResetTower" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
-              Abandonar Torre
+              ABANDONAR TORRE
             </button>
           </div>
         `;
@@ -6078,18 +6116,51 @@
             if (towerState.eliteIndex >= eliteData.length) {
               // GANHOU TUDO! Derrotou os 4 Elites + Campeão
               let dbProfile = (typeof currentUserProfile !== 'undefined' && currentUserProfile) ? currentUserProfile : null;
-              let unlocked = dbProfile && dbProfile.unlocked_badges ? [...dbProfile.unlocked_badges] : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
 
+              // 1. Carrega os arrays atuais (Badges e Regiões)
+              let unlocked = dbProfile && dbProfile.unlocked_badges ? [...dbProfile.unlocked_badges] : JSON.parse(localStorage.getItem('pkart_unlocked_badges') || '[]');
+              let unlockedRegions = dbProfile && dbProfile.unlocked_regions ? [...dbProfile.unlocked_regions] : JSON.parse(localStorage.getItem('pkart_unlocked_regions') || '["Kanto"]');
+
+              // 2. Define qual região deve ser desbloqueada com base no campeão derrotado
+              // (Adapte os nomes dentro das aspas simples para os valores reais do seu towerState.eliteFlag)
+              let nextRegion = '';
+              if (towerState.eliteFlag === 'champ_kanto') { // Exemplo: flag da Liga de Kanto
+                nextRegion = 'Johto';
+              } else if (towerState.eliteFlag === 'champ_johto') {
+                nextRegion = 'Hoenn';
+              }
+
+              let dbNeedsUpdate = false;
+
+              // 3. Atualiza os Badges
               if (!unlocked.includes(towerState.eliteFlag)) {
                 unlocked.push(towerState.eliteFlag);
                 localStorage.setItem('pkart_unlocked_badges', JSON.stringify(unlocked));
-                if (typeof supabaseClient !== 'undefined' && dbProfile) {
-                  dbProfile.unlocked_badges = unlocked;
-                  await supabaseClient.from('profiles').update({ unlocked_badges: unlocked }).eq('id', dbProfile.id);
-                }
+                if (dbProfile) dbProfile.unlocked_badges = unlocked;
+                dbNeedsUpdate = true;
               }
+
+              // 4. Atualiza as Regiões
+              if (nextRegion && !unlockedRegions.includes(nextRegion)) {
+                unlockedRegions.push(nextRegion);
+                localStorage.setItem('pkart_unlocked_regions', JSON.stringify(unlockedRegions));
+                if (dbProfile) dbProfile.unlocked_regions = unlockedRegions;
+                dbNeedsUpdate = true;
+              }
+
+              // 5. Salva tudo no Supabase numa única requisição, se houver dados novos
+              if (typeof supabaseClient !== 'undefined' && dbProfile && dbNeedsUpdate) {
+                await supabaseClient.from('profiles').update({
+                  unlocked_badges: unlocked,
+                  unlocked_regions: unlockedRegions
+                }).eq('id', dbProfile.id);
+              }
+
               await saveTowerStateToDB(null);
-              showResultModal('badge', 'CAMPEÃO DA LIGA!', 'Épico! Você esmagou a Elite Four e o Campeão simultaneamente! A próxima Região foi desbloqueada!');
+
+              // 6. Mensagem dinâmica para a interface
+              const regionMsg = nextRegion ? `A região de ${nextRegion} foi desbloqueada!` : 'Uma nova Região foi desbloqueada!';
+              showResultModal('badge', 'CAMPEÃO DA LIGA!', `Épico! Esmagou a Elite Four e o Campeão simultaneamente! ${regionMsg}`);
             } else {
               showResultModal('win', 'ANDAR CONCLUÍDO!', `Incrível! Você superou ${defeatedLeader} e seus 3 Karts. Prepare-se para o próximo andar!`);
               await saveTowerStateToDB(towerState);

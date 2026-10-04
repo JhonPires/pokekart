@@ -16,16 +16,10 @@
         }
 
         /* TELA DE CARREGAMENTO */
+        /* TELA DE CARREGAMENTO */
         #loadingScreen {
             position: absolute;
             inset: 0;
-
-            /* Imagem de fundo com uma leve máscara escura para destacar o texto */
-            background: linear-gradient(rgba(5, 11, 22, 0.7), rgba(5, 11, 22, 0.7)), url('img/fundo2.png');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -34,6 +28,31 @@
             font-weight: 900;
             z-index: 9999;
             transition: opacity 0.5s;
+            overflow: hidden;
+            /* Garante que o vídeo não vaze da tela */
+        }
+
+        /* VÍDEO DE FUNDO TELA CHEIA */
+        #loadingVideo {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            min-width: 100%;
+            min-height: 100%;
+            width: auto;
+            height: auto;
+            transform: translate(-50%, -50%);
+            object-fit: cover;
+            z-index: -2;
+            /* Fica no fundo absoluto */
+        }
+
+        /* MÁSCARA ESCURA SOBRE O VÍDEO (Equivalente ao antigo linear-gradient) */
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 11, 22, 0.7);
+            z-index: -1;
         }
 
         /* CONTAINER DA HUD */
@@ -367,6 +386,13 @@
 <body>
 
     <div id="loadingScreen">
+        <!-- VÍDEO DE FUNDO SUBSTITUINDO A IMAGEM -->
+        <video autoplay muted loop id="loadingVideo">
+            <source src="img/loading.mp4" type="video/mp4">
+            O seu navegador não suporta a tag de vídeo.
+        </video>
+        <!-- MÁSCARA ESCURA PARA DESTAQUE DO TEXTO -->
+        <div class="video-overlay"></div>
 
         <!-- LOGO CENTRALIZADA NO TOPO -->
         <img src="img/logo.png" alt="Logo PokeKart" class="loading-logo">
@@ -382,7 +408,6 @@
 
             <div id="loadingTip">Preparando a pista para a sua aventura...</div>
         </div>
-
     </div>
 
     <div id="ui-container">

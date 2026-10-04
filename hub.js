@@ -9,10 +9,15 @@ const kartId = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
 // Lê o estado completo da torre guardado ao sair do Lobby
 const towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{"floor": 1, "biome": "grass", "maxFloors": 5, "leader": "Desconhecido"}');
 
-const biome = towerState.biome || 'grass';
+let biome = towerState.biome || 'grass';
 const maxFloors = towerState.maxFloors || 5;
 const leaderName = towerState.leader || 'Desconhecido';
 const andarAtual = towerState.floor || 1;
+
+// FORÇA O BIOMA "CITY" VISUALMENTE APENAS NO HUB DA ELITE FOUR
+if (towerState.mode === 'elite_nuzlocke') {
+    biome = 'city';
+}
 
 const gymName = leaderName !== 'Desconhecido' ? `Ginásio de ${leaderName}` : 'Torre Pokémon';
 

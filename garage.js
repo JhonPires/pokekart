@@ -336,11 +336,25 @@ function renderKartGrid() {
     card.dataset.kartId = kart.id;
     card.style.position = 'relative'; // Garante que a etiqueta flutue corretamente no canto
 
+    // Verifica a trava de região para UI
+    let unlockedRegions = ['Kanto'];
+    if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_regions) {
+      unlockedRegions = currentUserProfile.unlocked_regions;
+    } else {
+      unlockedRegions = JSON.parse(localStorage.getItem('pkart_unlocked_regions') || '["Kanto"]');
+    }
+    const kartRegion = getRegionByDex(kart.dexId);
+    const isRegionLocked = !unlockedRegions.includes(kartRegion);
+
     let priceLabelHtml = '';
     if (isFreeRotation) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#22c55e;">GRÁTIS HOJE</div>`;
     } else if (isUnlocked) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#38bdf8;">OK</div>`;
+    } else if (kart.activated === false) {
+      priceLabelHtml = `<div class="kart-card-price" style="color:#ef4444;">LENDÁRIO</div>`;
+    } else if (isRegionLocked) {
+      priceLabelHtml = `<div class="kart-card-price" style="color:#f97316;">${kartRegion} 🔒</div>`;
     } else {
       priceLabelHtml = `<div class="kart-card-price">🪙 ${kart.price}</div>`;
     }
@@ -561,10 +575,32 @@ function updateActionButton(kartData, isFreeRotation) {
     btnAction.onclick = () => equipKart(kartData.id);
   } else {
     // AQUI ESTÁ A LÓGICA DE BLOQUEIO DA COMPRA
+
+    // 1. Identifica as regiões liberadas pelo jogador
+    let unlockedRegions = ['Kanto'];
+    if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_regions) {
+      unlockedRegions = currentUserProfile.unlocked_regions;
+    } else {
+      unlockedRegions = JSON.parse(localStorage.getItem('pkart_unlocked_regions') || '["Kanto"]');
+    }
+
+    // 2. Descobre a região do kart atual
+    const kartRegion = getRegionByDex(kartData.dexId);
+    const isRegionLocked = !unlockedRegions.includes(kartRegion);
+
     if (kartData.activated === false) {
+      // Trava original para Lendários / Karts desativados
       btnAction.innerText = 'INDISPONÍVEL';
-      btnAction.style.background = '#475569'; // Cinza escuro para indicar bloqueio
+      btnAction.style.background = '#475569';
       btnAction.style.color = '#94a3b8';
+      btnAction.style.cursor = 'not-allowed';
+      btnAction.disabled = true;
+      btnAction.onclick = null;
+    } else if (isRegionLocked) {
+      // Nova trava de progressão de mapa
+      btnAction.innerText = `BLOQUEADO (${kartRegion.toUpperCase()})`;
+      btnAction.style.background = '#475569';
+      btnAction.style.color = '#f97316'; // Laranja para destacar que é bloqueio de região
       btnAction.style.cursor = 'not-allowed';
       btnAction.disabled = true;
       btnAction.onclick = null;
@@ -583,6 +619,23 @@ async function buyKart(kartId, price) {
   if (!currentUserProfile) {
     alert('Você precisa estar logado para comprar karts!');
     return;
+  }
+
+  // --- NOVA TRAVA DE SEGURANÇA DA REGIÃO ---
+  const kartData = KART_CATALOG.find(k => k.id === kartId);
+  if (kartData) {
+    let unlockedRegions = ['Kanto'];
+    if (currentUserProfile.unlocked_regions) {
+      unlockedRegions = currentUserProfile.unlocked_regions;
+    } else {
+      unlockedRegions = JSON.parse(localStorage.getItem('pkart_unlocked_regions') || '["Kanto"]');
+    }
+
+    const kartRegion = getRegionByDex(kartData.dexId);
+    if (!unlockedRegions.includes(kartRegion) && kartData.activated !== false) {
+      alert(`Você precisa concluir e liberar a região de ${kartRegion} para comprar este kart!`);
+      return;
+    }
   }
 
   if (currentUserProfile.coins < price) {
