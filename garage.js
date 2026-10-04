@@ -26,6 +26,11 @@ function getKartUrl(filename) {
 // Catálogo Completo
 let KART_CATALOG = [];
 
+// Lista de karts exclusivos do Modo Desafio (não podem ser comprados)
+const KARTS_LIDERES = [
+  'onix', 'starmie', 'raichu', 'vileplume', 'muk', 'alakazam', 'arcanine', 'rhydon'
+];
+
 async function carregarKartsDaGaragem() {
   try {
     // Adicionado 'pokemon_dex_id' na query do Supabase
@@ -345,20 +350,22 @@ function renderKartGrid() {
     }
     const kartRegion = getRegionByDex(kart.dexId);
     const isRegionLocked = !unlockedRegions.includes(kartRegion);
+    const isLeaderKart = KARTS_LIDERES.includes(kart.id);
 
     let priceLabelHtml = '';
     if (isFreeRotation) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#22c55e;">GRÁTIS HOJE</div>`;
     } else if (isUnlocked) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#38bdf8;">OK</div>`;
+    } else if (isLeaderKart) {
+      priceLabelHtml = `<div class="kart-card-price" style="color:#ff4b55;">DESAFIO 🔒</div>`;
     } else if (kart.activated === false) {
-      priceLabelHtml = `<div class="kart-card-price" style="color:#ef4444;">LENDÁRIO</div>`;
+      priceLabelHtml = `<div class="kart-card-price" style="color:#a855f7;">LENDÁRIO 🔒</div>`;
     } else if (isRegionLocked) {
       priceLabelHtml = `<div class="kart-card-price" style="color:#f97316;">${kartRegion} 🔒</div>`;
     } else {
       priceLabelHtml = `<div class="kart-card-price">🪙 ${kart.price}</div>`;
     }
-
     // HTML da etiqueta de NOVO (animada com CSS inline básico)
     const newBadgeHtml = isNew ?
       `<div class="kart-card-new-badge" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: white; font-size: 10px; font-weight: 900; padding: 4px 8px; border-radius: 12px; z-index: 10; box-shadow: 0 4px 6px rgba(0,0,0,0.5); border: 2px solid #0f172a;">NOVO</div>`
@@ -587,12 +594,21 @@ function updateActionButton(kartData, isFreeRotation) {
     // 2. Descobre a região do kart atual
     const kartRegion = getRegionByDex(kartData.dexId);
     const isRegionLocked = !unlockedRegions.includes(kartRegion);
+    const isLeaderKart = KARTS_LIDERES.includes(kartData.id);
 
-    if (kartData.activated === false) {
-      // Trava original para Lendários / Karts desativados
-      btnAction.innerText = 'INDISPONÍVEL';
+    if (isLeaderKart) {
+      // Nova trava exclusiva para Karts de Líder de Ginásio
+      btnAction.innerText = 'DESAFIO LÍDER';
       btnAction.style.background = '#475569';
-      btnAction.style.color = '#94a3b8';
+      btnAction.style.color = '#ff4b55'; // Vermelho para remeter ao Modo Desafio
+      btnAction.style.cursor = 'not-allowed';
+      btnAction.disabled = true;
+      btnAction.onclick = null;
+    } else if (kartData.activated === false) {
+      // Trava original para Lendários
+      btnAction.innerText = 'LENDÁRIO';
+      btnAction.style.background = '#475569';
+      btnAction.style.color = '#a855f7'; // Roxo para destacar lendários
       btnAction.style.cursor = 'not-allowed';
       btnAction.disabled = true;
       btnAction.onclick = null;
@@ -621,9 +637,14 @@ async function buyKart(kartId, price) {
     return;
   }
 
-  // --- NOVA TRAVA DE SEGURANÇA DA REGIÃO ---
+  // --- NOVA TRAVA DE SEGURANÇA DA REGIÃO E LÍDERES ---
   const kartData = KART_CATALOG.find(k => k.id === kartId);
   if (kartData) {
+    if (KARTS_LIDERES.includes(kartId)) {
+      alert('Este kart é uma recompensa exclusiva do Modo Desafio e não pode ser comprado!');
+      return;
+    }
+
     let unlockedRegions = ['Kanto'];
     if (currentUserProfile.unlocked_regions) {
       unlockedRegions = currentUserProfile.unlocked_regions;

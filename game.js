@@ -6977,18 +6977,104 @@ function executarSaidaDaSala() {
   }
 }
 
+// --- NOVA FUNÇÃO UNIFICADA DE PUNIÇÃO (COM SUPABASE E WIN RATE) ---
+function punirAbandonoLocal() {
+  if (!corridaAtivaParaPunicao) return;
+
+  const mode = matchConfig.mode;
+
+  // 1. Atualiza as flags no LocalStorage (UI Local)
+  if (mode === 'tower' || mode === 'elite_nuzlocke') {
+    localStorage.setItem('pkart_tower_result', 'lose');
+    localStorage.removeItem('pkart_tower_state');
+    localStorage.removeItem('pkart_pending_tower_save');
+    try {
+      const snapshot = { ...secureTowerState, ...matchConfig };
+      localStorage.setItem('pkart_last_race_state', JSON.stringify(snapshot));
+    } catch (e) { }
+  } else if (mode === 'desafio') {
+    localStorage.setItem('pkart_desafio_result', 'lose');
+  }
+
+  // 2. Registra a Derrota no Banco de Dados (races_played, races_lost, leader_stats)
+  if (typeof supabaseClient !== 'undefined' && typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+    try {
+      const totalCorridas = (currentUserProfile.races_played || 0) + 1;
+      const totalDerrotas = (currentUserProfile.races_lost || 0) + 1;
+
+      let updatePayload = {
+        races_played: totalCorridas,
+        races_lost: totalDerrotas
+      };
+
+      if (mode === 'tower' || mode === 'elite_nuzlocke') {
+        updatePayload.tower_state = null;
+      }
+
+      // Contabiliza a derrota para as estatísticas específicas do líder (Modo Desafio e Torre)
+      if (mode === 'desafio' || mode === 'tower' || mode === 'elite_nuzlocke') {
+        const currentGymKey = matchConfig.gymId || secureTowerState.gymId || 'desafio_geral';
+        let leaderStats = currentUserProfile.leader_stats || {};
+        if (typeof leaderStats === 'string') {
+          try { leaderStats = JSON.parse(leaderStats); } catch (e) { leaderStats = {}; }
+        }
+        if (!leaderStats[currentGymKey]) leaderStats[currentGymKey] = { played: 0, won: 0 };
+
+        leaderStats[currentGymKey].played += 1;
+        updatePayload.leader_stats = leaderStats;
+      }
+
+      // Atualiza o perfil na memória local para o Lobby não precisar de um reload pesado
+      currentUserProfile.races_played = totalCorridas;
+      currentUserProfile.races_lost = totalDerrotas;
+      if (updatePayload.leader_stats) currentUserProfile.leader_stats = updatePayload.leader_stats;
+
+      // 3. Disparo de Segurança (O navegador NÃO cancelará esta requisição)
+      supabaseClient.auth.getSession().then(({ data }) => {
+        const token = data?.session?.access_token;
+        if (token) {
+          const endpoint = `${supabaseClient.supabaseUrl}/rest/v1/profiles?id=eq.${currentUserProfile.id}`;
+
+          fetch(endpoint, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+              'apikey': supabaseClient.supabaseKey,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(updatePayload),
+            keepalive: true // A Mágica acontece aqui: Continua enviando mesmo de página fechada!
+          }).catch(() => { });
+        }
+      });
+
+      // Por redundância, também chama a função normal do SDK
+      supabaseClient.from('profiles').update(updatePayload).eq('id', currentUserProfile.id).then(() => { });
+
+    } catch (err) {
+      console.warn("Erro ao processar derrota do banco no abandono:", err);
+    }
+  }
+
+  corridaAtivaParaPunicao = false;
+}
+
 // Intercepta F5 para evitar abandono sem punição
 window.addEventListener('keydown', (e) => {
   if (e.code === 'F5') {
+    e.preventDefault(); // Bloqueia o reload instantâneo
+
     if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
-      e.preventDefault();
       executarSaidaDaSala();
-      corridaAtivaParaPunicao = false;
-      setTimeout(() => { window.location.href = 'index.html'; }, 50);
-    } else if (matchConfig.mode === 'tower') {
-      registrarDerrotaTorre(); // Reseta a torre ao dar F5
-      corridaAtivaParaPunicao = false;
+    } else {
+      punirAbandonoLocal();
     }
+
+    // Pequeno atraso de 150ms para garantir que a promessa do banco de dados tem tempo de montar o cabeçalho
+    setTimeout(() => {
+      window.location.href = 'index.html';
+    }, 150);
   }
 });
 
@@ -6996,9 +7082,8 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('pagehide', () => {
   if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     executarSaidaDaSala();
-  }
-  if (matchConfig.mode === 'tower') {
-    registrarDerrotaTorre(); // Reseta a torre ao fechar o navegador
+  } else {
+    punirAbandonoLocal();
   }
 });
 

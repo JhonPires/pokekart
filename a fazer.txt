@@ -1,8 +1,8 @@
 BUGS
-f5 ou atualizar tela dentro da corrida deve remover da corrida
+
 
 AJUSTES
-- Criar as pistas que faltam para os lideres de ginasio e as para elite Four
+- Criar as pistas para elite Four
 - Criar os 3D para colocar no novo hub da elite Four
 - Trocar todos os icones
 - Trocar os icones dos emojis da loja
