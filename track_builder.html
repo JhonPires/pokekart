@@ -557,6 +557,20 @@
       </button>
     </nav>
 
+
+    <div class="tool-section-title" id="nodePropsTitle">Elevação do Ponto</div>
+    <nav class="nav" id="nodePropsNav">
+      <div
+        style="padding: 12px 15px; border: 1px solid #1e3a57; border-radius: 13px; background: rgba(12, 28, 48, .72);">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+          <span style="font-size: 13px; font-weight: 700; color: var(--muted);">Altura (Y)</span>
+          <span id="nodeElevationValue" style="color: var(--cyan); font-weight: 900; font-size: 13px;">0m</span>
+        </div>
+        <input class="range" type="range" id="nodeElevationSlider" min="0" max="25" step="1" value="0"
+          style="margin-top: 0;">
+      </div>
+    </nav>
+
     <div class="tool-section-title">Circuito</div>
     <nav class="nav">
       <button id="btnToggleLoop"><span class="icon" id="loopIcon">🔄</span><span id="loopText">Fechar

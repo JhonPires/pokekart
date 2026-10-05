@@ -1,3 +1,9 @@
+Versão 1.9.7
+Adicionado a possibilidade de criar subidas nas pistas.;
+
+
+
+
 Versão 1.9.6
 Corrigido a classificação da corrida multiplayer.;
 Adicionado a quantidade de moedas atuais do jogador na garagem.;

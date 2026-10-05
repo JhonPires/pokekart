@@ -94,3 +94,16 @@ Como ficaria: Essas moedas especiais ficariam guardadas para você conseguir com
   "lockedKart": "alakazam",
   "eliteRaceIndex": 4
 }
+
+
+[
+  "pewter",
+  "cerulean",
+  "vermilion",
+  "celadon",
+  "fuchsia",
+  "saffron",
+  "cinnabar",
+  "viridian",
+  "champ_kanto"
+]

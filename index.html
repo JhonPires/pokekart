@@ -2567,11 +2567,11 @@
     ];
 
     const ELITE_FOUR_KANTO = [
-      { id: 'lorelei', name: 'Lorelei', type: '🧊', karts: ['dewgong', 'cloyster', 'lapras'], biomes: ['ice'] },
-      { id: 'bruno', name: 'Bruno', type: '🥊', karts: ['onix', 'hitmonchan', 'machamp'], biomes: ['dirt'] },
-      { id: 'agatha', name: 'Agatha', type: '👻', karts: ['gengar', 'golbat', 'gengar'], biomes: ['ghost'] },
-      { id: 'lance', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['city'] },
-      { id: 'champion_kanto', name: 'Blue', type: '👑', karts: ['pidgeot', 'alakazam', 'blastoise'], biomes: ['city'] }
+      { id: 'lorelei', name: 'Lorelei', type: '🧊', karts: ['dewgong', 'cloyster', 'lapras'], biomes: ['ice'], customTrack: '3b47079a-690e-4fed-82cb-b1dcd9695e0b' },
+      { id: 'bruno', name: 'Bruno', type: '🥊', karts: ['onix', 'hitmonchan', 'machamp'], biomes: ['dirt'], customTrack: '3b47079a-690e-4fed-82cb-b1dcd9695e0b' },
+      { id: 'agatha', name: 'Agatha', type: '👻', karts: ['gengar', 'golbat', 'gengar'], biomes: ['ghost'], customTrack: '3b47079a-690e-4fed-82cb-b1dcd9695e0b' },
+      { id: 'lance', name: 'Lance', type: '🐉', karts: ['gyarados', 'aerodactyl', 'dragonite'], biomes: ['city'], customTrack: '3b47079a-690e-4fed-82cb-b1dcd9695e0b' },
+      { id: 'champion_kanto', name: 'Blue', type: '👑', karts: ['pidgeot', 'alakazam', 'blastoise'], biomes: ['city'], customTrack: '3b47079a-690e-4fed-82cb-b1dcd9695e0b' }
     ];
 
     const ELITE_FOUR_JOHTO = [
@@ -5945,8 +5945,7 @@
             towerState.leader = currentElite.name;
             towerState.leaderKart = currentElite.karts;        // ARRAY de karts dos 3 bots
             towerState.biome = currentElite.biomes[0] || 'grass';
-            towerState.track = 'circuitoE';
-            delete towerState.customTrack;
+            towerState.customTrack = currentElite.customTrack;
 
             // Grava no localStorage E no Supabase antes de sair da página
             document.getElementById('btnEnterElite').disabled = true;

@@ -5,6 +5,11 @@ const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
 const victorySound = new Audio('sounds/victory.mp3');
 
+// Instancie junto com as outras variáveis globais ou no construtor da classe
+const floorRaycaster = new THREE.Raycaster();
+const downVector = new THREE.Vector3(0, -1, 0);
+const KART_HEIGHT_OFFSET = 0.5; // Ajuste para o centro de massa/tamanho do seu modelo 3D não afundar no chão
+
 // Renderizador normal (sem toneMapping agressivo)
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -609,7 +614,7 @@ let trackWidth = 10;
 const trackElementsGroup = new THREE.Group();
 scene.add(trackElementsGroup);
 
-const TRACK_SAMPLE_COUNT = 360;
+const TRACK_SAMPLE_COUNT = 2500;
 const trackSamples = [];
 
 function updateTrackSamples() {
@@ -619,20 +624,83 @@ function updateTrackSamples() {
     const point = trackCurve.getPointAt(t);
     const tangent = trackCurve.getTangentAt(t).normalize();
     const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
-    trackSamples.push({ t, point, normal });
+    // Inclinação (pitch) do traçado neste ponto: positivo = subida
+    const pitch = Math.atan2(tangent.y, Math.hypot(tangent.x, tangent.z));
+    trackSamples.push({ t, point, normal, tangent, pitch });
   }
   currentTrackPoints = trackCurve.getSpacedPoints(150);
 }
 
 updateTrackSamples();
 
+// ------------------------------------------------------------
+// ALTURA (EIXO Y) VINDA DO TRAÇADO
+// A busca é feita só no plano XZ: a altura do objeto não pode
+// influenciar qual trecho da pista é o "mais próximo".
+// `y` é a altura da pista interpolada entre duas amostras (sem degraus).
+// ------------------------------------------------------------
 function nearestTrackSample(position) {
-  let best = trackSamples[0], bestDist = Infinity, bestIndex = 0;
-  for (let i = 0; i < trackSamples.length; i++) {
-    const d = trackSamples[i].point.distanceToSquared(position);
-    if (d < bestDist) { bestDist = d; best = trackSamples[i]; bestIndex = i; }
+  const px = position.x, pz = position.z;
+  const n = trackSamples.length;
+  let bestIndex = 0, bestDist = Infinity;
+  for (let i = 0; i < n; i++) {
+    const p = trackSamples[i].point;
+    const dx = p.x - px, dz = p.z - pz;
+    const d = dx * dx + dz * dz;
+    if (d < bestDist) { bestDist = d; bestIndex = i; }
   }
-  return { sample: best, index: bestIndex };
+
+  const best = trackSamples[bestIndex];
+  const cur = best.point;
+  let y = cur.y;
+  const ax = px - cur.x, az = pz - cur.z;
+
+  const nxt = trackSamples[(bestIndex + 1) % n].point;
+  const nx = nxt.x - cur.x, nz = nxt.z - cur.z;
+  const dotN = ax * nx + az * nz;
+  if (dotN > 0) {
+    const l2 = nx * nx + nz * nz;
+    if (l2 > 1e-9) y = cur.y + (nxt.y - cur.y) * Math.min(1, dotN / l2);
+  } else {
+    const prv = trackSamples[(bestIndex - 1 + n) % n].point;
+    const qx = prv.x - cur.x, qz = prv.z - cur.z;
+    const dotP = ax * qx + az * qz;
+    const l2 = qx * qx + qz * qz;
+    if (dotP > 0 && l2 > 1e-9) y = cur.y + (prv.y - cur.y) * Math.min(1, dotP / l2);
+  }
+
+  return { sample: best, index: bestIndex, distXZ: Math.sqrt(bestDist), y };
+}
+
+// Altura da pista no ponto (x, z). Use para tudo que fica NA pista:
+// karts, armadilhas, projéteis, caixas largadas, marcas de pneu...
+function getTrackHeightAt(x, z) {
+  return nearestTrackSample({ x, z }).y;
+}
+
+// O terreno acompanha a altura da pista perto dela e vai voltando
+// para y = 0 com a distância (colinas suaves em vez de pista "flutuando").
+const TERRAIN_FOLLOWS_TRACK = true;  // false = chão plano em y = 0 (comportamento antigo)
+const TERRAIN_FLAT_MARGIN = 6;       // metros além da borda da pista mantendo a mesma altura
+const TERRAIN_BLEND_DIST = 50;       // metros para o terreno voltar a y = 0
+
+// Altura do chão no ponto (x, z). Use para decoração lateral (árvores, pedras, prédios...).
+function getGroundHeightAt(x, z) {
+  if (!TERRAIN_FOLLOWS_TRACK) return 0;
+  const r = nearestTrackSample({ x, z });
+  const flatRadius = trackWidth / 2 + TERRAIN_FLAT_MARGIN;
+  const t = Math.min(1, Math.max(0, (r.distXZ - flatRadius) / TERRAIN_BLEND_DIST));
+  const smooth = t * t * (3 - 2 * t);
+  return r.y * (1 - smooth);
+}
+
+// Deita um plano (decal) sobre a pista acompanhando a inclinação do traçado.
+// Equivale a rotation.x = -PI/2 + rotation.z = heading quando a pista é plana.
+function alignFlatToTrack(mesh, tangent) {
+  const heading = Math.atan2(tangent.x, tangent.z);
+  const pitch = Math.atan2(tangent.y, Math.hypot(tangent.x, tangent.z));
+  mesh.rotation.order = 'YXZ';
+  mesh.rotation.set(-Math.PI / 2 - pitch, heading, 0);
 }
 
 function buildTrackMesh() {
@@ -663,8 +731,10 @@ function buildTrackMesh() {
     const left = current.clone().addScaledVector(side, trackWidth / 2);
     const right = current.clone().addScaledVector(side, -trackWidth / 2);
 
-    positions.push(left.x, 0.03, left.z);
-    positions.push(right.x, 0.03, right.z);
+    // ANTES ESTAVA: positions.push(left.x, 0.03, left.z);
+    // AGORA: Usa a altura real do ponto da curva (current.y) + um offset mínimo para não dar z-fighting
+    positions.push(left.x, current.y + 0.03, left.z);
+    positions.push(right.x, current.y + 0.03, right.z);
 
     const progress = i / segments;
     uvs.push(0, progress);
@@ -887,8 +957,10 @@ function addTrackKerbs() {
       const innerEdge = current.clone().addScaledVector(normal, sideSign * (trackWidth / 2));
       const outerEdge = current.clone().addScaledVector(normal, sideSign * (trackWidth / 2 + kerbWidth));
 
-      positions.push(innerEdge.x, 0.035, innerEdge.z);
-      positions.push(outerEdge.x, 0.035, outerEdge.z);
+      // ANTES ESTAVA: positions.push(innerEdge.x, 0.035, innerEdge.z);
+      // AGORA: Acompanha a subida/descida do asfalto
+      positions.push(innerEdge.x, current.y + 0.035, innerEdge.z);
+      positions.push(outerEdge.x, current.y + 0.035, outerEdge.z);
 
       const progress = i / segments;
       uvs.push(progress * 12, 0); uvs.push(progress * 12, 1);
@@ -944,11 +1016,37 @@ const groundMat = new THREE.MeshStandardMaterial({
   metalness: 0.0
 });
 
-const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), groundMat);
-ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.02;
+const TERRAIN_SIZE = 1200;
+const TERRAIN_SEGMENTS = 150; // células de 8 m
+
+function buildTerrainGeometry() {
+  const geo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
+  geo.rotateX(-Math.PI / 2); // já deitado: vértices em (x, altura, z)
+  const elevated = TERRAIN_FOLLOWS_TRACK && trackSamples.some(s => Math.abs(s.point.y) > 0.001);
+  if (elevated) {
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      pos.setY(i, getGroundHeightAt(pos.getX(i), pos.getZ(i)));
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+  }
+  return { geo, elevated };
+}
+
+const _terrainInit = buildTerrainGeometry();
+const ground = new THREE.Mesh(_terrainInit.geo, groundMat);
+ground.position.y = _terrainInit.elevated ? -0.1 : -0.02; // folga p/ o asfalto não "brigar" com o chão
 ground.receiveShadow = true;
 scene.add(ground);
+
+// Recria o terreno quando o traçado do banco substitui o preset
+function rebuildTerrain() {
+  const { geo, elevated } = buildTerrainGeometry();
+  ground.geometry.dispose();
+  ground.geometry = geo;
+  ground.position.y = elevated ? -0.1 : -0.02;
+}
 
 function createStripedTireTexture() {
   const canvas = document.createElement('canvas');
@@ -991,7 +1089,7 @@ function addTires() {
       tireTop.position.y = 0.7;
       tireStack.add(tireTop);
 
-      tireStack.position.set(pos.x, 0, pos.z);
+      tireStack.position.set(pos.x, point.y, pos.z);
       trackElementsGroup.add(tireStack);
     }
   }
@@ -1039,7 +1137,7 @@ function addGhostBarriers() {
       // Reduz o tamanho do grupo todo para caber perfeitamente na borda da pista
       tombstoneGroup.scale.setScalar(0.4);
 
-      tombstoneGroup.position.set(pos.x, 0, pos.z);
+      tombstoneGroup.position.set(pos.x, point.y, pos.z);
 
       // Gira a lápide para ficar virada de frente para a pista
       tombstoneGroup.rotation.y = Math.atan2(tangent.x, tangent.z) + (Math.PI / 2);
@@ -1074,7 +1172,7 @@ function addIceBarriers() {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
 
       const iceBlock = new THREE.Mesh(iceGeo, iceMat);
-      iceBlock.position.set(pos.x, 0.7, pos.z);
+      iceBlock.position.set(pos.x, point.y + 0.7, pos.z);
 
       // Dá uma leve rotação caótica para parecerem blocos esculpidos irregularmente
       iceBlock.rotation.y = (Math.random() - 0.5) * 0.5;
@@ -1129,16 +1227,17 @@ function spawnIceDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    const { sample } = nearestTrackSample(pos);
-    if (sample.point.distanceTo(pos) >= MIN_DISTANCE_FROM_TRACK) {
+    const { distXZ } = nearestTrackSample(pos);
+    if (distXZ >= MIN_DISTANCE_FROM_TRACK) {
       const scale = 0.8 + Math.random() * 0.7;
 
       // 50% de probabilidade de ser um cristal, 50% de ser um pinheiro nevado
       const isCrystal = Math.random() > 0.5;
 
       if (isCrystal) {
-        dummy.position.set(x, 3.0 * scale, z);
+        dummy.position.set(x, gy + (3.0 * scale), z);
         dummy.scale.setScalar(scale);
         // Cristais nascem com ângulos dramáticos espetados no chão
         dummy.rotation.set((Math.random() - 0.5) * 0.5, Math.random() * Math.PI, (Math.random() - 0.5) * 0.5);
@@ -1151,13 +1250,13 @@ function spawnIceDecorations() {
         pineInstanced.setMatrixAt(spawned, dummy.matrix);
         trunkInstanced.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, 1.25 * scale, z); // Tronco
+        dummy.position.set(x, gy + (1.25 * scale), z); // Tronco
         dummy.scale.setScalar(scale);
         dummy.rotation.set(0, Math.random() * Math.PI, 0);
         dummy.updateMatrix();
         trunkInstanced.setMatrixAt(spawned, dummy.matrix);
 
-        dummy.position.set(x, 4.5 * scale, z); // Folhas nevadas
+        dummy.position.set(x, gy + 4.5 * scale, z); // Folhas nevadas
         dummy.updateMatrix();
         pineInstanced.setMatrixAt(spawned, dummy.matrix);
 
@@ -1201,7 +1300,7 @@ function addLavaBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const rock = new THREE.Mesh(rockGeo, rockMat);
-      rock.position.set(pos.x, 0.4, pos.z);
+      rock.position.set(pos.x, point.y + 0.4, pos.z);
       rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
       rock.castShadow = true;
       trackElementsGroup.add(rock);
@@ -1235,12 +1334,13 @@ function spawnLavaDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.8 + Math.random() * 0.5;
 
       if (Math.random() > 0.5) {
-        dummy.position.set(x, 2.25 * scale, z);
+        dummy.position.set(x, gy + 2.25 * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
         dummy.updateMatrix();
@@ -1250,7 +1350,7 @@ function spawnLavaDecorations() {
         dummy.updateMatrix();
         magmaInst.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, 0.8 * scale, z);
+        dummy.position.set(x, gy + 0.8 * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set(Math.random(), Math.random(), Math.random());
         dummy.updateMatrix();
@@ -1286,7 +1386,7 @@ function addDirtBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const barrel = new THREE.Mesh(barrelGeo, barrelMat);
-      barrel.position.set(pos.x, 0.6, pos.z);
+      barrel.position.set(pos.x, point.y + 0.6, pos.z);
       barrel.rotation.y = Math.random() * Math.PI;
       barrel.castShadow = true;
       trackElementsGroup.add(barrel);
@@ -1320,12 +1420,13 @@ function spawnDirtDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.8 + Math.random() * 0.6;
 
       if (Math.random() > 0.4) { // Mais cactos do que pedras
-        dummy.position.set(x, 2.5 * scale, z);
+        dummy.position.set(x, gy + 2.5 * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set((Math.random() - 0.5) * 0.1, Math.random() * Math.PI, (Math.random() - 0.5) * 0.1);
         dummy.updateMatrix();
@@ -1335,7 +1436,7 @@ function spawnDirtDecorations() {
         dummy.updateMatrix();
         rockInst.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, 0.8 * scale, z);
+        dummy.position.set(x, gy + 0.8 * scale, z);
         dummy.scale.set(scale, scale * 0.5, scale); // Pedras achatadas
         dummy.rotation.set(Math.random(), Math.random(), Math.random());
         dummy.updateMatrix();
@@ -1374,7 +1475,7 @@ function addWaterBarriers() {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const buoy = new THREE.Mesh(buoyGeo, currentMat);
       buoy.rotation.x = Math.PI / 2; // Boia deitada no chão
-      buoy.position.set(pos.x, 0.2, pos.z);
+      buoy.position.set(pos.x, point.y + 0.2, pos.z);
       buoy.castShadow = true;
       trackElementsGroup.add(buoy);
     }
@@ -1407,12 +1508,13 @@ function spawnWaterDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.8 + Math.random() * 0.5;
 
       // Monta a palmeira (tronco e folhas sempre juntos neste bioma)
-      dummy.position.set(x, 2.5 * scale, z);
+      dummy.position.set(x, gy + 2.5 * scale, z);
       dummy.scale.setScalar(scale);
       // Inclinação suave para parecer coqueiro
       const rotZ = (Math.random() - 0.5) * 0.3;
@@ -1423,7 +1525,7 @@ function spawnWaterDecorations() {
       // Ajusta a copa das folhas acompanhando a inclinação
       const leafOffsetX = Math.sin(rotZ) * 2.5 * scale;
       const leafOffsetY = Math.cos(rotZ) * 2.5 * scale;
-      dummy.position.set(x + leafOffsetX, (2.5 * scale) + leafOffsetY, z);
+      dummy.position.set(x + leafOffsetX, gy + (2.5 * scale) + leafOffsetY, z);
       dummy.updateMatrix();
       leavesInst.setMatrixAt(spawned, dummy.matrix);
 
@@ -1455,7 +1557,7 @@ function addCityBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const cone = new THREE.Mesh(coneGeo, currentMat);
-      cone.position.set(pos.x, 0.6, pos.z);
+      cone.position.set(pos.x, point.y + 0.6, pos.z);
       cone.castShadow = true;
       trackElementsGroup.add(cone);
     }
@@ -1488,12 +1590,13 @@ function spawnCityDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 16.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 16.0) {
       const scale = 0.8 + Math.random() * 0.8;
 
       if (Math.random() > 0.5) {
-        dummy.position.set(x, 6.0 * scale, z);
+        dummy.position.set(x, gy + 6.0 * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set(0, Math.random() * Math.PI, 0); // Prédios retos
         dummy.updateMatrix();
@@ -1503,7 +1606,7 @@ function spawnCityDecorations() {
         dummy.updateMatrix();
         build2Inst.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, 4.0 * scale, z);
+        dummy.position.set(x, gy + 4.0 * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set(0, Math.random() * Math.PI, 0);
         dummy.updateMatrix();
@@ -1541,7 +1644,7 @@ function addPoisonBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const barrel = new THREE.Mesh(barrelGeo, currentMat);
-      barrel.position.set(pos.x, 0.6, pos.z);
+      barrel.position.set(pos.x, point.y + 0.6, pos.z);
       barrel.castShadow = true;
       trackElementsGroup.add(barrel);
     }
@@ -1574,19 +1677,20 @@ function spawnPoisonDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.7 + Math.random() * 0.6;
 
       // Tronco do cogumelo
-      dummy.position.set(x, 1.5 * scale, z);
+      dummy.position.set(x, gy + 1.5 * scale, z);
       dummy.scale.setScalar(scale);
       dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
       dummy.updateMatrix();
       stalkInst.setMatrixAt(spawned, dummy.matrix);
 
       // Cabeça do cogumelo (Cap)
-      dummy.position.set(x, 3.0 * scale, z);
+      dummy.position.set(x, gy + 3.0 * scale, z);
       // Não rotaciona o eixo X e Z para a meia-esfera ficar plana embaixo
       dummy.rotation.set(0, Math.random() * Math.PI, 0);
       dummy.updateMatrix();
@@ -1642,7 +1746,7 @@ function addElectricBarriers() {
       orbMesh.position.y = 1.9; // Posicionado exatamente no topo do poste
 
       poleGroup.add(poleMesh, orbMesh);
-      poleGroup.position.set(pos.x, 0, pos.z);
+      poleGroup.position.set(pos.x, point.y, pos.z);
 
       trackElementsGroup.add(poleGroup);
     }
@@ -1675,17 +1779,18 @@ function spawnElectricDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.8 + Math.random() * 0.5;
 
-      dummy.position.set(x, 6.0 * scale, z);
+      dummy.position.set(x, gy + 6.0 * scale, z);
       dummy.scale.setScalar(scale);
       dummy.rotation.set(0, 0, 0);
       dummy.updateMatrix();
       poleInst.setMatrixAt(spawned, dummy.matrix);
 
-      dummy.position.set(x, 12.0 * scale, z);
+      dummy.position.set(x, gy + 12.0 * scale, z);
       dummy.updateMatrix();
       orbInst.setMatrixAt(spawned, dummy.matrix);
 
@@ -1715,7 +1820,7 @@ function addRockBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const barrier = new THREE.Mesh(geo, mat);
-      barrier.position.set(pos.x, 0.5, pos.z);
+      barrier.position.set(pos.x, point.y + 0.5, pos.z);
       barrier.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
       barrier.castShadow = true;
       trackElementsGroup.add(barrier);
@@ -1746,10 +1851,11 @@ function spawnRockDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 16.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 16.0) {
       const scale = 0.8 + Math.random() * 1.5;
-      dummy.position.set(x, 7.5 * scale, z);
+      dummy.position.set(x, gy + 7.5 * scale, z);
       dummy.scale.set(scale, scale * (0.8 + Math.random() * 0.5), scale);
       dummy.rotation.set((Math.random() - 0.5) * 0.2, Math.random() * Math.PI, (Math.random() - 0.5) * 0.2);
       dummy.updateMatrix();
@@ -1782,7 +1888,7 @@ function addPsychicBarriers() {
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
       const barrier = new THREE.Mesh(geo, mat);
-      barrier.position.set(pos.x, 2.0, pos.z); // Flutua
+      barrier.position.set(pos.x, point.y + 2.0, pos.z); // Flutua
       barrier.castShadow = true;
       trackElementsGroup.add(barrier);
     }
@@ -1814,13 +1920,14 @@ function spawnPsychicDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    if (nearestTrackSample(pos).sample.point.distanceTo(pos) >= (trackWidth / 2) + 14.0) {
+    if (nearestTrackSample(pos).distXZ >= (trackWidth / 2) + 14.0) {
       const scale = 0.6 + Math.random() * 0.8;
       const hoverHeight = 12.0 + Math.random() * 6.0; // Objetos voando alto
 
       if (Math.random() > 0.5) {
-        dummy.position.set(x, hoverHeight * scale, z);
+        dummy.position.set(x, gy + hoverHeight * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set(Math.PI + (Math.random() - 0.5) * 0.5, Math.random() * Math.PI, (Math.random() - 0.5) * 0.5); // Ponta cabeça
         dummy.updateMatrix();
@@ -1830,7 +1937,7 @@ function spawnPsychicDecorations() {
         dummy.updateMatrix();
         ringInst.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, hoverHeight * scale, z);
+        dummy.position.set(x, gy + hoverHeight * scale, z);
         dummy.scale.setScalar(scale);
         dummy.rotation.set(Math.PI / 2 + (Math.random() - 0.5) * 0.5, 0, Math.random() * Math.PI); // Anéis inclinados
         dummy.updateMatrix();
@@ -1911,9 +2018,8 @@ function addStartFinishLine() {
     new THREE.PlaneGeometry(trackWidth, 3.2),
     new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(c), roughness: 0.6 })
   );
-  stripe.rotation.x = -Math.PI / 2;
-  stripe.rotation.z = heading;
-  stripe.position.set(point.x, 0.04, point.z);
+  alignFlatToTrack(stripe, tangent); // acompanha a inclinação da pista
+  stripe.position.set(point.x, point.y + 0.04, point.z);
   stripe.receiveShadow = true;
   trackElementsGroup.add(stripe);
 }
@@ -1945,12 +2051,11 @@ function spawnBoostPads(customBoosts) {
     const finalPt = pt.clone().addScaledVector(normal, offset);
 
     const pad = new THREE.Mesh(boostPadGeo, boostPadMat);
-    pad.rotation.x = -Math.PI / 2;
-    pad.rotation.z = heading;
-    pad.position.set(finalPt.x, 0.045, finalPt.z);
+    alignFlatToTrack(pad, tangent); // acompanha a inclinação da pista
+    pad.position.set(finalPt.x, finalPt.y + 0.045, finalPt.z);
     trackElementsGroup.add(pad);
 
-    boostPadsList.push({ position: new THREE.Vector3(finalPt.x, 0, finalPt.z) });
+    boostPadsList.push({ position: new THREE.Vector3(finalPt.x, finalPt.y, finalPt.z) });
   });
 }
 
@@ -2014,19 +2119,19 @@ function respawnTreesForTrack() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const treePos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    const { sample } = nearestTrackSample(treePos);
-    const distToTrack = sample.point.distanceTo(treePos);
+    const { distXZ: distToTrack } = nearestTrackSample(treePos);
 
     if (distToTrack >= MIN_DISTANCE_FROM_TRACK) {
       const scale = 0.8 + Math.random() * 0.5;
 
-      dummy.position.set(x, 1.25 * scale, z);
+      dummy.position.set(x, gy + (1.25 * scale), z);
       dummy.scale.setScalar(scale);
       dummy.updateMatrix();
       trunkInstanced.setMatrixAt(spawned, dummy.matrix);
 
-      dummy.position.set(x, (2.5 + 2.0) * scale, z);
+      dummy.position.set(x, gy + ((2.5 + 2.0) * scale), z);
       dummy.updateMatrix();
       leavesInstanced.setMatrixAt(spawned, dummy.matrix);
 
@@ -2077,16 +2182,17 @@ function spawnGhostDecorations() {
     const x = Math.cos(angle) * radius;
     const z = Math.sin(angle) * radius;
     const pos = new THREE.Vector3(x, 0, z);
+    const gy = getGroundHeightAt(x, z);
 
-    const { sample } = nearestTrackSample(pos);
-    if (sample.point.distanceTo(pos) >= MIN_DISTANCE_FROM_TRACK) {
+    const { distXZ } = nearestTrackSample(pos);
+    if (distXZ >= MIN_DISTANCE_FROM_TRACK) {
       const scale = 0.8 + Math.random() * 0.6;
 
       // 60% de probabilidade de ser uma chama flutuante, 40% de ser uma árvore morta
       const isFlame = Math.random() > 0.4;
 
       if (isFlame) {
-        dummy.position.set(x, 4.0 * scale, z); // Flutua no ar
+        dummy.position.set(x, gy + (4.0 * scale), z); // Flutua no ar
         dummy.scale.setScalar(scale);
         dummy.rotation.set(Math.random(), Math.random(), Math.random());
         dummy.updateMatrix();
@@ -2097,7 +2203,7 @@ function spawnGhostDecorations() {
         dummy.updateMatrix();
         trunkInstanced.setMatrixAt(spawned, dummy.matrix);
       } else {
-        dummy.position.set(x, 2.25 * scale, z); // Colado ao chão
+        dummy.position.set(x, gy + (2.25 * scale), z); // Colado ao chão
         dummy.scale.setScalar(scale);
         dummy.rotation.set((Math.random() - 0.5) * 0.3, Math.random() * Math.PI, (Math.random() - 0.5) * 0.3); // Árvores tortas
         dummy.updateMatrix();
@@ -2265,7 +2371,7 @@ function lancarCaixaRocket() {
   const posicaoAtras = kart.position.clone().sub(direcao.multiplyScalar(distanciaAtras));
 
   // Altura em Y reduzida de 1.0 para 0.3 para encostar no asfalto
-  caixaMesh.position.set(posicaoAtras.x, 0.3, posicaoAtras.z);
+  caixaMesh.position.set(posicaoAtras.x, getTrackHeightAt(posicaoAtras.x, posicaoAtras.z) + 0.3, posicaoAtras.z);
   caixaMesh.rotation.y = kart.rotation.y;
   caixaMesh.owner = 'local';
   caixaMesh.creationTime = Date.now();
@@ -2431,7 +2537,7 @@ async function loadCustomTrack(trackParam) {
   }
 
   if (trackData && trackData.points && trackData.points.length >= 3) {
-    const pts = trackData.points.map(p => new THREE.Vector3(p.x, 0, p.z));
+    const pts = trackData.points.map(p => new THREE.Vector3(p.x, p.y || 0, p.z));
     trackCurve = new THREE.CatmullRomCurve3(pts, true, 'centripetal', 0.5);
     if (trackData.width) trackWidth = trackData.width;
 
@@ -2442,6 +2548,7 @@ async function loadCustomTrack(trackParam) {
     }
 
     updateTrackSamples();
+    rebuildTerrain();
     buildAndAddTrackMesh();
     addTrackKerbs();
     // VERIFICAÇÃO SEGURA DOS PNEUS / BARREIRAS
@@ -2518,6 +2625,7 @@ function getGridPosition(gridIndex) {
   const pos = basePoint.clone()
     .addScaledVector(normal, lateralOffset)
     .addScaledVector(tangent, rowOffset);
+  pos.y = getTrackHeightAt(pos.x, pos.z); // altura exata da pista no grid
 
   const heading = Math.atan2(tangent.x, tangent.z);
 
@@ -3035,16 +3143,18 @@ function updatePhysics(dt) {
     return;
   }
 
-  // EFEITO ERIKA: O kart fica com força de atrito extrema, mal conseguindo andar
+  // EFEITO ERIKA: O kart fica com força de atrito extrema (Raízes)
   if (isRooted) {
-    physics.speed *= 0.4; // Corta a velocidade drasticamente a cada frame
+    physics.speed *= 0.4;
   }
 
+  // EFEITO LODO: Inverte a direção (Esquerda/Direita)
   if (isControlInverted) {
     controlInvertTimer -= dt;
     if (controlInvertTimer <= 0) isControlInverted = false;
   }
-  // 1. Atualiza o novo temporizador
+
+  // EFEITO KOGA: Inverte Acelerador/Freio
   if (isGasBrakeInverted) {
     gasBrakeInvertTimer -= dt;
     if (gasBrakeInvertTimer <= 0) isGasBrakeInverted = false;
@@ -3052,59 +3162,49 @@ function updatePhysics(dt) {
 
   const raceOver = raceTrackers.get('local')?.finished;
 
-  // 2. Lê os botões originais cruzados com a variável de inversão
+  // 1. Lê os botões originais
   const rawForward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
   const rawBackward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
+  const rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
+  const rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
+  const driftKey = !raceOver && keys['Space'];
 
-  // 3. Inverte Acelerador e Freio/Ré se o efeito estiver ativo
+  // 2. Aplica Inversões de Status (Koga e Lodo)
   const forward = isGasBrakeInverted ? rawBackward : rawForward;
   const backward = isGasBrakeInverted ? rawForward : rawBackward;
+  const left = isControlInverted ? rawRight : rawLeft;
+  const right = isControlInverted ? rawLeft : rawRight;
 
-  let rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
-  let rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
-
-  // --- NOVO: BUFF DAS MASTER BALLS DEPENDENTE DA POSIÇÃO ---
+  // --- BUFF DAS MASTER BALLS DEPENDENTE DA POSIÇÃO ---
   let myRank = 1;
   let totalActiveRacers = 1;
   const myProgress = raceTrackers.get('local')?.progress || 0;
 
-  // Calcula rapidamente a posição atual baseada no progresso (sem tocar no HTML)
   if (typeof remoteKarts !== 'undefined') {
     for (const [pid, entry] of remoteKarts.entries()) {
       totalActiveRacers++;
-      const theirProgress = raceTrackers.get(pid)?.progress || 0;
-      if (theirProgress > myProgress) {
+      if ((raceTrackers.get(pid)?.progress || 0) > myProgress) {
         myRank++;
       }
     }
   }
 
-  let mbBoostPercent = collectedMasterBalls * 0.01;
-
-  // Balanceamento: 1º ganha metade, Último ganha o dobro
+  let mbBoostPercent = (typeof collectedMasterBalls !== 'undefined' ? collectedMasterBalls : 0) * 0.01;
   if (totalActiveRacers > 1) {
-    if (myRank === 1) {
-      mbBoostPercent *= 0.5; // 50% do bônus para o líder
-    } else if (myRank === totalActiveRacers) {
-      mbBoostPercent *= 2.0; // 200% do bônus para o lanterna
-    }
+    if (myRank === 1) mbBoostPercent *= 0.5; // Lider: 50% do buff
+    else if (myRank === totalActiveRacers) mbBoostPercent *= 2.0; // Lanterna: 200% do buff
   }
 
-  let speedBonusMultiplier = 1 + mbBoostPercent;
-  let currentAccel = physics.accel * speedBonusMultiplier;
+  const speedBonusMultiplier = 1 + mbBoostPercent;
+  const currentAccel = physics.accel * speedBonusMultiplier;
 
-  const left = isControlInverted ? rawRight : rawLeft;
-  const right = isControlInverted ? rawLeft : rawRight;
-  const driftKey = !raceOver && keys['Space'];
-
-  // Se apertou espaço agora, não estava apertando antes, e não está voando por uma explosão:
+  // Pulo de Drift
   if (driftKey && !physics.wasDriftKeyPressed && physics.hopTimer <= 0 && !kart.userData.isJumping) {
-    physics.hopTimer = 0.4; // O pulinho dura exatamente 0.25 segundos
+    physics.hopTimer = 0.4;
   }
-  physics.wasDriftKeyPressed = driftKey; // Grava o estado para não pular infinitamente
-  // ----------------------------
+  physics.wasDriftKeyPressed = driftKey;
 
-  // Usa a nova aceleração buffada
+  // Aceleração
   if (forward) physics.speed += currentAccel * dt;
   else if (backward) physics.speed -= physics.brakeDecel * dt;
   else {
@@ -3112,7 +3212,7 @@ function updatePhysics(dt) {
     else if (physics.speed < 0) physics.speed = Math.min(0, physics.speed + physics.friction * dt);
   }
 
-  // Aplica o buff na velocidade máxima também
+  // Buff Turbo + Master Ball na Velocidade Máxima
   let currentMax = physics.maxSpeed * speedBonusMultiplier;
   if (physics.turboTimer > 0) {
     physics.turboTimer -= dt;
@@ -3121,30 +3221,30 @@ function updatePhysics(dt) {
 
   physics.speed = THREE.MathUtils.clamp(physics.speed, physics.maxReverse, currentMax);
 
+  // --- CÁLCULO DE DIREÇÃO ---
   let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
-  // EFEITO MISTY: Aquaplanagem (direção extremamente sensível/deslizante)
-  if (physics.aquaplaneTimer > 0) {
-    physics.aquaplaneTimer -= dt;
-    turnInput *= 3.8; // Multiplica quase 4x a resposta da curva!
-  }
 
-  if (physics.speed < -0.1) {
-    turnInput *= -1;
-  }
-
+  // Aplica giroscópio ANTES dos efeitos, para que o mobile sofra os debuffs
   if (isMobile) {
     if (Math.abs(gyroTurnInput) > 0.1) {
       turnInput = gyroTurnInput;
-      if (physics.speed < -0.1) turnInput *= -1;
     } else {
       turnInput = 0;
     }
   }
 
-  // Usa a velocidade máxima correta como base (maxSpeed para a frente, maxReverse para trás)
-  const refSpeed = physics.speed >= 0 ? physics.maxSpeed : Math.abs(physics.maxReverse);
+  // EFEITO MISTY: Aquaplanagem (direção extremamente sensível/deslizante)
+  if (physics.aquaplaneTimer > 0) {
+    physics.aquaplaneTimer -= dt;
+    turnInput *= 3.8;
+  }
 
-  // Calcula o fator de movimento usando a referência adequada
+  // Inverte eixo da direção ao dar ré
+  if (physics.speed < -0.1) {
+    turnInput *= -1;
+  }
+
+  const refSpeed = physics.speed >= 0 ? physics.maxSpeed : Math.abs(physics.maxReverse);
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / refSpeed, 0.2, 1);
   const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
 
@@ -3158,21 +3258,17 @@ function updatePhysics(dt) {
       physics.isDrifting = true;
       physics.driftDirection = turnInput !== 0 ? Math.sign(turnInput) : (left ? 1 : -1);
       physics.driftCharge = 0;
-
-      // CORREÇÃO 1: Zera a inércia do drift anterior. 
-      // Impede o "teleporte lateral" se o jogador trocar de lado muito rápido!
-      physics.driftFactor = 0;
+      physics.driftFactor = 0; // Zera a inércia do drift anterior
     }
     physics.driftCharge += dt * (physics.driftRate || 1.0);
 
     const driftSteer = physics.turnSpeed * (physics.driftControl || 1.0);
+    let currentTurnStrength = 0.38;
 
-    // CORREÇÃO 2: Permite abrir e fechar a curva enquanto o kart está a fazer drift
-    let currentTurnStrength = 0.38; // Força de curva neutra (igual à sua original)
     if (turnInput === physics.driftDirection) {
-      currentTurnStrength = 0.58; // Pressionando para dentro da curva: Fecha mais a curva
+      currentTurnStrength = 0.58; // Fecha a curva
     } else if (turnInput === -physics.driftDirection) {
-      currentTurnStrength = 0.15; // Pressionando contra a curva: Abre o traçado (evita bater nas paredes)
+      currentTurnStrength = 0.15; // Abre a curva
     }
 
     physics.heading += physics.driftDirection * driftSteer * currentTurnStrength * movingFactor * dt;
@@ -3195,27 +3291,25 @@ function updatePhysics(dt) {
   kart.position.addScaledVector(moveDir, physics.speed * dt);
   kart.rotation.y = physics.heading;
 
-  // --- LÓGICA DO EMPURRÃO DA ONDA SONORA ---
+  // Lógica do empurrão da Onda Sonora
   if (physics.pushTimer > 0) {
     physics.pushTimer -= dt;
-    // Empurra o kart com muita força na direção definida
     kart.position.addScaledVector(physics.pushVelocity, 45 * dt);
   }
-  // -----------------------------------------
 
   enforceTrackBoundary();
-  // Apenas faz o pulinho se não estiver a sofrer o ataque "Cavar" (DIG)
+
+  // Pulinho (Hop) e Efeito Dig
   if (!kart.userData.isJumping) {
+    // Descobre a altura atual da pista no ponto exato onde o kart está
+    const trackHeight = getTrackHeightAt(kart.position.x, kart.position.z);
+
     if (physics.hopTimer > 0) {
       physics.hopTimer -= dt;
-
-      // Converte o tempo de 0.25s numa escala de 0 a 1
       const hopProgress = 1.0 - (physics.hopTimer / 0.4);
-
-      // O Math.sin cria um arco perfeito: sobe até ao pico (1.2 de altura) e desce
-      kart.position.y = Math.sin(hopProgress * Math.PI) * 0.5;
+      kart.position.y = trackHeight + (Math.sin(hopProgress * Math.PI) * 0.5);
     } else {
-      kart.position.y = 0; // Garante que volta exatamente para o chão
+      kart.position.y = trackHeight; // Mantém o kart colado no asfalto inclinado
     }
   }
 }
@@ -3295,7 +3389,7 @@ function spawnSkidMarkPair() {
     const localPos = rearOffset.clone().add(new THREE.Vector3(lateralX, 0, 0));
     localPos.applyQuaternion(headingQuat);
     const worldPos = kart.position.clone().add(localPos);
-    worldPos.y = 0.035;
+    worldPos.y = getTrackHeightAt(worldPos.x, worldPos.z) + 0.05;
 
     const geo = new THREE.PlaneGeometry(0.22, 0.85);
     const mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false });
@@ -4193,14 +4287,14 @@ function spawnMasterBalls() {
       const pos = point.clone().addScaledVector(normal, laneOffset);
 
       const mesh = new THREE.Mesh(masterBallGeo, masterBallMat);
-      mesh.position.set(pos.x, 0.35, pos.z);
+      mesh.position.set(pos.x, point.y + 0.35, pos.z);
       mesh.castShadow = true;
       scene.add(mesh);
 
       masterBallsOnTrack.push({
         id: 'mb-' + (mBallId++),
         mesh: mesh,
-        baseY: 0.35,
+        baseY: point.y + 0.35,
         active: true,
         respawnTimer: 0
       });
@@ -4262,7 +4356,7 @@ function spawnItemBoxes(customItems) {
     [-2.8, 0, 2.8].forEach(offset => {
       const mesh = new THREE.Mesh(sphereGeo, pokeballMat);
       const pos = point.clone().addScaledVector(normal, offset);
-      mesh.position.set(pos.x, 0.6, pos.z);
+      mesh.position.set(pos.x, point.y + 0.6, pos.z);
       mesh.rotation.z = Math.PI / 6;
       mesh.castShadow = true;
       scene.add(mesh);
@@ -4270,7 +4364,7 @@ function spawnItemBoxes(customItems) {
       itemBoxes.push({
         id: boxId++,
         mesh: mesh,
-        baseY: 0.6,
+        baseY: point.y + 0.6, // Adiciona a altura da curva
         active: true,
         respawnTimer: 0
       });
@@ -4472,14 +4566,16 @@ let trapNextId = 0;
 
 function createTrapMesh(trapData) {
   playTrapDropSfx(trapData);
+  // A rede/bots só mandam x e z: a altura vem do traçado, igual em todos os clientes
+  const gy = getTrackHeightAt(trapData.x, trapData.z);
   if (trapData.type === 'FUMACA') {
     const group = new THREE.Group();
-    group.position.set(trapData.x, 0, trapData.z);
+    group.position.set(trapData.x, gy, trapData.z);
     scene.add(group);
 
     // Gera a nuvem volumétrica forçando a cor escura em todas as partículas
     for (let p = 0; p < 20; p++) {
-      spawnAmbientPuff(new THREE.Vector3(trapData.x, 0.2, trapData.z), {
+      spawnAmbientPuff(new THREE.Vector3(trapData.x, gy + 0.2, trapData.z), {
         color: 0x222225,       // Cor cinza-escura firme
         opacity: 0.4,         // Altamente opaca para não esbranquiçar
         scale: 3.5,            // Bem volumosa
@@ -4508,7 +4604,7 @@ function createTrapMesh(trapData) {
       const rockMat = new THREE.MeshStandardMaterial({ color: 0x5a5a5a, roughness: 0.9, flatShading: true });
       const rockMesh = new THREE.Mesh(rockGeo, rockMat);
 
-      rockMesh.position.set(trapData.x, 0.4, trapData.z);
+      rockMesh.position.set(trapData.x, gy + 0.4, trapData.z);
       rockMesh.rotation.set(Math.random(), Math.random(), Math.random());
       scene.add(rockMesh);
 
@@ -4545,7 +4641,7 @@ function createTrapMesh(trapData) {
         group.add(mesh);
       }
 
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       placedTraps.push({
@@ -4580,7 +4676,7 @@ function createTrapMesh(trapData) {
       coreMesh.position.y = 0.6;
       group.add(coreMesh);
 
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       placedTraps.push({
@@ -4609,7 +4705,7 @@ function createTrapMesh(trapData) {
         group.add(mesh);
       }
 
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       placedTraps.push({
@@ -4626,12 +4722,12 @@ function createTrapMesh(trapData) {
     // Se for a NÉVOA DO KOGA
     if (trapData.type === 'PURPLE_SMOKE') {
       const group = new THREE.Group();
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       // Gera a nuvem volumétrica forçando a cor roxa e uma grande expansão
       for (let p = 0; p < 40; p++) {
-        spawnAmbientPuff(new THREE.Vector3(trapData.x, 0.2, trapData.z), {
+        spawnAmbientPuff(new THREE.Vector3(trapData.x, gy + 0.2, trapData.z), {
           color: 0x7e22ce,       // Roxo escuro/tóxico
           opacity: 0.65,
           scale: 4.5,            // Partículas grandes
@@ -4658,7 +4754,7 @@ function createTrapMesh(trapData) {
 
     if (trapData.type === 'VORTEX') {
       const group = new THREE.Group();
-      group.position.set(trapData.x, 0.1, trapData.z);
+      group.position.set(trapData.x, gy + 0.1, trapData.z);
 
       // Cria um anel roxo escuro/preto para o vórtice
       const geometry = new THREE.TorusGeometry(2, 0.4, 16, 100);
@@ -4709,7 +4805,7 @@ function createTrapMesh(trapData) {
         group.add(mesh);
       }
 
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       placedTraps.push({
@@ -4747,7 +4843,7 @@ function createTrapMesh(trapData) {
         group.add(mesh);
       }
 
-      group.position.set(trapData.x, 0, trapData.z);
+      group.position.set(trapData.x, gy, trapData.z);
       scene.add(group);
 
       placedTraps.push({
@@ -4830,7 +4926,7 @@ function updateTraps(dt) {
       trap.puffTimer += dt;
       if (trap.puffTimer > 0.2) {
         trap.puffTimer = 0;
-        spawnAmbientPuff(trap.mesh.position.clone().setY(0.15), {
+        spawnAmbientPuff(trap.mesh.position.clone().setY(trap.mesh.position.y + 0.15), {
           color: 0x7e22ce, opacity: 0.7, scale: 2.5, scaleVariance: 1.5,
           riseSpeed: 0.4, riseVariance: 0.25, growth: 1.0, growthVariance: 0.8,
           life: 2.0, lifeVariance: 0.9, spread: 8.5
@@ -4849,7 +4945,7 @@ function updateTraps(dt) {
       trap.puffTimer += dt;
       if (trap.puffTimer > 0.32) {
         trap.puffTimer = 0;
-        spawnAmbientPuff(trap.mesh.position.clone().setY(0.15), {
+        spawnAmbientPuff(trap.mesh.position.clone().setY(trap.mesh.position.y + 0.15), {
           color: 0x222225, opacity: 1, scale: 0.9, scaleVariance: 0.8,
           riseSpeed: 0.4, riseVariance: 0.25, growth: 0.8, growthVariance: 0.8,
           life: 1.6, lifeVariance: 0.9, spread: 1.9
@@ -4859,7 +4955,7 @@ function updateTraps(dt) {
       trap.puffTimer += dt;
       if (trap.puffTimer > 0.9) {
         trap.puffTimer = 0;
-        spawnAmbientPuff(trap.mesh.position.clone().setY(0.06), {
+        spawnAmbientPuff(trap.mesh.position.clone().setY(trap.mesh.position.y + 0.06), {
           color: 0xcfa8ff, opacity: 0.4, scale: 0.16, scaleVariance: 0.1,
           riseSpeed: 0.15, riseVariance: 0.1, growth: 0.05, growthVariance: 0.05,
           life: 0.7, lifeVariance: 0.3, spread: 1.2
@@ -5145,7 +5241,8 @@ function triggerDigExplosion(targetId) {
     // Tranca o cadeado
     targetKartObj.userData.isJumping = true;
 
-    const startY = targetKartObj.position.y;
+    // A altura-base segue a pista (o kart continua andando durante o pulo)
+    const baseY = () => getTrackHeightAt(targetKartObj.position.x, targetKartObj.position.z);
     const startRotX = targetKartObj.rotation.x;
     const startRotZ = targetKartObj.rotation.z;
 
@@ -5156,7 +5253,7 @@ function triggerDigExplosion(targetId) {
       jumpTime += 0.05;
 
       // 1. Pula para o alto
-      targetKartObj.position.y = startY + Math.sin(jumpTime * Math.PI) * 3.5;
+      targetKartObj.position.y = baseY() + Math.sin(jumpTime * Math.PI) * 3.5;
 
       // 2. Efeito de TREMOR
       if (jumpTime < 1) {
@@ -5172,7 +5269,7 @@ function triggerDigExplosion(targetId) {
 
         if (targetId === 'local' || remoteKarts.has(targetId)) {
           // Crava o kart no chão original com exatidão
-          targetKartObj.position.y = startY;
+          targetKartObj.position.y = baseY();
           targetKartObj.rotation.x = startRotX;
           targetKartObj.rotation.z = startRotZ;
         }
@@ -5308,7 +5405,7 @@ function spawnDigProjectile(casterId, targetId) {
   }
 
   group.position.copy(startPos);
-  group.position.y = 0.05; // Bem colado no chão
+  group.position.y = getTrackHeightAt(startPos.x, startPos.z) + 0.05; // Bem colado no chão
   scene.add(group);
   playSkillSfx('DIG', startPos);
 
@@ -5384,7 +5481,7 @@ function updateDigProjectiles(dt) {
         dig.mesh.position.addScaledVector(moveDir, speed * dt);
 
         // 🪨 EFEITO SUBTERRÂNEO: Fica preso ao chão e vibra intensamente
-        dig.mesh.position.y = 0.12;
+        dig.mesh.position.y = getTrackHeightAt(dig.mesh.position.x, dig.mesh.position.z) + 0.12;
 
         // Tremor aleatório nos eixos X e Z para simular rachaduras violentas
         dig.mesh.rotation.x = (Math.random() - 0.5) * 0.6;
@@ -5933,7 +6030,10 @@ function updateRemoteKarts(dt) {
         0,
         Math.cos(entry.target.ry)
       );
+      const hBefore = getTrackHeightAt(entry.target.pos.x, entry.target.pos.z);
       entry.target.pos.addScaledVector(moveDir, entry.target.speed * dt);
+      // Ao extrapolar entre snapshots, o Y acompanha a subida/descida
+      entry.target.pos.y += getTrackHeightAt(entry.target.pos.x, entry.target.pos.z) - hBefore;
     }
 
     const lerpFactor = Math.min(1, dt * 18);
@@ -6591,6 +6691,11 @@ function updateBots(dt) {
     bot.obj.group.position.addScaledVector(moveDir, bot.speed * dt);
     bot.obj.group.rotation.y = bot.heading;
 
+    // Força os bots a acompanharem o relevo vertical (sem brigar com o pulo do Dig)
+    if (!bot.obj.group.userData.isJumping) {
+      bot.obj.group.position.y = getTrackHeightAt(bot.obj.group.position.x, bot.obj.group.position.z);
+    }
+
     const tr = updateRaceTracker(id, bot.obj.group.position);
     bot.progress = tr.progress;
     bot.lapCount = tr.lapCount;
@@ -6716,7 +6821,7 @@ function useBotSkill(botId, bot, skill) {
       const geoBot = new THREE.BoxGeometry(0.6, 0.6, 0.6);
       const matBot = new THREE.MeshStandardMaterial({ map: texturaBot });
       const caixaBotMesh = new THREE.Mesh(geoBot, matBot);
-      caixaBotMesh.position.set(trapPosBot.x, 0.3, trapPosBot.z);
+      caixaBotMesh.position.set(trapPosBot.x, getTrackHeightAt(trapPosBot.x, trapPosBot.z) + 0.3, trapPosBot.z);
       caixaBotMesh.owner = botId;
       caixaBotMesh.creationTime = Date.now();
       scene.add(caixaBotMesh);

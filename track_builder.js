@@ -22,16 +22,16 @@ let zoom = 2.0; // Pixels por metro
 
 // Pista Padrão de Exemplo
 const PRESET_TRACK = [
-  { x: 0, z: -100 },
-  { x: 60, z: -100 },
-  { x: 60, z: -30 },
-  { x: 40, z: 0 },
-  { x: 80, z: 40 },
-  { x: 40, z: 100 },
-  { x: -40, z: 100 },
-  { x: -70, z: 30 },
-  { x: -30, z: -30 },
-  { x: -60, z: -100 }
+  { x: 0, y: 0, z: -100 },
+  { x: 60, y: 0, z: -100 },
+  { x: 60, y: 0, z: -30 },
+  { x: 40, y: 0, z: 0 },
+  { x: 80, y: 0, z: 40 },
+  { x: 40, y: 0, z: 100 },
+  { x: -40, y: 0, z: 100 },
+  { x: -70, y: 0, z: 30 },
+  { x: -30, y: 0, z: -30 },
+  { x: -60, y: 0, z: -100 }
 ];
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -156,7 +156,8 @@ function screenToWorld(sx, sy) {
 // ------------------------------------------------------------
 function getSplineCurve() {
   if (points.length < 2) return null;
-  const v3Points = points.map(p => new THREE.Vector3(p.x, 0, p.z));
+  // Substitua o "0" pelo "p.y" para criar uma curva tridimensional real
+  const v3Points = points.map(p => new THREE.Vector3(p.x, p.y || 0, p.z));
   return new THREE.CatmullRomCurve3(v3Points, isClosed, 'centripetal', 0.5);
 }
 
@@ -412,6 +413,12 @@ function drawPointHandles() {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(idx + 1, scr.x, scr.y - 14);
+    const yVal = p.y || 0;
+    if (yVal !== 0) {
+      ctx.fillStyle = yVal > 0 ? '#4ade80' : '#ef4444'; // Verde se sobe, vermelho se desce
+      ctx.font = 'bold 9px sans-serif';
+      ctx.fillText(yVal > 0 ? `↑ ${yVal}m` : `↓ ${Math.abs(yVal)}m`, scr.x, scr.y + 16);
+    }
   });
 }
 
@@ -463,12 +470,15 @@ function setupCanvasEvents() {
         if (clickedPoint !== -1) {
           selectedPointIndex = clickedPoint;
           isDragging = true;
+          updateElevationUI(); // ATUALIZA A UI
         } else {
           // Adiciona novo nó
           const world = screenToWorld(mx, my);
+          world.y = 0; // INICIALIZA Y ZERADO
           points.push(world);
           selectedPointIndex = points.length - 1;
           isDragging = true;
+          updateElevationUI(); // ATUALIZA A UI
           render();
         }
       } else if (currentMode === 'items') {
@@ -532,6 +542,7 @@ function setupCanvasEvents() {
 
   window.addEventListener('mouseup', () => {
     isDragging = false;
+    updateElevationUI();
     isPanning = false;
   });
 
@@ -679,6 +690,8 @@ function setupUIEvents() {
         toolBtns.forEach(o => document.getElementById(o.id)?.classList.remove('active'));
         btn.classList.add('active');
         currentMode = t.mode;
+        selectedPointIndex = -1; // Deseleciona o ponto ao mudar de aba
+        updateElevationUI();     // Oculta o painel de altura
         render();
       };
     }
@@ -825,6 +838,44 @@ function setupUIEvents() {
   };
 }
 
+function updateElevationUI() {
+  const title = document.getElementById('nodePropsTitle');
+  const nav = document.getElementById('nodePropsNav');
+  const slider = document.getElementById('nodeElevationSlider');
+  const valText = document.getElementById('nodeElevationValue');
+
+  // Garante que o painel e o título estejam SEMPRE visíveis
+  title.style.display = 'block';
+  nav.style.display = 'block';
+
+  // O slider só fica ativo SE a ferramenta atual for 'nodes' E um ponto estiver selecionado
+  if (currentMode === 'nodes' && selectedPointIndex !== -1 && points[selectedPointIndex]) {
+    const yVal = points[selectedPointIndex].y || 0;
+    slider.value = yVal;
+    slider.disabled = false;
+    slider.style.opacity = '1';
+    slider.style.cursor = 'pointer';
+    valText.innerText = yVal + 'm';
+  } else {
+    // Se estiver na aba de Itens, aba de Turbos, ou clicar no vazio: deixa inativo
+    slider.value = 0;
+    slider.disabled = true;
+    slider.style.opacity = '0.4';
+    slider.style.cursor = 'not-allowed';
+    valText.innerText = '-';
+  }
+}
+
+// Adicione este listener DENTRO da função setupUIEvents() existente
+document.getElementById('nodeElevationSlider').addEventListener('input', (e) => {
+  if (selectedPointIndex !== -1 && points[selectedPointIndex]) {
+    const yVal = parseFloat(e.target.value);
+    points[selectedPointIndex].y = yVal;
+    document.getElementById('nodeElevationValue').innerText = yVal + 'm';
+    render();
+  }
+});
+
 function validateTrack() {
   if (points.length < 5) {
     alert('A pista precisa ter pelo menos 5 pontos para formar um circuito.');
@@ -848,7 +899,11 @@ function getTrackExportData() {
     version: 1,
     biome: selectedBiome,
     width: trackWidth,
-    points: points.map(p => ({ x: Math.round(p.x * 10) / 10, z: Math.round(p.z * 10) / 10 })),
+    points: points.map(p => ({
+      x: Math.round(p.x * 10) / 10,
+      y: Math.round((p.y || 0) * 10) / 10,
+      z: Math.round(p.z * 10) / 10
+    })),
     items: items.map(it => ({ t: Math.round(it.t * 1000) / 1000 })),
     boosts: boosts.map(b => ({
       t: Math.round(b.t * 1000) / 1000,
