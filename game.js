@@ -16,6 +16,8 @@ const isMobile = (() => {
   } catch (e) { return false; }
 })();
 const MOBILE_DISABLE_BLOOM = true; // o bloom é o efeito mais pesado; desligue só no celular
+// Sem bloom, o composer só copiaria a imagem: no celular renderizamos direto (menos uma passada em tela cheia)
+const useComposerPath = !(isMobile && MOBILE_DISABLE_BLOOM);
 const victorySound = new Audio('sounds/victory.mp3');
 
 // Instancie junto com as outras variáveis globais ou no construtor da classe
@@ -26,6 +28,7 @@ const KART_HEIGHT_OFFSET = 0.5; // Ajuste para o centro de massa/tamanho do seu 
 // Renderizador normal (sem toneMapping agressivo)
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.info.autoReset = !(/[?&]perf=1/.test(location.search)); // com ?perf=1 o contador é zerado à mão a cada frame
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap; // sombra mais leve no celular
 document.body.appendChild(renderer.domElement);
@@ -441,19 +444,19 @@ function setupEnhancedEnvironment(scene) {
 }
 
 const maxDustParticles = 40;
+const DUST_MESH_GEO = new THREE.DodecahedronGeometry(0.12, 0); // compartilhada (nunca descartar)
 
 function spawnDustParticle(x, y, z) {
   if (dustParticles.length >= maxDustParticles) {
     const old = dustParticles.shift();
     if (old) {
       scene.remove(old.mesh);
-      old.mesh.geometry.dispose();
       old.mesh.material.dispose();
     }
   }
 
   // Geometria menor (raio 0.12 em vez de 0.2)
-  const geo = new THREE.DodecahedronGeometry(0.12, 0);
+  const geo = DUST_MESH_GEO;
   const mat = new THREE.MeshStandardMaterial({
     color: 0xc5c5c5,
     roughness: 1.0,
@@ -488,7 +491,6 @@ function updateDustParticles() {
 
     if (p.life <= 0) {
       scene.remove(p.mesh);
-      p.mesh.geometry.dispose();
       p.mesh.material.dispose();
       dustParticles.splice(i, 1);
     }
@@ -631,6 +633,9 @@ scene.add(trackElementsGroup);
 
 const TRACK_SAMPLE_COUNT = 2500;
 const trackSamples = [];
+// Grade espacial (declarada aqui porque updateTrackSamples() roda já no carregamento)
+const TRACK_GRID_CELL = 8; // metros
+let trackGrid = null;
 
 function updateTrackSamples() {
   trackSamples.length = 0;
@@ -644,6 +649,7 @@ function updateTrackSamples() {
     trackSamples.push({ t, point, normal, tangent, pitch });
   }
   currentTrackPoints = trackCurve.getSpacedPoints(150);
+  buildTrackGrid();
 }
 
 updateTrackSamples();
@@ -654,15 +660,70 @@ updateTrackSamples();
 // influenciar qual trecho da pista é o "mais próximo".
 // `y` é a altura da pista interpolada entre duas amostras (sem degraus).
 // ------------------------------------------------------------
+// Grade espacial: em vez de varrer as 2500 amostras a cada chamada, olhamos só as células vizinhas.
+// O resultado é exatamente o mesmo da busca completa (a busca em anéis só para quando é impossível achar algo mais perto).
+
+function buildTrackGrid() {
+  const n = trackSamples.length;
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (let i = 0; i < n; i++) {
+    const p = trackSamples[i].point;
+    if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+    if (p.z < minZ) minZ = p.z; if (p.z > maxZ) maxZ = p.z;
+  }
+  const cols = Math.floor((maxX - minX) / TRACK_GRID_CELL) + 1;
+  const rows = Math.floor((maxZ - minZ) / TRACK_GRID_CELL) + 1;
+  const cells = new Array(cols * rows);
+  for (let i = 0; i < n; i++) {
+    const p = trackSamples[i].point;
+    const cx = Math.floor((p.x - minX) / TRACK_GRID_CELL);
+    const cz = Math.floor((p.z - minZ) / TRACK_GRID_CELL);
+    const k = cz * cols + cx;
+    (cells[k] || (cells[k] = [])).push(i);
+  }
+  trackGrid = { minX, minZ, cols, rows, cells };
+}
+
 function nearestTrackSample(position) {
   const px = position.x, pz = position.z;
   const n = trackSamples.length;
   let bestIndex = 0, bestDist = Infinity;
-  for (let i = 0; i < n; i++) {
-    const p = trackSamples[i].point;
-    const dx = p.x - px, dz = p.z - pz;
-    const d = dx * dx + dz * dz;
-    if (d < bestDist) { bestDist = d; bestIndex = i; }
+
+  const g = trackGrid;
+  if (g) {
+    const cx = Math.floor((px - g.minX) / TRACK_GRID_CELL);
+    const cz = Math.floor((pz - g.minZ) / TRACK_GRID_CELL);
+    const maxR = Math.max(cx, g.cols - 1 - cx, cz, g.rows - 1 - cz, 0);
+    for (let r = 0; r <= maxR; r++) {
+      for (let dz = -r; dz <= r; dz++) {
+        const gz = cz + dz;
+        if (gz < 0 || gz >= g.rows) continue;
+        const edgeRow = (dz === -r || dz === r);
+        const step = edgeRow ? 1 : (2 * r || 1);
+        for (let dx = -r; dx <= r; dx += step) {
+          const gx = cx + dx;
+          if (gx < 0 || gx >= g.cols) continue;
+          const cell = g.cells[gz * g.cols + gx];
+          if (!cell) continue;
+          for (let q = 0; q < cell.length; q++) {
+            const i = cell[q];
+            const p = trackSamples[i].point;
+            const ddx = p.x - px, ddz = p.z - pz;
+            const d = ddx * ddx + ddz * ddz;
+            if (d < bestDist || (d === bestDist && i < bestIndex)) { bestDist = d; bestIndex = i; }
+          }
+        }
+      }
+      const reach = r * TRACK_GRID_CELL;
+      if (bestDist <= reach * reach) break; // nada fora dos anéis já vistos pode estar mais perto
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const p = trackSamples[i].point;
+      const dx = p.x - px, dz = p.z - pz;
+      const d = dx * dx + dz * dz;
+      if (d < bestDist) { bestDist = d; bestIndex = i; }
+    }
   }
 
   const best = trackSamples[bestIndex];
@@ -1136,11 +1197,113 @@ function createStripedTireTexture() {
   return texture;
 }
 
+// ------------------------------------------------------------
+// ⚡ FUNDE AS BARREIRAS LATERAIS: centenas de meshes viram poucos draw calls (visual idêntico)
+// Agrupa por pedaços ao longo da pista para o frustum culling continuar funcionando.
+// ------------------------------------------------------------
+const BARRIER_MERGE_CHUNK = 24;
+
+function mergeMeshGeometries(meshes, inv) {
+  let vCount = 0, iCount = 0;
+  for (const m of meshes) {
+    const g = m.geometry;
+    vCount += g.attributes.position.count;
+    iCount += g.index ? g.index.count : g.attributes.position.count;
+  }
+  const pos = new Float32Array(vCount * 3);
+  const nor = new Float32Array(vCount * 3);
+  const uv = new Float32Array(vCount * 2);
+  const idx = vCount > 65535 ? new Uint32Array(iCount) : new Uint16Array(iCount);
+  const v = new THREE.Vector3(), n = new THREE.Vector3();
+  const M = new THREE.Matrix4(), NM = new THREE.Matrix3();
+  let vo = 0, io = 0;
+  for (const mesh of meshes) {
+    const g = mesh.geometry;
+    const pa = g.attributes.position, na = g.attributes.normal, ua = g.attributes.uv;
+    M.multiplyMatrices(inv, mesh.matrixWorld);
+    NM.getNormalMatrix(M);
+    for (let i = 0; i < pa.count; i++) {
+      v.fromBufferAttribute(pa, i).applyMatrix4(M);
+      const o3 = (vo + i) * 3;
+      pos[o3] = v.x; pos[o3 + 1] = v.y; pos[o3 + 2] = v.z;
+      if (na) {
+        n.fromBufferAttribute(na, i).applyMatrix3(NM).normalize();
+        nor[o3] = n.x; nor[o3 + 1] = n.y; nor[o3 + 2] = n.z;
+      } else { nor[o3 + 1] = 1; }
+      if (ua) { uv[(vo + i) * 2] = ua.getX(i); uv[(vo + i) * 2 + 1] = ua.getY(i); }
+    }
+    if (g.index) { for (let i = 0; i < g.index.count; i++) idx[io++] = g.index.getX(i) + vo; }
+    else { for (let i = 0; i < pa.count; i++) idx[io++] = vo + i; }
+    vo += pa.count;
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  out.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+  out.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  out.setIndex(new THREE.BufferAttribute(idx, 1));
+  out.computeBoundingSphere();
+  out.computeBoundingBox();
+  return out;
+}
+
+function mergeBarrierMeshes(startIndex) {
+  try {
+    const roots = trackElementsGroup.children.slice(startIndex);
+    if (roots.length < 8) return;
+    trackElementsGroup.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4();
+    if (typeof inv.invert === 'function') inv.copy(trackElementsGroup.matrixWorld).invert();
+    else inv.getInverse(trackElementsGroup.matrixWorld);
+
+    const buckets = new Map();
+    const mergedRoots = [];
+    roots.forEach((root, ri) => {
+      const chunk = Math.floor(ri / BARRIER_MERGE_CHUNK);
+      let ok = true;
+      const metas = [];
+      root.traverse((o) => {
+        if (o.isLight || o.isSprite || o.isPoints || o.isLine) { ok = false; return; }
+        if (!o.isMesh) return;
+        if (o.isInstancedMesh || o.isSkinnedMesh || Array.isArray(o.material) || !o.geometry ||
+          !o.geometry.attributes.position || o.geometry.attributes.color || (o.geometry.groups && o.geometry.groups.length)) { ok = false; return; }
+        metas.push(o);
+      });
+      if (!ok || metas.length === 0) return; // mantém esse objeto como está
+      mergedRoots.push(root);
+      for (const o of metas) {
+        const key = chunk + '|' + o.material.uuid;
+        let b = buckets.get(key);
+        if (!b) { b = { material: o.material, meshes: [], cast: false, receive: false }; buckets.set(key, b); }
+        b.meshes.push(o);
+        b.cast = b.cast || o.castShadow;
+        b.receive = b.receive || o.receiveShadow;
+      }
+    });
+    if (mergedRoots.length === 0) return;
+
+    // Monta tudo primeiro; só troca os objetos antigos pelos fundidos se nada falhou (evita duplicar)
+    const oldGeos = new Set();
+    const newMeshes = [];
+    buckets.forEach((b) => {
+      const merged = new THREE.Mesh(mergeMeshGeometries(b.meshes, inv), b.material);
+      merged.castShadow = !isMobile && b.cast; // no celular as barreiras não projetam sombra (quase imperceptível)
+      merged.receiveShadow = b.receive;
+      newMeshes.push(merged);
+      b.meshes.forEach(m => oldGeos.add(m.geometry));
+    });
+    newMeshes.forEach(m => trackElementsGroup.add(m));
+    mergedRoots.forEach(r => trackElementsGroup.remove(r));
+    oldGeos.forEach(g => g.dispose());
+  } catch (e) {
+    console.warn('mergeBarrierMeshes falhou (barreiras mantidas como estavam):', e);
+  }
+}
+
 const blackTireMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.8 });
 const stripedTireMat = new THREE.MeshStandardMaterial({ map: createStripedTireTexture(), roughness: 0.8 });
 
 function addTires() {
-  const tireGeo = new THREE.TorusGeometry(0.5, 0.25, 12, 24);
+  const tireGeo = new THREE.TorusGeometry(0.5, 0.25, isMobile ? 8 : 12, isMobile ? 16 : 24);
   const tireCount = 120;
   for (let i = 0; i < tireCount; i++) {
     const t = i / tireCount;
@@ -2202,6 +2365,7 @@ function checkBoostPads() {
 
 buildAndAddTrackMesh();
 addTrackKerbs();
+const __barrierStartA = trackElementsGroup.children.length;
 if (currentBiome === 'ghost') addGhostBarriers();
 else if (currentBiome === 'ice') addIceBarriers();
 else if (currentBiome === 'lava') addLavaBarriers();
@@ -2213,6 +2377,7 @@ else if (currentBiome === 'electric') addElectricBarriers();
 else if (currentBiome === 'rock') addRockBarriers();
 else if (currentBiome === 'psychic') addPsychicBarriers();
 else addTires(); // Grama (Padrão)
+mergeBarrierMeshes(__barrierStartA);
 addStartFinishLine();
 setupEnhancedEnvironment(scene);
 
@@ -2681,6 +2846,7 @@ async function loadCustomTrack(trackParam) {
     buildAndAddTrackMesh();
     addTrackKerbs();
     // VERIFICAÇÃO SEGURA DOS PNEUS / BARREIRAS
+    const __barrierStartB = trackElementsGroup.children.length;
     if (currentBiome === 'ghost') addGhostBarriers();
     else if (currentBiome === 'ice') addIceBarriers();
     else if (currentBiome === 'lava') addLavaBarriers();
@@ -2692,6 +2858,7 @@ async function loadCustomTrack(trackParam) {
     else if (currentBiome === 'rock') addRockBarriers();
     else if (currentBiome === 'psychic') addPsychicBarriers();
     else addTires(); // Grama (Padrão)
+    mergeBarrierMeshes(__barrierStartB);
     addStartFinishLine();
     spawnItemBoxes(trackData.items);
     spawnBoostPads(trackData.boosts);
@@ -2795,6 +2962,7 @@ async function loadKartTemplate(kartEntry, callback) {
         const arrayBuffer = await cachedResponse.arrayBuffer();
         loader.parse(arrayBuffer, './models/', (gltf) => {
           if (!window.KART_ASSETS) window.KART_ASSETS = {};
+          optimizeModelForMobile(gltf.scene, kartEntry.id);
           window.KART_ASSETS[kartEntry.id] = gltf.scene;
           kartEntry.template = gltf.scene;
           if (callback) callback(kartEntry.template);
@@ -2820,7 +2988,8 @@ async function loadKartTemplate(kartEntry, callback) {
     const arrayBuffer = await response.arrayBuffer();
     loader.parse(arrayBuffer, './models/', (gltf) => {
       if (!window.KART_ASSETS) window.KART_ASSETS = {};
-      window.KART_ASSETS[kartEntry.id] = gltf.scene;
+      optimizeModelForMobile(gltf.scene, kartEntry.id);
+          window.KART_ASSETS[kartEntry.id] = gltf.scene;
       kartEntry.template = gltf.scene;
       if (callback) callback(kartEntry.template);
     });
@@ -2830,7 +2999,7 @@ async function loadKartTemplate(kartEntry, callback) {
   }
 }
 
-function applyModelToGroup(group, templateScene, chassisColor) {
+function applyModelToGroup(group, templateScene, chassisColor, isLocalKart) {
   // Limpa os modelos 3D antigos, mas PRESERVA os efeitos visuais
   for (let i = group.children.length - 1; i >= 0; i--) {
     if (!group.children[i].userData.isEffect) {
@@ -2841,7 +3010,7 @@ function applyModelToGroup(group, templateScene, chassisColor) {
   if (templateScene) {
     const instance = templateScene.clone(true);
     instance.scale.setScalar(KART_MODEL_SCALE);
-    instance.traverse((obj) => { if (obj.isMesh) { obj.castShadow = true; obj.receiveShadow = true; } });
+    instance.traverse((obj) => { if (obj.isMesh) { obj.castShadow = !isMobile || !!isLocalKart; obj.receiveShadow = true; } }); // celular: só o kart do jogador projeta sombra
     group.add(instance);
   } else {
     const fallback = new THREE.Mesh(
@@ -3013,7 +3182,7 @@ function setLocalKartModel(kartEntry) {
       kart = localKartObj.group;
       wheels = localKartObj.wheels;
     }
-    applyModelToGroup(kart, template, 0xE53935);
+    applyModelToGroup(kart, template, 0xE53935, true);
 
     if (kartEntry.stats) {
       physics.accel = kartEntry.stats.accel;
@@ -3796,7 +3965,8 @@ function updateCamera(dt) {
 const skidMarks = [];
 const dustParticles = [];
 let skidSpawnTimer = 0;
-const SKID_MARK_MAX = 240;
+const SKID_MARK_MAX = isMobile ? 60 : 240;
+const SKID_MARK_GEO = new THREE.PlaneGeometry(0.22, 0.85); // compartilhada (nunca descartar)
 
 function spawnSkidMarkPair() {
   if (!kart) return;
@@ -3810,9 +3980,8 @@ function spawnSkidMarkPair() {
     const worldPos = kart.position.clone().add(localPos);
     worldPos.y = getTrackHeightAt(worldPos.x, worldPos.z) + 0.05;
 
-    const geo = new THREE.PlaneGeometry(0.22, 0.85);
     const mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false });
-    const mesh = new THREE.Mesh(geo, mat);
+    const mesh = new THREE.Mesh(SKID_MARK_GEO, mat);
     mesh.rotation.x = -Math.PI / 2;
     mesh.rotation.z = -physics.heading;
     mesh.position.copy(worldPos);
@@ -3824,7 +3993,6 @@ function spawnSkidMarkPair() {
   while (skidMarks.length > SKID_MARK_MAX) {
     const old = skidMarks.shift();
     scene.remove(old.mesh);
-    old.mesh.geometry.dispose();
     old.mesh.material.dispose();
   }
 }
@@ -3871,7 +4039,6 @@ function updateDriftEffects(dt) {
     sm.mesh.material.opacity = Math.max(0, (sm.life / sm.maxLife) * 0.32);
     if (sm.life <= 0) {
       scene.remove(sm.mesh);
-      if (sm.mesh.geometry) sm.mesh.geometry.dispose();
       if (sm.mesh.material) sm.mesh.material.dispose();
       skidMarks.splice(i, 1);
     }
@@ -6515,6 +6682,10 @@ function updateStandings() {
     return progB - progA;
   });
 
+  // Só reescreve o HTML (e recria os GIFs) quando a classificação realmente muda
+  const standingsSig = racers.map(r => r.key + '|' + r.dexId + '|' + (r.tr.finished ? 1 : 0) + '|' + r.name).join(';');
+  if (standingsEl.__sig !== standingsSig) {
+  standingsEl.__sig = standingsSig;
   standingsEl.innerHTML = racers.map((r, index) => {
     const isMe = r.key === 'local';
     const borderColor = isMe ? '#ffaa00' : '#cbd5e1';
@@ -6539,13 +6710,17 @@ function updateStandings() {
       </div>
     `;
   }).join('');
+  }
 
   return racers;
 }
 
+let driftHudHidden = false;
+const TIMER_UI_STEP_MS = isMobile ? 60 : 1; // celular: cronômetro atualiza ~16x/s em vez de 60x/s
+
 function updateHUD() {
   const nameEl = document.getElementById('hud-player-name');
-  if (nameEl) nameEl.innerText = playerNickname;
+  if (nameEl && nameEl.__v !== playerNickname) { nameEl.__v = playerNickname; nameEl.innerText = playerNickname; }
 
   if (kart) {
     const tr = updateRaceTracker('local', kart.position);
@@ -6561,11 +6736,14 @@ function updateHUD() {
     const lapTimesEl = document.getElementById('hud-lap-times');
 
     // 1. Atualiza a Volta Atual
-    if (lapEl) lapEl.innerText = Math.min(tr.lapCount, TOTAL_LAPS);
+    if (lapEl) {
+      const lapNow = Math.min(tr.lapCount, TOTAL_LAPS);
+      if (lapEl.__v !== lapNow) { lapEl.__v = lapNow; lapEl.innerText = lapNow; }
+    }
 
     // 2. Velocímetro original (mantido caso a barra ainda exista no HTML base)
     const currentSpeedKmH = Math.floor(Math.abs(physics.speed) * 3.6);
-    if (speedEl) speedEl.innerText = currentSpeedKmH;
+    if (speedEl && speedEl.__v !== currentSpeedKmH) { speedEl.__v = currentSpeedKmH; speedEl.innerText = currentSpeedKmH; }
 
     if (speedFillEl) {
       const maxPossibleSpeed = physics.maxSpeed * (physics.turboTimer > 0 ? 1.4 : 1.0) * 3.6;
@@ -6591,15 +6769,22 @@ function updateHUD() {
       else if (myRank === 2) color = '#e2e8f0'; // Prata
       else if (myRank === 3) color = '#cd7f32'; // Bronze
 
-      giantPosEl.style.color = color;
-      giantPosEl.innerHTML = `${myRank}<span class="ctr-giant-pos-suffix">${suffix}</span>`;
+      if (giantPosEl.__rank !== myRank) {
+        giantPosEl.__rank = myRank;
+        giantPosEl.style.color = color;
+        giantPosEl.innerHTML = `${myRank}<span class="ctr-giant-pos-suffix">${suffix}</span>`;
+      }
     }
 
     // 4. Histórico de Tempos das Voltas (L1, L2, L3)
     if (lapTimesEl) {
-      lapTimesEl.innerHTML = localLapTimes.map((timeMs, idx) => {
-        return `<div>L${idx + 1} ${formatTime(timeMs)}</div>`;
-      }).join('');
+      const lapSig = localLapTimes.length + ':' + localLapTimes[localLapTimes.length - 1];
+      if (lapTimesEl.__sig !== lapSig) {
+        lapTimesEl.__sig = lapSig;
+        lapTimesEl.innerHTML = localLapTimes.map((timeMs, idx) => {
+          return `<div>L${idx + 1} ${formatTime(timeMs)}</div>`;
+        }).join('');
+      }
     }
 
     // 5. Lógica da Barra de Drift (Ligada à nova estrutura CTR)
@@ -6607,6 +6792,7 @@ function updateHUD() {
     const ctrDriftFill = document.getElementById('ctrDriftFill') || (typeof driftBarFill !== 'undefined' ? driftBarFill : null);
 
     if (physics.isDrifting && physics.driftCharge > 0) {
+      driftHudHidden = false;
       if (ctrDriftBar) {
         ctrDriftBar.style.opacity = '1';
         ctrDriftBar.style.visibility = 'visible';
@@ -6627,7 +6813,8 @@ function updateHUD() {
           ctrDriftFill.style.boxShadow = '0 0 8px #facc15';
         }
       }
-    } else {
+    } else if (!driftHudHidden) {
+      driftHudHidden = true;
       if (ctrDriftBar) {
         ctrDriftBar.style.opacity = '0';
         ctrDriftBar.style.visibility = 'hidden';
@@ -6641,22 +6828,30 @@ function updateHUD() {
     // Agora verifica se alguma das 3 ameaças está ativa!
     if ((isDigIncoming || isRooted || rocketBoxAtiva) && !tr.finished) {
       if (typeof digWarningContainer !== 'undefined') {
-        digWarningContainer.style.display = 'block';
+        if (digWarningContainer.style.display !== 'block') digWarningContainer.style.display = 'block';
 
-        // Garante que o texto do DIG apareça corretamente se for ele
+        // Garante que o texto do DIG apareça corretamente se for ele (sem reescrever o HTML todo frame)
         if (isDigIncoming && !isRooted && !rocketBoxAtiva) {
-          digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
-          digWarningContainer.style.background = 'rgba(185, 28, 28, 0.85)';
+          if (digWarningContainer.__txt !== 'dig') {
+            digWarningContainer.__txt = 'dig';
+            digWarningContainer.innerHTML = '⚠️ PERIGO: ATAQUE CAVAR A CAMINHO! ⚠️';
+            digWarningContainer.style.background = 'rgba(185, 28, 28, 0.85)';
+          }
+        } else {
+          digWarningContainer.__txt = null;
         }
       }
     } else {
-      if (typeof digWarningContainer !== 'undefined') digWarningContainer.style.display = 'none';
+      if (typeof digWarningContainer !== 'undefined' && digWarningContainer.style.display !== 'none') digWarningContainer.style.display = 'none';
     }
 
     // 7. Relógio Principal
     if (raceStarted && !tr.finished) {
       totalRaceTimeMs = performance.now() - raceStartTime;
-      if (timerEl) timerEl.innerText = formatTime(totalRaceTimeMs);
+      if (timerEl) {
+        const timerStep = Math.floor(totalRaceTimeMs / TIMER_UI_STEP_MS);
+        if (timerEl.__step !== timerStep) { timerEl.__step = timerStep; timerEl.innerText = formatTime(totalRaceTimeMs); }
+      }
     }
 
     // 8. Fim de Corrida
@@ -6666,6 +6861,9 @@ function updateHUD() {
     }
 
     if (typeof finishLeaderboardEl !== 'undefined' && finishLeaderboardEl) {
+      const lbSig = racers.map(r => r.key + '|' + r.name + '|' + (r.tr.finished ? 1 : 0)).join(';');
+      if (finishLeaderboardEl.__sig !== lbSig) {
+      finishLeaderboardEl.__sig = lbSig;
       finishLeaderboardEl.innerHTML = racers.map((r, index) => {
         const isMe = r.key === 'local';
         const bgColor = isMe ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.7)';
@@ -6685,6 +6883,7 @@ function updateHUD() {
           </div>
         `;
       }).join('');
+      }
     }
   }
 }
@@ -6714,70 +6913,84 @@ function getTrackBounds(trackPoints) {
   };
 }
 
-function drawMinimap() {
-  const canvas = document.getElementById('minimapCanvas');
-  if (!canvas || !currentTrackPoints || currentTrackPoints.length === 0) return;
-  const ctx = canvas.getContext('2d');
+// Camada estática do minimapa (traçado) desenhada UMA vez; a cada atualização só os avatares são redesenhados.
+let minimapStatic = null;
+let minimapLastDraw = 0;
+const MINIMAP_MIN_INTERVAL_MS = isMobile ? 80 : 0; // celular: ~12 atualizações por segundo
+const minimapAvatarCache = new Map(); // dexId -> avatar já recortado (só celular; evita redesenhar GIF animado)
 
-  const width = canvas.width;
-  const height = canvas.height;
-
-  // Limpa totalmente o canvas deixando-o transparente (sem fundo escuro)
-  ctx.clearRect(0, 0, width, height);
-
-  ctx.save();
+function buildMinimapStatic(width, height) {
+  const off = document.createElement('canvas');
+  off.width = width; off.height = height;
+  const c = off.getContext('2d');
 
   const bounds = getTrackBounds(currentTrackPoints);
   const mapSize = Math.min(width, height) * 0.90;
   const scale = mapSize / Math.max(bounds.width, bounds.height);
   const offsetX = (width - bounds.width * scale) / 2;
   const offsetY = (height - bounds.height * scale) / 2;
-
-  function worldToMinimap(x, z) {
-    return {
-      x: offsetX + (x - bounds.minX) * scale,
-      y: offsetY + (z - bounds.minZ) * scale
-    };
-  }
-
-  // 1. Desenha a pista principal (traçado)
-  ctx.beginPath();
-  ctx.strokeStyle = '#cbd5e1';
-  ctx.lineWidth = 14;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  currentTrackPoints.forEach((pt, i) => {
-    const pos = worldToMinimap(pt.x, pt.z);
-    if (i === 0) ctx.moveTo(pos.x, pos.y);
-    else ctx.lineTo(pos.x, pos.y);
+  const toMap = (x, z) => ({
+    x: offsetX + (x - bounds.minX) * scale,
+    y: offsetY + (z - bounds.minZ) * scale
   });
-  ctx.closePath();
-  ctx.stroke();
+
+  // 1. Pista principal (traçado)
+  c.beginPath();
+  c.strokeStyle = '#cbd5e1';
+  c.lineWidth = 14;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  currentTrackPoints.forEach((pt, i) => {
+    const pos = toMap(pt.x, pt.z);
+    if (i === 0) c.moveTo(pos.x, pos.y);
+    else c.lineTo(pos.x, pos.y);
+  });
+  c.closePath();
+  c.stroke();
 
   // Borda interna para dar profundidade à pista
-  ctx.beginPath();
-  ctx.strokeStyle = '#afabab';
-  ctx.lineWidth = 12;
+  c.beginPath();
+  c.strokeStyle = '#afabab';
+  c.lineWidth = 12;
   currentTrackPoints.forEach((pt, i) => {
-    const pos = worldToMinimap(pt.x, pt.z);
-    if (i === 0) ctx.moveTo(pos.x, pos.y);
-    else ctx.lineTo(pos.x, pos.y);
+    const pos = toMap(pt.x, pt.z);
+    if (i === 0) c.moveTo(pos.x, pos.y);
+    else c.lineTo(pos.x, pos.y);
   });
-  ctx.closePath();
-  ctx.stroke();
+  c.closePath();
+  c.stroke();
+
+  return { canvas: off, points: currentTrackPoints, width, height, toMap };
+}
+
+function drawMinimap() {
+  const canvas = document.getElementById('minimapCanvas');
+  if (!canvas || !currentTrackPoints || currentTrackPoints.length === 0) return;
+
+  if (MINIMAP_MIN_INTERVAL_MS) {
+    const t = performance.now();
+    if (t - minimapLastDraw < MINIMAP_MIN_INTERVAL_MS) return;
+    minimapLastDraw = t;
+  }
+
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+
+  if (!minimapStatic || minimapStatic.points !== currentTrackPoints ||
+    minimapStatic.width !== width || minimapStatic.height !== height) {
+    minimapStatic = buildMinimapStatic(width, height);
+  }
+  const worldToMinimap = minimapStatic.toMap;
+
+  // Limpa totalmente o canvas deixando-o transparente (sem fundo escuro)
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(minimapStatic.canvas, 0, 0);
 
   // Função para desenhar o avatar circular dos Pokémon
   const drawMiniAvatar = (x, z, dexId, isPlayer) => {
     const pos = worldToMinimap(x, z);
     const radius = isPlayer ? 14 : 12;
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-    ctx.lineWidth = 3;
-    // ctx.strokeStyle = isPlayer ? '#ffaa00' : '#ffffff';
-    // ctx.stroke();
-    ctx.clip();
 
     const imgKey = `minimap_img_${dexId}`;
     let img = window[imgKey];
@@ -6786,10 +6999,31 @@ function drawMinimap() {
       img.src = `pokemons/poke_${dexId}.gif`;
       window[imgKey] = img;
     }
+    if (!(img.complete && img.naturalWidth !== 0)) return;
 
-    if (img.complete && img.naturalWidth !== 0) {
-      ctx.drawImage(img, pos.x - radius, pos.y - radius, radius * 2, radius * 2);
+    if (isMobile) {
+      // Celular: recorta o avatar uma única vez e reaproveita (GIF animado custa caro a cada redesenho)
+      const ck = dexId + ':' + radius;
+      let sprite = minimapAvatarCache.get(ck);
+      if (!sprite) {
+        sprite = document.createElement('canvas');
+        sprite.width = sprite.height = radius * 2;
+        const sc = sprite.getContext('2d');
+        sc.beginPath();
+        sc.arc(radius, radius, radius, 0, Math.PI * 2);
+        sc.clip();
+        sc.drawImage(img, 0, 0, radius * 2, radius * 2);
+        minimapAvatarCache.set(ck, sprite);
+      }
+      ctx.drawImage(sprite, pos.x - radius, pos.y - radius);
+      return;
     }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, pos.x - radius, pos.y - radius, radius * 2, radius * 2);
     ctx.restore();
   };
 
@@ -6808,8 +7042,6 @@ function drawMinimap() {
     const localDexId = KART_DATABASE.find(k => k.id === selectedKartId)?.dexId || 25;
     drawMiniAvatar(kart.position.x, kart.position.z, localDexId, true);
   }
-
-  ctx.restore();
 }
 
 // ------------------------------------------------------------
@@ -8577,6 +8809,112 @@ initGameEngine();
 // LOOP PRINCIPAL
 // ------------------------------------------------------------
 let lastTime = performance.now();
+// ------------------------------------------------------------
+// ⚡ DESEMPENHO: medidor (?perf=1), resolução dinâmica no celular e pós-processo dos modelos
+// ------------------------------------------------------------
+const PERF_OVERLAY = /[?&]perf=1/.test(location.search);
+const MOBILE_DYNAMIC_RES = isMobile && !useComposerPath;
+const MOBILE_MAX_TEX = 512; // texturas dos modelos 3D são reduzidas para este tamanho no celular
+const perfState = { winStart: 0, frames: 0, jsMs: 0, renderMs: 0, ratio: 1, goodWindows: 0, el: null, startAfter: 0, lastText: 0, fps: 0 };
+window.__kartModelStats = window.__kartModelStats || {};
+
+function collectModelStats(scene) {
+  let tris = 0, meshes = 0, maxTex = 0;
+  const seen = new Set();
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.geometry) return;
+    meshes++;
+    const g = o.geometry;
+    tris += (g.index ? g.index.count : (g.attributes.position ? g.attributes.position.count : 0)) / 3;
+    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    mats.forEach(m => {
+      if (!m) return;
+      ['map', 'normalMap', 'emissiveMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach(k => {
+        const t = m[k]; if (!t || !t.image || seen.has(t)) return;
+        seen.add(t);
+        maxTex = Math.max(maxTex, t.image.width || 0, t.image.height || 0);
+      });
+    });
+  });
+  return { tris: Math.round(tris), meshes, textures: seen.size, maxTex };
+}
+
+// Celular: reduz texturas gigantes dos .glb (maior gasto de memória/banda de GPU) e mede o modelo
+function optimizeModelForMobile(scene, id) {
+  try {
+    if (isMobile) {
+      const done = new Set();
+      scene.traverse((o) => {
+        if (!o.isMesh) return;
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach(m => {
+          if (!m) return;
+          ['map', 'normalMap', 'emissiveMap', 'roughnessMap', 'metalnessMap', 'aoMap'].forEach(k => {
+            const t = m[k];
+            if (!t || !t.image || done.has(t)) return;
+            done.add(t);
+            const img = t.image, w = img.width, h = img.height;
+            if (!w || !h || Math.max(w, h) <= MOBILE_MAX_TEX) return;
+            const s = MOBILE_MAX_TEX / Math.max(w, h);
+            const c = document.createElement('canvas');
+            c.width = Math.max(1, Math.round(w * s));
+            c.height = Math.max(1, Math.round(h * s));
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            t.image = c;
+            t.anisotropy = 1;
+            t.needsUpdate = true;
+          });
+        });
+      });
+    }
+    const st = collectModelStats(scene);
+    window.__kartModelStats[id || ('m' + Object.keys(window.__kartModelStats).length)] = st;
+    if (PERF_OVERLAY) console.log('[PERF] modelo', id, st);
+  } catch (e) { console.warn('optimizeModelForMobile falhou:', e); }
+}
+
+function perfTick(t0, t1, t2) {
+  const ps = perfState;
+  if (!ps.winStart) { ps.winStart = t2; ps.startAfter = t2 + 4000; }
+  ps.frames++; ps.jsMs += (t1 - t0); ps.renderMs += (t2 - t1);
+  const win = t2 - ps.winStart;
+  if (win < 1000) return;
+
+  ps.fps = ps.frames * 1000 / win;
+  const avgJs = ps.jsMs / ps.frames, avgRender = ps.renderMs / ps.frames;
+  const valid = win < 2500 && !document.hidden && !isPaused && t2 > ps.startAfter;
+
+  // Resolução dinâmica: só abaixa se o jogo não segura ~45 fps; sobe devagar quando sobra folga
+  if (MOBILE_DYNAMIC_RES && valid) {
+    if (ps.fps < 42 && ps.ratio > 0.55) {
+      ps.ratio = Math.max(0.55, +(ps.ratio - 0.15).toFixed(2));
+      renderer.setPixelRatio(ps.ratio);
+      ps.goodWindows = 0;
+    } else if (ps.fps > 56) {
+      if (++ps.goodWindows >= 6 && ps.ratio < 1) {
+        ps.ratio = Math.min(1, +(ps.ratio + 0.1).toFixed(2));
+        renderer.setPixelRatio(ps.ratio);
+        ps.goodWindows = 0;
+      }
+    } else ps.goodWindows = 0;
+  }
+
+  if (PERF_OVERLAY) {
+    if (!ps.el) {
+      ps.el = document.createElement('div');
+      ps.el.style.cssText = 'position:fixed;left:6px;bottom:6px;z-index:10002;pointer-events:none;background:rgba(0,0,0,0.7);color:#7CFC00;font:11px/1.35 monospace;padding:4px 6px;border-radius:4px;white-space:pre;';
+      document.body.appendChild(ps.el);
+    }
+    const inf = renderer.info;
+    const models = Object.entries(window.__kartModelStats).map(([k, s]) => `${k}:${Math.round(s.tris / 1000)}k tri/${s.maxTex}px`).join(' ');
+    ps.el.textContent =
+      `FPS ${ps.fps.toFixed(0)}  js ${avgJs.toFixed(1)}ms  render ${avgRender.toFixed(1)}ms  res ${ps.ratio.toFixed(2)}\n` +
+      `calls ${inf.render.calls}  tris ${(inf.render.triangles / 1000).toFixed(0)}k  geo ${inf.memory.geometries}  tex ${inf.memory.textures}\n` +
+      `modelos: ${models || '-'}`;
+  }
+  ps.winStart = t2; ps.frames = 0; ps.jsMs = 0; ps.renderMs = 0;
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
@@ -8631,7 +8969,10 @@ function animate() {
   if (typeof boostTexture !== 'undefined') {
     boostTexture.offset.y += 0.01; // Aumente ou diminua para ajustar a velocidade da animação
   }
-  composer.render();
+  const __t1 = performance.now();
+  if (PERF_OVERLAY) renderer.info.reset(); // composer faz várias passadas por frame: zera o contador manualmente
+  if (useComposerPath) composer.render(); else renderer.render(scene, camera);
+  perfTick(now, __t1, performance.now());
 }
 
 animate();
