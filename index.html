@@ -1511,6 +1511,16 @@
       pointer-events: none;
     }
 
+    .nav .icon img {
+      width: 32px;
+      /* Ajuste para o tamanho ideal (o tamanho do emoji era ~20px) */
+      height: 32px;
+      object-fit: contain;
+      /* Evita que a imagem fique esticada */
+      vertical-align: middle;
+      /* Alinha a imagem com o texto */
+    }
+
     @keyframes pulseBadge {
 
       0%,
@@ -2076,26 +2086,48 @@
       </div>
 
       <nav class="nav">
-        <button id="menuBtnGarage"><span class="icon">🛍️</span>Garagem</button>
-        <button id="menuBtnStore"><span class="icon">🛒</span>Loja de Cosméticos</button>
-        <button id="menuBtnTrackBuilder"><span class="icon">🗺️</span>Criador de Pistas</button>
-        <button id="menuBtnRankings"><span class="icon">🏆</span>Rankings De Pistas</button>
-        <button id="menuBtnChangelog"><span class="icon">📜</span>Notas da
-          Atualização</button><!-- Botão para adicionar no menu lateral (nav) -->
+        <button id="menuBtnGarage">
+          <span class="icon"><img src="icones/garagem.png" alt="Garagem"></span>&nbsp;Garagem
+        </button>
+
+        <button id="menuBtnStore">
+          <span class="icon"><img src="icones/loja.png" alt="Loja"></span>&nbsp;Loja de Cosméticos
+        </button>
+
+        <button id="menuBtnTrackBuilder">
+          <span class="icon"><img src="icones/pista.png" alt="Pista"></span>&nbsp;Criador de Pistas
+        </button>
+
+        <button id="menuBtnRankings">
+          <span class="icon"><img src="icones/ranking.png" alt="Ranking"></span>&nbsp;Rankings De Pistas
+        </button>
+
+        <button id="menuBtnChangelog">
+          <span class="icon"><img src="icones/notas.png" alt="Notas"></span>&nbsp;Notas da Atualização
+        </button>
+
         <button id="menuBtnRoulette" style="position: relative;">
-          <span class="icon">🎡</span>Roleta Diária
+          <span class="icon"><img src="icones/roleta.png" alt="Roleta"></span>&nbsp;Roleta Diária
           <span id="badgeRoulette" class="nav-badge" style="display: none;"></span>
         </button>
+
         <button id="menuBtnDailyLogin" style="position: relative;">
-          <span class="icon">🎁</span>Recompensa Diária
+          <span class="icon"><img src="icones/recompensa.png" alt="Recompensa"></span>&nbsp;Recompensa Diária
           <span id="badgeDailyLogin" class="nav-badge" style="display: none;"></span>
         </button>
-        <!-- Botão para o Menu Lateral -->
-        <button id="menuBtnMissions"><span class="icon">📜</span>Missões Diárias</button>
+
+        <button id="menuBtnMissions">
+          <span class="icon"><img src="icones/missoes.png" alt="Missões"></span>&nbsp;Missões Diárias
+        </button>
       </nav>
 
       <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
+        <div class="music-row" id="menuBtnMusicToggle">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <img src="icones/music.png" alt="Música" style="width: 32px; height: 32px; object-fit: contain;"> Música
+          </span>
+          <b id="musicStatusText">LIGADA</b>
+        </div>
         <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
           style="margin-top: 0;">
 
@@ -2151,15 +2183,20 @@
       <div class="topbar">
         <!-- Atualize este bloco na topbar -->
         <div class="stat" id="topbarLevelStat" style="cursor: pointer; position: relative;">
-          <span>⭐</span><b id="topbarLevelText">Nv. 1</b>
+          <span><img src="icones/estrela.png" alt="Nível"
+              style="width: 28px; height: 28px; object-fit: contain; vertical-align: middle;"></span> <b
+            id="topbarLevelText" style="vertical-align: middle;">Nv. 1</b>
           <div id="badgePasseTopbar"
             style="display: none; position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; background: #ef4444; border-radius: 50%; box-shadow: 0 0 8px #ef4444; border: 2px solid #0f172a;">
           </div>
         </div>
-        <div class="stat"><span>🪙</span><b id="playerCoinsText">0</b></div>
+        <div class="stat">
+          <span><img src="icones/moeda.png" alt="Moedas"
+              style="width: 28px; height: 26px; object-fit: contain; vertical-align: middle;"></span>
+          <b id="playerCoinsText" style="vertical-align: middle;">0</b>
+        </div>
         <div class="stat" onclick="abrirModalRanking()" style="cursor: pointer;" title="Ranking das Ligas">
-          <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png"
-            alt="Troféus" style="width: 28px; height: 28px; object-fit: contain;">
+          <img src="icones/liga.png" alt="Troféus" style="width: 28px; height: 28px; object-fit: contain;">
           <b id="playerTrophiesText">0</b>
         </div>
         <div class="stat rank" style="display: none;">
@@ -2174,8 +2211,8 @@
               Carregando...</div>
           </div>
           <b class="kart-name" id="kartName"
-            style="font-size: 13px; color: #35caff; font-weight: 900; margin-top: 0; white-space: nowrap;">⚡ Jolteon
-            Kart</b>
+            style="font-size: 13px; color: #35caff; font-weight: 900; margin-top: 0; white-space: nowrap;">Jolteon
+          </b>
         </div>
       </div>
 
@@ -2185,7 +2222,11 @@
             onerror="this.style.display='none';document.querySelector('.fallback-logo').style.display='block'">
           <div class="fallback-logo" style="display:none"><i>POKE</i><em>KART</em></div>
 
-          <div class="mode-title">🎮 &nbsp; ESCOLHA UM MODO DE JOGO</div>
+          <div class="mode-title">
+            <img src="icones/controle.png" alt="Modo de Jogo"
+              style="width: 28px; height: 28px; object-fit: contain; vertical-align: middle;"> &nbsp; ESCOLHA UM MODO DE
+            JOGO
+          </div>
 
           <section class="modes">
 
