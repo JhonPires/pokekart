@@ -8839,6 +8839,145 @@ function collectModelStats(scene) {
   return { tris: Math.round(tris), meshes, textures: seen.size, maxTex };
 }
 
+// ------------------------------------------------------------
+// ⚡ SIMPLIFICAÇÃO DE MODELOS NO CELULAR (clusterização de vértices)
+// Os .glb dos karts têm de 600 mil a 1,5 milhão de triângulos; o celular aguenta ~80 mil por kart.
+// Funde vértices vizinhos numa grade 3D (preservando "ilhas" de UV para a textura não borrar).
+// ?lod=0 desliga (para comparar) e ?tris=120000 muda o limite por modelo.
+// ------------------------------------------------------------
+const MOBILE_DECIMATE = isMobile && !/[?&]lod=0/.test(location.search);
+const MOBILE_MODEL_MAX_TRIS = (() => { const m = /[?&]tris=(\d+)/.exec(location.search); return m ? parseInt(m[1], 10) : 80000; })();
+
+function decimateGeometryByClustering(geo, targetTris) {
+  const posA = geo.attributes.position;
+  const norA = geo.attributes.normal;
+  const uvA = geo.attributes.uv;
+  const idxA = geo.index;
+  const V = posA.count;
+  const T = idxA ? Math.floor(idxA.count / 3) : Math.floor(V / 3);
+  if (T <= targetTris || V < 3) return null;
+
+  geo.computeBoundingBox();
+  const bb = geo.boundingBox;
+  const minX = bb.min.x, minY = bb.min.y, minZ = bb.min.z;
+  const maxExt = Math.max(bb.max.x - minX, bb.max.y - minY, bb.max.z - minZ) || 1;
+  const getI = idxA ? (k) => idxA.getX(k) : (k) => k;
+
+  // área total da superfície -> tamanho inicial da célula (~2 triângulos por célula ocupada)
+  let area = 0;
+  for (let t = 0; t < T; t++) {
+    const a = getI(t * 3), b = getI(t * 3 + 1), c = getI(t * 3 + 2);
+    const ux = posA.getX(b) - posA.getX(a), uy = posA.getY(b) - posA.getY(a), uz = posA.getZ(b) - posA.getZ(a);
+    const vx = posA.getX(c) - posA.getX(a), vy = posA.getY(c) - posA.getY(a), vz = posA.getZ(c) - posA.getZ(a);
+    const cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
+    area += 0.5 * Math.sqrt(cx * cx + cy * cy + cz * cz);
+  }
+  let cell = Math.max(Math.sqrt(2 * area / targetTris), maxExt / 1000);
+
+  const otherNames = Object.keys(geo.attributes).filter(n => n !== 'position' && n !== 'normal');
+
+  const run = (cellSize) => {
+    const inv = 1 / cellSize;
+    const map = new Map();
+    const remap = new Int32Array(V);
+    const first = []; // 1º vértice de cada cluster (fonte de UV e demais atributos)
+    for (let v = 0; v < V; v++) {
+      let ix = Math.floor((posA.getX(v) - minX) * inv); if (ix > 1023) ix = 1023;
+      let iy = Math.floor((posA.getY(v) - minY) * inv); if (iy > 1023) iy = 1023;
+      let iz = Math.floor((posA.getZ(v) - minZ) * inv); if (iz > 1023) iz = 1023;
+      let ub = 0;
+      if (uvA) {
+        const u = uvA.getX(v), w = uvA.getY(v);
+        ub = ((Math.floor((u - Math.floor(u)) * 16) & 15) << 4) | (Math.floor((w - Math.floor(w)) * 16) & 15);
+      }
+      const key = (((ix * 1024 + iy) * 1024) + iz) * 256 + ub;
+      let id = map.get(key);
+      if (id === undefined) { id = first.length; first.push(v); map.set(key, id); }
+      remap[v] = id;
+    }
+    const n = first.length;
+    const sp = new Float64Array(n * 3), sn = new Float64Array(n * 3), cnt = new Uint32Array(n);
+    for (let v = 0; v < V; v++) {
+      const id = remap[v], o = id * 3;
+      sp[o] += posA.getX(v); sp[o + 1] += posA.getY(v); sp[o + 2] += posA.getZ(v);
+      if (norA) { sn[o] += norA.getX(v); sn[o + 1] += norA.getY(v); sn[o + 2] += norA.getZ(v); }
+      cnt[id]++;
+    }
+    const tri = new Uint32Array(T * 3);
+    let tc = 0;
+    for (let t = 0; t < T; t++) {
+      const a = remap[getI(t * 3)], b = remap[getI(t * 3 + 1)], c = remap[getI(t * 3 + 2)];
+      if (a === b || b === c || a === c) continue; // triângulo colapsou
+      tri[tc++] = a; tri[tc++] = b; tri[tc++] = c;
+    }
+    return { n, sp, sn, cnt, first, tri, tc, tris: tc / 3 };
+  };
+
+  let res = null;
+  for (let pass = 0; pass < 3; pass++) {
+    res = run(cell);
+    if (res.tris <= targetTris * 1.35 && res.tris >= targetTris * 0.55) break;
+    if (pass < 2) cell *= Math.sqrt(res.tris / targetTris); // ajusta a célula e tenta de novo
+  }
+  if (!res || res.tris < 4 || res.tris >= T) return null;
+
+  const n = res.n;
+  const outP = new Float32Array(n * 3), outN = norA ? new Float32Array(n * 3) : null;
+  for (let i = 0; i < n; i++) {
+    const o = i * 3, c = res.cnt[i];
+    outP[o] = res.sp[o] / c; outP[o + 1] = res.sp[o + 1] / c; outP[o + 2] = res.sp[o + 2] / c;
+    if (outN) {
+      const x = res.sn[o], y = res.sn[o + 1], z = res.sn[o + 2];
+      const l = Math.sqrt(x * x + y * y + z * z) || 1;
+      outN[o] = x / l; outN[o + 1] = y / l; outN[o + 2] = z / l;
+    }
+  }
+  const out = new THREE.BufferGeometry();
+  out.setAttribute('position', new THREE.BufferAttribute(outP, 3));
+  if (outN) out.setAttribute('normal', new THREE.BufferAttribute(outN, 3));
+  for (const name of otherNames) {
+    const a = geo.attributes[name];
+    const size = a.itemSize;
+    const arr = new Float32Array(n * size);
+    for (let i = 0; i < n; i++) {
+      const v = res.first[i];
+      for (let k = 0; k < size; k++) arr[i * size + k] = a.getComponent ? a.getComponent(v, k) : a.array[v * size + k];
+    }
+    out.setAttribute(name, new THREE.BufferAttribute(arr, size, a.normalized));
+  }
+  const tri = res.tc > 0 ? res.tri.slice(0, res.tc) : res.tri;
+  out.setIndex(new THREE.BufferAttribute(n > 65535 ? tri : new Uint16Array(tri), 1));
+  out.computeBoundingSphere();
+  out.computeBoundingBox();
+  return out;
+}
+
+// Reduz o modelo inteiro para ~MOBILE_MODEL_MAX_TRIS triângulos, repartindo o orçamento entre as peças
+function decimateModelForMobile(scene) {
+  const meshes = [];
+  let total = 0;
+  scene.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+    if (o.isSkinnedMesh || o.isInstancedMesh || (o.geometry.morphAttributes && Object.keys(o.geometry.morphAttributes).length)) return;
+    const g = o.geometry;
+    const t = (g.index ? g.index.count : g.attributes.position.count) / 3;
+    meshes.push({ o, t });
+    total += t;
+  });
+  if (total <= MOBILE_MODEL_MAX_TRIS) return false;
+  const ratio = MOBILE_MODEL_MAX_TRIS / total;
+  const done = new Map(); // geometria original -> simplificada (mantém geometrias compartilhadas)
+  let changed = false;
+  for (const { o, t } of meshes) {
+    if (t < 1500) continue; // peças pequenas ficam intactas
+    const old = o.geometry;
+    if (done.has(old)) { o.geometry = done.get(old); continue; }
+    const simp = decimateGeometryByClustering(old, Math.max(600, Math.floor(t * ratio)));
+    if (simp) { done.set(old, simp); o.geometry = simp; old.dispose(); changed = true; }
+  }
+  return changed;
+}
+
 // Celular: reduz texturas gigantes dos .glb (maior gasto de memória/banda de GPU) e mede o modelo
 function optimizeModelForMobile(scene, id) {
   try {
@@ -8867,7 +9006,12 @@ function optimizeModelForMobile(scene, id) {
         });
       });
     }
-    const st = collectModelStats(scene);
+    const stBefore = collectModelStats(scene);
+    let st = stBefore;
+    if (MOBILE_DECIMATE && decimateModelForMobile(scene)) {
+      st = collectModelStats(scene);
+      st.rawTris = stBefore.tris; // o medidor mostra "antes→depois"
+    }
     window.__kartModelStats[id || ('m' + Object.keys(window.__kartModelStats).length)] = st;
     if (PERF_OVERLAY) console.log('[PERF] modelo', id, st);
   } catch (e) { console.warn('optimizeModelForMobile falhou:', e); }
@@ -8906,7 +9050,7 @@ function perfTick(t0, t1, t2) {
       document.body.appendChild(ps.el);
     }
     const inf = renderer.info;
-    const models = Object.entries(window.__kartModelStats).map(([k, s]) => `${k}:${Math.round(s.tris / 1000)}k tri/${s.maxTex}px`).join(' ');
+    const models = Object.entries(window.__kartModelStats).map(([k, s]) => `${k}:${s.rawTris ? Math.round(s.rawTris / 1000) + 'k→' : ''}${Math.round(s.tris / 1000)}k tri/${s.maxTex}px`).join(' ');
     ps.el.textContent =
       `FPS ${ps.fps.toFixed(0)}  js ${avgJs.toFixed(1)}ms  render ${avgRender.toFixed(1)}ms  res ${ps.ratio.toFixed(2)}\n` +
       `calls ${inf.render.calls}  tris ${(inf.render.triangles / 1000).toFixed(0)}k  geo ${inf.memory.geometries}  tex ${inf.memory.textures}\n` +
