@@ -26,10 +26,10 @@ const downVector = new THREE.Vector3(0, -1, 0);
 const KART_HEIGHT_OFFSET = 0.5; // Ajuste para o centro de massa/tamanho do seu modelo 3D não afundar no chão
 
 // Renderizador normal (sem toneMapping agressivo)
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+const renderer = new THREE.WebGLRenderer({ antialias: !/[?&]aa=0/.test(location.search), powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.info.autoReset = !(/[?&]perf=1/.test(location.search)); // com ?perf=1 o contador é zerado à mão a cada frame
-renderer.shadowMap.enabled = true;
+renderer.shadowMap.enabled = !/[?&]shadow=0/.test(location.search);
 renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap; // sombra mais leve no celular
 document.body.appendChild(renderer.domElement);
 
@@ -3407,10 +3407,9 @@ function setupMobileControls() {
       position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
       border: ${u(3)} solid rgba(255,255,255,0.7); border-radius: 50%;
-      background: rgba(15,23,42,0.45); color: #fff;
+      background: rgba(15,23,42,0.58); color: #fff;
       font-family: 'Bangers', Impact, sans-serif; font-size: ${u(24)}; letter-spacing: 1px;
       text-shadow: 2px 2px 0 #000; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-      -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
       transition: transform 0.06s, background 0.06s;
     }
     #mobileControls .mc-btn.pressed { transform: scale(0.92); background: rgba(250,204,21,0.6); }
@@ -3425,14 +3424,14 @@ function setupMobileControls() {
     .mc-back { width: ${u(50)}; height: ${u(50)}; right: calc(${u(222)} + ${SR}); bottom: calc(${u(14)} + ${SB}); font-size: ${u(28)} !important; }
     .mc-drift { width: ${u(64)}; height: ${u(64)}; right: calc(${u(150)} + ${SR}); bottom: calc(${u(100)} + ${SB}); font-size: ${u(15)} !important; background: rgba(14,165,233,0.5) !important; }
     .mc-ability { width: ${u(80)}; height: ${u(80)}; right: calc(${u(26)} + ${SR}); bottom: calc(${u(128)} + ${SB}); border-color: #38bdf8 !important; background: rgba(30,41,59,0.7) !important; }
-    .mc-ability.has-item { border-color: #facc15 !important; animation: mcPulse 0.7s infinite alternate; }
+    .mc-ability.has-item { border-color: #facc15 !important; box-shadow: 0 0 16px rgba(250,204,21,0.95) !important; }
     .mc-ability-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; }
     .mc-ability-icon svg, .mc-ability-icon img { width: 64%; height: 64%; object-fit: contain; }
-    .mc-rocket { width: ${u(120)}; height: ${u(120)}; left: calc(50% - ${u(60)}); bottom: calc(${u(96)} + ${SB}); background: rgba(220,38,38,0.8) !important; border-color: #fecaca !important; font-size: ${u(22)} !important; text-align: center; animation: mcPulse 0.35s infinite alternate; }
+    .mc-rocket { width: ${u(120)}; height: ${u(120)}; left: calc(50% - ${u(60)}); bottom: calc(${u(96)} + ${SB}); background: rgba(220,38,38,0.8) !important; border-color: #fecaca !important; font-size: ${u(22)} !important; text-align: center; box-shadow: 0 0 18px rgba(250,204,21,0.95) !important; will-change: opacity; animation: mcPulse 0.35s infinite alternate; }
     .mc-mini { width: ${u(38)}; height: ${u(38)}; top: calc(${u(8)} + ${ST}); font-size: ${u(18)} !important; }
     .mc-pause { right: calc(${u(112)} + ${SR}); }
     .mc-gyro { right: calc(${u(158)} + ${SR}); }
-    @keyframes mcPulse { from { box-shadow: 0 0 6px rgba(250,204,21,0.5); } to { box-shadow: 0 0 22px rgba(250,204,21,1); } }
+    @keyframes mcPulse { from { opacity: 0.72; } to { opacity: 1; } }
     .mc-toast { position: fixed; top: ${u(60)}; left: 50%; transform: translateX(-50%); z-index: 10000; padding: ${u(8)} ${u(18)};
       background: rgba(15,23,42,0.92); color: #fff; border: 2px solid #38bdf8; border-radius: 8px; font: ${u(14)} sans-serif; pointer-events: none; }
   `;
@@ -3543,6 +3542,7 @@ function injectMobileBaseStyles() {
     html, body { margin: 0; overflow: hidden; overscroll-behavior: none; touch-action: none;
       -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
     canvas { touch-action: none; }
+    ${/[?&]hud=0/.test(location.search) ? '.ctr-hud, #mobileControls { display: none !important; }' : ''}
 
     /* HUD compacta para telas de celular (os valores do desktop são grandes demais) */
     .ctr-hud .ctr-timer-box { top: calc(${u(6)} + env(safe-area-inset-top, 0px)); left: calc(${u(10)} + env(safe-area-inset-left, 0px)); }
@@ -3564,6 +3564,12 @@ function injectMobileBaseStyles() {
     .ctr-hud .ctr-minimap-canvas { width: ${u(100)} !important; height: ${u(100)} !important; }
     .ctr-hud .ctr-drift-bar { width: ${u(100)}; height: ${u(10)}; }
     #digWarningContainer { font-size: ${u(14)} !important; padding: ${u(5)} ${u(14)} !important; top: 16% !important; max-width: 70vw; }
+
+    @keyframes pulseWarning {
+      0% { transform: translateX(-50%) scale(1); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1.08); opacity: 0.7; }
+    }
+    #digWarningContainer { box-shadow: 0 0 14px rgba(239,68,68,0.9); will-change: transform, opacity; }
 
     #mobileRotateOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10001; display: none;
       flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
@@ -8815,7 +8821,7 @@ let lastTime = performance.now();
 const PERF_OVERLAY = /[?&]perf=1/.test(location.search);
 const MOBILE_DYNAMIC_RES = isMobile && !useComposerPath;
 const MOBILE_MAX_TEX = 512; // texturas dos modelos 3D são reduzidas para este tamanho no celular
-const perfState = { winStart: 0, frames: 0, jsMs: 0, renderMs: 0, ratio: 1, goodWindows: 0, el: null, startAfter: 0, lastText: 0, fps: 0 };
+const perfState = { winStart: 0, frames: 0, jsMs: 0, renderMs: 0, ratio: 1, goodWindows: 0, el: null, startAfter: 0, lastText: 0, fps: 0, pendingCheck: null, lockUntil: 0 };
 window.__kartModelStats = window.__kartModelStats || {};
 
 function collectModelStats(scene) {
@@ -9030,17 +9036,33 @@ function perfTick(t0, t1, t2) {
 
   // Resolução dinâmica: só abaixa se o jogo não segura ~45 fps; sobe devagar quando sobra folga
   if (MOBILE_DYNAMIC_RES && valid) {
-    if (ps.fps < 42 && ps.ratio > 0.55) {
-      ps.ratio = Math.max(0.55, +(ps.ratio - 0.15).toFixed(2));
-      renderer.setPixelRatio(ps.ratio);
-      ps.goodWindows = 0;
-    } else if (ps.fps > 56) {
-      if (++ps.goodWindows >= 6 && ps.ratio < 1) {
-        ps.ratio = Math.min(1, +(ps.ratio + 0.1).toFixed(2));
+    if (ps.pendingCheck) {
+      // Baixar a resolução só vale se o FPS melhorou; se não melhorou, o gargalo não são os pixels: volta e para de tentar
+      const c = ps.pendingCheck;
+      if (c.settle > 0) {
+        c.settle--; // 1ª janela após a troca é descartada (mistura frames antigos/novos e inclui a recriação do framebuffer)
+      } else {
+        ps.pendingCheck = null;
+        if (ps.fps < c.fps * 1.08) {
+          ps.ratio = c.ratio;
+          renderer.setPixelRatio(ps.ratio);
+          ps.lockUntil = t2 + 90000;
+        }
+      }
+    } else if (t2 >= ps.lockUntil) {
+      if (ps.fps < 42 && ps.ratio > 0.55) {
+        ps.pendingCheck = { fps: ps.fps, ratio: ps.ratio, settle: 1 };
+        ps.ratio = Math.max(0.55, +(ps.ratio - 0.15).toFixed(2));
         renderer.setPixelRatio(ps.ratio);
         ps.goodWindows = 0;
-      }
-    } else ps.goodWindows = 0;
+      } else if (ps.fps > 56) {
+        if (++ps.goodWindows >= 6 && ps.ratio < 1) {
+          ps.ratio = Math.min(1, +(ps.ratio + 0.1).toFixed(2));
+          renderer.setPixelRatio(ps.ratio);
+          ps.goodWindows = 0;
+        }
+      } else ps.goodWindows = 0;
+    }
   }
 
   if (PERF_OVERLAY) {
@@ -9054,7 +9076,8 @@ function perfTick(t0, t1, t2) {
     ps.el.textContent =
       `FPS ${ps.fps.toFixed(0)}  js ${avgJs.toFixed(1)}ms  render ${avgRender.toFixed(1)}ms  res ${ps.ratio.toFixed(2)}\n` +
       `calls ${inf.render.calls}  tris ${(inf.render.triangles / 1000).toFixed(0)}k  geo ${inf.memory.geometries}  tex ${inf.memory.textures}\n` +
-      `modelos: ${models || '-'}`;
+      `modelos: ${models || '-'}\n` +
+      `flags: ${(location.search.match(/[?&](shadow|aa|hud|lod|tris)=\d+/g) || []).join(' ') || '-'}`;
   }
   ps.winStart = t2; ps.frames = 0; ps.jsMs = 0; ps.renderMs = 0;
 }
