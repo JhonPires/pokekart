@@ -3,6 +3,19 @@
 // ------------------------------------------------------------
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+// Detecta celular/tablet: user agent + iPadOS (que se apresenta como Mac) + tela de toque sem mouse.
+// Dica: abrir o jogo com ?mobile=1 força o modo mobile (útil para testar no desktop).
+const isMobile = (() => {
+  try {
+    if (new URLSearchParams(location.search).get('mobile') === '1') return true;
+    const ua = navigator.userAgent || '';
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua)) return true;
+    if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return true; // iPadOS 13+
+    return window.matchMedia('(pointer: coarse) and (hover: none)').matches && navigator.maxTouchPoints > 0;
+  } catch (e) { return false; }
+})();
+const MOBILE_DISABLE_BLOOM = true; // o bloom é o efeito mais pesado; desligue só no celular
 const victorySound = new Audio('sounds/victory.mp3');
 
 // Instancie junto com as outras variáveis globais ou no construtor da classe
@@ -14,7 +27,7 @@ const KART_HEIGHT_OFFSET = 0.5; // Ajuste para o centro de massa/tamanho do seu 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = isMobile ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap; // sombra mais leve no celular
 document.body.appendChild(renderer.domElement);
 
 // Setup de Pós-Processamento (Bloom Suave)
@@ -26,6 +39,7 @@ composer.addPass(renderPass);
 // Isso impede que o asfalto cinza brilhe, aplicando brilho apenas no que for muito claro
 const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.15, 0.4, 0.95);
 composer.addPass(bloomPass);
+if (isMobile && MOBILE_DISABLE_BLOOM) bloomPass.enabled = false;
 
 // --- CRIAÇÃO DA BARRA DE DRIFT NA TELA ---
 // const driftBarContainer = document.createElement('div');
@@ -404,7 +418,7 @@ function setupEnhancedEnvironment(scene) {
   const sun = new THREE.DirectionalLight(0xfff5e6, biome.sun !== undefined ? biome.sun : 1.3);
   sun.position.set(40, 60, 20);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(isMobile ? 1024 : 2048, isMobile ? 1024 : 2048);
   sun.shadow.camera.left = -110; sun.shadow.camera.right = 110;
   sun.shadow.camera.top = 110; sun.shadow.camera.bottom = -110;
   scene.add(sun);
@@ -3082,98 +3096,388 @@ const keys = {};
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// --- INTEGRAÇÃO MOBILE (GIROSCÓPIO + CONTROLES INVISÍVEIS) ---
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+// ------------------------------------------------------------
+// 📱 MODO MOBILE: tela cheia + paisagem, botões na tela, giroscópio opcional
+// (isMobile é detectado no topo do arquivo; ?mobile=1 força este modo no desktop p/ testes)
+// ------------------------------------------------------------
 let gyroTurnInput = 0;
 let mobileGasActive = false;
 let mobileBrakeActive = false;
+let mobileLeftActive = false;
+let mobileRightActive = false;
+let mobileDriftActive = false;
+let mobileLookBackActive = false;
+let mobileSteerMode = 'buttons'; // 'buttons' (padrão) | 'gyro'
+try { if (localStorage.getItem('pkart_mobile_steer') === 'gyro') mobileSteerMode = 'gyro'; } catch (e) { }
+const GYRO_SIGN = 1; // se a direção por giroscópio sair invertida no seu aparelho, troque para -1
+let gyroListening = false;
+let pausedByRotation = false;
+let mobileUI = null;
+let wakeLockSentinel = null;
+
+// Reaproveita os handlers de teclado existentes (E = item, R = desarmar/soltar, Esc = pausa)
+function pressKey(code, key) {
+  window.dispatchEvent(new KeyboardEvent('keydown', { code, key }));
+  window.dispatchEvent(new KeyboardEvent('keyup', { code, key }));
+}
+
+function releaseMobileInputs() {
+  mobileGasActive = mobileBrakeActive = mobileLeftActive = mobileRightActive = false;
+  mobileDriftActive = mobileLookBackActive = false;
+  gyroTurnInput = 0;
+  if (mobileUI) mobileUI.root.querySelectorAll('.pressed').forEach(el => el.classList.remove('pressed'));
+}
+
+function updateMobileScale() {
+  // Todos os botões/HUD mobile usam a unidade --u (1u ≈ 1px numa tela de 390px de altura)
+  const k = Math.min(1.2, Math.max(0.72, window.innerHeight / 390));
+  document.documentElement.style.setProperty('--u', k + 'px');
+}
+
+function onDeviceOrientation(e) {
+  if (e.beta == null) return;
+  const ang = (screen.orientation && typeof screen.orientation.angle === 'number')
+    ? screen.orientation.angle
+    : (typeof window.orientation === 'number' ? window.orientation : 90);
+  const flip = (ang === 270 || ang === -90) ? -1 : 1; // paisagem "invertida"
+  const tilt = Math.max(-40, Math.min(40, e.beta));
+  gyroTurnInput = -(tilt / 40) * flip * GYRO_SIGN;
+}
+
+async function enableGyro() {
+  if (gyroListening) return true;
+  if (typeof DeviceOrientationEvent === 'undefined') return false;
+  try {
+    // iOS exige que o pedido venha direto de um toque do jogador
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      const p = await DeviceOrientationEvent.requestPermission();
+      if (p !== 'granted') return false;
+    }
+  } catch (e) { return false; }
+  window.addEventListener('deviceorientation', onDeviceOrientation);
+  gyroListening = true;
+  return true;
+}
+
+function setSteerMode(mode) {
+  mobileSteerMode = mode;
+  mobileLeftActive = mobileRightActive = false;
+  gyroTurnInput = 0;
+  try { localStorage.setItem('pkart_mobile_steer', mode); } catch (e) { }
+  if (mobileUI) {
+    mobileUI.root.classList.toggle('gyro', mode === 'gyro');
+    mobileUI.gyroBtn.textContent = mode === 'gyro' ? '📱' : '🎮';
+  }
+}
+
+function mobileToast(text) {
+  const el = document.createElement('div');
+  el.className = 'mc-toast';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2200);
+}
+
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator && !wakeLockSentinel) {
+      wakeLockSentinel = await navigator.wakeLock.request('screen');
+      wakeLockSentinel.addEventListener('release', () => { wakeLockSentinel = null; });
+    }
+  } catch (e) { }
+}
+
+// Segurar (gás, freio, direção...): usa pointer capture, então deslizar o dedo para fora não "trava" o botão
+function bindHold(el, onDown, onUp) {
+  const down = (e) => {
+    e.preventDefault();
+    try { el.setPointerCapture(e.pointerId); } catch (_) { }
+    el.classList.add('pressed');
+    onDown();
+  };
+  const up = (e) => {
+    e.preventDefault();
+    el.classList.remove('pressed');
+    onUp();
+  };
+  el.addEventListener('pointerdown', down);
+  el.addEventListener('pointerup', up);
+  el.addEventListener('pointercancel', up);
+  el.addEventListener('lostpointercapture', up);
+  el.addEventListener('contextmenu', (e) => e.preventDefault());
+}
+
+// Toque único: dispara no instante em que o dedo encosta (menor latência)
+function bindTap(el, fn) {
+  el.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    el.classList.add('pressed');
+    fn();
+  });
+  const release = () => el.classList.remove('pressed');
+  el.addEventListener('pointerup', release);
+  el.addEventListener('pointercancel', release);
+  el.addEventListener('pointerleave', release);
+  el.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 
 function setupMobileControls() {
-  if (!isMobile) return;
+  if (!isMobile || mobileUI) return;
 
-  const controlsContainer = document.createElement('div');
-  controlsContainer.id = 'mobileControls';
-  controlsContainer.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; touch-action: none; display: flex; pointer-events: none;';
+  const u = (n) => `calc(var(--u) * ${n})`;
+  const SL = 'env(safe-area-inset-left, 0px)';
+  const SR = 'env(safe-area-inset-right, 0px)';
+  const SB = 'env(safe-area-inset-bottom, 0px)';
+  const ST = 'env(safe-area-inset-top, 0px)';
 
-  const leftArea = document.createElement('div');
-  leftArea.style.cssText = 'width: 50%; height: 100%; display: flex; flex-direction: column; pointer-events: auto;';
+  const style = document.createElement('style');
+  style.id = 'mobileControlsStyle';
+  style.textContent = `
+    #mobileControls { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 90; pointer-events: none; touch-action: none; }
+    #mobileControls .mc-btn {
+      position: absolute; pointer-events: auto; touch-action: none; box-sizing: border-box;
+      display: flex; align-items: center; justify-content: center;
+      border: ${u(3)} solid rgba(255,255,255,0.7); border-radius: 50%;
+      background: rgba(15,23,42,0.45); color: #fff;
+      font-family: 'Bangers', Impact, sans-serif; font-size: ${u(24)}; letter-spacing: 1px;
+      text-shadow: 2px 2px 0 #000; box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+      transition: transform 0.06s, background 0.06s;
+    }
+    #mobileControls .mc-btn.pressed { transform: scale(0.92); background: rgba(250,204,21,0.6); }
+    .mc-steer { width: ${u(92)}; height: ${u(92)}; border-radius: ${u(24)} !important; font-size: ${u(40)} !important; bottom: calc(${u(14)} + ${SB}); }
+    .mc-left { left: calc(${u(18)} + ${SL}); }
+    .mc-right { left: calc(${u(124)} + ${SL}); }
+    #mobileControls.gyro .mc-steer { display: none; }
+    .mc-gas { width: ${u(104)}; height: ${u(104)}; right: calc(${u(16)} + ${SR}); bottom: calc(${u(14)} + ${SB}); background: rgba(34,197,94,0.5) !important; font-size: ${u(30)} !important; }
+    .mc-gas.pressed { background: rgba(74,222,128,0.8) !important; }
+    .mc-brake { width: ${u(76)}; height: ${u(76)}; right: calc(${u(138)} + ${SR}); bottom: calc(${u(14)} + ${SB}); background: rgba(239,68,68,0.5) !important; font-size: ${u(18)} !important; }
+    .mc-brake.pressed { background: rgba(248,113,113,0.8) !important; }
+    .mc-back { width: ${u(50)}; height: ${u(50)}; right: calc(${u(222)} + ${SR}); bottom: calc(${u(14)} + ${SB}); font-size: ${u(28)} !important; }
+    .mc-drift { width: ${u(64)}; height: ${u(64)}; right: calc(${u(150)} + ${SR}); bottom: calc(${u(100)} + ${SB}); font-size: ${u(15)} !important; background: rgba(14,165,233,0.5) !important; }
+    .mc-ability { width: ${u(80)}; height: ${u(80)}; right: calc(${u(26)} + ${SR}); bottom: calc(${u(128)} + ${SB}); border-color: #38bdf8 !important; background: rgba(30,41,59,0.7) !important; }
+    .mc-ability.has-item { border-color: #facc15 !important; animation: mcPulse 0.7s infinite alternate; }
+    .mc-ability-icon { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; pointer-events: none; }
+    .mc-ability-icon svg, .mc-ability-icon img { width: 64%; height: 64%; object-fit: contain; }
+    .mc-rocket { width: ${u(120)}; height: ${u(120)}; left: calc(50% - ${u(60)}); bottom: calc(${u(96)} + ${SB}); background: rgba(220,38,38,0.8) !important; border-color: #fecaca !important; font-size: ${u(22)} !important; text-align: center; animation: mcPulse 0.35s infinite alternate; }
+    .mc-mini { width: ${u(38)}; height: ${u(38)}; top: calc(${u(8)} + ${ST}); font-size: ${u(18)} !important; }
+    .mc-pause { right: calc(${u(112)} + ${SR}); }
+    .mc-gyro { right: calc(${u(158)} + ${SR}); }
+    @keyframes mcPulse { from { box-shadow: 0 0 6px rgba(250,204,21,0.5); } to { box-shadow: 0 0 22px rgba(250,204,21,1); } }
+    .mc-toast { position: fixed; top: ${u(60)}; left: 50%; transform: translateX(-50%); z-index: 10000; padding: ${u(8)} ${u(18)};
+      background: rgba(15,23,42,0.92); color: #fff; border: 2px solid #38bdf8; border-radius: 8px; font: ${u(14)} sans-serif; pointer-events: none; }
+  `;
+  document.head.appendChild(style);
 
-  const btnItem = document.createElement('div');
-  btnItem.style.cssText = 'flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;';
+  const root = document.createElement('div');
+  root.id = 'mobileControls';
+  root.innerHTML = `
+    <div class="mc-btn mc-steer mc-left" data-act="left">◀</div>
+    <div class="mc-btn mc-steer mc-right" data-act="right">▶</div>
+    <div class="mc-btn mc-back" data-act="back">↺</div>
+    <div class="mc-btn mc-brake" data-act="brake">FREIO</div>
+    <div class="mc-btn mc-gas" data-act="gas">GO!</div>
+    <div class="mc-btn mc-drift" data-act="drift">DRIFT</div>
+    <div class="mc-btn mc-ability" data-act="ability"><span class="mc-ability-icon"></span></div>
+    <div class="mc-btn mc-rocket" data-act="rocket" style="display:none">DESARMAR!</div>
+    <div class="mc-btn mc-mini mc-pause" data-act="pause">⏸</div>
+    <div class="mc-btn mc-mini mc-gyro" data-act="gyro">🎮</div>
+  `;
+  document.body.appendChild(root);
 
-  const btnBrake = document.createElement('div');
-  btnBrake.style.cssText = 'flex: 1; width: 100%; display: flex; align-items: center; justify-content: center;';
+  const q = (a) => root.querySelector(`[data-act="${a}"]`);
+  bindHold(q('left'), () => { mobileLeftActive = true; }, () => { mobileLeftActive = false; });
+  bindHold(q('right'), () => { mobileRightActive = true; }, () => { mobileRightActive = false; });
+  bindHold(q('gas'), () => { mobileGasActive = true; }, () => { mobileGasActive = false; });
+  bindHold(q('brake'), () => { mobileBrakeActive = true; }, () => { mobileBrakeActive = false; });
+  bindHold(q('drift'), () => { mobileDriftActive = true; }, () => { mobileDriftActive = false; });
+  bindHold(q('back'), () => { mobileLookBackActive = true; }, () => { mobileLookBackActive = false; });
+  bindTap(q('ability'), () => pressKey('KeyE', 'e'));
+  bindTap(q('rocket'), () => pressKey('KeyR', 'r'));
+  bindTap(q('pause'), () => pressKey('Escape', 'Escape'));
 
-  leftArea.appendChild(btnItem);
-  leftArea.appendChild(btnBrake);
-
-  const btnGas = document.createElement('div');
-  btnGas.style.cssText = 'width: 50%; height: 100%; pointer-events: auto; display: flex; align-items: center; justify-content: center;';
-
-  controlsContainer.appendChild(leftArea);
-  controlsContainer.appendChild(btnGas);
-  document.body.appendChild(controlsContainer);
-
-  btnGas.addEventListener('touchstart', (e) => { e.preventDefault(); mobileGasActive = true; });
-  btnGas.addEventListener('touchend', (e) => { e.preventDefault(); mobileGasActive = false; });
-  btnGas.addEventListener('touchcancel', (e) => { e.preventDefault(); mobileGasActive = false; });
-
-  btnBrake.addEventListener('touchstart', (e) => { e.preventDefault(); mobileBrakeActive = true; });
-  btnBrake.addEventListener('touchend', (e) => { e.preventDefault(); mobileBrakeActive = false; });
-  btnBrake.addEventListener('touchcancel', (e) => { e.preventDefault(); mobileBrakeActive = false; });
-
-  btnItem.addEventListener('touchstart', (e) => {
+  // Alternar entre botões e giroscópio. Usa "click" (e não pointerdown) porque o iOS só
+  // libera o pedido de permissão do sensor dentro de um clique/toque completo.
+  const gyroBtn = q('gyro');
+  gyroBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    if (currentItem && raceStarted) {
-      useEquippedSkill(currentItem);
-      currentItem = null;
-      const iconEl = document.getElementById('itemIcon');
-      if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
+    if (mobileSteerMode === 'gyro') { setSteerMode('buttons'); mobileToast('Direção: botões'); return; }
+    const ok = await enableGyro();
+    if (ok) { setSteerMode('gyro'); mobileToast('Direção: giroscópio — incline o celular'); }
+    else { setSteerMode('buttons'); mobileToast('Giroscópio indisponível ou negado'); }
+  });
+
+  mobileUI = { root, gyroBtn, abilityBtn: q('ability'), rocketBtn: q('rocket'), pauseBtn: q('pause') };
+  setSteerMode(mobileSteerMode);
+
+  // Sincroniza o que depende do estado do jogo (ícone do item, botão de desarmar, pausa)
+  setInterval(() => {
+    try {
+      const slot = document.getElementById('itemIcon');
+      const host = root.querySelector('.mc-ability-icon');
+      if (slot && host && host.innerHTML !== slot.innerHTML) host.innerHTML = slot.innerHTML;
+      mobileUI.abilityBtn.classList.toggle('has-item', !!currentItem);
+      mobileUI.rocketBtn.style.display = (rocketBoxAtiva || isRooted) ? 'flex' : 'none';
+      mobileUI.pauseBtn.textContent = (isPaused && !pausedByRotation) ? '▶' : '⏸';
+    } catch (e) { }
+  }, 120);
+}
+
+// ---------- Aviso "gire o celular" (pausa o jogo enquanto estiver em retrato) ----------
+function setupRotateOverlay() {
+  const ov = document.createElement('div');
+  ov.id = 'mobileRotateOverlay';
+  ov.innerHTML = `
+    <div class="mr-phone">📱</div>
+    <div class="mr-title">GIRE O CELULAR</div>
+    <div class="mr-sub">O jogo é jogado na horizontal.<br>Se nada acontecer, ative a rotação automática do aparelho.</div>`;
+  document.body.appendChild(ov);
+
+  const check = () => {
+    updateMobileScale();
+    const portrait = window.innerHeight > window.innerWidth;
+    ov.style.display = portrait ? 'flex' : 'none';
+    if (portrait) {
+      if (!isPaused) { isPaused = true; pausedByRotation = true; }
+      releaseMobileInputs();
+    } else if (pausedByRotation) {
+      isPaused = false;
+      pausedByRotation = false;
+    }
+  };
+  window.addEventListener('resize', check);
+  window.addEventListener('orientationchange', () => {
+    check();
+    // alguns navegadores atualizam innerWidth/innerHeight só depois do evento
+    setTimeout(() => { check(); window.dispatchEvent(new Event('resize')); }, 300);
+  });
+  if (screen.orientation && screen.orientation.addEventListener) screen.orientation.addEventListener('change', check);
+  check();
+}
+
+function injectMobileBaseStyles() {
+  // Viewport sem zoom + tela cheia "de app" quando o jogo é adicionado à tela de início
+  let vp = document.querySelector('meta[name="viewport"]');
+  if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+  vp.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover';
+  ['apple-mobile-web-app-capable', 'mobile-web-app-capable'].forEach(n => {
+    if (!document.querySelector(`meta[name="${n}"]`)) {
+      const m = document.createElement('meta'); m.name = n; m.content = 'yes'; document.head.appendChild(m);
     }
   });
+
+  updateMobileScale();
+  const u = (n) => `calc(var(--u) * ${n})`;
+  const s = document.createElement('style');
+  s.id = 'mobileBaseStyle';
+  s.textContent = `
+    html, body { margin: 0; overflow: hidden; overscroll-behavior: none; touch-action: none;
+      -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+    canvas { touch-action: none; }
+
+    /* HUD compacta para telas de celular (os valores do desktop são grandes demais) */
+    .ctr-hud .ctr-timer-box { top: calc(${u(6)} + env(safe-area-inset-top, 0px)); left: calc(${u(10)} + env(safe-area-inset-left, 0px)); }
+    .ctr-hud .ctr-main-timer { font-size: ${u(26)}; letter-spacing: 1px; }
+    .ctr-hud .ctr-lap-times { font-size: ${u(13)}; margin-left: 2px; }
+    .ctr-hud .ctr-lap-counter { top: calc(${u(6)} + env(safe-area-inset-top, 0px)); right: calc(${u(10)} + env(safe-area-inset-right, 0px)); font-size: ${u(28)}; }
+    .ctr-hud .ctr-mb-box { top: ${u(4)}; gap: 3px; }
+    .ctr-hud .ctr-mb-icon { width: ${u(30)}; height: ${u(30)}; }
+    .ctr-hud .ctr-mb-count { font-size: ${u(24)}; }
+    .ctr-hud .ctr-mb-x { font-size: ${u(16)}; }
+    .ctr-hud .ctr-item-slot { display: none; } /* o botão de habilidade na tela já mostra o item */
+    .ctr-hud .ctr-standings { top: ${u(56)}; left: calc(${u(8)} + env(safe-area-inset-left, 0px)); gap: 0; }
+    .ctr-hud .ctr-standing-item { margin-bottom: ${u(3)}; }
+    .ctr-hud .ctr-portrait { width: ${u(26)}; height: ${u(26)}; border-width: 2px; border-radius: 6px; box-shadow: 1px 1px 4px rgba(0,0,0,0.7); }
+    .ctr-hud .ctr-portrait-pos { font-size: ${u(17)}; left: ${u(-7)}; bottom: ${u(-5)}; text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; }
+    .ctr-hud .ctr-giant-pos { bottom: ${u(8)}; left: 50%; transform: translateX(-50%) rotate(-8deg); font-size: ${u(64)}; text-shadow: 4px 4px 0 rgba(0,0,0,0.8), -2px -2px 0 #000, 2px -2px 0 #000; }
+    .ctr-hud .ctr-giant-pos-suffix { font-size: ${u(26)}; }
+    .ctr-hud .ctr-minimap-box { top: ${u(40)}; bottom: auto; right: calc(${u(8)} + env(safe-area-inset-right, 0px)); pointer-events: none; gap: 4px; }
+    .ctr-hud .ctr-minimap-canvas { width: ${u(100)} !important; height: ${u(100)} !important; }
+    .ctr-hud .ctr-drift-bar { width: ${u(100)}; height: ${u(10)}; }
+    #digWarningContainer { font-size: ${u(14)} !important; padding: ${u(5)} ${u(14)} !important; top: 16% !important; max-width: 70vw; }
+
+    #mobileRotateOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 10001; display: none;
+      flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px;
+      background: #0f172a; color: #FFD54F; font-family: 'Bangers', Impact, sans-serif; }
+    #mobileRotateOverlay .mr-phone { font-size: 84px; animation: mrTurn 1.6s ease-in-out infinite; }
+    #mobileRotateOverlay .mr-title { font-size: 40px; margin-top: 16px; letter-spacing: 2px; }
+    #mobileRotateOverlay .mr-sub { font: 15px/1.4 sans-serif; color: #7dd3fc; margin-top: 10px; }
+    @keyframes mrTurn { 0%, 15% { transform: rotate(0deg); } 60%, 100% { transform: rotate(-90deg); } }
+  `;
+  document.head.appendChild(s);
+
+  // Evita rolagem/"puxar para atualizar" e zoom por pinça durante a corrida
+  document.addEventListener('touchmove', (e) => {
+    if (e.target && e.target.closest && e.target.closest('#finishOverlay, #pauseMenu')) return;
+    e.preventDefault();
+  }, { passive: false });
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev =>
+    document.addEventListener(ev, (e) => e.preventDefault()));
 }
 
 async function enableMobileExperience() {
   if (!isMobile) return;
 
+  // 1) Giroscópio primeiro: no iOS o pedido de permissão precisa sair direto do toque
+  const gyroReady = (mobileSteerMode === 'gyro') ? enableGyro() : Promise.resolve(true);
+
+  // 2) Tela cheia + travar em paisagem (a trava só funciona em tela cheia, e não existe no iPhone)
   try {
-    if (document.documentElement.requestFullscreen) {
-      await document.documentElement.requestFullscreen();
-    }
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (req) await req.call(el, { navigationUI: 'hide' });
+  } catch (e) { console.warn('Tela cheia ignorada:', e); }
+  try {
+    if (screen.orientation && screen.orientation.lock) await screen.orientation.lock('landscape');
+  } catch (e) { console.warn('Lock de rotação ignorado:', e); }
 
-    if (screen.orientation && screen.orientation.lock) {
-      await screen.orientation.lock('landscape').catch(e => console.warn("Lock de rotação ignorado:", e));
-    }
+  // 3) Não deixa a tela apagar durante a corrida
+  requestWakeLock();
 
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      const permission = await DeviceOrientationEvent.requestPermission();
-      if (permission !== 'granted') return;
-    }
-
-    window.addEventListener('deviceorientation', (event) => {
-      let tilt = event.beta;
-      tilt = THREE.MathUtils.clamp(tilt, -40, 40);
-      gyroTurnInput = -(tilt / 40);
-    });
-
-    setupMobileControls();
-
-  } catch (err) {
-    console.warn("Erro ao configurar modo mobile:", err);
+  if (!(await gyroReady)) {
+    setSteerMode('buttons');
+    mobileToast('Giroscópio negado — usando os botões');
   }
 }
 
 if (isMobile) {
+  injectMobileBaseStyles();
+  setupRotateOverlay();
+  setupMobileControls();
+
+  // Pausa sozinho se o jogador sair do app/bloquear a tela; religa o wake lock ao voltar
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      releaseMobileInputs();
+      if (!isPaused && raceStarted) pressKey('Escape', 'Escape');
+    } else {
+      requestWakeLock();
+    }
+  });
+  window.addEventListener('blur', releaseMobileInputs);
+
+  const canFullscreen = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
   const startOverlay = document.createElement('div');
   startOverlay.id = 'mobileStartOverlay';
-  startOverlay.style.cssText = 'position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.95); color: #FFD54F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-size: 22px; font-weight: bold; font-family: sans-serif; text-align: center; padding: 20px;';
-  startOverlay.innerHTML = '🎮 MODO MOBILE ATIVADO<br><br><span style="font-size:16px; color:#38bdf8;">Toque na tela para travar a rotação e ativar o giroscópio</span>';
+  startOverlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.96); color: #FFD54F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: Bangers, Impact, sans-serif; text-align: center; padding: 20px;';
+  startOverlay.innerHTML = `
+    <div style="font-size: 54px;">🏁</div>
+    <div style="font-size: 38px; letter-spacing: 2px; margin: 6px 0 14px;">TOQUE PARA JOGAR</div>
+    <div style="font: 15px/1.45 sans-serif; color: #38bdf8; max-width: 440px;">
+      Segure o celular na horizontal.<br>
+      Esquerda: ◀ ▶ para virar &nbsp;•&nbsp; Direita: GO!, FREIO, DRIFT e habilidade.<br>
+      Dá para trocar para direção por giroscópio no botão 🎮 do topo.
+    </div>
+    ${canFullscreen ? '' : '<div style="font: 13px/1.4 sans-serif; color: #94a3b8; margin-top: 14px; max-width: 420px;">Dica (iPhone): no Safari, toque em Compartilhar → “Adicionar à Tela de Início” para jogar em tela cheia.</div>'}
+  `;
   document.body.appendChild(startOverlay);
 
-  startOverlay.addEventListener('touchstart', (e) => {
+  // "click" (e não touchstart): é o que o iOS aceita como gesto para tela cheia/sensores/áudio
+  startOverlay.addEventListener('click', (e) => {
     e.preventDefault();
-    enableMobileExperience();
+    const p = enableMobileExperience(); // começa dentro do gesto do usuário
     startOverlay.remove();
+    return p;
   }, { once: true });
 }
 
@@ -3280,9 +3584,9 @@ function updatePhysics(dt) {
   // 1. Lê os botões originais
   const rawForward = !raceOver && (keys['KeyW'] || keys['ArrowUp'] || mobileGasActive);
   const rawBackward = !raceOver && (keys['KeyS'] || keys['ArrowDown'] || mobileBrakeActive);
-  const rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft']);
-  const rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight']);
-  const driftKey = !raceOver && keys['Space'];
+  const rawLeft = !raceOver && (keys['KeyA'] || keys['ArrowLeft'] || mobileLeftActive);
+  const rawRight = !raceOver && (keys['KeyD'] || keys['ArrowRight'] || mobileRightActive);
+  const driftKey = !raceOver && (keys['Space'] || mobileDriftActive);
 
   // 2. Aplica Inversões de Status (Koga e Lodo)
   const forward = isGasBrakeInverted ? rawBackward : rawForward;
@@ -3340,7 +3644,7 @@ function updatePhysics(dt) {
   let turnInput = (left ? 1 : 0) - (right ? 1 : 0);
 
   // Aplica giroscópio ANTES dos efeitos, para que o mobile sofra os debuffs
-  if (isMobile) {
+  if (isMobile && mobileSteerMode === 'gyro') {
     if (Math.abs(gyroTurnInput) > 0.1) {
       turnInput = gyroTurnInput;
     } else {
@@ -3462,7 +3766,7 @@ let wasLookingBack = false;
 function updateCamera(dt) {
   if (!kart) return;
 
-  const isLookingBack = keys['KeyQ'];
+  const isLookingBack = keys['KeyQ'] || mobileLookBackActive;
 
   // Se segurar Q, usa o offset da frente. Se soltar, usa o original (-8)
   const activeOffset = isLookingBack ? camOffsetReverse : camOffset;
