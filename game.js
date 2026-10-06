@@ -387,20 +387,21 @@ function setupEnhancedEnvironment(scene) {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
     const grad = ctx.createLinearGradient(0, 0, 0, 512);
-    grad.addColorStop(0.0, '#1a4a76'); // Topo do céu (azul profundo)
-    grad.addColorStop(0.5, '#5cb8ff'); // Meio do céu
-    grad.addColorStop(1.0, '#aaddff'); // Horizonte (quase branco)
+    const skyStops = biome.sky || ['#1a4a76', '#5cb8ff', '#aaddff']; // topo, meio, horizonte
+    grad.addColorStop(0.0, skyStops[0]);
+    grad.addColorStop(0.5, skyStops[1]);
+    grad.addColorStop(1.0, skyStops[2]);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, 2, 512);
     return new THREE.CanvasTexture(canvas);
   }
 
   scene.background = createSkyTexture();
-  scene.fog = new THREE.Fog(0xaaddff, 60, 280); // Substitui a neblina antiga pela nova
+  scene.fog = new THREE.Fog(biome.fog || 0xaaddff, 60, 280); // Substitui a neblina antiga pela nova
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  scene.add(new THREE.AmbientLight(0xffffff, biome.ambient !== undefined ? biome.ambient : 0.75));
 
-  const sun = new THREE.DirectionalLight(0xfff5e6, 1.3);
+  const sun = new THREE.DirectionalLight(0xfff5e6, biome.sun !== undefined ? biome.sun : 1.3);
   sun.position.set(40, 60, 20);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -768,11 +769,15 @@ const BIOME_CONFIGS = {
     trackRoughness: 0.75, trackMetalness: 0.1, groundRoughness: 0.95
   },
   ice: { // Gelo (Articuno, Lapras)
-    ground: ['#bae6fd', '#7dd3fc'], // Neve e gelo claro
-    noiseL: 'rgba(255,255,255,0.6)', noiseD: 'rgba(2,132,199,0.1)',
-    track: '#e0f2fe', trackLines: 'rgba(2,132,199,0.5)', // Asfalto de gelo
-    kerb: ['#0ea5e9', '#ffffff'], // Azul e branco
-    trackRoughness: 0.15, trackMetalness: 0.4, groundRoughness: 0.4 // Muito liso e reflexivo!
+    // AJUSTES ANTI-BRANCO: tudo aqui pode ser calibrado sem mexer no resto do código
+    ground: ['#9cc6e0', '#82b3d1'], // Neve azulada (antes quase branca)
+    noiseL: 'rgba(255,255,255,0.28)', noiseD: 'rgba(2,80,140,0.12)',
+    groundPatches: { count: 110, colors: ['rgba(84,160,76,0.65)', 'rgba(50,115,56,0.6)', 'rgba(120,180,86,0.55)'] }, // grama furando a neve
+    track: '#3d4350', trackLines: 'rgba(225,242,255,0.75)', // Asfalto escuro (cor padrão) ...
+    trackIce: true, // ... com manchas de gelo e rachaduras por cima
+    kerb: ['#0284c7', '#d9eefa'], // Azul e gelo (antes branco puro)
+    trackRoughness: 0.45, trackMetalness: 0.1, groundRoughness: 0.85,
+    sky: ['#1b4a7a', '#5aa5da', '#a9d0ea'], fog: 0x9cc2de, ambient: 0.55, sun: 1.0
   },
   lava: { // Fogo (Charizard, Moltres)
     ground: ['#7f1d1d', '#450a0a'], // Magma escuro e rocha vulcânica
@@ -864,6 +869,39 @@ function createBiomeTrackTexture() {
   for (let i = 0; i < 40000; i++) {
     ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.08)';
     ctx.fillRect(Math.random() * 256, Math.random() * 512, 1, 1);
+  }
+
+  // Gelo sobre o asfalto: manchas alongadas + rachaduras (repete em y p/ emendar sem costura)
+  if (biome.trackIce) {
+    for (let i = 0; i < 26; i++) {
+      const x = 14 + Math.random() * 228, y = Math.random() * 512;
+      const rx = 10 + Math.random() * 38, ry = 22 + Math.random() * 70;
+      for (const dy of [-512, 0, 512]) {
+        ctx.save();
+        ctx.translate(x, y + dy);
+        ctx.scale(rx, ry);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        g.addColorStop(0, 'rgba(205,236,255,0.6)');
+        g.addColorStop(0.6, 'rgba(170,220,250,0.3)');
+        g.addColorStop(1, 'rgba(170,220,250,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+    ctx.strokeStyle = 'rgba(235,248,255,0.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    for (let i = 0; i < 18; i++) {
+      let cx = 14 + Math.random() * 228, cy = Math.random() * 512;
+      const pts = [[cx, cy]];
+      for (let k = 0; k < 4; k++) { cx += (Math.random() - 0.5) * 30; cy += 8 + Math.random() * 26; pts.push([cx, cy]); }
+      for (const dy of [-512, 0, 512]) {
+        ctx.beginPath();
+        pts.forEach(([px, py], k) => k ? ctx.lineTo(px, py + dy) : ctx.moveTo(px, py + dy));
+        ctx.stroke();
+      }
+    }
   }
 
   // Faixa central
@@ -1001,6 +1039,28 @@ function createBiomeGroundTexture() {
   for (let i = 0; i < 90000; i++) {
     ctx.fillStyle = Math.random() > 0.5 ? biome.noiseD : biome.noiseL;
     ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 3);
+  }
+
+  // Manchas de grama (ex: bioma de gelo): grupos de "folhas" verdes espalhados pelo chão
+  if (biome.groundPatches) {
+    const { count, colors } = biome.groundPatches;
+    for (let i = 0; i < count; i++) {
+      const bx = Math.random() * 512, by = Math.random() * 512;
+      const blades = [];
+      for (let k = 0; k < 5; k++) {
+        blades.push([(Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 2 + Math.random() * 4, 5 + Math.random() * 9,
+          colors[Math.floor(Math.random() * colors.length)], Math.random() * Math.PI]);
+      }
+      for (const dx of [-512, 0, 512]) for (const dy of [-512, 0, 512]) {
+        if (bx + dx < -30 || bx + dx > 542 || by + dy < -30 || by + dy > 542) continue;
+        for (const [ox, oy, rx, ry, col, rot] of blades) {
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.ellipse(bx + dx + ox, by + dy + oy, rx, ry, rot, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    }
   }
 
   const texture = new THREE.CanvasTexture(c);
@@ -1154,9 +1214,9 @@ function addGhostBarriers() {
 function addIceBarriers() {
   const iceGeo = new THREE.BoxGeometry(1.4, 1.4, 1.4);
   const iceMat = new THREE.MeshStandardMaterial({
-    color: 0xa5f3fc,
+    color: 0x7fc8e6,
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.8,
     roughness: 0.1,
     metalness: 0.2
   });
@@ -1185,6 +1245,60 @@ function addIceBarriers() {
   }
 }
 
+// Tufos de grama 3D ao longo das laterais da pista (InstancedMesh: 1 draw call).
+// Mais densos perto da pista e ralos conforme se afastam. Segue a altura do terreno.
+const GRASS_TUFT_COUNT = 700;   // quantidade de tufos
+const GRASS_BLADES_PER_TUFT = 5;
+const GRASS_MAX_DIST = 38;      // metros além da borda da pista
+function addGrassTufts(group) {
+  const bladeGeo = new THREE.ConeGeometry(0.09, 0.9, 4);
+  bladeGeo.translate(0, 0.45, 0); // base da folha no chão
+  const inst = new THREE.InstancedMesh(
+    bladeGeo,
+    new THREE.MeshStandardMaterial({ roughness: 0.9, flatShading: true }),
+    GRASS_TUFT_COUNT * GRASS_BLADES_PER_TUFT
+  );
+  const palette = [0x4f9d4a, 0x3d8a45, 0x6bb34f];
+  const minLat = trackWidth / 2 + 1.6; // fora da zebra
+  const dummy = new THREE.Object3D();
+  const color = new THREE.Color();
+
+  let tufts = 0, attempts = 0, idx = 0;
+  while (tufts < GRASS_TUFT_COUNT && attempts < GRASS_TUFT_COUNT * 6) {
+    attempts++;
+    const s = trackSamples[Math.floor(Math.random() * trackSamples.length)];
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const lat = minLat + Math.pow(Math.random(), 1.7) * GRASS_MAX_DIST;
+    const px = s.point.x + s.normal.x * side * lat;
+    const pz = s.point.z + s.normal.z * side * lat;
+    // em curvas fechadas outro trecho da pista pode estar mais perto: não plantar em cima dele
+    if (nearestTrackSample({ x: px, z: pz }).distXZ < minLat) continue;
+
+    const gy = getGroundHeightAt(px, pz);
+    const scale = 0.7 + Math.random() * 0.9;
+    for (let b = 0; b < GRASS_BLADES_PER_TUFT; b++) {
+      const ang = Math.random() * Math.PI * 2;
+      const r = Math.random() * 0.35 * scale;
+      dummy.position.set(px + Math.cos(ang) * r, gy, pz + Math.sin(ang) * r);
+      dummy.rotation.set((Math.random() - 0.5) * 0.5, Math.random() * Math.PI, (Math.random() - 0.5) * 0.5);
+      dummy.scale.set(scale, scale * (0.6 + Math.random() * 0.8), scale);
+      dummy.updateMatrix();
+      inst.setMatrixAt(idx, dummy.matrix);
+      if (inst.setColorAt) {
+        color.setHex(palette[Math.floor(Math.random() * palette.length)]);
+        color.offsetHSL(0, 0, (Math.random() - 0.5) * 0.08);
+        inst.setColorAt(idx, color);
+      }
+      idx++;
+    }
+    tufts++;
+  }
+  inst.count = idx;
+  inst.instanceMatrix.needsUpdate = true;
+  if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
+  group.add(inst);
+}
+
 function spawnIceDecorations() {
   if (currentTreeGroup) {
     scene.remove(currentTreeGroup);
@@ -1207,7 +1321,7 @@ function spawnIceDecorations() {
 
   // Geometria dos Pinheiros Nevados
   const pineGeo = new THREE.ConeGeometry(2.2, 5.5, 6);
-  const pineMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 }); // Neve branca nas folhas
+  const pineMat = new THREE.MeshStandardMaterial({ color: 0x3f7f5e, roughness: 0.9 }); // Pinheiro verde (era branco puro)
   const trunkGeo = new THREE.CylinderGeometry(0.4, 0.6, 2.5, 6);
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3b32, roughness: 1.0 });
 
@@ -1280,6 +1394,7 @@ function spawnIceDecorations() {
   currentTreeGroup.add(crystalInstanced);
   currentTreeGroup.add(pineInstanced);
   currentTreeGroup.add(trunkInstanced);
+  addGrassTufts(currentTreeGroup);
   scene.add(currentTreeGroup);
 }
 
