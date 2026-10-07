@@ -2,6 +2,7 @@
 const SUPABASE_URL = 'https://ccazflqrpzngxvdwgpoq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjYXpmbHFycHpuZ3h2ZHdncG9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5MDIwMjAsImV4cCI6MjEwNDQ3ODAyMH0.lwOWX7-7wzNmBHNyp-6zWIusm5noA5s_zUak3qpOsVQ';
 
+const isPasswordRecoveryLink = new URLSearchParams(window.location.hash.slice(1)).get('type') === 'recovery';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Estado local do jogador logado e aba ativa do ranking
@@ -23,21 +24,49 @@ function formatRecordTime(ms) {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
 }
 
-// Cadastrar com Email e Senha
-async function signUpPlayer(email, password, nickname) {
-  const { data, error } = await supabaseClient.auth.signUp({
-    email,
-    password,
-    options: { data: { nickname } }
+// A função do servidor mantém o vínculo usuário/e-mail privado.
+async function requestPlayerAuth(payload) {
+  const { data, error } = await supabaseClient.functions.invoke('player-auth', {
+    body: payload,
+    // Cadastro e login são públicos: não reutiliza um token de sessão antigo.
+    headers: { Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
   });
-  if (error) throw error;
+  if (error) {
+    const status = error.context?.status;
+    let message = status === 404
+      ? 'O serviço de cadastro ainda não foi publicado no Supabase (player-auth).'
+      : status === 401
+        ? 'O Supabase recusou o acesso ao serviço de cadastro (HTTP 401).'
+        : 'Não foi possível conectar ao serviço de cadastro. Confira a conexão e se a função player-auth foi publicada no Supabase.';
+    try {
+      const detail = await error.context.json();
+      if (typeof detail.error === 'string') message = detail.error;
+      else if (typeof detail.message === 'string') message = `Supabase${status ? ` (HTTP ${status})` : ''}: ${detail.message}`;
+    } catch (_) { /* Falha de rede ou resposta sem JSON: mantém a mensagem específica. */ }
+    throw new Error(message);
+  }
+  if (data?.error) throw new Error(data.error);
+  if (data?.session) {
+    const { error: sessionError } = await supabaseClient.auth.setSession(data.session);
+    if (sessionError) throw sessionError;
+  }
   return data;
 }
 
-// Fazer Login
-async function loginPlayer(email, password) {
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+async function signUpPlayer(username, password, nickname, email = '') {
+  return requestPlayerAuth({ action: 'register', username, password, nickname, email });
+}
+
+// Contas antigas continuam entrando com o e-mail original.
+async function loginPlayer(identifier, password) {
+  let data;
+  if (identifier.includes('@')) {
+    const result = await supabaseClient.auth.signInWithPassword({ email: identifier, password });
+    if (result.error) throw result.error;
+    data = result.data;
+  } else {
+    data = await requestPlayerAuth({ action: 'login', username: identifier, password });
+  }
   await fetchPlayerProfile();
   return data;
 }
@@ -460,13 +489,54 @@ document.addEventListener('DOMContentLoaded', async () => {
   const submitBtn = document.getElementById('btnAuthSubmit');
   const title = document.getElementById('authTitle');
   const nickInput = document.getElementById('authNick');
+  const usernameInput = document.getElementById('authUsername');
+  const emailInput = document.getElementById('authEmail');
+  const passwordInput = document.getElementById('authPassword');
+  const emailHint = document.getElementById('authEmailHint');
+  const forgotBtn = document.getElementById('btnForgotPassword');
+  const message = document.getElementById('authMessage');
+  let recoveryMode = isPasswordRecoveryLink;
+
+  function showAuthMessage(text) {
+    if (message) { message.innerText = text; message.hidden = !text; }
+  }
+
+  function renderAuthMode() {
+    if (title) title.innerText = recoveryMode ? 'Nova senha' : isLoginMode ? 'Entrar na Conta' : 'Criar Conta';
+    if (submitBtn) submitBtn.innerText = recoveryMode ? 'SALVAR SENHA' : isLoginMode ? 'ENTRAR' : 'CADASTRAR';
+    if (toggleBtn) {
+      toggleBtn.style.display = recoveryMode ? 'none' : 'block';
+      toggleBtn.innerText = isLoginMode ? 'Não tem conta? Cadastrar-se' : 'Já tem uma conta? Entrar';
+    }
+    if (nickInput) nickInput.style.display = isLoginMode || recoveryMode ? 'none' : 'block';
+    if (emailInput) emailInput.style.display = isLoginMode || recoveryMode ? 'none' : 'block';
+    if (emailHint) emailHint.style.display = isLoginMode || recoveryMode ? 'none' : 'block';
+    if (usernameInput) {
+      usernameInput.style.display = recoveryMode ? 'none' : 'block';
+      usernameInput.placeholder = isLoginMode ? 'Usuário ou e-mail' : 'Usuário (3 a 24 caracteres)';
+    }
+    if (passwordInput) {
+      passwordInput.autocomplete = isLoginMode && !recoveryMode ? 'current-password' : 'new-password';
+      passwordInput.placeholder = isLoginMode && !recoveryMode ? 'Sua senha' : 'Senha (mínimo 8 caracteres)';
+    }
+    if (forgotBtn) forgotBtn.hidden = !isLoginMode || recoveryMode;
+  }
+  renderAuthMode();
+  supabaseClient.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      recoveryMode = true;
+      renderAuthMode();
+      if (modal) modal.style.display = 'flex';
+      showAuthMessage('Escolha uma nova senha para sua conta.');
+    }
+  });
 
   setupSideMenu();
 
   // Verifica a sessão atual com o Supabase
   const { data: { session } } = await supabaseClient.auth.getSession();
 
-  if (session) {
+  if (session && !recoveryMode) {
     if (modal) modal.style.display = 'none';
     await updateLobbyUI();
   } else {
@@ -477,10 +547,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (toggleBtn) {
     toggleBtn.onclick = () => {
       isLoginMode = !isLoginMode;
-      if (title) title.innerText = isLoginMode ? 'Entrar na Conta' : 'Criar Conta';
-      if (submitBtn) submitBtn.innerText = isLoginMode ? 'ENTRAR' : 'CADASTRAR';
-      if (toggleBtn) toggleBtn.innerText = isLoginMode ? 'Não tem conta? Cadastrar-se' : 'Já tem uma conta? Entrar';
-      if (nickInput) nickInput.style.display = isLoginMode ? 'none' : 'block';
+      showAuthMessage('');
+      renderAuthMode();
+    };
+  }
+
+  if (forgotBtn) {
+    forgotBtn.onclick = async () => {
+      const email = prompt('Informe o e-mail cadastrado para recuperar sua senha:');
+      if (!email) return;
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        showAuthMessage('Informe um e-mail válido.'); return;
+      }
+      forgotBtn.disabled = true;
+      try {
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: window.location.origin + window.location.pathname,
+        });
+        if (error) throw error;
+        showAuthMessage('Se esse e-mail estiver cadastrado, você receberá um link para redefinir a senha.');
+      } catch (error) {
+        showAuthMessage(error.message);
+      } finally { forgotBtn.disabled = false; }
     };
   }
 
@@ -492,22 +580,39 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nickEl = document.getElementById('authNick');
 
       const email = emailEl ? emailEl.value.trim() : '';
-      const password = passEl ? passEl.value.trim() : '';
+      const password = passEl ? passEl.value : '';
       const nickname = nickEl ? nickEl.value.trim() : '';
+      const identifier = usernameInput ? usernameInput.value.trim().toLowerCase() : '';
 
+      if (submitBtn.disabled) return;
+      submitBtn.disabled = true;
+      showAuthMessage('');
       try {
-        if (isLoginMode) {
-          await loginPlayer(email, password);
+        if (recoveryMode) {
+          if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
+          const { error } = await supabaseClient.auth.updateUser({ password });
+          if (error) throw error;
+          window.history.replaceState(null, '', window.location.pathname);
+        } else if (isLoginMode) {
+          if (!identifier || !password) throw new Error('Informe usuário ou e-mail e sua senha.');
+          await loginPlayer(identifier, password);
         } else {
-          if (!nickname) { alert('Digite um nickname!'); return; }
-          await signUpPlayer(email, password, nickname);
-          await loginPlayer(email, password);
+          if (!/^[a-z0-9_]{3,24}$/.test(identifier)) throw new Error('Use 3 a 24 letras, números ou sublinhados no usuário.');
+          if (password.length < 8) throw new Error('A senha precisa ter pelo menos 8 caracteres.');
+          if (email && !emailEl.checkValidity()) throw new Error('Informe um e-mail válido ou deixe o campo vazio.');
+          const result = await signUpPlayer(identifier, password, nickname || identifier, email);
+          if (!result.session) {
+            isLoginMode = true;
+            renderAuthMode();
+            showAuthMessage(result.requires_confirmation ? 'Conta criada! Confirme seu e-mail antes de entrar.' : 'Conta criada! Entre com seu usuário e senha.');
+            return;
+          }
         }
         if (modal) modal.style.display = 'none';
         window.location.reload();
       } catch (err) {
-        alert('Erro ao autenticar: ' + err.message);
-      }
+        showAuthMessage(err.message);
+      } finally { submitBtn.disabled = false; }
     };
   }
 });

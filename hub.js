@@ -249,6 +249,34 @@ const turnSpeed = 0.05;     // Mantém a curva igual ou ajuste se preferir
 window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
 window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
 
+// Pointer capture keeps acceleration/steering active until the finger is released.
+const hubPointerSets = [];
+document.querySelectorAll('[data-drive]').forEach(button => {
+    const activePointers = new Set();
+    hubPointerSets.push(activePointers);
+    button.addEventListener('pointerdown', event => {
+        event.preventDefault();
+        activePointers.add(event.pointerId);
+        button.setPointerCapture(event.pointerId);
+        keys[button.dataset.drive] = true;
+    });
+    const release = event => {
+        activePointers.delete(event.pointerId);
+        keys[button.dataset.drive] = activePointers.size > 0;
+    };
+    button.addEventListener('pointerup', release);
+    button.addEventListener('pointercancel', release);
+    button.addEventListener('lostpointercapture', release);
+});
+function releaseHubControls() {
+    hubPointerSets.forEach(pointers => pointers.clear());
+    Object.keys(keys).forEach(key => { keys[key] = false; });
+    kartSpeed = 0;
+}
+window.addEventListener('blur', releaseHubControls);
+document.addEventListener('visibilitychange', releaseHubControls);
+window.addEventListener('resize', releaseHubControls);
+
 // 4. CARREGAR MODELOS
 function carregarMundo() {
     // A. Carregar o Kart do Jogador

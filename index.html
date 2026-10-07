@@ -829,6 +829,70 @@
       gap: 16px;
     }
 
+    .result-card { text-align: center; max-width: 420px; }
+    .result-icon {
+      width: 64px; height: 64px; margin: 0 auto;
+      display: grid; place-items: center; border-radius: 16px;
+      border: 1px solid #23557c; background: rgba(12, 28, 48, .72);
+      color: var(--cyan); font-size: 32px;
+    }
+    .result-card .modal-title { margin: 0; padding: 0; font-size: 22px; }
+    .result-description { color: #dcecff; font-size: 14px; line-height: 1.6; }
+    .result-action {
+      width: 100%; min-height: 45px; padding: 10px 16px;
+      border-radius: 12px; border: 1px solid #52d6ff;
+      background: linear-gradient(135deg, #27c8ff, #078be8);
+      color: #031525; font-weight: 900; cursor: pointer;
+    }
+    .result-action.secondary { background: #0c1c30; color: #dcecff; border-color: #23557c; }
+
+    .league-ranking-modal {
+      width: min(460px, calc(100vw - 32px));
+      max-height: min(680px, calc(100dvh - 32px));
+      display: flex; flex-direction: column; gap: 0; overflow: hidden;
+    }
+    .league-ranking-overlay { box-sizing: border-box; padding: 16px; background: rgba(3, 9, 20, .85); backdrop-filter: blur(6px); }
+    .league-ranking-header {
+      position: relative; display: flex; flex-direction: column; gap: 14px;
+      padding: 4px 0 16px; border-bottom: 1px solid rgba(67, 181, 255, .18);
+    }
+    .league-ranking-header .modal-title { padding: 0 44px; }
+    .league-ranking-header .modal-close-btn { top: 0; right: 0; }
+    .league-switcher {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 8px; padding: 6px 10px; border: 1px solid #1d3857;
+      border-radius: 12px; background: rgba(7, 16, 31, .65);
+    }
+    .league-switcher button {
+      width: 40px; min-width: 40px; height: 40px; border-radius: 10px;
+      border: 1px solid #1e3a57; background: rgba(12, 28, 48, .9);
+      color: var(--cyan); font-size: 18px; font-weight: 900; cursor: pointer;
+    }
+    .league-switcher button:hover { background: #102a48; border-color: var(--cyan); }
+    #rankingLeagueTitle {
+      min-width: 0; display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; line-height: 1.2; text-align: center; white-space: nowrap;
+      font-size: 16px !important;
+    }
+    #rankingLeagueTitle img { display: block; flex: 0 0 24px; width: 24px; height: 24px; }
+    #rankingListContainer { min-height: 120px; padding: 14px 2px 2px !important; }
+    .league-player-row {
+      min-width: 0; display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 10px 12px; border: 1px solid #1d3857;
+      border-radius: 12px; background: rgba(7, 16, 31, .55);
+      color: var(--text); cursor: pointer; transition: background .18s, border-color .18s;
+    }
+    .league-player-row:hover { background: rgba(16, 42, 72, .8); border-color: #2389c5; }
+    .league-player-row.current-player { background: rgba(33, 199, 255, .1); border-color: var(--cyan); }
+    .league-player-identity { min-width: 0; display: flex; align-items: center; gap: 10px; }
+    .league-player-position { flex: 0 0 30px; color: var(--muted); font-weight: 900; text-align: center; }
+    .league-player-name { min-width: 0; overflow-wrap: anywhere; font-weight: 750; }
+    .league-player-score {
+      flex: 0 0 auto; display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border: 1px solid rgba(67, 181, 255, .18);
+      border-radius: 10px; background: rgba(7, 16, 31, .7); font-weight: 850;
+    }
+
     input.game-input {
       background: #09172a;
       border: 1px solid #275276;
@@ -1537,9 +1601,11 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
 </head>
 
-<body>
+<body data-page="lobby">
   <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
   <div id="changelogModalOverlay" class="overlay-general" style="z-index: 1000;">
     <div class="lobbyCardModal" style="height: 560px; width: 420px; display: flex; flex-direction: column;">
@@ -1615,38 +1681,20 @@
 
   <!-- MODAL RANKING: CAMINHO DAS LIGAS -->
   <div id="rankingModal"
-    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.9); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
-
-    <div
-      style="background: #1e293b; border: 2px solid #38bdf8; border-radius: 16px; width: 90%; max-width: 500px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-
-      <!-- Cabeçalho com Navegação de Ligas -->
-      <div
-        style="padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; flex-direction: column; gap: 12px; position: relative;">
-
-        <button onclick="fecharModalRanking()"
-          style="position: absolute; top: 16px; right: 20px; background: transparent; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; padding: 0;">&times;</button>
-
-        <h2 style="margin: 0; color: #f8fafc; font-size: 18px; text-align: center;">Tabela de Classificação</h2>
-
-        <!-- Controles < LIGA > -->
-        <div
-          style="display: flex; justify-content: space-between; align-items: center; background: rgba(15, 23, 42, 0.6); padding: 8px; border-radius: 8px; border: 1px solid #334155;">
-          <button onclick="mudarLigaRanking(-1)"
-            style="background: transparent; border: none; color: #38bdf8; font-size: 20px; cursor: pointer; padding: 0 10px; font-weight: bold;">&lt;</button>
-          <div id="rankingLeagueTitle"
-            style="font-size: 18px; font-weight: bold; color: #eab308; display: flex; align-items: center; gap: 8px;">
-            🥇 Liga Ouro
-          </div>
-          <button onclick="mudarLigaRanking(1)"
-            style="background: transparent; border: none; color: #38bdf8; font-size: 20px; cursor: pointer; padding: 0 10px; font-weight: bold;">&gt;</button>
+    class="league-ranking-overlay" role="dialog" aria-modal="true" aria-labelledby="leagueRankingHeading"
+    style="display: none; position: fixed; inset: 0; z-index: 10000; justify-content: center; align-items: center;">
+    <div class="lobbyCardModal league-ranking-modal">
+      <div class="league-ranking-header">
+        <button class="modal-close-btn" type="button" aria-label="Fechar classificação" onclick="fecharModalRanking()">✕</button>
+        <h2 id="leagueRankingHeading" class="modal-title">🏆 CLASSIFICAÇÃO DA LIGA</h2>
+        <div class="league-switcher">
+          <button type="button" aria-label="Liga anterior" onclick="mudarLigaRanking(-1)">‹</button>
+          <div id="rankingLeagueTitle">🥇 Liga Ouro</div>
+          <button type="button" aria-label="Próxima liga" onclick="mudarLigaRanking(1)">›</button>
         </div>
-
       </div>
-
-      <!-- Lista de Jogadores -->
-      <div id="rankingListContainer"
-        style="padding: 16px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px;">
+      <div id="rankingListContainer" aria-live="polite" aria-label="Jogadores classificados"
+        style="overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px;">
         <!-- Preenchido via JS -->
       </div>
 
@@ -1690,15 +1738,19 @@
   <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
     <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
       <h2 id="authTitle" class="modal-title" style="font-size: 24px; margin-bottom: 20px;">CRIAR CONTA</h2>
-      <input type="text" id="authNick" class="game-input" placeholder="Seu Nickname" style="margin-bottom: 12px;" />
-      <input type="email" id="authEmail" class="game-input" placeholder="Seu E-mail" style="margin-bottom: 12px;" />
-      <input type="password" id="authPassword" class="game-input" placeholder="Sua Senha"
+      <input type="text" id="authUsername" class="game-input" placeholder="Usuário (3 a 24 caracteres)" aria-label="Usuário" autocomplete="username" autocapitalize="none" spellcheck="false" style="margin-bottom: 12px;" />
+      <input type="text" id="authNick" class="game-input" placeholder="Apelido no jogo (opcional)" aria-label="Apelido no jogo" maxlength="30" style="margin-bottom: 12px;" />
+      <input type="email" id="authEmail" class="game-input" placeholder="E-mail para recuperação (opcional)" aria-label="E-mail para recuperação, opcional" autocomplete="email" style="margin-bottom: 12px;" />
+      <p id="authEmailHint" style="font-size: 11px; color: var(--muted); margin-bottom: 12px;">Sem e-mail, você precisa guardar sua senha: não haverá recuperação por e-mail.</p>
+      <input type="password" id="authPassword" class="game-input" placeholder="Senha (mínimo 8 caracteres)" aria-label="Senha" autocomplete="new-password"
         style="margin-bottom: 20px;" />
+      <p id="authMessage" role="status" style="font-size: 12px; color: var(--cyan); margin-bottom: 12px;" hidden></p>
       <button id="btnAuthSubmit" class="btn primary"
         style="width: 100%; margin-bottom: 16px; min-height: 45px; border-radius: 12px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">CADASTRAR</button>
       <div style="font-size: 13px; color: var(--muted); cursor: pointer; font-weight: 800; transition: color 0.2s;"
         onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--muted)'" id="toggleAuthMode">Já
         tem uma conta? Entrar</div>
+      <button id="btnForgotPassword" type="button" hidden style="margin-top: 12px; background: transparent; border: none; color: var(--cyan); cursor: pointer; font-size: 12px;">Esqueci minha senha</button>
     </div>
   </div>
 
@@ -1756,13 +1808,13 @@
     </div>
   </div>
   <div id="resultModalOverlay" class="overlay-general" style="z-index: 2600;">
-    <div class="lobbyCardModal" style="text-align: center; max-width: 380px; padding: 30px;">
-      <div id="resultIcon" style="font-size: 80px; margin: 10px 0;">🎉</div>
-      <h2 id="resultTitle" style="color: var(--yellow); font-size: 26px; font-weight: 900; margin-bottom: 10px;">
+    <div class="lobbyCardModal result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText">
+      <div id="resultIcon" class="result-icon" aria-hidden="true">🏅</div>
+      <h2 id="resultTitle" class="modal-title">
         INSÍGNIA CONQUISTADA!</h2>
-      <p id="resultText" style="color: #dcecff; font-size: 14px; margin-bottom: 25px;"></p>
-      <button id="btnCloseResult" class="btn primary"
-        style="width: 100%; min-height: 45px; border-radius: 12px; border: 1px solid #52d6ff; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">CONTINUAR</button>
+      <p id="resultText" class="result-description"></p>
+      <button id="btnCloseResult" class="result-action" type="button">CONTINUAR</button>
+      <button id="btnResultSecondary" class="result-action secondary" type="button" hidden>NÃO USAR REVIVE</button>
     </div>
   </div>
 
@@ -1777,7 +1829,7 @@
         class="modal-close-btn">✕</button>
 
       <!-- TOPO COM TÍTULO E MOEDAS ALINHADOS -->
-      <div
+      <div class="store-heading"
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-right: 40px; flex-shrink: 0;">
         <h2 class="modal-title" style="text-align: left; margin: 0;">🛒 LOJA DE COSMÉTICOS</h2>
 
@@ -1788,7 +1840,7 @@
       </div>
 
       <!-- CONTAINER PRINCIPAL: MENU LATERAL ESQUERDA + GRID DIREITA -->
-      <div style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
+      <div class="store-layout" style="display: flex; flex: 1; gap: 20px; overflow: hidden;">
 
         <!-- Menu Lateral (Categorias) -->
         <div id="storeTabsContainer"
@@ -1813,7 +1865,7 @@
       <button id="btnCloseRoulette" class="modal-close-btn">✕</button>
       <h2 class="modal-title" style="margin-bottom: 20px;">🎡 GIRO DIÁRIO</h2>
 
-      <div style="position: relative; margin: 0 auto 30px; width: 280px;">
+      <div class="roulette-frame" style="position: relative; margin: 0 auto 30px; width: 280px;">
         <div class="roulette-pointer"></div>
         <div id="rouletteWheel" class="roulette-wheel"></div>
       </div>
@@ -1873,9 +1925,13 @@
         class="modal-close-btn">✕</button>
 
       <h2 class="modal-title" style="margin-bottom: 5px;">🎟️ PASSE DE BATALHA</h2>
-      <p
+      <p id="bpSeasonName"
         style="text-align: center; color: #facc15; font-size: 12px; font-weight: 900; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px;">
         Temporada 1: O Despertar
+      </p>
+      <p id="bpSeasonCountdown" role="timer" aria-live="off"
+        style="text-align: center; color: #91a7be; font-size: 11px; font-weight: 800; margin: -12px 0 16px;">
+        Temporada de 90 dias
       </p>
 
       <!-- Barra de Progresso do Nível -->
@@ -4641,7 +4697,15 @@
     // Configuração de XP por Nível (Ex: 100 XP para subir do 1 pro 2)
     const XP_PER_LEVEL = 100;
 
-    // Catálogo da Temporada 1
+    // A configuração completa (incluindo as datas) é carregada de game_configs.
+    let BP_SEASON_CONFIG = {
+      id: 'season_1',
+      name: 'Temporada 1: O Despertar',
+      duration_days: 90,
+      start_at: null
+    };
+
+    // Catálogo padrão usado enquanto a configuração do servidor carrega.
     let BATTLE_PASS_SEASON_1 = [
       { level: 1, type: 'coins', amount: 100, name: '100 Moedas', icon: '🪙' },
       { level: 2, type: 'coins', amount: 250, name: '250 Moedas', icon: '💰' },
@@ -4649,6 +4713,70 @@
       { level: 4, type: 'coins', amount: 500, name: '500 Moedas', icon: '💎' },
       { level: 5, type: 'kart', amount: 'mewtwo', name: 'Kart Mewtwo', icon: '🏎️', isPremium: true } // Kart Final da Temporada
     ];
+
+    function aplicarConfigPasse(configData) {
+      if (Array.isArray(configData)) {
+        // Compatibilidade com game_configs no formato antigo (somente array de recompensas).
+        BATTLE_PASS_SEASON_1 = configData;
+        return;
+      }
+      if (!configData || typeof configData !== 'object') return;
+
+      BP_SEASON_CONFIG = {
+        ...BP_SEASON_CONFIG,
+        id: configData.id || BP_SEASON_CONFIG.id,
+        name: configData.name || BP_SEASON_CONFIG.name,
+        duration_days: Number(configData.duration_days) || 90,
+        start_at: configData.start_at || null
+      };
+      if (Array.isArray(configData.rewards)) BATTLE_PASS_SEASON_1 = configData.rewards;
+    }
+
+    function getBPSeasonEnd() {
+      if (!BP_SEASON_CONFIG.start_at) return null;
+      const startsAt = new Date(BP_SEASON_CONFIG.start_at).getTime();
+      if (!Number.isFinite(startsAt)) return null;
+      return startsAt + BP_SEASON_CONFIG.duration_days * 24 * 60 * 60 * 1000;
+    }
+
+    function isBPSeasonActive() {
+      const endAt = getBPSeasonEnd();
+      return endAt === null || Date.now() < endAt;
+    }
+
+    function atualizarContadorPasse() {
+      const countdown = document.getElementById('bpSeasonCountdown');
+      const seasonName = document.getElementById('bpSeasonName');
+      if (seasonName) seasonName.innerText = BP_SEASON_CONFIG.name;
+      if (!countdown) return;
+
+      const endAt = getBPSeasonEnd();
+      if (endAt === null) {
+        countdown.innerText = `Temporada de ${BP_SEASON_CONFIG.duration_days} dias · configure a data inicial no Supabase`;
+        return;
+      }
+
+      const remainingMs = endAt - Date.now();
+      if (remainingMs <= 0) {
+        countdown.innerText = 'Temporada encerrada';
+        return;
+      }
+
+      const days = Math.floor(remainingMs / 86400000);
+      const hours = Math.floor((remainingMs % 86400000) / 3600000);
+      const minutes = Math.floor((remainingMs % 3600000) / 60000);
+      countdown.innerText = `⏳ ${days} dias, ${hours}h ${minutes}min restantes`;
+    }
+    let passeEstavaAtivo = isBPSeasonActive();
+    setInterval(() => {
+      atualizarContadorPasse();
+      const passeEstaAtivo = isBPSeasonActive();
+      if (passeEstavaAtivo && !passeEstaAtivo) {
+        renderBattlePass();
+        atualizarBadgePasse();
+      }
+      passeEstavaAtivo = passeEstaAtivo;
+    }, 60000);
 
     const btnOpenBP = document.getElementById('menuBtnBattlePass');
     if (btnOpenBP) {
@@ -4662,20 +4790,43 @@
       // Pega o XP do jogador (ou 0 se for novo)
       const userXp = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.xp) ? currentUserProfile.xp : 0;
 
-      const currentLevel = Math.floor(userXp / XP_PER_LEVEL) + 1;
-      const currentLevelXp = userXp % XP_PER_LEVEL;
+      const highestPassLevel = Math.max(1, ...BATTLE_PASS_SEASON_1.map(reward => Number(reward.level) || 1));
+      const rawLevel = Math.floor(userXp / XP_PER_LEVEL) + 1;
+      const currentLevel = Math.min(rawLevel, highestPassLevel);
+      const currentLevelXp = rawLevel >= highestPassLevel ? XP_PER_LEVEL : userXp % XP_PER_LEVEL;
 
       return { level: currentLevel, currentXp: currentLevelXp, nextLevelXp: XP_PER_LEVEL, totalXp: userXp };
+    }
+
+    function getClaimedBPRewards() {
+      let saved = currentUserProfile?.claimed_bp_rewards || [];
+      if (typeof saved === 'string') {
+        try { saved = JSON.parse(saved); } catch (e) { saved = []; }
+      }
+      if (Array.isArray(saved)) return saved; // Formato legado: uma única temporada.
+      const seasonClaims = saved?.[BP_SEASON_CONFIG.id] || [];
+      return Array.isArray(seasonClaims) ? seasonClaims : [];
+    }
+
+    function saveClaimedBPRewards(claimedLevels) {
+      let saved = currentUserProfile?.claimed_bp_rewards || {};
+      if (typeof saved === 'string') {
+        try { saved = JSON.parse(saved); } catch (e) { saved = {}; }
+      }
+      if (Array.isArray(saved)) saved = { [BP_SEASON_CONFIG.id]: saved };
+      saved[BP_SEASON_CONFIG.id] = claimedLevels;
+      currentUserProfile.claimed_bp_rewards = saved;
+      return saved;
     }
 
     function atualizarBadgePasse() {
       if (!currentUserProfile) return;
 
       const info = getPlayerLevelInfo();
-      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+      const claimedRewards = getClaimedBPRewards();
 
       // Verifica se existe algum nível alcançado cujo prêmio AINDA NÃO foi resgatado
-      const temRecompensaPendente = BATTLE_PASS_SEASON_1.some(reward => {
+      const temRecompensaPendente = isBPSeasonActive() && BATTLE_PASS_SEASON_1.some(reward => {
         return info.level >= reward.level && !claimedRewards.includes(reward.level);
       });
 
@@ -4698,9 +4849,10 @@
     function renderBattlePass() {
       if (!currentUserProfile) return;
       updateLevelUI();
+      atualizarContadorPasse();
 
       const info = getPlayerLevelInfo();
-      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+      const claimedRewards = getClaimedBPRewards();
 
       // Atualiza a Barra de Progresso no Modal
       document.getElementById('bpCurrentLevelText').innerText = info.level;
@@ -4714,12 +4866,15 @@
       BATTLE_PASS_SEASON_1.forEach((reward, index) => {
         const isClaimed = claimedRewards.includes(reward.level);
         const isUnlocked = info.level >= reward.level;
-        const isClaimable = isUnlocked && !isClaimed;
+        const isClaimable = isBPSeasonActive() && isUnlocked && !isClaimed;
 
         let stateClass = 'locked';
         let btnHtml = `<button class="btn-claim-mission" disabled style="background: #1e3a57; color: #64748b; border-color: #2a5078;">BLOQUEADO</button>`;
 
-        if (isClaimed) {
+        if (!isBPSeasonActive() && !isClaimed) {
+          stateClass = 'locked';
+          btnHtml = `<button class="btn-claim-mission" disabled style="background: #1e3a57; color: #64748b; border-color: #2a5078;">ENCERRADO</button>`;
+        } else if (isClaimed) {
           stateClass = 'claimed';
           btnHtml = `<button class="btn-claim-mission" disabled style="background: transparent; border: 1px solid #38bdf8; color: #38bdf8;">RESGATADO</button>`;
         } else if (isClaimable) {
@@ -4753,9 +4908,12 @@
     // Função para Resgatar Prêmio
     window.claimBPReward = async (level) => {
       if (!currentUserProfile) return;
+      if (!isBPSeasonActive()) { alert('Esta temporada já foi encerrada.'); return; }
 
       const reward = BATTLE_PASS_SEASON_1.find(r => r.level === level);
-      if (!reward) return;
+      if (!reward || getPlayerLevelInfo().level < reward.level) return;
+      const claimedRewards = getClaimedBPRewards();
+      if (claimedRewards.includes(level)) return;
 
       // Se for uma caixa de escolha de karts, abre o modal e PARA a execução aqui
       if (reward.type === 'kart_choice') {
@@ -4763,10 +4921,9 @@
         return;
       }
 
-      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
       claimedRewards.push(level);
 
-      let updateData = { claimed_bp_rewards: claimedRewards };
+      let updateData = { claimed_bp_rewards: saveClaimedBPRewards(claimedRewards) };
 
       // Aplica a recompensa de acordo com o tipo padrão
       if (reward.type === 'coins') {
@@ -4785,10 +4942,45 @@
         }
       }
       else if (reward.type === 'avatar') {
-        alert(`Você desbloqueou o avatar especial: ${reward.name}!`);
+        let unlockedAvatars = currentUserProfile.unlocked_avatars || ['ash'];
+        if (typeof unlockedAvatars === 'string') {
+          try { unlockedAvatars = JSON.parse(unlockedAvatars); } catch (e) { unlockedAvatars = [unlockedAvatars]; }
+        }
+        if (!unlockedAvatars.includes(reward.amount)) unlockedAvatars.push(reward.amount);
+        currentUserProfile.unlocked_avatars = unlockedAvatars;
+        updateData.unlocked_avatars = unlockedAvatars;
       }
-
-      currentUserProfile.claimed_bp_rewards = claimedRewards;
+      else if (reward.type === 'consumable') {
+        let inventory = currentUserProfile.inventory || {};
+        if (typeof inventory === 'string') {
+          try { inventory = JSON.parse(inventory); } catch (e) { inventory = {}; }
+        }
+        const itemId = reward.amount || reward.item_id;
+        const quantity = Math.max(1, Number(reward.quantity) || 1);
+        inventory[itemId] = (Number(inventory[itemId]) || 0) + quantity;
+        currentUserProfile.inventory = inventory;
+        updateData.inventory = inventory;
+      }
+      else if (['title', 'border', 'trail', 'victory'].includes(reward.type)) {
+        let unlockedCosmetics = currentUserProfile.unlocked_cosmetics || [];
+        if (typeof unlockedCosmetics === 'string') {
+          try { unlockedCosmetics = JSON.parse(unlockedCosmetics); } catch (e) { unlockedCosmetics = []; }
+        }
+        const itemId = reward.amount || reward.item_id;
+        if (!unlockedCosmetics.includes(itemId)) unlockedCosmetics.push(itemId);
+        currentUserProfile.unlocked_cosmetics = unlockedCosmetics;
+        updateData.unlocked_cosmetics = unlockedCosmetics;
+      }
+      else if (reward.type === 'emoji') {
+        let unlockedEmojis = currentUserProfile.unlocked_emojis || ['bulbasaur', 'charmander', 'squirtle', 'pikachu'];
+        if (typeof unlockedEmojis === 'string') {
+          try { unlockedEmojis = JSON.parse(unlockedEmojis); } catch (e) { unlockedEmojis = [unlockedEmojis]; }
+        }
+        const emojiId = reward.amount || reward.item_id;
+        if (!unlockedEmojis.includes(emojiId)) unlockedEmojis.push(emojiId);
+        currentUserProfile.unlocked_emojis = unlockedEmojis;
+        updateData.unlocked_emojis = unlockedEmojis;
+      }
 
       // Salva no Supabase
       if (typeof supabaseClient !== 'undefined') {
@@ -4797,6 +4989,8 @@
 
       renderBattlePass();
       atualizarBadgePasse();
+      if (typeof renderInventory === 'function') renderInventory();
+      if (typeof initStickerChat === 'function') initStickerChat();
       if (typeof sortKartsByAvailability === 'function') sortKartsByAvailability();
     };
 
@@ -4852,11 +5046,14 @@
 
     window.confirmarEscolhaKart = async (level, kartId, kartName) => {
       if (!currentUserProfile) return;
+      if (!isBPSeasonActive() || getPlayerLevelInfo().level < level) return;
+      const jaResgatado = getClaimedBPRewards().includes(level);
+      if (jaResgatado) return;
 
       const confirmar = confirm(`Tem certeza que deseja escolher o ${kartName}? Você NÃO poderá alterar depois!`);
       if (!confirmar) return;
 
-      const claimedRewards = currentUserProfile.claimed_bp_rewards || [];
+      const claimedRewards = getClaimedBPRewards();
       claimedRewards.push(level);
 
       let userKarts = currentUserProfile.unlocked_karts || [];
@@ -4865,13 +5062,13 @@
         userKarts.push(kartId);
       }
 
-      currentUserProfile.claimed_bp_rewards = claimedRewards;
       currentUserProfile.unlocked_karts = userKarts;
+      const savedClaims = saveClaimedBPRewards(claimedRewards);
 
       // Salva no Supabase
       if (typeof supabaseClient !== 'undefined') {
         await supabaseClient.from('profiles').update({
-          claimed_bp_rewards: claimedRewards,
+          claimed_bp_rewards: savedClaims,
           unlocked_karts: userKarts
         }).eq('id', currentUserProfile.id);
       }
@@ -5032,17 +5229,16 @@
 
         jogadores.forEach((jogador, index) => {
           const isMe = jogador.id === myId;
-          const bgStyle = isMe ? `background: ${liga.color}25; border: 1px solid ${liga.color};` : 'background: rgba(15, 23, 42, 0.5); border: 1px solid #334155;';
           const nameColor = isMe ? liga.color : '#f8fafc';
           const posColor = index === 0 ? '#eab308' : (index === 1 ? '#cbd5e1' : (index === 2 ? '#b45309' : '#64748b'));
 
           htmlLista += `
-        <div onclick="window.abrirPerfilJogador('${jogador.id}')" style="${bgStyle} border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: transform 0.1s, filter 0.1s;" onmouseover="this.style.filter='brightness(1.2)';" onmouseout="this.style.filter='brightness(1)';">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <span style="color: ${posColor}; font-weight: 900; font-size: 16px; width: 24px; text-align: center;">#${index + 1}</span>
-            <span style="color: ${nameColor}; font-weight: bold; font-size: 15px;">${jogador.nickname || 'Piloto Anônimo'}</span>
+        <div class="league-player-row ${isMe ? 'current-player' : ''}" onclick="window.abrirPerfilJogador('${jogador.id}')">
+          <div class="league-player-identity">
+            <span class="league-player-position" style="color: ${posColor};">#${index + 1}</span>
+            <span class="league-player-name" style="color: ${nameColor};">${jogador.nickname || 'Piloto Anônimo'}</span>
           </div>
-          <div style="display: flex; align-items: center; gap: 6px; background: rgba(0,0,0,0.3); padding: 4px 10px; border-radius: 20px;">
+          <div class="league-player-score">
             <span style="color: ${liga.color}; font-weight: bold;">${jogador.trophies || 0}</span>
             <span style="font-size: 12px;">🏆</span>
           </div>
@@ -5066,7 +5262,7 @@
         if (!error && data) {
           data.forEach(item => {
             if (item.config_name === 'roulette') prizes = item.config_data;
-            if (item.config_name === 'battle_pass') BATTLE_PASS_SEASON_1 = item.config_data;
+            if (item.config_name === 'battle_pass') aplicarConfigPasse(item.config_data);
             if (item.config_name === 'daily_missions') MISSION_CATALOG = item.config_data;
             if (item.config_name === 'achievements') ACHIEVEMENTS_CATALOG = item.config_data;
           });
@@ -5261,6 +5457,7 @@
 
       // Puxar inventário e cosméticos
       let myCosmetics = [];
+      let myAvatars = ['ash'];
       let myInventory = {};
       let myEmojis = ['bulbasaur', 'charmander', 'squirtle', 'pikachu']; // Default
       if (currentUserProfile) {
@@ -5268,6 +5465,13 @@
           try {
             myCosmetics = Array.isArray(currentUserProfile.unlocked_cosmetics) ? currentUserProfile.unlocked_cosmetics : JSON.parse(currentUserProfile.unlocked_cosmetics);
           } catch (e) { myCosmetics = []; }
+        }
+        if (currentUserProfile.unlocked_avatars) {
+          try {
+            myAvatars = Array.isArray(currentUserProfile.unlocked_avatars)
+              ? currentUserProfile.unlocked_avatars
+              : JSON.parse(currentUserProfile.unlocked_avatars);
+          } catch (e) { myAvatars = [currentUserProfile.unlocked_avatars]; }
         }
         if (currentUserProfile.inventory) {
           try {
@@ -5286,7 +5490,12 @@
 
       items.forEach(item => {
         const isConsumable = item.type === 'consumable';
-        const isOwned = !isConsumable && (myCosmetics.includes(item.id) || myEmojis.includes(item.id));
+        const isPassExclusive = item.metadata?.battle_pass_exclusive === true;
+        const avatarId = item.type === 'avatar' ? (item.metadata?.avatar_id || item.id) : null;
+        const isOwned = !isConsumable && (
+          (item.type === 'avatar' && myAvatars.includes(avatarId)) ||
+          myCosmetics.includes(item.id) || myEmojis.includes(item.id)
+        );
         const amountOwned = myInventory[item.id] || 0;
 
         let isEquipped = false;
@@ -5303,12 +5512,18 @@
         let btnText = `🪙 ${item.price}`;
         let btnStyle = 'background: linear-gradient(135deg, #27c8ff, #078be8); border: 1px solid #52d6ff; color: #031525;';
 
-        if (isConsumable) {
+        if (isPassExclusive && !isOwned) {
+          btnText = 'EXCLUSIVO DO PASSE';
+          btnStyle = 'background: #1e3a57; border: 1px solid #a78bfa; color: #c4b5fd; font-weight: 900; cursor: not-allowed;';
+        } else if (isConsumable) {
           btnText = `COMPRAR (🪙 ${item.price})`;
         } else if (isOwned) {
           if (item.type === 'emoji') {
             btnText = 'OBTIDO';
             btnStyle = 'background: #1e3a57; border: 1px solid #2a5078; color: #64748b; font-weight: 900;';
+          } else if (item.type === 'avatar') {
+            btnText = 'DESBLOQUEADO';
+            btnStyle = 'background: #1e3a57; border: 1px solid #22c55e; color: #86efac; font-weight: 900;';
           } else if (isEquipped) {
             btnText = 'EQUIPADO';
             btnStyle = 'background: #22c55e; border: 1px solid #16a34a; color: #022c22; font-weight: 900;';
@@ -5318,12 +5533,15 @@
           }
         }
 
-        const tagText = isConsumable ? `No Inventário: ${amountOwned}` : (item.type === 'title' ? 'Título' : (item.type === 'border' ? 'Borda' : 'Avatar'));
+        const storeTypeNames = { title: 'Título', border: 'Borda', avatar: 'Avatar', trail: 'Rastro', victory: 'Efeito de vitória' };
+        const tagText = isConsumable ? `No Inventário: ${amountOwned}` : (storeTypeNames[item.type] || 'Item');
 
         grid.innerHTML += `
       <div style="background: ${cardBg}; border: 1px solid ${cardBorder}; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; align-items: center; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
         <div style="height: 70px; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 10px;">
-          ${item.icon || '🎁'}
+          ${item.type === 'avatar' && item.metadata?.avatar_url
+            ? `<img src="${item.metadata.avatar_url}" alt="${item.name}" style="max-width: 64px; max-height: 64px; object-fit: contain; image-rendering: pixelated;">`
+            : (item.icon || '🎁')}
         </div>
         <div style="font-size: 14px; font-weight: 900; color: #fff; margin-bottom: 5px;">
           ${item.name}
@@ -5332,9 +5550,9 @@
           ${tagText}
         </div>
         <div style="font-size: 10px; color: #64748b; margin-bottom: 15px; min-height: 24px; line-height: 1.2;">
-          ${item.description || ''}
+          ${item.description || item.metadata?.description || ''}
         </div>
-        <button class="mode-btn" style="margin-top: auto; width: 100%; min-height: 36px; font-size: 12px; ${btnStyle}" onclick="interagirItemLoja('${item.id}', ${item.price}, '${item.type}', ${isOwned}, ${isEquipped}, '${item.name}')">
+        <button class="mode-btn" ${isPassExclusive && !isOwned ? 'disabled' : ''} style="margin-top: auto; width: 100%; min-height: 36px; font-size: 12px; ${btnStyle}" onclick="interagirItemLoja('${item.id}', ${item.price}, '${item.type}', ${isOwned}, ${isEquipped}, '${item.name}', '${avatarId || ''}')">
           ${btnText}
         </button>
       </div>
@@ -5344,8 +5562,10 @@
 
     // 5. Ação de Comprar ou Equipar Integrada ao Supabase
     // 5. Ação de Comprar ou Equipar Integrada ao Supabase
-    window.interagirItemLoja = async function (itemId, price, type, isOwned, isEquipped, itemName) {
+    window.interagirItemLoja = async function (itemId, price, type, isOwned, isEquipped, itemName, avatarId) {
       if (!currentUserProfile) return;
+      const catalogItem = (storeItemsCache[type === 'title' ? 'titles' : type === 'border' ? 'borders' : type === 'avatar' ? 'avatars' : type === 'trail' ? 'trail' : type === 'victory' ? 'victory' : type === 'emoji' ? 'emojis' : 'consumables'] || []).find(item => item.id === itemId);
+      if (catalogItem?.metadata?.battle_pass_exclusive && !isOwned) return;
 
       // --- TRATAMENTO PARA CONSUMÍVEIS (Pode comprar várias vezes) ---
       if (type === 'consumable') {
@@ -5396,11 +5616,24 @@
 
         const novasMoedas = userCoins - price;
 
-        // Verifica se é emoji para salvar na coluna correta
+        // Salva cada tipo na coluna correspondente do perfil.
         if (type === 'emoji') {
           myEmojis.push(itemId);
           currentUserProfile.unlocked_emojis = myEmojis;
           updateData.unlocked_emojis = myEmojis;
+        } else if (type === 'avatar') {
+          let myAvatars = ['ash'];
+          if (currentUserProfile.unlocked_avatars) {
+            try {
+              myAvatars = Array.isArray(currentUserProfile.unlocked_avatars)
+                ? currentUserProfile.unlocked_avatars
+                : JSON.parse(currentUserProfile.unlocked_avatars);
+            } catch (e) { myAvatars = [currentUserProfile.unlocked_avatars]; }
+          }
+          const unlockedAvatarId = avatarId || itemId;
+          if (!myAvatars.includes(unlockedAvatarId)) myAvatars.push(unlockedAvatarId);
+          currentUserProfile.unlocked_avatars = myAvatars;
+          updateData.unlocked_avatars = myAvatars;
         } else {
           myCosmetics.push(itemId);
           currentUserProfile.unlocked_cosmetics = myCosmetics;
@@ -5413,7 +5646,7 @@
         document.getElementById('storeUserCoins').innerText = novasMoedas;
         document.getElementById('playerCoinsText').innerText = novasMoedas;
       } else {
-        if (type === 'emoji') return;
+        if (type === 'emoji' || type === 'avatar') return;
         let colunaEquipamento = null;
         if (type === 'title') colunaEquipamento = 'equipped_title';
         if (type === 'border') colunaEquipamento = 'equipped_border';
@@ -6225,7 +6458,7 @@
             }
           } else {
             // Perdeu 1 corrida, cai no início da Elite 4
-            showResultModal('lose', 'DESAFIO FALHOU!', `Você foi derrotado por ${towerState.leader}. No modo Nuzlocke não há segundas chances nem Revives. A Liga foi totalmente reiniciada!`);
+            showResultModal('lose', 'FICA PARA A PRÓXIMA!', `Tentativa encerrada. A Liga recomeça do início, conforme as regras Nuzlocke.`);
             await saveTowerStateToDB(null);
           }
           renderBadgesSidebar();
@@ -6265,7 +6498,7 @@
 
           // Verifica se o jogador tem Revives na mochila
           if (revivesCount > 0) {
-            const usarRevive = confirm(`⚠️ DERROTA!\n\nVocê tem ${revivesCount}x 💊 Revive(s) na sua mochila.\nDeseja gastar 1 Revive para continuar no Andar ${towerState.floor} e não perder o progresso da Torre?`);
+            const usarRevive = await askToUseTowerRevive(revivesCount, towerState.floor);
 
             if (usarRevive) {
               // 1. Desconta o item da mochila
@@ -6283,12 +6516,12 @@
             } else {
               // Tem Revive mas escolheu não usar (cai da torre)
               await saveTowerStateToDB(null);
-              showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+              showResultModal('lose', 'FICA PARA A PRÓXIMA!', `A tentativa terminou no andar ${towerState.floor}; a Torre recomeça do início.`);
             }
           } else {
             // Não tem Revive (cai da torre)
             await saveTowerStateToDB(null);
-            showResultModal('lose', 'DERROTADO!', `Você perdeu no andar ${towerState.floor} e caiu da Torre. Progresso zerado!`);
+            showResultModal('lose', 'FICA PARA A PRÓXIMA!', `A tentativa terminou no andar ${towerState.floor}; a Torre recomeça do início.`);
           }
         }
 
@@ -6412,7 +6645,7 @@
         if (result === 'win') {
           showResultModal('win', 'VITÓRIA NO DESAFIO!', `Você derrotou ${state.leader}! Sua taxa de vitória contra este líder agora é de ${winRateAtual}%.${recompensaMsg}`);
         } else {
-          showResultModal('lose', 'DERROTA...', `O líder ${state.leader} venceu. Sua taxa de vitória caiu para ${winRateAtual}%.`);
+          showResultModal('lose', 'FICA PARA A PRÓXIMA!', `${state.leader} venceu esta corrida. Sua taxa de vitória é de ${winRateAtual}%.`);
         }
 
         // Atualiza as porcentagens no painel visual
@@ -6429,10 +6662,36 @@
         const iconEl = document.getElementById('resultIcon'), titleEl = document.getElementById('resultTitle'), textEl = document.getElementById('resultText');
         if (type === 'win') { iconEl.innerText = '🏆'; titleEl.style.color = '#22c55e'; }
         else if (type === 'badge') { iconEl.innerText = '🏅'; titleEl.style.color = '#facc15'; }
-        else { iconEl.innerText = '❌'; titleEl.style.color = '#ef4444'; }
+        else { iconEl.innerText = '↻'; titleEl.style.color = 'var(--cyan)'; }
         titleEl.innerText = title; textEl.innerText = text;
+        const secondary = document.getElementById('btnResultSecondary');
+        secondary.hidden = true;
+        secondary.onclick = null;
         overlay.style.display = 'flex';
-        document.getElementById('btnCloseResult').onclick = () => overlay.style.display = 'none';
+        const primary = document.getElementById('btnCloseResult');
+        primary.innerText = type === 'lose' ? 'ENTENDI' : 'CONTINUAR';
+        primary.onclick = () => overlay.style.display = 'none';
+        primary.focus();
+      }
+
+      function askToUseTowerRevive(count, floor) {
+        showResultModal('retry', 'MAIS UMA TENTATIVA?', `Esta corrida terminou, mas você pode continuar no andar ${floor} usando 1 Revive. Você tem ${count} na mochila. Se preferir voltar ao lobby, a próxima tentativa começa no primeiro andar.`);
+        return new Promise(resolve => {
+          const overlay = document.getElementById('resultModalOverlay');
+          const primary = document.getElementById('btnCloseResult');
+          const secondary = document.getElementById('btnResultSecondary');
+          const finish = useRevive => {
+            primary.onclick = null;
+            secondary.onclick = null;
+            secondary.hidden = true;
+            overlay.style.display = 'none';
+            resolve(useRevive);
+          };
+          primary.innerText = 'USAR 1 REVIVE';
+          secondary.hidden = false;
+          primary.onclick = () => finish(true);
+          secondary.onclick = () => finish(false);
+        });
       }
 
       renderBadgesSidebar();

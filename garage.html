@@ -349,6 +349,7 @@
       display: flex;
       flex-direction: column;
       gap: 15px;
+      min-height: 0;
     }
 
     .card {
@@ -367,6 +368,75 @@
       font-weight: 900;
       letter-spacing: .7px;
       margin-bottom: 12px;
+    }
+
+    .garage-filters {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+    }
+
+    .garage-filter-controls {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 8px;
+    }
+
+    .garage-select-wrap { position: relative; min-width: 0; }
+
+    /* Filters reuse the custom dropdown used by the track builder. */
+    .garage-select-wrap { position: relative; min-width: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .garage-select-trigger.dropdown-selected {
+      width: 100%; height: 55px; min-height: 55px; box-sizing: border-box;
+      padding: 0 16px; border: 1px solid #1e3a57; border-radius: 13px;
+      background: rgba(12, 28, 48, .72); color: #edf5ff; font-size: 14px;
+      font-weight: 750; cursor: pointer; display: flex; align-items: center;
+      justify-content: space-between; user-select: none; transition: .18s;
+    }
+    .garage-select-trigger.dropdown-selected:hover,
+    .garage-select-trigger.dropdown-selected.open { border-color: #2389c5; background: #102a48; }
+    .garage-select-trigger.dropdown-selected::after { content: none; }
+    .garage-select-trigger {
+      height: 55px; min-height: 55px; text-align: left; font-family: inherit;
+      font-size: 14px; transform: none; gap: 8px;
+    }
+    .garage-select-value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .garage-select-chevron { flex: 0 0 auto; }
+    .garage-select-trigger.open .garage-select-chevron { transform: rotate(180deg); }
+    .garage-select-trigger:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
+    .garage-filter-controls { position: relative; z-index: 2; }
+    .garage-select-wrap:has(.garage-filter-menu.show) { z-index: 101; }
+    .garage-filter-menu { max-height: 240px; }
+    .garage-kart-list-card { min-height: 0; overflow: visible !important; }
+    .garage-kart-list-card .kart-grid-container { min-height: 0; }
+    .garage-select-native:focus + .garage-select-trigger { outline: 2px solid var(--cyan); }
+    .garage-select-native {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+    .garage-filter-menu.dropdown-options {
+      display: none; position: absolute; top: calc(100% + 6px); left: 0; width: 100%;
+      box-sizing: border-box; padding: 0; border: 1px solid #1e3a57; border-radius: 13px;
+      background: rgba(12, 28, 48, .98); overflow-y: auto; z-index: 99999;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, .9); backdrop-filter: blur(12px);
+      max-height: 240px; scrollbar-width: thin; scrollbar-color: #275276 transparent;
+    }
+    .garage-filter-menu.dropdown-options.show { display: block; }
+    .garage-filter-menu.dropdown-options::-webkit-scrollbar { width: 6px; }
+    .garage-filter-menu.dropdown-options::-webkit-scrollbar-thumb { background: #275276; border-radius: 4px; }
+    .garage-filter-menu [role="option"] {
+      padding: 12px 16px; color: #edf5ff; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: background .15s ease; white-space: nowrap;
+    }
+    .garage-filter-menu [role="option"]:hover { background: #1e3a57; color: #38bdf8; }
+    .garage-filter-menu [role="option"] { outline: none; }
+    .garage-filter-menu [role="option"][aria-selected="true"] { background: #128dcc; color: #fff; }
+    .garage-filter-menu [role="option"]:focus-visible { background: #1e3a57; color: #38bdf8; }
+
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
     }
 
     /* Grid de Karts */
@@ -569,9 +639,11 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
 </head>
 
-<body>
+<body data-page="garage">
   <div class="race-glow"></div>
 
   <div class="shell">
@@ -657,7 +729,7 @@
 
 
             <!-- BARRAS DE STATUS NA HORIZONTAL COM COMPARAÇÃO (BARRAS PREENCHIDAS) -->
-            <div style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; min-width: 250px;">
+            <div class="garage-stats" style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; min-width: 250px;">
 
               <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
                 <div class="stat-head"><span>Velocidade Máx</span></div>
@@ -698,15 +770,15 @@
         <!-- PAINEL DA LOJA / STATUS -->
         <div class="garage-panel">
 
-          <div class="card" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+          <div class="card garage-kart-list-card" style="flex: 1; display: flex; flex-direction: column; overflow: visible;">
 
             <!-- CABEÇALHO DA LISTA COM O FILTRO DE ORDENAÇÃO E REGIÃO -->
-            <div
-              style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 0;">
+            <div class="garage-filters" style="margin-bottom: 12px; margin-top: 0;">
               <div class="section-label" style="margin: 0;">MODELOS DISPONÍVEIS</div>
-              <div style="display: flex; gap: 8px;">
-                <select id="garageRegionSelect" onchange="renderKartGrid()"
-                  style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
+              <div class="garage-filter-controls">
+                <div class="garage-select-wrap" id="garageRegionDropdown">
+                  <span class="sr-only">Filtrar por região</span>
+                  <select class="garage-select-native" id="garageRegionSelect" onchange="renderKartGrid()" aria-hidden="true" tabindex="-1">
                   <option value="all">Todas as Regiões</option>
                   <option value="Kanto">Kanto (1-151)</option>
                   <option value="Johto">Johto (152-251)</option>
@@ -717,14 +789,17 @@
                   <option value="Alola">Alola (722-809)</option>
                   <option value="Galar">Galar (810-898)</option>
                   <option value="Paldea">Paldea (906-1025)</option>
-                </select>
-                <select id="garageSortSelect" onchange="renderKartGrid()"
-                  style="background: rgba(12, 28, 48, 0.9); color: #38bdf8; border: 1px solid #1e3a57; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; outline: none; cursor: pointer;">
+                  </select>
+                </div>
+                <div class="garage-select-wrap" id="garageSortDropdown">
+                  <span class="sr-only">Ordenar karts</span>
+                  <select class="garage-select-native" id="garageSortSelect" onchange="renderKartGrid()" aria-hidden="true" tabindex="-1">
                   <option value="default">Ordem Padrão</option>
                   <option value="owned">Ativos Primeiro</option>
                   <option value="price_asc">Menor Preço</option>
                   <option value="price_desc">Maior Preço</option>
-                </select>
+                  </select>
+                </div>
               </div>
             </div>
 

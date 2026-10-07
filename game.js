@@ -4230,7 +4230,10 @@ async function showFinishOverlay(place) {
   `;
 
   card.innerHTML = `
-    <h2 style="margin:0; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">🏁 CORRIDA FINALIZADA</h2>
+    <h2 style="margin:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
+      <span aria-hidden="true">🏁</span>
+      <span>CORRIDA FINALIZADA</span>
+    </h2>
     <div style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
        <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
        <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Recompensas...</div>
@@ -7974,7 +7977,9 @@ function updateKartEffects(dt) {
 // ------------------------------------------------------------
 const playerCosmetics = {
   trailColor: null, // Guardará o THREE.Color do rastro
-  victoryEffectId: null
+  victoryEffectId: null,
+  victoryEffectStyle: null,
+  victoryEffectColor: null
 };
 
 async function loadPlayerCosmetics() {
@@ -8007,6 +8012,13 @@ async function loadPlayerCosmetics() {
     // Guarda o efeito de vitória para usarmos depois
     if (profile?.equipped_victory) {
       playerCosmetics.victoryEffectId = profile.equipped_victory;
+      const { data: item } = await supabaseClient
+        .from('store_items')
+        .select('metadata')
+        .eq('id', profile.equipped_victory)
+        .single();
+      playerCosmetics.victoryEffectStyle = item?.metadata?.effect_style || null;
+      playerCosmetics.victoryEffectColor = item?.metadata?.effect_color || null;
     }
   } catch (err) {
     console.warn("[Cosméticos] Erro ao carregar itens equipados:", err);
@@ -8092,10 +8104,10 @@ function trigger3DVictoryEffect(targetGroup) {
   const effectId = playerCosmetics.victoryEffectId.toLowerCase();
 
   // EFEITO 1: AURA DE LUZ DIVINA (Se o ID contiver a palavra "aura")
-  if (effectId.includes('aura')) {
+  if (playerCosmetics.victoryEffectStyle === 'aura' || (!playerCosmetics.victoryEffectStyle && effectId.includes('aura'))) {
     const geo = new THREE.CylinderGeometry(2.5, 2.5, 20, 16, 1, true);
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xffd700, // Dourado
+      color: playerCosmetics.victoryEffectColor || 0xffd700,
       transparent: true,
       opacity: 0.5,
       blending: THREE.AdditiveBlending,
@@ -8133,7 +8145,9 @@ function trigger3DVictoryEffect(targetGroup) {
     for (let i = 0; i < count; i++) {
       const mesh = new THREE.Mesh(geo, mat.clone());
       // Cores aleatórias e muito saturadas
-      mesh.colorOriginal = new THREE.Color().setHSL(Math.random(), 1.0, 0.6);
+      mesh.colorOriginal = playerCosmetics.victoryEffectColor
+        ? new THREE.Color(playerCosmetics.victoryEffectColor)
+        : new THREE.Color().setHSL(Math.random(), 1.0, 0.6);
       mesh.material.color = mesh.colorOriginal;
       mesh.material.color.multiplyScalar(2.5); // Super brilho
 

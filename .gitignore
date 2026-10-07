@@ -3,6 +3,7 @@ models_backup/
 
 # Node
 node_modules/
+test-results/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

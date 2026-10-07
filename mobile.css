@@ -1,0 +1,156 @@
+/* Shared mobile shell. Only loaded by the pages outside the race. */
+.mobile-menu-toggle, .mobile-menu-backdrop, .orientation-notice,
+.hub-touch-controls, .builder-touch-tools { display: none; }
+
+@media (max-width: 1100px) {
+  html { min-height: 100%; }
+  body { overflow-x: hidden; overflow-y: auto; }
+  main, .shell, .content { min-width: 0; }
+  button, input, select, textarea { touch-action: manipulation; }
+  input:not([type="range"]):not([type="checkbox"]), select, textarea { font-size: 16px !important; max-width: 100%; }
+  button, .btn-back, .customDropdownTrigger, .customDropdownOption,
+  .dropdown-selected, .dropdown-options > div { min-height: 44px; }
+  .overlay-general button { min-height: 44px !important; min-width: 44px; }
+  [data-page="garage"] select { min-height: 44px; }
+  .mobile-menu-toggle {
+    display: block; position: fixed; top: max(8px, env(safe-area-inset-top));
+    left: max(8px, env(safe-area-inset-left)); z-index: 900;
+    height: 44px; padding: 0 14px; border: 1px solid #21c7ff;
+    border-radius: 12px; color: #fff; background: #0d1a2d; font-weight: 800;
+  }
+  body .sidebar {
+    display: flex; flex-direction: column; position: fixed;
+    inset: 0 auto 0 0; width: min(315px, 88vw); height: 100dvh;
+    padding: 65px 18px max(20px, env(safe-area-inset-bottom));
+    overflow-y: auto; overflow-x: hidden; clip-path: none;
+    z-index: 850; transform: translateX(-105%); visibility: hidden;
+    background: #08192f;
+  }
+  body.mobile-menu-open .sidebar { transform: translateX(0); visibility: visible; }
+  body.mobile-menu-open { overflow: hidden; }
+  .mobile-menu-backdrop {
+    position: fixed; inset: 0; z-index: 800; background: #020814b3; border: 0;
+  }
+  body.mobile-menu-open .mobile-menu-backdrop { display: block; }
+  body main { margin-left: 0; width: 100%; padding: 64px 12px 20px; }
+  .sidebar > * { flex-shrink: 0; }
+  .sidebar .account { margin-top: 20px; }
+
+  /* Lobby, including the panels rendered by JavaScript. */
+  [data-page="lobby"] .topbar { position: static; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  [data-page="lobby"] .stat { padding: 0 10px; height: 44px; min-width: 0; }
+  [data-page="lobby"] .stat b { font-size: 13px; overflow-wrap: anywhere; }
+  [data-page="lobby"] .stage { min-height: 0; padding: 16px 0; }
+  [data-page="lobby"] .content { width: 100%; }
+  [data-page="lobby"] .logo { width: min(220px, 55vw); }
+  [data-page="lobby"] .mode-title { font-size: 13px; padding: 8px 14px; text-align: center; }
+  [data-page="lobby"] .modes {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%; gap: 16px; overflow: visible; padding: 12px 0;
+  }
+  [data-page="lobby"] .mode { min-width: 0; min-height: 540px; padding: 14px; }
+  .mode-config-panel, .player-slot > *, .profile-grid-layout > * { min-width: 0; }
+  .overlay-general, .modal-overlay {
+    box-sizing: border-box; height: 100dvh; padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-y: auto; overscroll-behavior: contain;
+  }
+  .lobbyCardModal, .profile-modal-wide, .modal-card {
+    box-sizing: border-box; width: 100% !important; max-width: min(900px, 100%) !important;
+    max-height: calc(100dvh - 24px) !important; overflow-y: auto !important;
+    padding: 20px !important; border-radius: 18px; min-width: 0;
+  }
+  .lobbyCardModal > *, .modal-card > * { flex-shrink: 0; min-width: 0; }
+  .modal-title { padding-right: 30px; font-size: 19px; overflow-wrap: anywhere; }
+  .modal-close-btn, .modal-close { min-width: 44px; min-height: 44px; z-index: 20; }
+  #bpTrackContainer { flex-shrink: 0; max-width: 100%; }
+  #storeModalOverlay .lobbyCardModal { height: auto !important; }
+  .store-heading { flex-wrap: wrap; gap: 12px; }
+  .store-layout { flex-direction: column; overflow: visible !important; }
+  #storeTabsContainer { width: 100% !important; flex-direction: row !important; overflow-x: auto; border-right: 0 !important; padding: 0 0 8px !important; }
+  #storeTabsContainer > * { flex: 0 0 auto; }
+  #storeItemsGrid { overflow: visible !important; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important; padding: 0 !important; }
+  #rouletteModalOverlay .roulette-frame { width: min(280px, 100%) !important; aspect-ratio: 1; }
+  #rouletteWheel { aspect-ratio: 1; }
+  #rankingModal > div { max-height: calc(100dvh - 24px) !important; overflow-y: auto; }
+  .profile-header-card > *, .profile-stat-box { min-width: 0; overflow-wrap: anywhere; }
+  #stickerChatContainer { left: 12px !important; right: 12px; bottom: 12px !important; width: auto !important; max-width: 360px; max-height: calc(100dvh - 24px); overflow-y: auto; }
+
+  /* Garage: stable viewer size and a scrollable collection. */
+  [data-page="garage"] .garage-layout { height: auto; min-height: calc(100dvh - 84px); padding: 0; flex-direction: column; }
+  [data-page="garage"] .garage-layout > * { min-width: 0; }
+  [data-page="garage"] .viewport-3d { flex: none !important; height: clamp(240px, 48dvh, 450px); }
+  [data-page="garage"] .viewport-3d canvas { display: block; touch-action: none; }
+  [data-page="garage"] .garage-panel { width: 100%; }
+  [data-page="garage"] .garage-kart-list-card { min-height: 0; }
+  [data-page="garage"] .card { padding: 14px !important; }
+  [data-page="garage"] .garage-stats { min-width: 0 !important; flex-basis: 100% !important; gap: 12px !important; }
+  [data-page="garage"] .garage-filters { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  [data-page="garage"] .garage-filters > .garage-filter-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; min-width: 0; }
+  [data-page="garage"] .garage-select-trigger { min-width: 0; width: 100%; }
+  [data-page="garage"] .kart-grid-container { max-height: 55dvh; flex: auto; }
+  [data-page="garage"] .kart-grid { grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)); }
+  #imageZoomModal { padding: 54px 12px 12px; box-sizing: border-box; }
+
+  /* Track editor: tools live in the drawer, canvas uses remaining height. */
+  [data-page="builder"] { overflow: hidden; }
+  [data-page="builder"] main { height: 100dvh; padding: 0; }
+  [data-page="builder"] header { height: auto; min-height: 60px; padding: 8px 12px 8px 112px; gap: 8px; flex-wrap: wrap; }
+  [data-page="builder"] .topbar-title { display: none; }
+  [data-page="builder"] .topbar-right { display: flex; flex-wrap: wrap; gap: 6px; }
+  [data-page="builder"] .btn-builder { padding: 0 10px; font-size: 12px; }
+  [data-page="builder"] .workspace-container { min-height: 0; padding: 6px 12px; flex-direction: column; gap: 6px; }
+  [data-page="builder"] .workspace { width: 100%; height: auto; flex: 1; min-height: 80px; max-height: none; }
+  #trackCanvas { touch-action: none; }
+  .builder-touch-tools { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px; }
+  .builder-touch-tools button { min-width: 44px; border: 1px solid #275276; border-radius: 8px; background: #09172a; color: #fff; padding: 0 10px; }
+  .builder-touch-tools button[aria-pressed="true"] { background: #087ad8; }
+  [data-page="builder"] .info-bar { position: static; transform: none; min-width: 0; width: 100%; height: auto; flex-shrink: 0; padding: 6px; flex-wrap: wrap; gap: 6px; border-radius: 10px; }
+  [data-page="builder"] .info-item { font-size: 11px; padding: 0 6px; }
+  .moderation-table-wrap { overflow: auto; }
+  .moderation-table { min-width: 650px; }
+
+  /* Moderation forms. */
+  [data-page="admin"] { padding: 16px 12px; }
+  [data-page="admin"] header { align-items: flex-start; flex-direction: column; gap: 16px; padding: 16px; }
+  [data-page="admin"] h1 { font-size: 21px; }
+  [data-page="admin"] .config-block { padding: 16px; }
+  [data-page="admin"] .btn-save { width: 100%; }
+  [data-page="admin"] .btn-back { display: inline-flex; align-items: center; box-sizing: border-box; }
+
+  [data-page="hub"] { overflow: hidden; }
+  [data-page="hub"] #ui-container { padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
+  [data-page="hub"] .hud-panel { min-width: 170px; padding: 10px; }
+  [data-page="hub"] .hud-title { font-size: 14px; }
+  [data-page="hub"] .loading-logo { max-height: 28dvh; width: auto; max-width: 70vw; }
+  [data-page="hub"] .loading-title { font-size: 17px; }
+  [data-page="hub"] .loading-bar-container { width: min(550px, 75vw); }
+}
+
+@media (max-width: 600px) {
+  [data-page="lobby"] .modes { grid-template-columns: minmax(0, 1fr); }
+  .profile-grid-layout { grid-template-columns: minmax(0, 1fr); }
+  .daily-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .daily-card.day-7 { grid-column: 1 / -1; }
+  .mission-card, .profile-header-card { flex-wrap: wrap; gap: 12px; }
+  .mission-info { min-width: 0; padding-right: 0; }
+  .mission-reward { width: 100%; }
+  .lobbyCardModal, .profile-modal-wide { padding: 16px !important; }
+  #storeItemsGrid { grid-template-columns: minmax(0, 1fr) !important; }
+  #kartChoiceGrid { gap: 8px !important; }
+  [data-page="garage"] .garage-filters > .garage-filter-controls { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (pointer: coarse) {
+  .hub-touch-controls { display: flex; position: fixed; inset: auto max(16px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); justify-content: space-between; z-index: 20; pointer-events: none; }
+  .hub-touch-controls > div { display: flex; gap: 10px; }
+  .hub-touch-controls button { width: 64px; height: 58px; border-radius: 16px; border: 1px solid #38bdf8; background: #09172ade; color: white; font-size: 24px; touch-action: none; user-select: none; pointer-events: auto; }
+  .hub-touch-controls button:active { background: #087ad8; }
+  [data-page="hub"] .controls-hint { display: none; }
+}
+
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 1100px) {
+  .orientation-notice { display: flex; position: fixed; inset: 0; z-index: 20000; background: #050f20; color: #f4f8ff; align-items: center; justify-content: center; flex-direction: column; gap: 18px; padding: 28px; text-align: center; font: 16px system-ui; }
+  .orientation-notice .rotate-icon { font-size: 64px; color: #21c7ff; }
+  .orientation-notice p { max-width: 320px; line-height: 1.5; }
+  .orientation-notice a { color: #21c7ff; padding: 12px; }
+}

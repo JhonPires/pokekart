@@ -381,9 +381,11 @@
             }
         }
     </style>
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
 </head>
 
-<body>
+<body data-page="hub">
 
     <div id="loadingScreen">
         <!-- VÍDEO DE FUNDO SUBSTITUINDO A IMAGEM -->
@@ -434,6 +436,16 @@
         </div>
     </div>
 
+    <div class="hub-touch-controls" aria-label="Controles da Torre">
+        <div>
+            <button type="button" data-drive="a" aria-label="Virar à esquerda">◀</button>
+            <button type="button" data-drive="d" aria-label="Virar à direita">▶</button>
+        </div>
+        <div>
+            <button type="button" data-drive="s" aria-label="Ré">▼</button>
+            <button type="button" data-drive="w" aria-label="Acelerar">▲</button>
+        </div>
+    </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>

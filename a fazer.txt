@@ -1,19 +1,11 @@
-BUGS
-
-
 AJUSTES
 - Criar as pistas para elite Four
 - Criar os 3D para colocar no novo hub da elite Four
-- Trocar todos os icones
 - Trocar os icones dos emojis da loja
-
-
-NOVIDADES 
 
 
 FUTURO
 - Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
-- Mobile
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Ver a possibilidade de escolher para onde jogar a habilidade
 
@@ -23,14 +15,8 @@ Trocar esse POKEKART do menu por uma imagem
 
 GARAGEM
 Troca os icones
-Corrigir os dropdown
 
 LOJA
-+ titulos
-+ bordas
-Adicionar os avatares já bloqueados no perfil para serem vendidos
-+ rastros
-+ efeitos
 Trocar os icones
 
 CRIADOR DE PISTAS
@@ -40,26 +26,14 @@ PERFIL DO PILOTO
 Trocar os icones
 
 PASSE DE BATALHA
-Rever as recompensas (adicionar consumiveis, titulos, bordas, rastros, efeitos, emojis )
 Trocar os icones
-Aumentar quantidade de niveis
 
-TABELA DE CLASSIFICACAO
-Mudar o icone que abre o modal (hj esta masterball)
-Está com o modal em estilo diferente dos demais
 
 MODO MULTI
 Trocar os icones
 
-MODO TORRE
-Alterar o modal de DERROTADO 
-
 HUB
 Trocar os icones
-
-CORRIDA
-Placar quando finalizado está ficando com a bandeira no canto superior esquerdo
-
 
 
 

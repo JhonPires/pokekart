@@ -13,6 +13,8 @@ let selectedPointIndex = -1;
 let hoveredPointIndex = -1;
 let isDragging = false;
 let isPanning = false;
+let canvasTouchAction = 'edit';
+let canvasPointerId = null;
 let panStart = { x: 0, y: 0 };
 let lastMousePos = { x: 0, y: 0 };
 
@@ -40,6 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
+  new ResizeObserver(resizeCanvas).observe(document.getElementById('workspace'));
 
   // NOVO: Verifica se estamos a editar uma pista através da URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -450,20 +453,47 @@ function updateInfo() {
 // INTERAÇÃO COM O MOUSE E EVENTOS DO CANVAS
 // ------------------------------------------------------------
 function setupCanvasEvents() {
-  canvas.addEventListener('mousedown', (e) => {
+  const panButton = document.getElementById('btnCanvasPan');
+  const eraseButton = document.getElementById('btnCanvasErase');
+  const setAction = action => {
+    canvasTouchAction = canvasTouchAction === action ? 'edit' : action;
+    panButton.setAttribute('aria-pressed', String(canvasTouchAction === 'pan'));
+    eraseButton.setAttribute('aria-pressed', String(canvasTouchAction === 'erase'));
+  };
+  panButton.addEventListener('click', () => setAction('pan'));
+  eraseButton.addEventListener('click', () => setAction('erase'));
+  document.querySelectorAll('[data-mode], #toolBoosts').forEach(button => {
+    button.addEventListener('click', () => {
+      canvasTouchAction = 'edit';
+      panButton.setAttribute('aria-pressed', 'false');
+      eraseButton.setAttribute('aria-pressed', 'false');
+    });
+  });
+  document.getElementById('btnCanvasZoomIn').addEventListener('click', () => changeCanvasZoom(1.15));
+  document.getElementById('btnCanvasZoomOut').addEventListener('click', () => changeCanvasZoom(1 / 1.15));
+
+  canvas.addEventListener('pointerdown', (e) => {
+    if (canvasPointerId !== null || e.button === 2) return;
+    e.preventDefault();
+    canvasPointerId = e.pointerId;
+    canvas.setPointerCapture(e.pointerId);
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
     lastMousePos = { x: mx, y: my };
 
     // Botão do meio ou segurando espaço -> Pan
-    if (e.button === 1 || e.shiftKey) {
+    if (e.button === 1 || e.shiftKey || canvasTouchAction === 'pan') {
       isPanning = true;
       panStart = { x: mx, y: my };
       return;
     }
 
     if (e.button === 0) { // Clique esquerdo
+      if (canvasTouchAction === 'erase') {
+        removeCanvasElement(mx, my);
+        return;
+      }
       const clickedPoint = findNearestPoint(mx, my);
 
       if (currentMode === 'nodes') {
@@ -512,7 +542,8 @@ function setupCanvasEvents() {
     }
   });
 
-  canvas.addEventListener('mousemove', (e) => {
+  canvas.addEventListener('pointermove', (e) => {
+    if (canvasPointerId !== null && canvasPointerId !== e.pointerId) return;
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
@@ -527,6 +558,7 @@ function setupCanvasEvents() {
 
     if (isDragging && selectedPointIndex !== -1) {
       const world = screenToWorld(mx, my);
+      world.y = points[selectedPointIndex].y || 0;
       points[selectedPointIndex] = world;
       render();
       return;
@@ -540,18 +572,24 @@ function setupCanvasEvents() {
     }
   });
 
-  window.addEventListener('mouseup', () => {
+  const endCanvasGesture = event => {
+    if (event.pointerId !== undefined && event.pointerId !== canvasPointerId) return;
+    canvasPointerId = null;
     isDragging = false;
     updateElevationUI();
     isPanning = false;
-  });
+  };
+  canvas.addEventListener('pointerup', endCanvasGesture);
+  canvas.addEventListener('pointercancel', endCanvasGesture);
+  canvas.addEventListener('lostpointercapture', endCanvasGesture);
+  window.addEventListener('blur', endCanvasGesture);
+  window.addEventListener('resize', endCanvasGesture);
 
   // Zoom com a roda do mouse
   canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
-    zoom = Math.max(0.5, Math.min(6.0, zoom * zoomFactor));
-    render();
+    changeCanvasZoom(zoomFactor);
   }, { passive: false });
 
   // Clique direito: remove ponto ou item
@@ -560,7 +598,16 @@ function setupCanvasEvents() {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
+    removeCanvasElement(mx, my);
+  });
+}
 
+function changeCanvasZoom(factor) {
+  zoom = Math.max(0.5, Math.min(6.0, zoom * factor));
+  render();
+}
+
+function removeCanvasElement(mx, my) {
     if (currentMode === 'nodes') {
       const pIdx = findNearestPoint(mx, my);
       if (pIdx !== -1 && points.length > 2) {
@@ -581,11 +628,11 @@ function setupCanvasEvents() {
         render();
       }
     }
-  });
+  updateElevationUI();
 }
 
 function findNearestPoint(sx, sy) {
-  const threshold = 14;
+  const threshold = matchMedia('(pointer: coarse)').matches ? 24 : 14;
   for (let i = 0; i < points.length; i++) {
     const scr = worldToScreen(points[i].x, points[i].z);
     if (Math.hypot(scr.x - sx, scr.y - sy) <= threshold) {
@@ -616,7 +663,7 @@ function findNearestTOnCurve(sx, sy, curve) {
 function findNearestItem(sx, sy) {
   const curve = getSplineCurve();
   if (!curve) return -1;
-  const threshold = 16;
+  const threshold = matchMedia('(pointer: coarse)').matches ? 24 : 16;
 
   for (let i = 0; i < items.length; i++) {
     const pt = curve.getPointAt(items[i].t);
@@ -631,7 +678,7 @@ function findNearestItem(sx, sy) {
 function findNearestBoost(sx, sy) {
   const curve = getSplineCurve();
   if (!curve) return -1;
-  const threshold = 16;
+  const threshold = matchMedia('(pointer: coarse)').matches ? 24 : 16;
 
   for (let i = 0; i < boosts.length; i++) {
     const pt = curve.getPointAt(boosts[i].t);

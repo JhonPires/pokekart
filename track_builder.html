@@ -538,9 +538,11 @@
       color: #38bdf8;
     }
   </style>
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
 </head>
 
-<body>
+<body data-page="builder">
 
   <aside class="sidebar" id="sidebar">
     <div class="brand-mini">
@@ -637,6 +639,12 @@
       </div>
     </header>
 
+    <div class="builder-touch-tools" role="toolbar" aria-label="Controles do mapa">
+      <button type="button" id="btnCanvasPan" aria-pressed="false">✋ Mover mapa</button>
+      <button type="button" id="btnCanvasErase" aria-pressed="false">⌫ Apagar</button>
+      <button type="button" id="btnCanvasZoomOut" aria-label="Diminuir zoom">−</button>
+      <button type="button" id="btnCanvasZoomIn" aria-label="Aumentar zoom">+</button>
+    </div>
     <div class="workspace-container">
       <section class="workspace" id="workspace">
         <canvas id="trackCanvas"></canvas>
@@ -681,7 +689,7 @@
         <button class="modal-close" id="btnCloseAdminModal">&times;</button>
       </div>
       <div style="font-size: 13px; color: #94a3b8;">Gerencie as pistas enviadas pela comunidade.</div>
-      <div style="width: 100%;">
+      <div class="moderation-table-wrap" style="width: 100%;">
         <table class="moderation-table">
           <thead>
             <tr>

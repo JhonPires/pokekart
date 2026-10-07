@@ -92,6 +92,7 @@ function updateDailyFreeKarts() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  initGarageFilterDropdowns();
   init3DViewport();
 
   if (typeof fetchPlayerProfile === 'function') {
@@ -116,6 +117,123 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnBack = document.getElementById('btnBack');
   if (btnBack) btnBack.onclick = () => window.location.href = 'index.html';
 });
+
+function initGarageFilterDropdowns() {
+  const configs = [
+    { wrapperId: 'garageRegionDropdown', selectId: 'garageRegionSelect', label: 'Filtrar por região' },
+    { wrapperId: 'garageSortDropdown', selectId: 'garageSortSelect', label: 'Ordenar karts' }
+  ];
+  const closeAll = (exceptMenu = null) => {
+    document.querySelectorAll('.garage-filter-menu.show').forEach(menu => {
+      if (menu !== exceptMenu) {
+        menu.classList.remove('show');
+        const trigger = menu.closest('.garage-select-wrap')?.querySelector('.garage-select-trigger');
+        trigger?.classList.remove('open');
+        trigger?.setAttribute('aria-expanded', 'false');
+      }
+    });
+  };
+
+  configs.forEach(({ wrapperId, selectId, label }) => {
+    const wrapper = document.getElementById(wrapperId);
+    const select = document.getElementById(selectId);
+    if (!wrapper || !select) return;
+
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'dropdown-selected garage-select-trigger';
+    trigger.setAttribute('aria-label', label);
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+    trigger.innerHTML = '<span class="garage-select-value"></span><span class="garage-select-chevron" aria-hidden="true">▼</span>';
+
+    const menu = document.createElement('div');
+    menu.className = 'dropdown-options garage-filter-menu';
+    menu.id = `${selectId}Menu`;
+    menu.setAttribute('role', 'listbox');
+    trigger.setAttribute('aria-controls', menu.id);
+
+    [...select.options].forEach(option => {
+      const item = document.createElement('div');
+      item.setAttribute('role', 'option');
+      item.dataset.value = option.value;
+      item.textContent = option.textContent.trim();
+      item.tabIndex = -1;
+      item.addEventListener('click', () => choose(option.value));
+      menu.appendChild(item);
+    });
+
+    wrapper.append(trigger, menu);
+    const valueLabel = trigger.querySelector('.garage-select-value');
+
+    const syncValue = () => {
+      const selected = select.options[select.selectedIndex];
+      valueLabel.textContent = selected ? selected.textContent.trim() : '';
+      menu.querySelectorAll('[role="option"]').forEach(item => {
+        const isSelected = item.dataset.value === select.value;
+        item.setAttribute('aria-selected', String(isSelected));
+        if (isSelected) item.classList.add('selected');
+        else item.classList.remove('selected');
+      });
+    };
+    const setOpen = open => {
+      closeAll(menu);
+      menu.classList.toggle('show', open);
+      trigger.classList.toggle('open', open);
+      trigger.setAttribute('aria-expanded', String(open));
+    };
+    const choose = value => {
+      select.value = value;
+      syncValue();
+      setOpen(false);
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      trigger.focus();
+    };
+    const focusOption = option => {
+      const options = [...menu.querySelectorAll('[role="option"]')];
+      const target = options[option];
+      if (!target) return;
+      options.forEach(item => { item.tabIndex = item === target ? 0 : -1; });
+      target.focus();
+    };
+
+    trigger.addEventListener('click', () => {
+      const open = !menu.classList.contains('show');
+      setOpen(open);
+      if (open) menu.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
+    });
+    trigger.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        setOpen(true);
+        const index = [...menu.children].findIndex(item => item.dataset.value === select.value);
+        focusOption(index < 0 ? 0 : index);
+      }
+    });
+    menu.addEventListener('keydown', event => {
+      const options = [...menu.querySelectorAll('[role="option"]')];
+      const index = options.indexOf(document.activeElement);
+      if (event.key === 'Escape') {
+        event.preventDefault(); setOpen(false); trigger.focus();
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        focusOption((index + direction + options.length) % options.length);
+      } else if (event.key === 'Home' || event.key === 'End') {
+        event.preventDefault(); focusOption(event.key === 'Home' ? 0 : options.length - 1);
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        if (index >= 0) choose(options[index].dataset.value);
+      }
+    });
+    select.addEventListener('change', syncValue);
+    syncValue();
+  });
+
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.garage-select-wrap')) closeAll();
+  });
+}
 
 function updateHeaderData() {
   const nickEl = document.getElementById('playerNickname');
@@ -145,6 +263,17 @@ function init3DViewport() {
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   container.appendChild(renderer.domElement);
+
+  // The viewer changes size when the mobile layout stacks or rotates.
+  const resizeViewer = () => {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (!width || !height) return;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  };
+  new ResizeObserver(resizeViewer).observe(container);
 
   let isUserInteracting = false;
   let resumeAutoRotateTimeout = null;
