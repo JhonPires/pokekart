@@ -1,7 +1,7 @@
 // garage.js - Atualizado com Novos Karts e Sistema de Rotação Gratuita
 
 let scene, camera, renderer, currentMesh, controls;
-let selectedKartId = 'jolteon';
+let selectedKartId = sessionStorage.getItem('pkart_selected_kart');
 let garageRequestId = 0;
 
 const POKEAPI_SPRITE_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/';
@@ -51,16 +51,17 @@ async function carregarKartsDaGaragem() {
     }
   } catch (err) {
     console.error("Erro ao carregar catálogo da garagem:", err);
-    KART_CATALOG = [{
-      id: 'jolteon',
-      name: 'Jolteon Kart',
-      price: 0,
-      conceptImg: 'img/jolteon.png',
-      modelUrl: getKartUrl('jolteon.glb'),
+    const fallbackId = getDefaultPlayerKart();
+    KART_CATALOG = fallbackId ? [{
+      id: fallbackId,
+      name: `${fallbackId[0].toUpperCase()}${fallbackId.slice(1)} Kart`,
+      price: null,
+      conceptImg: `img/${fallbackId}.png`,
+      modelUrl: getKartUrl(`${fallbackId}.glb`),
       stats: { speed: 75, accel: 90, handling: 85 },
-      dexId: 135,
+      dexId: { charizard: 6, venusaur: 3, blastoise: 9 }[fallbackId] || null,
       activated: true
-    }];
+    }] : [];
   }
 }
 
@@ -76,9 +77,9 @@ function updateDailyFreeKarts() {
     return s / 233280;
   }
 
-  // CORREÇÃO: Filtra para remover o Jolteon e apenas karts ativos
+  // A rotação diária não concede propriedade permanente.
   const availableKarts = KART_CATALOG
-    .filter(k => k.id !== 'jolteon' && k.activated !== false)
+    .filter(k => k.activated !== false)
     .map(k => k.id);
   availableKarts.sort();
 
@@ -109,6 +110,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (currentUserProfile && currentUserProfile.selected_kart) {
     selectedKartId = currentUserProfile.selected_kart;
+  } else {
+    selectedKartId = getDefaultPlayerKart();
   }
 
   renderKartGrid();
@@ -390,7 +393,7 @@ function renderKartGrid() {
   gridEl.innerHTML = '';
 
   // 1. Trava de segurança para ler os karts do banco de dados
-  let userKarts = ['jolteon', 'charizard'];
+  let userKarts = [];
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
       userKarts = currentUserProfile.unlocked_karts;
@@ -410,8 +413,9 @@ function renderKartGrid() {
   // 🛡️ 3. TRAVA DE EXPIRAÇÃO AUTOMÁTICA
   const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
   if (currentEquipped && !unlockedList.includes(currentEquipped)) {
-    sessionStorage.setItem('pkart_selected_kart', 'jolteon');
-    selectedKartId = 'jolteon';
+    selectedKartId = getDefaultPlayerKart() || unlockedList[0] || null;
+    if (selectedKartId) sessionStorage.setItem('pkart_selected_kart', selectedKartId);
+    else sessionStorage.removeItem('pkart_selected_kart');
   }
 
   // 🔄 4. SISTEMA DE ORDENAÇÃO (FILTRO)
@@ -457,7 +461,7 @@ function renderKartGrid() {
   catalogToRender.forEach((kart) => {
     const isUnlocked = unlockedList.includes(kart.id);
 
-    const thumbSrc = kart.dexId ? `${POKEAPI_SPRITE_BASE}${kart.dexId}.png` : 'img/jolteon.png';
+    const thumbSrc = kart.dexId ? `${POKEAPI_SPRITE_BASE}${kart.dexId}.png` : kart.conceptImg || 'emojis/pokeball.png';
 
     const isFreeRotation = dailyFreeKarts.includes(kart.id) && !userKarts.includes(kart.id);
 
@@ -542,7 +546,7 @@ function selectKart(kartId) {
     const nameEl = document.getElementById('kartName');
 
     // 🛡️ TRAVA DE SEGURANÇA PARA LER O BANCO
-    let userKarts = ['jolteon', 'charizard'];
+    let userKarts = [];
     if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
       if (Array.isArray(currentUserProfile.unlocked_karts)) {
         userKarts = currentUserProfile.unlocked_karts;
@@ -574,7 +578,7 @@ function selectKart(kartId) {
       // --- NOVO: LÓGICA DE BARRAS PREENCHIDAS PARA COMPARAÇÃO ---
       const currentlyEquippedId = (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.selected_kart)
         ? currentUserProfile.selected_kart
-        : sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+        : sessionStorage.getItem('pkart_selected_kart') || getDefaultPlayerKart();
 
       const equippedData = KART_CATALOG.find(k => k.id === currentlyEquippedId);
       const isComparing = (kartId !== currentlyEquippedId);
@@ -615,7 +619,7 @@ function selectKart(kartId) {
 }
 
 async function equipKart(kartId) {
-  let userKarts = ['jolteon', 'charizard'];
+  let userKarts = [];
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
       userKarts = currentUserProfile.unlocked_karts;
@@ -642,15 +646,6 @@ async function equipKart(kartId) {
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
     currentUserProfile.selected_kart = kartId;
 
-    // CORREÇÃO: "Tranca" o kart temporariamente no inventário local.
-    // Isso impede que o Lobby ative a segurança e resete pro Jolteon!
-    if (isFreeRotation && !userKarts.includes(kartId)) {
-      if (Array.isArray(currentUserProfile.unlocked_karts)) {
-        currentUserProfile.unlocked_karts.push(kartId);
-      } else {
-        currentUserProfile.unlocked_karts = JSON.stringify([...userKarts, kartId]);
-      }
-    }
   }
   // 🛡️ 2. CORREÇÃO: Salva no Supabase SEMPRE. 
   // Isso impede que o auth.js do Lobby puxe um dado velho e resete seu kart.
@@ -677,7 +672,7 @@ function updateActionButton(kartData, isFreeRotation) {
   if (!btnAction) return;
 
   // 🛡️️ TRAVA DE SEGURANÇA
-  let userKarts = ['jolteon', 'charizard'];
+  let userKarts = [];
   if (currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
       userKarts = currentUserProfile.unlocked_karts;

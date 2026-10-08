@@ -16,6 +16,14 @@ const isMobile = (() => {
   } catch (e) { return false; }
 })();
 const MOBILE_DISABLE_BLOOM = true; // o bloom é o efeito mais pesado; desligue só no celular
+let raceSceneReady = false;
+let raceStartRequested = false;
+let raceNetworkInitialized = false;
+let confirmMobileStart;
+const mobileStartReady = new Promise(resolve => {
+  confirmMobileStart = resolve;
+  if (!isMobile) resolve();
+});
 // Sem bloom, o composer só copiaria a imagem: no celular renderizamos direto (menos uma passada em tela cheia)
 const useComposerPath = !(isMobile && MOBILE_DISABLE_BLOOM);
 const victorySound = new Audio('sounds/victory.mp3');
@@ -139,7 +147,7 @@ const GYM_LEADERS = ['GARY', 'SILVER', 'MAY', 'ASH', 'N', 'RED', 'DAWN', 'TRACEY
 
 // 1. Puxa dados do Jogador (Lobby)
 const playerNickname = (sessionStorage.getItem('pkart_nickname') || 'JOGADOR').toUpperCase();
-const selectedKartId = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+let selectedKartId = sessionStorage.getItem('pkart_selected_kart');
 
 // 2. Puxa a configuração da partida (Torre ou Hub)
 const matchConfig = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
@@ -315,7 +323,7 @@ function setupCTRHud() {
   `;
   document.head.appendChild(style);
 
-  const defaultIconSvg = '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="10" fill="none" stroke="#3a5a78" stroke-width="1.6"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="#8da5bd" font-family="Arial, sans-serif">?</text></svg>';
+  const defaultIconSvg = '<img class="pk-skill-icon" src="emojis/pokeball.png" alt="Nenhuma habilidade equipada">';
 
   const hudHTML = document.createElement('div');
   hudHTML.className = 'ctr-hud';
@@ -562,12 +570,13 @@ async function loadKartsFromDatabase() {
   } catch (err) {
     console.error("Erro ao carregar karts do banco:", err);
     // Fallback de segurança usando getKartUrl também
-    KART_DATABASE = [{
-      id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
+    const fallbackId = selectedKartId || getDefaultPlayerKart();
+    KART_DATABASE = fallbackId ? [{
+      id: fallbackId, name: `${fallbackId[0].toUpperCase()}${fallbackId.slice(1)} Kart`, modelUrl: getKartUrl(`${fallbackId}.glb`),
       stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
-      dexId: 135,
+      dexId: { charizard: 6, venusaur: 3, blastoise: 9 }[fallbackId] || null,
       activated: true
-    }];
+    }] : [];
   }
 }
 
@@ -2899,9 +2908,7 @@ async function loadCustomTrack(trackParam) {
   }
 }
 
-if (customTrackParam) {
-  loadCustomTrack(customTrackParam);
-}
+// A pista personalizada será aguardada antes de posicionar os karts no grid.
 
 // ------------------------------------------------------------
 // GRID DE LARGADA
@@ -2933,70 +2940,76 @@ function getGridPosition(gridIndex) {
 // ------------------------------------------------------------
 const KART_MODEL_SCALE = 2.2;
 
-async function loadKartTemplate(kartEntry, callback) {
-  if (kartEntry.template) {
-    if (callback) callback(kartEntry.template);
-    return;
-  }
+const kartTemplateLoads = new Map();
+const pendingKartModels = new Set();
+let raceModelLoader = null;
 
-  if (window.KART_ASSETS && window.KART_ASSETS[kartEntry.id]) {
-    kartEntry.template = window.KART_ASSETS[kartEntry.id];
-    if (callback) callback(kartEntry.template);
-    return;
+async function readKartTemplate(kartEntry) {
+  if (kartEntry.template) return kartEntry.template;
+  if (window.KART_ASSETS && window.KART_ASSETS[kartEntry.id]) return window.KART_ASSETS[kartEntry.id];
+  if (!raceModelLoader) {
+    raceModelLoader = new THREE.GLTFLoader();
+    if (typeof THREE.DRACOLoader !== 'undefined') {
+      const dracoLoader = new THREE.DRACOLoader();
+      dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+      dracoLoader.setWorkerLimit(isMobile ? 1 : 2);
+      raceModelLoader.setDRACOLoader(dracoLoader);
+    }
   }
-
-  const loader = new THREE.GLTFLoader();
-  if (typeof THREE.DRACOLoader !== 'undefined') {
-    const dracoLoader = new THREE.DRACOLoader();
-    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-    loader.setDRACOLoader(dracoLoader);
-  }
-
   const targetCacheName = typeof CACHE_NAME !== 'undefined' ? CACHE_NAME : 'pkart-3d-models-v2';
-
+  let cache = null;
+  let arrayBuffer = null;
   try {
     if ('caches' in window) {
-      const cache = await caches.open(targetCacheName);
-      const cachedResponse = await cache.match(kartEntry.modelUrl);
-      if (cachedResponse) {
-        const arrayBuffer = await cachedResponse.arrayBuffer();
-        loader.parse(arrayBuffer, './models/', (gltf) => {
-          if (!window.KART_ASSETS) window.KART_ASSETS = {};
-          optimizeModelForMobile(gltf.scene, kartEntry.id);
-          window.KART_ASSETS[kartEntry.id] = gltf.scene;
-          kartEntry.template = gltf.scene;
-          if (callback) callback(kartEntry.template);
-        });
-        return;
-      }
+      cache = await caches.open(targetCacheName);
+      const cached = await cache.match(kartEntry.modelUrl);
+      if (cached) arrayBuffer = await cached.arrayBuffer();
     }
-  } catch (err) {
-    console.warn('[Game] Erro ao carregar Cache Storage:', err);
+  } catch (err) { console.warn('[Game] Erro ao carregar Cache Storage:', err); }
+  if (!arrayBuffer) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    try {
+      const response = await fetch(kartEntry.modelUrl, { signal: controller.signal });
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      if (cache) cache.put(kartEntry.modelUrl, response.clone()).catch(() => {});
+      arrayBuffer = await response.arrayBuffer();
+    } finally { clearTimeout(timeout); }
   }
+  const gltf = await new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('Tempo esgotado ao preparar modelo 3D')), 45000);
+    try {
+      raceModelLoader.parse(arrayBuffer, './models/',
+        value => { clearTimeout(timeout); resolve(value); },
+        error => { clearTimeout(timeout); reject(error); });
+    } catch (error) { clearTimeout(timeout); reject(error); }
+  });
+  // Cede um quadro antes da otimização para manter o loading visível.
+  await window.RaceLoading.nextPaint();
+  optimizeModelForMobile(gltf.scene, kartEntry.id);
+  if (!window.KART_ASSETS) window.KART_ASSETS = {};
+  window.KART_ASSETS[kartEntry.id] = gltf.scene;
+  return gltf.scene;
+}
 
-  try {
-    const response = await fetch(kartEntry.modelUrl);
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-    if ('caches' in window) {
-      try {
-        const cache = await caches.open(targetCacheName);
-        cache.put(kartEntry.modelUrl, response.clone());
-      } catch (e) { }
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    loader.parse(arrayBuffer, './models/', (gltf) => {
-      if (!window.KART_ASSETS) window.KART_ASSETS = {};
-      optimizeModelForMobile(gltf.scene, kartEntry.id);
-          window.KART_ASSETS[kartEntry.id] = gltf.scene;
-      kartEntry.template = gltf.scene;
-      if (callback) callback(kartEntry.template);
-    });
-  } catch (err) {
-    console.error(`[GLB] Erro ao carregar ${kartEntry.name}:`, err);
-    if (callback) callback(null);
+function loadKartTemplate(kartEntry, callback) {
+  if (!kartTemplateLoads.has(kartEntry.id)) {
+    kartTemplateLoads.set(kartEntry.id, readKartTemplate(kartEntry).catch(error => {
+      console.error(`[GLB] Erro ao carregar ${kartEntry.name}:`, error);
+      return null; // Mantém o kart de fallback em caso de arquivo indisponível.
+    }));
   }
+  const pending = kartTemplateLoads.get(kartEntry.id).then(template => {
+    kartEntry.template = template;
+    if (callback) callback(template);
+    return template;
+  }).finally(() => pendingKartModels.delete(pending));
+  pendingKartModels.add(pending);
+  return pending;
+}
+
+async function waitForKartModels() {
+  while (pendingKartModels.size) await Promise.all([...pendingKartModels]);
 }
 
 function applyModelToGroup(group, templateScene, chassisColor, isLocalKart) {
@@ -3169,14 +3182,14 @@ let localKartLoaded = false;
 let countdownStarted = false;
 
 function checkAndStartCountdown() {
-  if (localKartLoaded && !countdownStarted && !roomCodeParam) {
+  if (raceSceneReady && localKartLoaded && !countdownStarted && !roomCodeParam) {
     countdownStarted = true;
-    setTimeout(() => { startCountdown(); }, 1500);
+    startCountdown();
   }
 }
 
 function setLocalKartModel(kartEntry) {
-  loadKartTemplate(kartEntry, (template) => {
+  return loadKartTemplate(kartEntry, (template) => {
     if (!kart) {
       localKartObj = createKart(0xE53935);
       kart = localKartObj.group;
@@ -3208,6 +3221,8 @@ function setLocalKartModel(kartEntry) {
 let isPaused = false;
 const pauseMenuEl = document.getElementById('pauseMenu');
 const btnReturnLobbyEl = document.getElementById('btnReturnLobby');
+const btnResumeRaceEl = document.getElementById('btnResumeRace');
+if (btnResumeRaceEl) btnResumeRaceEl.onclick = () => { if (isPaused) pressKey('Escape', 'Escape'); };
 
 window.addEventListener('keydown', (e) => {
   if (e.code === 'Escape') {
@@ -3495,10 +3510,11 @@ function setupMobileControls() {
 function setupRotateOverlay() {
   const ov = document.createElement('div');
   ov.id = 'mobileRotateOverlay';
+  ov.className = 'pk-modal-overlay';
   ov.innerHTML = `
-    <div class="mr-phone">📱</div>
-    <div class="mr-title">GIRE O CELULAR</div>
-    <div class="mr-sub">O jogo é jogado na horizontal.<br>Se nada acontecer, ative a rotação automática do aparelho.</div>`;
+    <section class="pk-modal pk-modal-compact"><div class="mr-phone">📱</div>
+    <div class="mr-title pk-modal-title">GIRE O CELULAR</div>
+    <div class="mr-sub">O jogo é jogado na horizontal.<br>Se nada acontecer, ative a rotação automática do aparelho.</div></section>`;
   document.body.appendChild(ov);
 
   const check = () => {
@@ -3634,16 +3650,21 @@ if (isMobile) {
   const canFullscreen = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
   const startOverlay = document.createElement('div');
   startOverlay.id = 'mobileStartOverlay';
-  startOverlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.96); color: #FFD54F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: Bangers, Impact, sans-serif; text-align: center; padding: 20px;';
+  startOverlay.className = 'pk-modal-overlay';
+  startOverlay.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.96); color: #FFD54F; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20001; font-family: Bangers, Impact, sans-serif; text-align: center; padding: 20px;';
   startOverlay.innerHTML = `
-    <div style="font-size: 54px;">🏁</div>
-    <div style="font-size: 38px; letter-spacing: 2px; margin: 6px 0 14px;">TOQUE PARA JOGAR</div>
+    <section class="pk-modal pk-modal-compact">
+    <img class="pk-modal-symbol" src="icones/tematicos/circuito.png" alt="">
+    <span class="pk-modal-eyebrow">PRONTO PARA A LARGADA?</span>
+    <h2 class="pk-modal-title">TOQUE PARA JOGAR</h2>
     <div style="font: 15px/1.45 sans-serif; color: #38bdf8; max-width: 440px;">
       Segure o celular na horizontal.<br>
       Esquerda: ◀ ▶ para virar &nbsp;•&nbsp; Direita: GO!, FREIO, DRIFT e habilidade.<br>
       Dá para trocar para direção por giroscópio no botão 🎮 do topo.
     </div>
     ${canFullscreen ? '' : '<div style="font: 13px/1.4 sans-serif; color: #94a3b8; margin-top: 14px; max-width: 420px;">Dica (iPhone): no Safari, toque em Compartilhar → “Adicionar à Tela de Início” para jogar em tela cheia.</div>'}
+    <button type="button" class="pk-modal-primary" style="padding:12px;">VAMOS CORRER</button>
+    </section>
   `;
   document.body.appendChild(startOverlay);
 
@@ -3652,7 +3673,7 @@ if (isMobile) {
     e.preventDefault();
     const p = enableMobileExperience(); // começa dentro do gesto do usuário
     startOverlay.remove();
-    return p;
+    return Promise.resolve(p).finally(confirmMobileStart);
   }, { once: true });
 }
 
@@ -3672,7 +3693,11 @@ let countdownStartTime = 0;
 let gasPressedTime = 0;
 
 function startCountdown() {
+  if (window.RaceLoading.failed) return;
+  if (!raceSceneReady) { raceStartRequested = true; return; }
   if (countdownInProgress || raceStarted) return;
+  clearTimeout(raceReadyTimeout);
+  window.RaceLoading.hide();
   countdownInProgress = true;
   countdownStartTime = performance.now(); // Grava a hora exata que os números começam
   gasPressedTime = 0; // Limpa o registo do acelerador
@@ -4201,8 +4226,16 @@ async function showFinishOverlay(place) {
 
   const overlay = document.createElement('div');
   overlay.id = 'finishOverlay';
+  overlay.className = 'pk-modal-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-label', 'Resultado da corrida');
   overlay.style.cssText = `
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh;
+    box-sizing: border-box;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow: hidden; touch-action: pan-y;
     background: rgba(11, 19, 41, 0.85); display: flex; flex-direction: column;
     align-items: center; justify-content: center; z-index: 9999; font-family: 'Segoe UI', Tahoma, sans-serif;
   `;
@@ -4212,42 +4245,61 @@ async function showFinishOverlay(place) {
     @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     #finishOverlay ::-webkit-scrollbar { width: 6px; }
     #finishOverlay ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
+    #finishOverlay .finish-card {
+      box-sizing: border-box; width: min(430px, 100%); max-height: 100%; min-height: 0;
+      padding: 32px 24px; gap: 16px; flex-shrink: 0; border-radius: 20px;
+      overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
+      touch-action: pan-y; -webkit-overflow-scrolling: touch;
+    }
+    #finishOverlay .finish-card > * { flex-shrink: 0; min-width: 0; }
+    #finishOverlay .finish-title { font-size: 26px; flex-direction: column; gap: 8px; }
+    #finishOverlay .finish-leaderboard {
+      flex: 1 1 auto; min-height: 72px; max-height: 220px;
+      overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
+    }
+    #finishOverlay .finish-leaderboard > * { flex-shrink: 0; }
+    #finishOverlay button { min-height: 44px; touch-action: manipulation; }
+    @media (max-width: 600px), (max-height: 500px) {
+      #finishOverlay .finish-card { padding: 16px; gap: 10px; border-radius: 16px; }
+      #finishOverlay .finish-title { font-size: 20px; flex-direction: row; justify-content: center; }
+      #finishOverlay .finish-leaderboard { max-height: clamp(72px, 26dvh, 140px); }
+    }
   `;
   overlay.appendChild(style);
 
   const card = document.createElement('div');
+  card.className = 'pk-modal finish-card';
   card.style.cssText = `
     background: rgba(15, 23, 42, 0.85); 
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(56, 189, 248, 0.4); 
-    border-radius: 20px; 
-    padding: 32px 24px; 
-    width: 380px; 
     box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(56, 189, 248, 0.1);
-    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    display: flex; flex-direction: column; align-items: center;
     animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
   `;
 
   card.innerHTML = `
-    <h2 style="margin:0; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; color:#FFD54F; font-size:26px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
+    <h2 class="finish-title" style="margin:0; width:100%; display:flex; align-items:center; text-align:center; color:#FFD54F; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
       <span aria-hidden="true">🏁</span>
       <span>CORRIDA FINALIZADA</span>
     </h2>
-    <div style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
+    <div class="pk-modal-panel" style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
        <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
        <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Recompensas...</div>
     </div>
   `;
 
   finishLeaderboardEl = document.createElement('div');
+  finishLeaderboardEl.className = 'finish-leaderboard';
   finishLeaderboardEl.style.cssText = `
     width: 100%; display: flex; flex-direction: column; gap: 6px; 
-    max-height: 220px; overflow-y: auto; padding-right: 4px;
+    overflow-y: auto; padding-right: 4px; box-sizing: border-box;
   `;
   card.appendChild(finishLeaderboardEl);
 
   const buttonsContainer = document.createElement('div');
+  buttonsContainer.className = 'pk-modal-actions';
   buttonsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;';
 
   const baseBtnStyle = `border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: transform 0.1s;`;
@@ -4255,6 +4307,7 @@ async function showFinishOverlay(place) {
   // Se for corrida Multiplayer
   if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     const btnKeep = document.createElement('button');
+      btnKeep.className = 'pk-modal-primary';
     btnKeep.style.cssText = baseBtnStyle + 'background: #22c55e; color: #0f172a; box-shadow: 0 4px 0 #16a34a;';
     btnKeep.innerText = isHost ? 'Manter Sala e Voltar' : 'Voltar para a Sala';
     btnKeep.onmousedown = () => btnKeep.style.transform = 'translateY(4px)';
@@ -4268,6 +4321,7 @@ async function showFinishOverlay(place) {
     };
 
     const btnLeave = document.createElement('button');
+      btnLeave.className = 'pk-modal-danger';
     btnLeave.style.cssText = baseBtnStyle + 'background: #ef4444; color: #fff; box-shadow: 0 4px 0 #b91c1c;';
     btnLeave.innerText = isHost ? 'Fechar Sala' : 'Sair da Sala';
     btnLeave.onmousedown = () => btnLeave.style.transform = 'translateY(4px)';
@@ -4293,6 +4347,7 @@ async function showFinishOverlay(place) {
         // Na Elite, sempre manda de volta para o Hub processar a próxima batalha
         if (currentFloor < maxFloorsVal || isElite) {
           const btnVoltarHub = document.createElement('button');
+      btnVoltarHub.className = 'pk-modal-primary';
           btnVoltarHub.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
 
           // Ícone ajustado para fazer mais sentido com a Elite
@@ -4312,6 +4367,7 @@ async function showFinishOverlay(place) {
         } else {
           // Venceu o Boss (Líder do Ginásio)
           const btnFinishTower = document.createElement('button');
+      btnFinishTower.className = 'pk-modal-primary';
           btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
           btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
           btnFinishTower.onclick = () => window.location.href = 'index.html';
@@ -4325,6 +4381,7 @@ async function showFinishOverlay(place) {
 
         if (canUseRevive) {
           const btnRevive = document.createElement('button');
+      btnRevive.className = 'pk-modal-primary';
           btnRevive.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ec4899, #be185d); color: #fff; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); margin-bottom: 4px;';
           btnRevive.innerHTML = `💊 Usar Revive (${reviveCount} restantes)`;
           btnRevive.onmousedown = () => btnRevive.style.transform = 'translateY(4px)';
@@ -4342,6 +4399,7 @@ async function showFinishOverlay(place) {
           buttonsContainer.appendChild(btnRevive);
 
           const btnGiveUp = document.createElement('button');
+      btnGiveUp.className = 'pk-modal-danger';
           btnGiveUp.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
           btnGiveUp.innerText = 'Aceitar Derrota e Sair';
           btnGiveUp.onclick = async () => {
@@ -4353,6 +4411,7 @@ async function showFinishOverlay(place) {
         } else {
           // NÃO TEM REVIVE OU É MODO ELITE (REVIVE PROIBIDO)
           const btnBackLobby = document.createElement('button');
+      btnBackLobby.className = 'pk-modal-secondary';
 
           // Estilo vermelho escuro se for derrota na Elite para dar impacto
           if (isElite) {
@@ -4433,6 +4492,7 @@ async function showFinishOverlay(place) {
       }
 
       const btnReturn = document.createElement('button');
+      btnReturn.className = 'pk-modal-primary';
       btnReturn.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
       btnReturn.innerText = place === 1 ? '🏆 Vitória! Voltar ao Lobby' : '❌ Derrota! Voltar ao Lobby';
       btnReturn.onclick = () => window.location.href = 'index.html';
@@ -4442,6 +4502,7 @@ async function showFinishOverlay(place) {
     // 🔥 MODO SOLO NORMAL (Estes botões NÃO aparecem na Torre)
     if (!isTower && !isDesafio && !isElite) {
       const btnPlayAgain = document.createElement('button');
+      btnPlayAgain.className = 'pk-modal-primary';
       btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
       btnPlayAgain.onmousedown = () => btnPlayAgain.style.transform = 'translateY(4px)';
@@ -4450,6 +4511,7 @@ async function showFinishOverlay(place) {
       buttonsContainer.appendChild(btnPlayAgain);
 
       const btnRestart = document.createElement('button');
+      btnRestart.className = 'pk-modal-secondary';
       btnRestart.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, var(--accent, #8757ff), #0867d8); color: #fff; box-shadow: 0 4px 15px var(--glow, rgba(129,75,255,0.35));';
       btnRestart.innerText = 'Voltar ao Lobby';
       btnRestart.onmousedown = () => btnRestart.style.transform = 'translateY(4px)';
@@ -4700,86 +4762,86 @@ async function showFinishOverlay(place) {
 // ------------------------------------------------------------
 // POKÉBOLAS, ARMADILHAS E HABILIDADES NO (E)
 // ------------------------------------------------------------
-const ITEM_ICON_DEFAULT = '<svg viewBox="0 0 24 24" width="30" height="30"><circle cx="12" cy="12" r="10" fill="none" stroke="#3a5a78" stroke-width="1.6"/><text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="800" fill="#8da5bd" font-family="Arial, sans-serif">?</text></svg>';
+const ITEM_ICON_DEFAULT = '<img class="pk-skill-icon" src="emojis/pokeball.png" alt="Nenhuma habilidade equipada">';
 
 const SKILLS = {
   TURBO: {
     id: 'TURBO', name: 'Aceleração de Fogo',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 36px; line-height: 1;">🔥</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/fogo.png" alt="Aceleração de Fogo">'
   },
   ICE: {
     id: 'ICE', name: 'Gelo na Pista',
-    icon: '<svg viewBox="0 0 24 24" width="34" height="34" stroke="#8fe3ff" stroke-width="1.8" fill="none" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4" y1="7" x2="20" y2="17"/><line x1="20" y1="7" x2="4" y2="17"/></svg>'
+    icon: '<img class="pk-skill-icon" src="img/insig_mahogany.png" alt="Gelo na Pista">'
   },
   LODO: {
     id: 'LODO', name: 'Lodo Obscuro',
-    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 2c4 5 7 9 7 13a7 7 0 0 1-14 0c0-4 3-8 7-13z" fill="#6a2fa0"/></svg>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/lodo.png" alt="Lodo Obscuro">'
   },
   SHIELD: {
     id: 'SHIELD', name: 'Proteção',
-    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><path d="M12 2l7 3v6c0 5-3.5 8.5-7 10-3.5-1.5-7-5-7-10V5l7-3z" fill="rgba(40,201,255,0.25)" stroke="#28c9ff" stroke-width="1.8"/></svg>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/escudo.png" alt="Proteção">'
   },
   CHOQUE: {
     id: 'CHOQUE', name: 'Trovoada Elétrica',
-    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><polygon points="13,2 4,14 11,14 9,22 20,9 12,9" fill="#ffd43b"/></svg>'
+    icon: '<img class="pk-skill-icon" src="img/insig_vermilion.png" alt="Trovoada Elétrica">'
   },
   FUMACA: {
     id: 'FUMACA', name: 'Cortina de Fumaça',
-    icon: '<svg viewBox="0 0 24 24" width="34" height="34"><circle cx="7" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/><circle cx="12" cy="12" r="4" fill="#9aa7b3" opacity="0.85"/><circle cx="17" cy="15" r="3.2" fill="#9aa7b3" opacity="0.85"/></svg>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/vento.png" alt="Cortina de Fumaça">'
   },
   SURF: {
     id: 'SURF', name: 'Surf Aquático',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌊</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/agua.png" alt="Surf Aquático">'
   },
   LAMA: {
     id: 'LAMA', name: 'Ataque de Lama',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">💩</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/lama.png" alt="Ataque de Lama">'
   },
   DIG: {
     id: 'DIG', name: 'Ataque Cavar',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">⛏️</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/cavar.png" alt="Ataque Cavar">'
   },
   SOM: {
     id: 'SOM', name: 'Onda Sonora',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🔊</div>'
+    icon: '<img class="pk-skill-icon" src="icones/music.png" alt="Onda Sonora">'
   },
   ROCKET_BOX: {
     id: 'ROCKET_BOX', name: 'Armadilha Rocket',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 32px; font-weight: 900; font-family: Arial, sans-serif; color: #ef4444; text-shadow: 2px 2px 0px #111;">R</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/alerta.png" alt="Armadilha Rocket">'
   },
   // NOVA HABILIDADE DO BROCK
   BROCK_ROCK: {
     id: 'BROCK_ROCK', name: 'Pedra do Brock',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🪨</div>'
+    icon: '<img class="pk-skill-icon" src="img/insig_pewter.png" alt="Pedra do Brock">'
   },
   // NOVA HABILIDADE DA MISTY
   MISTY_WATER: {
     id: 'MISTY_WATER', name: 'Poça da Misty',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">💧</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/agua.png" alt="Poça da Misty">'
   },
   // NOVA HABILIDADE DO LT. SURGE
   SURGE_SHOCK: {
     id: 'SURGE_SHOCK', name: 'Armadilha Elétrica',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">⚡</div>'
+    icon: '<img class="pk-skill-icon" src="img/insig_vermilion.png" alt="Armadilha Elétrica">'
   },
   // NOVA HABILIDADE DA ERIKA
   ERIKA_ROOTS: {
     id: 'ERIKA_ROOTS', name: 'Raízes Emaranhadas',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌿</div>'
+    icon: '<img class="pk-skill-icon" src="img/insig_celadon.png" alt="Raízes Emaranhadas">'
   },
   // NOVA HABILIDADE DO KOGA
   KOGA_SMOKE: {
     id: 'KOGA_SMOKE', name: 'Névoa Tóxica',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🟣</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/lodo.png" alt="Névoa Tóxica">'
   },
   // NOVA HABILIDADE DA SABRINA
   SABRINA_VORTEX: {
     id: 'SABRINA_VORTEX', name: 'Vórtice Psíquico',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🌀</div>'
+    icon: '<img class="pk-skill-icon" src="img/insig_saffron.png" alt="Vórtice Psíquico">'
   },
   BLAINE_BOOST: {
     id: 'BLAINE_BOOST', name: 'Boost de Fogo',
-    icon: '<div style="display:flex; align-items:center; justify-content:center; width:100%; height:100%; font-size: 34px;">🔥</div>'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/fogo.png" alt="Boost de Fogo">'
   }
 };
 
@@ -6213,12 +6275,34 @@ const remoteKarts = new Map();
 let racePeer = null;
 let hostConn = null;
 const activeGuestConns = new Map();
+const raceReadyGuests = new Set();
+let raceReadyTimeout = null;
 
 
 const _roomParam = urlParams.get('room') || matchConfig.room || null;
 const _slotParam = matchConfig.slot !== undefined ? parseInt(matchConfig.slot, 10) : (urlParams.has('slot') ? parseInt(urlParams.get('slot'), 10) : 0);
 
 const isHost = Boolean(_roomParam) && _slotParam === 0;
+
+function maybeStartMultiplayerCountdown() {
+  if (!isHost || !raceSceneReady || raceStarted || countdownInProgress) return;
+  const expectedGuests = Math.max(0, totalPlayersParam - 1);
+  if (activeGuestConns.size < expectedGuests) return;
+  if ([...activeGuestConns.keys()].some(peerId => !raceReadyGuests.has(peerId))) return;
+  clearTimeout(raceReadyTimeout);
+  broadcastEvent({ t: 'start_countdown' });
+  startCountdown();
+}
+
+async function waitForRaceParticipants() {
+  if (!roomCodeParam) return;
+  const deadline = Date.now() + 90000;
+  const expectedOthers = Math.max(0, totalPlayersParam - 1);
+  while ([...remoteKarts.entries()].filter(([id, entry]) => !entry.isBot && !id.startsWith('bot-')).length < expectedOthers) {
+    if (Date.now() > deadline) throw new Error('Não foi possível reunir os pilotos. Volte ao lobby e tente novamente.');
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+}
 
 function friendLabel(peerId) {
   return 'AMIGO ' + peerId.slice(-4).toUpperCase();
@@ -6381,14 +6465,20 @@ function removeRemoteKart(peerId) {
     remoteKarts.delete(peerId);
   }
   activeGuestConns.delete(peerId);
+  raceReadyGuests.delete(peerId);
   raceTrackers.delete(peerId);
 }
 
 function initRaceMultiplayer() {
   if (!_roomParam) {
-    setTimeout(startCountdown, 500);
     return;
   }
+  raceNetworkInitialized = true;
+  raceReadyTimeout = setTimeout(() => {
+    if (!raceStarted && !countdownInProgress) {
+      window.RaceLoading.fail('Algum piloto não conseguiu preparar a corrida. Volte ao lobby e tente novamente.');
+    }
+  }, 90000);
 
   const roomClean = _roomParam.trim().toLowerCase();
   const racePeerId = `pkart-race-${roomClean}`;
@@ -6412,17 +6502,14 @@ function initRaceMultiplayer() {
     racePeer.on('connection', (conn) => {
       conn.on('open', () => {
         activeGuestConns.set(conn.peer, conn);
-        setTimeout(() => {
-          broadcastEvent({ t: 'start_countdown' });
-          if (!raceStarted && !countdownInProgress) {
-            startCountdown();
-          }
-        }, 1000);
       });
 
       conn.on('data', (data) => {
         if (data.t === 'state') {
           handleRemoteKartState(conn.peer, data);
+        } else if (data.t === 'race_ready') {
+          raceReadyGuests.add(conn.peer);
+          maybeStartMultiplayerCountdown();
         } else {
           handleNetworkMessage(data);
         }
@@ -6531,7 +6618,7 @@ function initRaceMultiplayer() {
 let netTimer = 0;
 function networkTick(dt) {
   // Watchdog para convidados: se o host cair, expulsa para o lobby sem punição
-  if (!isHost && typeof roomCodeParam !== 'undefined' && roomCodeParam) {
+  if (raceSceneReady && !isHost && typeof roomCodeParam !== 'undefined' && roomCodeParam && hostConn && hostConn.open) {
     if (Date.now() - lastSnapshotReceivedTime > 4000) {
       const myTracker = raceTrackers.get('local');
       if (myTracker && myTracker.finished) return;
@@ -6668,7 +6755,7 @@ function updateStandings() {
       racers.push({
         key: pid,
         name: entry.nickname || friendLabel(pid),
-        kartId: entry.kartId || 'jolteon',
+        kartId: entry.kartId || selectedKartId,
         dexId: botKartData?.dexId || entry.dexId || 25, // Puxa o dexId do bot ou usa 25 como fallback
         tr: tr
       });
@@ -8192,22 +8279,70 @@ function updateVictoryEffectsAnim(dt) {
 }
 
 async function initGameEngine() {
+  window.RaceLoading.setStatus('Carregando piloto e garagem...');
+  const profile = await fetchPlayerProfile();
+  selectedKartId = sessionStorage.getItem('pkart_selected_kart');
+  if (!profile || profile.starter_choice_completed === false || !selectedKartId) {
+    window.location.replace('index.html');
+    return;
+  }
   // NOVO: Carrega os cosméticos do Supabase antes de a corrida começar
   await loadPlayerCosmetics();
 
   // 1. Espera os karts carregarem do banco de dados
   await loadKartsFromDatabase();
+  if (!KART_DATABASE.length) { window.location.replace('index.html'); return; }
+
+  if (customTrackParam) {
+    window.RaceLoading.setStatus('Preparando a pista escolhida...');
+    await window.RaceLoading.nextPaint();
+    await loadCustomTrack(customTrackParam);
+  }
 
   // 2. Só agora define o índice do kart escolhido
   let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
   if (selectedKartIndex === -1) selectedKartIndex = 0;
 
   // 3. Inicia os modelos locais
-  setLocalKartModel(KART_DATABASE[selectedKartIndex]);
+  window.RaceLoading.setStatus('Carregando os karts da corrida...');
+  const localModelReady = setLocalKartModel(KART_DATABASE[selectedKartIndex]);
 
   // 4. Inicia bots e rede
   spawnBots();
+  await localModelReady;
+  await waitForKartModels();
+  // No celular, a largada também aguarda o toque e a entrada em tela cheia.
+  await mobileStartReady;
   initRaceMultiplayer();
+  if (roomCodeParam) {
+    window.RaceLoading.setStatus('Reunindo os pilotos...');
+    await waitForRaceParticipants();
+    await waitForKartModels();
+  }
+
+  window.RaceLoading.setStatus('Preparando a largada...');
+  await window.RaceLoading.nextPaint();
+  updateCamera(1); // Posiciona a câmera no grid antes do primeiro quadro visível.
+  updateRemoteKarts(1); // Também prepara os adversários na posição recebida, antes de aquecer a GPU.
+  renderer.compile(scene, camera);
+  for (let i = 0; i < 3; i++) {
+    if (useComposerPath) composer.render(); else renderer.render(scene, camera);
+    await window.RaceLoading.nextPaint();
+  }
+  raceSceneReady = true;
+  lastTime = performance.now();
+  if (!roomCodeParam) {
+    checkAndStartCountdown();
+  } else if (raceStartRequested) {
+    clearTimeout(raceReadyTimeout);
+    startCountdown();
+  } else if (isHost) {
+    window.RaceLoading.setStatus('Aguardando os outros pilotos ficarem prontos...');
+    maybeStartMultiplayerCountdown();
+  } else if (hostConn && hostConn.open) {
+    window.RaceLoading.setStatus('Aguardando os outros pilotos ficarem prontos...');
+    hostConn.send({ t: 'race_ready' });
+  }
 }
 
 // ------------------------------------------------------------
@@ -8823,7 +8958,10 @@ function updateKartAudio() {
 }
 
 // Inicia a engine
-initGameEngine();
+initGameEngine().catch(error => {
+  console.error('[Corrida] Falha ao preparar corrida:', error);
+  window.RaceLoading.fail(error.message);
+});
 
 // ------------------------------------------------------------
 // LOOP PRINCIPAL
@@ -9102,6 +9240,12 @@ function animate() {
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastTime) / 1000);
   lastTime = now;
+
+  // Durante o loading, só a rede precisa rodar; evita renderizações incompletas e trabalho repetido.
+  if (!raceSceneReady) {
+    if (raceNetworkInitialized) networkTick(dt);
+    return;
+  }
 
   // Acompanha a pressão do acelerador enquanto o semáforo conta
   if (countdownInProgress && !raceStarted) {

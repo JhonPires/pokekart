@@ -769,7 +769,7 @@ function setupUIEvents() {
   //   const trackData = getTrackExportData();
   //   sessionStorage.setItem('pkart_custom_track_data', JSON.stringify(trackData));
 
-  //   const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+  //   const selectedKart = sessionStorage.getItem('pkart_selected_kart');
   //   const nick = (sessionStorage.getItem('pkart_nickname') || 'PILOTO').toUpperCase();
 
   //   // Passa o bioma na URL para o game.js aplicar a textura correta
@@ -1134,7 +1134,8 @@ window.testTrackById = async (trackId) => {
     // Extrai o bioma do JSON do banco (fallback para grass se for uma pista antiga)
     const trackBiome = (trackRecord && trackRecord.track_data && trackRecord.track_data.biome) ? trackRecord.track_data.biome : 'grass';
 
-    const selectedKart = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+    const selectedKart = sessionStorage.getItem('pkart_selected_kart');
+    if (!selectedKart) { window.location.href = 'index.html'; return; }
     const nick = (sessionStorage.getItem('pkart_nickname') || 'ADMIN').toUpperCase();
 
     window.location.href = `game.html?nick=${encodeURIComponent(nick)}&kart=${selectedKart}&customTrack=${trackId}&difficulty=${trackDifficulty}&biome=${trackBiome}`;

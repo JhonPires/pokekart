@@ -6,6 +6,8 @@ const ASSET_LIST = [
   { id: 'zoroark', url: './models/zoroark.glb' },
   { id: 'togetic', url: './models/togetic.glb' },
   { id: 'charizard', url: './models/charizard.glb' },
+  { id: 'venusaur', url: './models/venusaur.glb' },
+  { id: 'blastoise', url: './models/blastoise.glb' },
   { id: 'flygon', url: './models/flygon.glb' },
   { id: 'gengar', url: './models/gengar.glb' },
   { id: 'oshawott', url: './models/oshawott.glb' },

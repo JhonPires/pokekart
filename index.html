@@ -2,10 +2,13 @@
 <html lang="pt-BR">
 
 <head>
+    <link rel="stylesheet" href="poke-icons.css?v=20261007-1">
+    <script defer src="poke-icons.js?v=20261007-1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokeKart</title>
   <link rel="icon" type="image/png" href="img/favicon.png">
+  <link rel="stylesheet" href="starter-choice.css?v=1">
   <style>
     :root {
       --bg: #07101f;
@@ -87,22 +90,6 @@
       overflow-x: hidden;
     }
 
-    .brand-mini {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      margin: 0 4px 25px;
-    }
-
-    .brand-mini strong {
-      font-size: 25px;
-      letter-spacing: .5px;
-    }
-
-    .brand-mini span {
-      color: var(--cyan);
-    }
-
     .nav {
       display: grid;
       gap: 9px;
@@ -143,27 +130,6 @@
       font-size: 20px;
       width: 22px;
       text-align: center;
-    }
-
-    .music {
-      margin-top: 9px;
-      padding: 15px;
-      border: 1px solid #1e3a57;
-      border-radius: 13px;
-      background: rgba(12, 28, 48, .72);
-    }
-
-    .music-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-weight: 750;
-      cursor: pointer;
-    }
-
-    .music-row b {
-      font-size: 12px;
-      color: var(--danger);
     }
 
     .range {
@@ -556,63 +522,6 @@
       animation: fadeInPanel 0.25s ease;
       position: relative;
       z-index: 3;
-    }
-
-    .roulette-container {
-      position: relative;
-      width: 260px;
-      height: 260px;
-      margin: 20px auto;
-    }
-
-    /* O ponteiro branco no topo */
-    .roulette-pointer {
-      position: absolute;
-      top: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-top: 25px solid #ffffff;
-      z-index: 10;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-    }
-
-    .roulette-wheel {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 4px solid #38bdf8;
-      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
-      position: relative;
-      overflow: hidden;
-      transition: transform 4s cubic-bezier(0.15, 0.9, 0.25, 1);
-      /* Animação suave de giro */
-    }
-
-    /* Estilo base para cada texto de prémio */
-    .prize-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 50%;
-      /* Ocupa do centro até à borda */
-      text-align: right;
-      /* Empurra o texto para a borda da roleta */
-      padding-right: 20px;
-      transform-origin: 0% 50%;
-      /* O eixo de rotação é exatamente o centro da roleta */
-      font-weight: 800;
-      color: #ffffff;
-      font-family: sans-serif;
-      font-size: 14px;
-      text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
-      /* Contraste para leitura */
-      box-sizing: border-box;
-      margin-top: -10px;
-      /* Centraliza verticalmente com base na altura da fonte */
     }
 
     @keyframes fadeInPanel {
@@ -1017,31 +926,6 @@
       text-transform: uppercase;
       text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
       margin: 4px 0 2px 2px !important;
-    }
-
-    /* ESTILOS DA ROLETA */
-    .roulette-wheel {
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      border: 4px solid var(--cyan);
-      box-shadow: 0 0 30px rgba(0, 190, 255, 0.4);
-      transition: transform 4s cubic-bezier(0.1, 0.7, 0.1, 1);
-      position: relative;
-    }
-
-    .roulette-pointer {
-      position: absolute;
-      top: -15px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 15px solid transparent;
-      border-right: 15px solid transparent;
-      border-top: 30px solid #fff;
-      z-index: 10;
-      filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
     }
 
     /* SISTEMA DE LOGIN DIÁRIO */
@@ -1602,14 +1486,19 @@
     }
   </style>
   <link rel="stylesheet" href="mobile.css">
-  <script src="mobile.js" defer></script>
+  <link rel="stylesheet" href="brand.css?v=20261007-1">
+  <link rel="stylesheet" href="roulette.css?v=20261007-1">
+  <script src="roulette.js?v=20261007-1"></script>
+  <script src="mobile.js?v=modal-theme-20261007-1" defer></script>
+  <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
+  <link rel="stylesheet" href="music-player.css?v=20261007-1">
 </head>
 
 <body data-page="lobby">
   <!-- MODAL DE NOTAS DE ATUALIZAÇÃO -->
-  <div id="changelogModalOverlay" class="overlay-general" style="z-index: 1000;">
-    <div class="lobbyCardModal" style="height: 560px; width: 420px; display: flex; flex-direction: column;">
-      <button id="btnCloseChangelog" class="modal-close-btn">✕</button>
+  <div id="changelogModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 1000;">
+    <div class="pk-modal lobbyCardModal" style="height: 560px; width: 420px; display: flex; flex-direction: column;">
+      <button id="btnCloseChangelog" class="modal-close-btn" aria-label="Fechar janela">✕</button>
       <h2 class="modal-title" style="text-align: center;">📜 NOTAS DA ATUALIZAÇÃO</h2>
       <div id="changelogContent"
         style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; margin-top: 10px;">
@@ -1622,9 +1511,9 @@
   <div class="race-glow"></div>
 
   <!-- MODAL DE PROMOÇÃO DE LIGA -->
-  <div id="promotionModalOverlay" class="overlay-general" style="background: rgba(3, 9, 20, 0.92); z-index: 3000;">
-    <div class="lobbyCardModal promo-anim" style="text-align: center; max-width: 380px; padding: 30px;">
-      <h3 style="color: var(--muted); font-size: 14px; letter-spacing: 2.5px; margin-bottom: 5px; font-weight: 900;">
+  <div id="promotionModalOverlay" class="pk-modal-overlay overlay-general" style="background: rgba(3, 9, 20, 0.92); z-index: 3000;">
+    <div class="pk-modal lobbyCardModal promo-anim" style="text-align: center; max-width: 380px; padding: 30px;">
+      <h3 class="pk-modal-eyebrow" style="color: var(--muted); font-size: 14px; letter-spacing: 2.5px; margin-bottom: 5px; font-weight: 900;">
         NOVA LIGA ALCANÇADA</h3>
       <div id="promoLeagueIcon" class="promo-icon-anim" style="color: #ffd23f;">🥇</div>
       <h2 id="promoLeagueName"
@@ -1639,9 +1528,9 @@
   </div>
 
   <!-- MODAL DE RANKINGS -->
-  <div id="rankingModalOverlay" class="overlay-general" style="z-index: 1000;">
-    <div class="lobbyCardModal" style="height: 560px;">
-      <button id="btnCloseRankingModal" class="modal-close-btn">✕</button>
+  <div id="rankingModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 1000;">
+    <div class="pk-modal lobbyCardModal" style="height: 560px;">
+      <button id="btnCloseRankingModal" class="modal-close-btn" aria-label="Fechar janela">✕</button>
       <h2 class="modal-title">🏆 RANKINGS GLOBAIS</h2>
 
       <!-- 3 Abas de Alternância -->
@@ -1681,9 +1570,9 @@
 
   <!-- MODAL RANKING: CAMINHO DAS LIGAS -->
   <div id="rankingModal"
-    class="league-ranking-overlay" role="dialog" aria-modal="true" aria-labelledby="leagueRankingHeading"
+    class="pk-modal-overlay league-ranking-overlay" role="dialog" aria-modal="true" aria-labelledby="leagueRankingHeading"
     style="display: none; position: fixed; inset: 0; z-index: 10000; justify-content: center; align-items: center;">
-    <div class="lobbyCardModal league-ranking-modal">
+    <div class="pk-modal lobbyCardModal league-ranking-modal">
       <div class="league-ranking-header">
         <button class="modal-close-btn" type="button" aria-label="Fechar classificação" onclick="fecharModalRanking()">✕</button>
         <h2 id="leagueRankingHeading" class="modal-title">🏆 CLASSIFICAÇÃO DA LIGA</h2>
@@ -1702,7 +1591,7 @@
   </div>
 
   <!-- PAINEL DE BATE-PAPO (STICKERS Paginado) -->
-  <div id="stickerChatContainer"
+  <div class="pk-modal" id="stickerChatContainer"
     style="display: none; position: fixed; background: rgba(9, 23, 42, 0.95); border: 2px solid #38bdf8; border-radius: 16px; padding: 16px; z-index: 4000; flex-direction: column; gap: 8px; backdrop-filter: blur(10px); box-shadow: 0 15px 45px rgba(0,0,0,0.8); width: 280px;">
 
     <!-- Cabeçalho com Navegação -->
@@ -1735,8 +1624,8 @@
   </div>
 
 
-  <div id="authModal" class="overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
-    <div class="lobbyCardModal" style="max-width: 340px; text-align: center;">
+  <div id="authModal" class="pk-modal-overlay overlay-general" style="background: rgba(3, 9, 20, 0.9); z-index: 1000;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 340px; text-align: center;">
       <h2 id="authTitle" class="modal-title" style="font-size: 24px; margin-bottom: 20px;">CRIAR CONTA</h2>
       <input type="text" id="authUsername" class="game-input" placeholder="Usuário (3 a 24 caracteres)" aria-label="Usuário" autocomplete="username" autocapitalize="none" spellcheck="false" style="margin-bottom: 12px;" />
       <input type="text" id="authNick" class="game-input" placeholder="Apelido no jogo (opcional)" aria-label="Apelido no jogo" maxlength="30" style="margin-bottom: 12px;" />
@@ -1755,12 +1644,12 @@
   </div>
 
   <!-- MODAL DE PERFIL DO JOGADOR -->
-  <div id="playerProfileModal" class="overlay-general" style="display: none; z-index: 2550;">
-    <div class="lobbyCardModal" style="width: 400px; max-width: 95vw; padding: 0; overflow: hidden;">
+  <div id="playerProfileModal" class="pk-modal-overlay overlay-general" style="display: none; z-index: 2550;">
+    <div class="pk-modal lobbyCardModal" style="width: 400px; max-width: 95vw; padding: 0; overflow: hidden;">
       <div
-        style="background: linear-gradient(180deg, rgba(7, 140, 255, 0.2), transparent); padding: 24px; position: relative; text-align: center; border-bottom: 1px solid rgba(33, 199, 255, 0.2);">
+        class="pk-modal-hero" style="background: linear-gradient(180deg, rgba(7, 140, 255, 0.2), transparent); padding: 24px; position: relative; text-align: center; border-bottom: 1px solid rgba(33, 199, 255, 0.2);">
         <button onclick="document.getElementById('playerProfileModal').style.display='none'" class="modal-close-btn"
-          style="top: 12px; right: 12px;">✕</button>
+          style="top: 12px; right: 12px;" aria-label="Fechar janela">✕</button>
         <div id="ppAvatar" class="avatar"
           style="width: 70px; height: 70px; font-size: 36px; margin: 0 auto 12px; background: rgba(0,0,0,0.3); border: 2px solid #21c7ff;">
           👤</div>
@@ -1807,8 +1696,8 @@
       </div>
     </div>
   </div>
-  <div id="resultModalOverlay" class="overlay-general" style="z-index: 2600;">
-    <div class="lobbyCardModal result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText">
+  <div id="resultModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 2600;">
+    <div class="pk-modal lobbyCardModal result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle" aria-describedby="resultText">
       <div id="resultIcon" class="result-icon" aria-hidden="true">🏅</div>
       <h2 id="resultTitle" class="modal-title">
         INSÍGNIA CONQUISTADA!</h2>
@@ -1819,14 +1708,14 @@
   </div>
 
   <!-- MODAL DA LOJA DE COSMÉTICOS -->
-  <div id="storeModalOverlay" class="overlay-general" style="z-index: 3100; display: none;">
+  <div id="storeModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3100; display: none;">
     <!-- Tamanho fixo adicionado: width: 900px; height: 650px; com limites de segurança (max-width/height) para telas menores -->
-    <div class="lobbyCardModal"
+    <div class="pk-modal lobbyCardModal"
       style="width: 900px; height: 650px; max-width: 95vw; max-height: 95vh; display: flex; flex-direction: column;">
 
       <!-- BOTÃO X PADRÃO NO CANTO SUPERIOR DIREITO -->
       <button onclick="document.getElementById('storeModalOverlay').style.display='none'"
-        class="modal-close-btn">✕</button>
+        class="modal-close-btn" aria-label="Fechar janela">✕</button>
 
       <!-- TOPO COM TÍTULO E MOEDAS ALINHADOS -->
       <div class="store-heading"
@@ -1860,29 +1749,40 @@
   </div>
 
   <!-- Modal da Roleta -->
-  <div id="rouletteModalOverlay" class="overlay-general" style="z-index: 3000;">
-    <div class="lobbyCardModal" style="text-align: center; max-width: 380px; padding: 30px;">
-      <button id="btnCloseRoulette" class="modal-close-btn">✕</button>
-      <h2 class="modal-title" style="margin-bottom: 20px;">🎡 GIRO DIÁRIO</h2>
-
-      <div class="roulette-frame" style="position: relative; margin: 0 auto 30px; width: 280px;">
-        <div class="roulette-pointer"></div>
-        <div id="rouletteWheel" class="roulette-wheel"></div>
+  <div id="rouletteModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3000;" role="dialog" aria-modal="true" aria-labelledby="rouletteTitle" aria-busy="false">
+    <div class="pk-modal lobbyCardModal roulette-modal">
+      <button id="btnCloseRoulette" class="modal-close-btn" type="button" aria-label="Fechar roleta">✕</button>
+      <header class="roulette-heading">
+        <span class="roulette-eyebrow">SORTE DE TREINADOR</span>
+        <h2 id="rouletteTitle">ROLETA DIÁRIA</h2>
+        <p>Um giro. Uma recompensa. Um impulso para sua próxima corrida.</p>
+      </header>
+      <div class="roulette-layout">
+        <div class="roulette-frame" aria-hidden="true">
+          <div class="roulette-pointer"></div>
+          <div id="rouletteWheel" class="roulette-wheel"></div>
+          <div class="roulette-center"><img src="icones/tematicos/escudo.png" alt=""></div>
+        </div>
+        <section class="roulette-rewards" aria-labelledby="rouletteRewardsTitle">
+          <h3 id="rouletteRewardsTitle">Prêmios deste giro</h3>
+          <ul id="roulettePrizes" class="roulette-prize-list"></ul>
+        </section>
       </div>
-
-      <p id="rouletteStatus" style="color: #dcecff; font-size: 13px; font-weight: bold; margin-bottom: 20px;">Tente a
-        sorte e ganhe prêmios todos os dias!</p>
-
-      <button id="btnSpinRoulette" class="btn primary"
-        style="width: 100%; min-height: 45px; border-radius: 12px; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-weight: 900; cursor: pointer;">GIRAR
-        AGORA</button>
+      <div id="rouletteResult" class="roulette-result" data-state="ready" role="status" aria-live="polite" aria-atomic="true">
+        <img id="rouletteResultIcon" src="icones/tematicos/estrela.png" alt="">
+        <div><strong id="rouletteResultTitle">Um giro gratuito por dia</strong><p id="rouletteStatus">Gire e descubra sua recompensa!</p></div>
+      </div>
+      <div class="roulette-actions">
+        <button id="btnSpinRoulette" class="pk-modal-primary" type="button">GIRAR AGORA</button>
+        <p class="roulette-note">Renova à meia-noite UTC · As chances aparecem ao lado de cada prêmio.</p>
+      </div>
     </div>
   </div>
 
   <!-- Modal do Calendário -->
-  <div id="dailyLoginModalOverlay" class="overlay-general" style="z-index: 3000;">
-    <div class="lobbyCardModal" style="max-width: 420px; padding: 25px;">
-      <button id="btnCloseDailyLogin" class="modal-close-btn">✕</button>
+  <div id="dailyLoginModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3000;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 420px; padding: 25px;">
+      <button id="btnCloseDailyLogin" class="modal-close-btn" aria-label="Fechar janela">✕</button>
       <h2 class="modal-title" style="margin-bottom: 5px;">📅 LOGIN DIÁRIO</h2>
       <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
         Entre todos os dias para não perder a sequência!
@@ -1904,9 +1804,9 @@
   </div>
 
   <!-- Modal das Missões -->
-  <div id="missionsModalOverlay" class="overlay-general" style="z-index: 3000;">
-    <div class="lobbyCardModal" style="max-width: 460px; padding: 25px;">
-      <button id="btnCloseMissions" class="modal-close-btn">✕</button>
+  <div id="missionsModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3000;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 460px; padding: 25px;">
+      <button id="btnCloseMissions" class="modal-close-btn" aria-label="Fechar janela">✕</button>
       <h2 class="modal-title" style="margin-bottom: 5px;">📜 MISSÕES DIÁRIAS</h2>
       <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
         Complete desafios para ganhar moedas extras! Reseta à meia-noite.
@@ -1919,10 +1819,10 @@
   </div>
 
   <!-- Modal do Passe de Batalha -->
-  <div id="battlePassModalOverlay" class="overlay-general" style="z-index: 3000; display: none;">
-    <div class="lobbyCardModal" style="max-width: 780px; padding: 25px;">
+  <div id="battlePassModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3000; display: none;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 780px; padding: 25px;">
       <button onclick="document.getElementById('battlePassModalOverlay').style.display='none'"
-        class="modal-close-btn">✕</button>
+        class="modal-close-btn" aria-label="Fechar janela">✕</button>
 
       <h2 class="modal-title" style="margin-bottom: 5px;">🎟️ PASSE DE BATALHA</h2>
       <p id="bpSeasonName"
@@ -1956,10 +1856,10 @@
   </div>
 
   <!-- Modal de Escolha de Kart do Passe -->
-  <div id="kartChoiceModalOverlay" class="overlay-general" style="z-index: 3500; display: none;">
-    <div class="lobbyCardModal" style="max-width: 500px; padding: 25px;">
+  <div id="kartChoiceModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3500; display: none;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 500px; padding: 25px;">
       <button onclick="document.getElementById('kartChoiceModalOverlay').style.display='none'"
-        class="modal-close-btn">✕</button>
+        class="modal-close-btn" aria-label="Fechar janela">✕</button>
       <h2 class="modal-title" style="margin-bottom: 5px;">🎁 ESCOLHA SEU KART</h2>
       <p style="text-align: center; color: #91a7be; font-size: 12px; font-weight: bold; margin-bottom: 20px;">
         Você atingiu o nível máximo! Escolha apenas UM kart como recompensa.
@@ -1973,10 +1873,10 @@
   </div>
 
   <!-- Modal do Perfil do Jogador (Horizontal / Largo) -->
-  <div id="profileModalOverlay" class="overlay-general" style="z-index: 3000; display: none;">
-    <div class="lobbyCardModal profile-modal-wide" style="max-height: 90vh; overflow-y: auto;">
+  <div id="profileModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3000; display: none;">
+    <div class="pk-modal lobbyCardModal profile-modal-wide" style="max-height: 90vh; overflow-y: auto;">
       <button onclick="document.getElementById('profileModalOverlay').style.display='none'"
-        class="modal-close-btn">✕</button>
+        class="modal-close-btn" aria-label="Fechar janela">✕</button>
 
       <h2 class="modal-title" style="text-align: left; margin-bottom: 15px;">⚙️ PERFIL DO PILOTO</h2>
 
@@ -2104,10 +2004,10 @@
   </div>
 
   <!-- Modal de Seleção de Avatar Paginado -->
-  <div id="avatarModalOverlay" class="overlay-general" style="z-index: 3500; display: none;">
-    <div class="lobbyCardModal" style="max-width: 440px; padding: 25px;">
+  <div id="avatarModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3500; display: none;">
+    <div class="pk-modal lobbyCardModal" style="max-width: 440px; padding: 25px;">
       <button onclick="document.getElementById('avatarModalOverlay').style.display='none'"
-        class="modal-close-btn">✕</button>
+        class="modal-close-btn" aria-label="Fechar janela">✕</button>
 
       <!-- Cabeçalho com Navegação por Setas (Idêntico às Conquistas) -->
       <!-- Cabeçalho ajustado para não sobrepor o botão X -->
@@ -2137,9 +2037,7 @@
 
   <div class="shell">
     <aside class="sidebar" id="sidebar">
-      <div class="brand-mini">
-        <strong>POKE<span>KART</span></strong>
-      </div>
+      <div class="pk-brand pk-brand--sidebar"><img src="icones/tematicos/escudo.png" alt=""><div><strong>POKÉKART</strong><small>LOBBY</small></div></div>
 
       <nav class="nav">
         <button id="menuBtnGarage">
@@ -2177,28 +2075,24 @@
         </button>
       </nav>
 
-      <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="music-row" id="menuBtnMusicToggle">
-          <span style="display: flex; align-items: center; gap: 8px;">
-            <img src="icones/music.png" alt="Música" style="width: 32px; height: 32px; object-fit: contain;"> Música
-          </span>
-          <b id="musicStatusText">LIGADA</b>
+      <section class="music-player" aria-label="Player de música" data-poke-icons="off">
+        <div class="music-player-row">
+          <img src="icones/music.png" alt="">
+          <div class="music-player-copy"><strong>MÚSICA</strong><small id="musicTrackText">Faixa 01 / 09</small></div>
+          <button id="btnMusicPlayPause" type="button" aria-label="Reproduzir música" title="Reproduzir música">▶</button>
+          <button id="btnMusicOptions" type="button" aria-label="Opções de música" title="Opções de música" aria-expanded="false" aria-controls="musicOptions">⋯</button>
         </div>
-        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
-          style="margin-top: 0;">
-
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
-          <button id="btnMusicPrev" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
-            title="Música Anterior">⏮</button>
-          <button id="btnMusicPlayPause" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
-            title="Pausar / Reproduzir">⏸</button>
-          <button id="btnMusicNext" class="btn"
-            style="width: 48px; height: 42px; min-height: unset; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 10px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; font-weight: 900; cursor: pointer;"
-            title="Próxima Música">⏭</button>
+        <div id="musicOptions" class="music-options" hidden>
+          <div class="music-options-heading"><span>TRILHA POKÉKART</span><button id="menuBtnMusicToggle" type="button"><span id="musicStatusText">PAUSADA</span></button></div>
+          <div class="music-track-controls">
+            <button id="btnMusicPrev" type="button" aria-label="Música anterior">⏮ Anterior</button>
+            <button id="btnMusicNext" type="button" aria-label="Próxima música">Próxima ⏭</button>
+          </div>
+          <label class="music-volume-label" for="musicVolumeSlider">Volume <output id="musicVolumeValue" for="musicVolumeSlider">40%</output></label>
+          <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+          <p id="musicFeedback" class="music-feedback" role="status" aria-live="polite">Reproduza quando quiser.</p>
         </div>
-      </div>
+      </section>
 
       <div class="account">
         <div class="profile">
@@ -2295,8 +2189,8 @@
                 <div class="mode-divider-badge">
                   <div class="divider-line blue-left"></div>
                   <div class="badge-circle" style="--accent: #15c9ff; --glow: rgba(0,195,255,0.5);"><img
-                      src="svg/person_solo.svg" alt="Play"
-                      style="width: 22px; height: 22px; object-fit: contain; opacity: 0.4;" /></div>
+                      src="icones/tematicos/perfil.png" alt="Piloto"
+                      style="width: 28px; height: 28px; object-fit: contain;" /></div>
                   <div class="divider-line blue-right"></div>
                 </div>
                 <h2>MODO SOLO</h2>
@@ -2304,9 +2198,9 @@
 
                 <button class="mode-btn" id="btnOpenSoloConfig"
                   style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                  <img src="svg/play.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <img src="icones/tematicos/bandeira.png" alt="Iniciar corrida" style="width: 32px; height: 32px; object-fit: contain;" />
                   <span>JOGAR AGORA</span>
-                  <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                  <img src="icones/tematicos/turbo.png" alt="Avançar" style="width: 24px; height: 24px; object-fit: contain;" />
                 </button>
 
                 <div class="mode-config-panel" id="panelSoloConfig" style="justify-content: space-between;">
@@ -2351,10 +2245,10 @@
                       style="display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background: linear-gradient(90deg, #15c9ff, #0867d8); margin: 0;">
                       <span
                         style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;">
-                        <img src="svg/play.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                        <img src="icones/tematicos/bandeira.png" alt="Iniciar corrida" style="width: 32px; height: 32px; object-fit: contain;" />
                       </span>
                       <span style="flex: 1; text-align: center;">INICIAR CORRIDA</span>
-                      <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                      <img src="icones/tematicos/turbo.png" alt="Avançar" style="width: 24px; height: 24px; object-fit: contain;" />
                     </button>
                   </div>
                 </div>
@@ -2370,7 +2264,7 @@
                 <div class="mode-divider-badge">
                   <div class="divider-line purple-left"></div>
                   <div class="badge-circle" style="--accent: #8757ff; --glow: rgba(129,75,255,0.5);"> <img
-                      src="svg/person_multi.svg" alt="Play"
+                      src="icones/tematicos/mundo.png" alt="Multiplayer"
                       style="width: 28px; height: 28px; object-fit: contain; opacity: 0.6;" /></div>
                   <div class="divider-line purple-right"></div>
                 </div>
@@ -2378,9 +2272,9 @@
                 <p>Jogue com seus amigos ou com jogadores do mundo todo.</p>
                 <button class="mode-btn" id="btnOpenMultiConfig"
                   style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                  <img src="svg/multi.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <img src="icones/tematicos/controle.png" alt="Multiplayer" style="width: 32px; height: 32px; object-fit: contain;" />
                   <span>ENTRAR</span>
-                  <img src="svg/right.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                  <img src="icones/tematicos/turbo.png" alt="Avançar" style="width: 24px; height: 24px; object-fit: contain;" />
                 </button>
 
                 <!-- PAINEL COM ABAS E SLOTS VISUAIS -->
@@ -2497,7 +2391,7 @@
                       style="display: none; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(90deg, var(--accent), #0867d8); border: 1px solid var(--accent); color: #fff; margin: 0; box-shadow: 0 5px 18px var(--glow);">
                       <span style="font-size: 16px;">🏁</span>
                       <span style="font-weight: 950; letter-spacing: 0.5px; color: #fff;">INICIAR SALA</span>
-                      <img src="svg/right.svg" alt="Arrow"
+                      <img src="icones/tematicos/turbo.png" alt="Avançar"
                         style="width: 20px; height: 20px; object-fit: contain; vertical-align: middle; margin-top: -1px;" />
                     </button>
                   </div>
@@ -2514,7 +2408,7 @@
                 <div class="mode-divider-badge">
                   <div class="divider-line yellow-left"></div>
                   <div class="badge-circle" style="--accent: #ffd21c; --glow: rgba(255,190,0,0.5);">
-                    <img src="svg/badge.svg" alt="Play"
+                    <img src="icones/liga.png" alt="Liga"
                       style="width: 30px; height: 30px; object-fit: contain; opacity: 0.8;" />
                   </div>
                   <div class="divider-line yellow-right"></div>
@@ -2523,9 +2417,9 @@
                 <p>Suba os andares, enfrente desafios e conquiste grandes recompensas.</p>
                 <button class="mode-btn" id="btnOpenTowerConfig"
                   style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-                  <img src="svg/torre.svg" alt="Play" style="width: 32px; height: 32px; object-fit: contain;" />
+                  <img src="icones/tematicos/escudo.png" alt="Modo Torre" style="width: 32px; height: 32px; object-fit: contain;" />
                   <span>VER TORRE</span>
-                  <img src="svg/right2.svg" alt="Play" style="width: 24px; height: 24px; object-fit: contain;" />
+                  <img src="icones/tematicos/turbo.png" alt="Avançar" style="width: 24px; height: 24px; object-fit: contain;" />
                 </button>
 
                 <!-- NOVO PAINEL INLINE DA TORRE -->
@@ -2563,7 +2457,7 @@
                 <button class="mode-btn" id="btnOpenDesafioConfig"
                   style="display: flex; align-items: center; justify-content: center; gap: 8px;">
                   <span style="font-weight: 950;">VER DESAFIOS</span>
-                  <img src="svg/right2.svg" alt="Play"
+                  <img src="icones/tematicos/turbo.png" alt="Avançar"
                     style="width: 24px; height: 24px; object-fit: contain; filter: invert(1);" />
                 </button>
 
@@ -2627,8 +2521,8 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="assets.js"></script>
-  <script src="music.js"></script>
+  <script src="assets.js?v=starter-choice-1"></script>
+  <script src="music.js?v=compact-20261007-1"></script>
 
   <script>
     const GYM_TOWERS = [
@@ -2822,11 +2716,13 @@
       } catch (err) {
         console.error("Erro ao carregar karts do banco:", err);
         // Fallback de segurança usando getKartUrl também
-        KART_DATABASE = [{
-          id: 'jolteon', name: 'Jolteon Kart', modelUrl: getKartUrl('jolteon.glb'),
+        const fallbackId = getDefaultPlayerKart();
+        KART_DATABASE = fallbackId ? [{
+          id: fallbackId, name: `${fallbackId[0].toUpperCase()}${fallbackId.slice(1)} Kart`, modelUrl: getKartUrl(`${fallbackId}.glb`),
           stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
-          dexId: 135
-        }];
+          dexId: { charizard: 6, venusaur: 3, blastoise: 9 }[fallbackId] || null,
+          activated: true
+        }] : [];
       }
     }
 
@@ -2879,7 +2775,10 @@
         topbarKartName.innerText = item.name.replace(/^[^\w\s]+/, '').trim();
       }
 
-      sessionStorage.setItem('pkart_selected_kart', item.id);
+      if (currentUserProfile?.starter_choice_completed !== false &&
+          (getOwnedKartIds().includes(item.id) || dailyFreeKarts.includes(item.id))) {
+        sessionStorage.setItem('pkart_selected_kart', item.id);
+      }
       const requestId = ++previewRequestId;
 
       if (currentModel) {
@@ -2954,9 +2853,8 @@
       }
 
       const availableKarts = KART_DATABASE
-        .filter(k => k.activated) // <-- Bloqueia karts desativados de entrarem no sorteio
-        .map(k => k.id)
-        .filter(id => id !== 'jolteon');
+        .filter(k => k.activated)
+        .map(k => k.id);
 
       // 3. Ordem alfabética estrita antes de embaralhar, garantindo a mesma base inicial sempre
       availableKarts.sort();
@@ -2969,6 +2867,7 @@
 
       // Seleciona os 4 primeiros
       dailyFreeKarts = availableKarts.slice(0, 4);
+      sessionStorage.setItem('pkart_daily_free', JSON.stringify(dailyFreeKarts));
       // LOG DENTRO DA FUNÇÃO
       if (dailyFreeKarts.length > 0) {
         console.log("Karts Sorteados Hoje:", dailyFreeKarts);
@@ -2978,7 +2877,7 @@
 
     function sortKartsByAvailability() {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
-      let unlockedKarts = ['jolteon', ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
+      let unlockedKarts = [...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
       let userKarts = [];
       if (profile && profile.unlocked_karts) {
@@ -3001,7 +2900,9 @@
       const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
       // AGUARDA o perfil carregar antes de tirar conclusões precipitadas!
       if (profile && currentEquipped && !unlockedKarts.includes(currentEquipped)) {
-        sessionStorage.setItem('pkart_selected_kart', 'jolteon');
+        const fallbackKart = getDefaultPlayerKart(profile) || unlockedKarts[0];
+        if (fallbackKart) sessionStorage.setItem('pkart_selected_kart', fallbackKart);
+        else sessionStorage.removeItem('pkart_selected_kart');
       }
 
       const availableGroup = [];
@@ -3028,7 +2929,7 @@
 
     function checkKartLockStatus(kartId) {
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
-      let unlockedKarts = ['jolteon'];
+      let unlockedKarts = [];
       unlockedKarts = [...unlockedKarts, ...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
       // 🛡️ TRAVA DE SEGURANÇA REPLICADA AQUI
@@ -3048,8 +2949,7 @@
 
       unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
 
-      const isSessionSelected = sessionStorage.getItem('pkart_selected_kart') === kartId;
-      const isUnlocked = unlockedKarts.includes(kartId) || isSessionSelected;
+      const isUnlocked = unlockedKarts.includes(kartId);
       const isFreeRotation = dailyFreeKarts.includes(kartId) && !userKarts.includes(kartId);
 
       const btnPlaySolo = document.getElementById('btnPlaySolo');
@@ -3798,143 +3698,24 @@
     }
 
     // --- SISTEMA DE ROLETA DIÁRIA ---
-    let prizes = [
-      { label: '50 Moedas', type: 'coins', amount: 50 },
-      { label: '100 Moedas', type: 'coins', amount: 100 },
-      { label: '200 Moedas', type: 'coins', amount: 200 },
-      { label: '10 Moedas', type: 'coins', amount: 10 },
-      { label: '300 Moedas', type: 'coins', amount: 300 },
-      { label: '500 Moedas', type: 'coins', amount: 500 }
-    ];
-
-    // Cores bem distintas para substituir o choque entre o amarelo e o laranja
-    const ROULETTE_COLORS = ['#ffd23f', '#ff4b55', '#21c7ff', '#8757ff', '#22c55e', '#f97316'];
-
-    function renderRoulette() {
-      const wheel = document.getElementById('rouletteWheel');
-      if (!wheel) return;
-
-      wheel.innerHTML = ''; // Limpa a roleta
-      let gradientStops = [];
-      const sliceAngle = 360 / prizes.length;
-
-      prizes.forEach((prize, index) => {
-        const color = ROULETTE_COLORS[index % ROULETTE_COLORS.length];
-        const startAngle = index * sliceAngle;
-        const endAngle = startAngle + sliceAngle;
-        gradientStops.push(`${color} ${startAngle}deg ${endAngle}deg`);
-
-        // Cria o texto do prêmio
-        const textElement = document.createElement('div');
-        textElement.className = 'prize-text';
-        textElement.innerText = prize.label.replace(' Moedas', ' 🪙'); // Deixa o texto mais limpo
-
-        // Posiciona o texto exatamente no centro da sua fatia correspondente
-        const centerAngle = startAngle + (sliceAngle / 2);
-        const cssRotation = centerAngle - 90;
-        textElement.style.transform = `rotate(${cssRotation}deg)`;
-
-        wheel.appendChild(textElement);
-      });
-
-      // Aplica o fundo colorido dinâmico
-      wheel.style.background = `conic-gradient(${gradientStops.join(', ')})`;
-    }
-
-    let currentRotation = 0;
-    let isSpinning = false;
-
-    const btnOpenRoulette = document.getElementById('menuBtnRoulette');
-    const btnCloseRoulette = document.getElementById('btnCloseRoulette');
-    const modalRoulette = document.getElementById('rouletteModalOverlay');
-    const wheel = document.getElementById('rouletteWheel');
-    const btnSpin = document.getElementById('btnSpinRoulette');
-    const statusText = document.getElementById('rouletteStatus');
-
-    function getUTCDateString() {
-      const now = new Date();
-      return `${now.getUTCFullYear()}-${now.getUTCMonth() + 1}-${now.getUTCDate()}`;
-    }
-
-    btnOpenRoulette.onclick = () => {
-      modalRoulette.style.display = 'flex';
-      checkDailySpinStatus();
-    };
-
-    btnCloseRoulette.onclick = () => {
-      if (!isSpinning) modalRoulette.style.display = 'none';
-    };
-
-    function checkDailySpinStatus() {
-      const todayUTC = getUTCDateString();
-      const lastSpin = currentUserProfile ? currentUserProfile.last_spin_date : localStorage.getItem('pkart_last_spin');
-
-      if (lastSpin === todayUTC) {
-        btnSpin.disabled = true;
-        btnSpin.style.opacity = '0.5';
-        btnSpin.style.cursor = 'not-allowed';
-        btnSpin.innerText = 'VOLTE AMANHÃ';
-        statusText.innerText = 'Você já girou a roleta hoje!';
-      } else {
-        btnSpin.disabled = false;
-        btnSpin.style.opacity = '1';
-        btnSpin.style.cursor = 'pointer';
-        btnSpin.innerText = 'GIRAR AGORA';
-        statusText.innerText = 'Tente a sorte e ganhe prêmios todos os dias!';
+    const dailyRoulette = PokeRoulette.mount({
+      getProfile: () => typeof currentUserProfile !== 'undefined' ? currentUserProfile : null,
+      persist: async (profile, update) => {
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) throw new Error('Conexão indisponível. Tente novamente.');
+        // Compare the prior claim date so two tabs cannot redeem the same daily spin.
+        let request = supabaseClient.from('profiles').update(update).eq('id', profile.id);
+        request = profile.last_spin_date == null ? request.is('last_spin_date', null) : request.eq('last_spin_date', profile.last_spin_date);
+        const { data, error } = await request.select('id').maybeSingle();
+        if (error) throw new Error('Verifique sua conexão e tente resgatar novamente.');
+        if (!data) throw new Error('O giro já foi usado em outra sessão. Recarregue o lobby.');
+      },
+      onUpdate: () => {
+        document.getElementById('playerCoinsText').textContent = currentUserProfile.coins || 0;
+        if (typeof renderInventory === 'function') renderInventory();
+        if (typeof updateMenuNotifications === 'function') updateMenuNotifications();
       }
-    }
-
-    btnSpin.onclick = async () => {
-      if (isSpinning) return;
-
-      if (!currentUserProfile) {
-        alert("Você precisa estar logado para girar a roleta!");
-        return;
-      }
-
-      isSpinning = true;
-      btnSpin.disabled = true;
-      btnSpin.innerText = 'GIRANDO...';
-      statusText.innerText = 'Boa sorte!';
-
-      // Sorteia o prêmio
-      const prizeIndex = Math.floor(Math.random() * prizes.length);
-      const sliceAngle = 360 / prizes.length;
-
-      // Calcula a rotação para cair exatamente no meio da fatia correta (com voltas extras)
-      const extraSpins = 5 * 360;
-      const prizeAngle = extraSpins + (360 - (prizeIndex * sliceAngle)) - (sliceAngle / 2);
-      currentRotation += prizeAngle;
-
-      wheel.style.transform = `rotate(${currentRotation}deg)`;
-
-      // Aguarda a animação do CSS (4 segundos)
-      setTimeout(async () => {
-        const wonPrize = prizes[prizeIndex];
-        statusText.innerText = `Parabéns! Você ganhou ${wonPrize.label}!`;
-        statusText.style.color = '#22c55e';
-
-        // Atualiza saldo e data no Supabase
-        const todayUTC = getUTCDateString();
-        const newCoins = (currentUserProfile.coins || 0) + wonPrize.amount;
-
-        currentUserProfile.coins = newCoins;
-        currentUserProfile.last_spin_date = todayUTC;
-        localStorage.setItem('pkart_last_spin', todayUTC);
-
-        document.getElementById('playerCoinsText').innerText = newCoins; // Atualiza UI
-
-        if (typeof supabaseClient !== 'undefined') {
-          await supabaseClient.from('profiles').update({
-            coins: newCoins,
-            last_spin_date: todayUTC
-          }).eq('id', currentUserProfile.id);
-        }
-
-        isSpinning = false;
-        btnSpin.innerText = 'VOLTE AMANHÃ';
-      }, 4000);
-    };
+    });
+    function renderRoulette() { dailyRoulette.render(); }
 
     // --- SISTEMA DE LOGIN DIÁRIO ---
     const DAILY_REWARDS = [50, 100, 150, 200, 250, 350, 1000]; // Moedas do dia 1 ao 7
@@ -4318,8 +4099,7 @@
         try { userKarts = JSON.parse(userKarts); } catch (e) { userKarts = []; }
       }
 
-      // Lista única com o Jolteon base e todos os karts desbloqueados
-      const allUserKarts = Array.from(new Set(['jolteon', ...userKarts]));
+      const allUserKarts = Array.from(new Set(userKarts));
 
       if (!achievements.includes('kart_collector') && allUserKarts.length >= 3) {
         achievements.push('kart_collector');
@@ -4336,8 +4116,6 @@
           if (region === 'Kanto') kantoCount++;
           if (region === 'Johto') johtoCount++;
           if (region === 'Hoenn') hoennCount++;
-        } else if (kartId === 'jolteon') {
-          kantoCount++; // O Jolteon é de Kanto, garante fallback de segurança
         }
       });
 
@@ -5261,7 +5039,7 @@
         const { data, error } = await supabaseClient.from('game_configs').select('config_name, config_data');
         if (!error && data) {
           data.forEach(item => {
-            if (item.config_name === 'roulette') prizes = item.config_data;
+            if (item.config_name === 'roulette') dailyRoulette.setPrizes(item.config_data);
             if (item.config_name === 'battle_pass') aplicarConfigPasse(item.config_data);
             if (item.config_name === 'daily_missions') MISSION_CATALOG = item.config_data;
             if (item.config_name === 'achievements') ACHIEVEMENTS_CATALOG = item.config_data;
@@ -5688,17 +5466,17 @@
     };
 
     function getStyledNickname(nickname, equippedTitleId) {
-      if (!equippedTitleId) return nickname;
+      if (!equippedTitleId) return `<span data-poke-icons="off">${nickname}</span>`;
 
       if (typeof storeItemsCache !== 'undefined' && storeItemsCache.titles) {
         const item = storeItemsCache.titles.find(t => t.id === equippedTitleId);
         if (item && item.metadata && item.metadata.nickname_style) {
           // Adicionamos display: inline-block por segurança para o gradiente funcionar no texto
-          return `<span style="${item.metadata.nickname_style}; display: inline-block;">${nickname}</span>`;
+          return `<span data-poke-icons="off" style="${item.metadata.nickname_style}; display: inline-block;">${nickname}</span>`;
         }
       }
 
-      return nickname;
+      return `<span data-poke-icons="off">${nickname}</span>`;
     }
 
     function getCustomJoinMessage(playerName, equippedTitleId) {
@@ -5971,13 +5749,6 @@
 
       renderRoulette();
       setTimeout(updateLevelUI, 800);
-      const btnPrev = document.getElementById('btnMusicPrev');
-      const btnPlayPause = document.getElementById('btnMusicPlayPause');
-      const btnNext = document.getElementById('btnMusicNext');
-      const btnMusicToggle = document.getElementById('menuBtnMusicToggle');
-      const slider = document.getElementById('musicVolumeSlider');
-      const statusText = document.getElementById('musicStatusText');
-
       const topbarStat = document.getElementById('topbarLevelStat');
       const bpModalOverlay = document.getElementById('battlePassModalOverlay');
 
@@ -5989,100 +5760,6 @@
           }
         };
       }
-
-      function updatePlayPauseUI() {
-        if (!btnPlayPause) return;
-        if (window.globalMusic && window.globalMusic.paused) {
-          btnPlayPause.innerText = '▶';
-        } else {
-          btnPlayPause.innerText = '⏸';
-        }
-      }
-
-      if (btnPrev) {
-        btnPrev.onclick = () => { if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic(); };
-      }
-
-      if (btnPlayPause) {
-        btnPlayPause.onclick = () => {
-          if (window.globalMusic) {
-            if (window.globalMusic.paused) {
-              window.globalMusic.play().catch(() => { });
-              isMusicEnabled = true;
-            } else {
-              window.globalMusic.pause();
-              isMusicEnabled = false;
-            }
-            localStorage.setItem('pkart_music', isMusicEnabled);
-            localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
-            updateAudioUI();
-          }
-        };
-      }
-
-      if (btnNext) {
-        btnNext.onclick = () => { if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic(); };
-      }
-
-      let isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
-      let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
-      if (isNaN(vol)) vol = 0.4;
-
-      if (slider) slider.value = vol;
-      if (window.globalMusic) window.globalMusic.volume = vol;
-
-      function updateAudioUI() {
-        if (statusText) {
-          statusText.innerText = isMusicEnabled ? 'LIGADA' : 'DESLIGADA';
-          statusText.style.color = isMusicEnabled ? '#21c7ff' : '#ff4b55';
-        }
-        if (slider) {
-          const percent = (slider.value / 1) * 100;
-          slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
-        }
-        if (window.globalMusic) {
-          if (isMusicEnabled) window.globalMusic.play().catch(() => { });
-          else window.globalMusic.pause();
-        }
-        updatePlayPauseUI();
-      }
-
-      if (btnMusicToggle) {
-        btnMusicToggle.onclick = () => {
-          isMusicEnabled = !isMusicEnabled;
-          localStorage.setItem('pkart_music', isMusicEnabled);
-          localStorage.setItem('pkart_music_playing', isMusicEnabled ? 'true' : 'false');
-          updateAudioUI();
-        };
-      }
-
-      if (slider) {
-        slider.addEventListener('input', (e) => {
-          const v = parseFloat(e.target.value);
-          if (window.globalMusic) window.globalMusic.volume = v;
-          localStorage.setItem('pkart_music_vol', v);
-
-          if (v === 0 && isMusicEnabled) {
-            isMusicEnabled = false;
-            localStorage.setItem('pkart_music', false);
-          } else if (v > 0 && !isMusicEnabled) {
-            isMusicEnabled = true;
-            localStorage.setItem('pkart_music', true);
-          }
-          updateAudioUI();
-        });
-      }
-
-      updateAudioUI();
-
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'pkart_music_playing' || e.key === 'pkart_music_vol' || e.key === 'pkart_music') {
-          isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
-          const newVol = parseFloat(localStorage.getItem('pkart_music_vol'));
-          if (!isNaN(newVol) && window.globalMusic) window.globalMusic.volume = newVol;
-          updateAudioUI();
-        }
-      });
 
       await fetchCustomTracks();
       setupCustomDropdowns();
@@ -6175,25 +5852,25 @@
 
           towerContent.innerHTML = `
               <div style="text-align: center; margin-bottom: 15px;">
-                <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px rgba(255, 75, 85, 0.4));">${currentElite.type}</div>
-                <h3 style="color: #ff4b55; font-size: 18px; margin-bottom: 2px;">LIGA DE ${regionName.toUpperCase()}</h3>
+                <div style="font-size: 40px; margin-bottom: 5px; filter: drop-shadow(0 0 10px var(--glow));">${currentElite.type}</div>
+                <h3 style="color: var(--accent); font-size: 18px; margin-bottom: 2px;">LIGA DE ${regionName.toUpperCase()}</h3>
                 <p style="color: #ffffff; font-size: 12px; font-weight: bold;">${isChampion ? 'Campeão' : 'Elite Four'}: <b style="color: var(--yellow);">${currentElite.name}</b></p>
               </div>
               
-              <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #ff4b55; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(255, 75, 85, 0.15);">
-                <strong style="color: #ff4b55; font-size: 16px;">Andar ${andarAtual} de 5</strong>                
-                <p style="color: #91a7be; font-size: 11px; margin-top: 2px;">Oponentes: <b style="color:#ff4b55">${oponentesNomes}</b></p>
-                ${towerState.lockedKart ? `<p style="color: #38bdf8; font-size: 11px; margin-top: 4px; font-weight: bold;">Kart Travado: ${towerState.lockedKart.toUpperCase()}</p>` : ''}
-                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(255, 75, 85, 0.3);">
-                  <p style="color: #ef4444; font-size: 10px; font-weight: bold;">⚠️ MODO NUZLOCKE (SEM REVIVES / SEM TROCA)</p>
+              <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid var(--accent); margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px var(--glow);">
+                <strong style="color: var(--accent); font-size: 16px;">Andar ${andarAtual} de 5</strong>
+                <p style="color: #91a7be; font-size: 11px; margin-top: 2px;">Oponentes: <b style="color: var(--accent);">${oponentesNomes}</b></p>
+                ${towerState.lockedKart ? `<p style="color: var(--accent); font-size: 11px; margin-top: 4px; font-weight: bold;">Kart Travado: ${towerState.lockedKart.toUpperCase()}</p>` : ''}
+                <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--accent);">
+                  <p style="color: var(--accent); font-size: 10px; font-weight: bold;">⚠️ MODO NUZLOCKE (SEM REVIVES / SEM TROCA)</p>
                 </div>
               </div>
               
               <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-                <button id="btnEnterElite" class="mode-btn" style="margin: 0; background: linear-gradient(90deg, #ef4444, #b91c1c); color: #fff; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);">
+                <button id="btnEnterElite" class="mode-btn" style="margin: 0; font-weight: 900;">
                   ${isChampion ? 'DESAFIAR CAMPEÃO' : 'CORRER ANDAR'}
                 </button>
-                <button id="btnResetElite" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
+                <button id="btnResetElite" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-weight: 900; box-shadow: none;">
                   Abandonar Desafio
                 </button>
               </div>
@@ -6274,15 +5951,15 @@
           </div>
           
           <div style="width: 100%; background: rgba(9, 23, 42, 0.7); padding: 12px; border-radius: 12px; border: 1px solid #1d3857; margin-bottom: 15px; text-align: center; box-shadow: inset 0 0 10px rgba(0,0,0,0.5);">
-            <strong style="color: ${isBoss ? '#ef4444' : '#38bdf8'}; font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
+            <strong style="color: var(--accent); font-size: 16px;">${isBoss ? 'ÚLTIMO ANDAR: LÍDER!' : `Andar ${towerState.floor} de ${towerState.maxFloors}`}</strong>
             <p style="color: #91a7be; font-size: 12px; margin-top: 4px; line-height: 1.3; font-weight: bold">${isBoss ? 'Vença para conquistar a insígnia!' : 'Vença a corrida para subir de andar. Se perder, a torre é reiniciada.'}</p>
           </div>
           
           <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
-            <button id="btnEnterTowerFloor" class="mode-btn" style="margin: 0; background: ${isBoss ? 'linear-gradient(90deg, #ef4444, #b91c1c)' : '#f1f5f9'}; color: ${isBoss ? '#fff' : '#0f172a'}; border: none; font-weight: 900; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <button id="btnEnterTowerFloor" class="mode-btn" style="margin: 0; font-weight: 900;">
               ${isBoss ? 'DESAFIAR LÍDER' : 'CORRER ANDAR'}
             </button>
-            <button id="btnResetTower" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid #ef4444; color: #ef4444; font-weight: 900; box-shadow: none;">
+            <button id="btnResetTower" class="mode-btn" style="margin: 0; background: transparent; border: 1px solid var(--accent); color: var(--accent); font-weight: 900; box-shadow: none;">
               ABANDONAR TORRE
             </button>
           </div>
@@ -6717,10 +6394,10 @@
       // Fica monitorando até o auth.js terminar de baixar o perfil do jogador
       // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA / SINCRONIZADOR DE GARAGEM
       const expirationInterval = setInterval(() => {
-        if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+        if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.starter_choice_completed !== false && previewRenderer && KART_DATABASE.length) {
           clearInterval(expirationInterval); // Achou o perfil, para o loop
 
-          let userKarts = ['jolteon'];
+          let userKarts = [];
           if (currentUserProfile.unlocked_karts) {
             try {
               userKarts = Array.isArray(currentUserProfile.unlocked_karts)
@@ -6730,22 +6407,22 @@
           }
 
           // Pega o kart selecionado direto do banco de dados (A garagem atualizou isso lá)
-          const currentDBKart = currentUserProfile.selected_kart || 'jolteon';
+          const currentDBKart = currentUserProfile.selected_kart || getDefaultPlayerKart();
 
-          // Se o kart que veio do banco não é o Jolteon, não é comprado e NÃO está na rotação de hoje: EXPIRADO!
-          if (currentDBKart !== 'jolteon' && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
-            console.log("Kart expirado detectado! Retornando para o Jolteon...");
+          if (currentDBKart && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
+            const fallbackKart = getDefaultPlayerKart();
 
-            sessionStorage.setItem('pkart_selected_kart', 'jolteon');
-            currentUserProfile.selected_kart = 'jolteon';
+            if (fallbackKart) sessionStorage.setItem('pkart_selected_kart', fallbackKart);
+            else sessionStorage.removeItem('pkart_selected_kart');
+            currentUserProfile.selected_kart = fallbackKart;
 
             if (typeof supabaseClient !== 'undefined') {
-              supabaseClient.from('profiles').update({ selected_kart: 'jolteon' }).eq('id', currentUserProfile.id);
+              supabaseClient.from('profiles').update({ selected_kart: fallbackKart }).eq('id', currentUserProfile.id);
             }
           } else {
             // SE FOR VÁLIDO: Força a memória local a ficar igual ao banco de dados! 
             // (Isso resolve o bug de voltar da garagem e a Home ignorar sua escolha)
-            sessionStorage.setItem('pkart_selected_kart', currentDBKart);
+            if (currentDBKart) sessionStorage.setItem('pkart_selected_kart', currentDBKart);
           }
 
           // Agora que temos o perfil 100% carregado, reorganizamos a lista e aplicamos na tela
@@ -6895,9 +6572,9 @@
       // Verifica Roleta
       const badgeRoulette = document.getElementById('badgeRoulette');
       if (badgeRoulette) {
-        const lastSpin = currentUserProfile.last_spin_date || localStorage.getItem('pkart_last_spin');
-        // Se a última rodada não for hoje, mostra o badge
-        badgeRoulette.style.display = (lastSpin === todayRoleta) ? 'none' : 'block';
+        const lastSpin = currentUserProfile.last_spin_date;
+        // Normalize padded and legacy UTC dates without sharing claims across accounts.
+        badgeRoulette.style.display = PokeRoulette.sameDay(lastSpin, todayRoleta) ? 'none' : 'block';
       }
 
       // Verifica Recompensa Diária
@@ -7073,7 +6750,8 @@
     };
   </script>
 
-  <script src="auth.js?v=username-login-20261006-1"></script>
+  <script src="starter-choice.js?v=modal-theme-20261007-1"></script>
+  <script src="auth.js?v=starter-choice-20261006-1"></script>
 </body>
 
 </html>

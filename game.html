@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 
 <head>
+    <link rel="stylesheet" href="poke-icons.css?v=20261007-1">
+    <script defer src="poke-icons.js?v=20261007-1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PokeKart — Corrida</title>
@@ -86,11 +88,48 @@
             filter: brightness(1.1);
             transform: translateY(-1px);
         }
+
+        #raceLoadingScreen {
+            position: fixed; inset: 0; z-index: 20000; box-sizing: border-box;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 20px; padding: 24px; overflow-y: auto; touch-action: pan-y;
+            background: radial-gradient(ellipse at top, #11385b, #050d1c 70%);
+            color: #f4f8ff; text-align: center;
+        }
+        #raceLoadingScreen[hidden], #raceLoadingActions[hidden] { display: none; }
+        #raceLoadingScreen img { width: min(380px, 75vw); max-height: 28dvh; object-fit: contain; }
+        #raceLoadingScreen h1 { margin: 0; font-size: clamp(20px, 4vw, 28px); color: #ffd43b; }
+        #raceLoadingStatus { margin: 0; color: #a9cde8; font-size: 15px; }
+        .race-loading-bar { width: min(340px, 80vw); height: 6px; border-radius: 8px; background: #183650; overflow: hidden; }
+        .race-loading-bar::after {
+            content: ''; display: block; width: 35%; height: 100%; border-radius: inherit;
+            background: #28c9ff; animation: raceLoadingSlide 1.3s ease-in-out infinite alternate;
+        }
+        #raceLoadingActions { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        #raceLoadingActions button, #raceLoadingActions a {
+            box-sizing: border-box; min-height: 44px; padding: 12px 18px; border: 1px solid #28c9ff;
+            border-radius: 10px; background: #0d2841; color: #fff; font: inherit;
+            text-decoration: none; cursor: pointer; touch-action: manipulation;
+        }
+        @keyframes raceLoadingSlide { from { transform: translateX(-10%); } to { transform: translateX(195%); } }
+        @media (max-height: 450px) { #raceLoadingScreen { gap: 12px; padding: 12px; } }
+        @media (prefers-reduced-motion: reduce) { .race-loading-bar::after { animation: none; width: 100%; } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
 </head>
 
 <body>
+    <div id="raceLoadingScreen" role="status" aria-live="polite" aria-busy="true">
+        <img src="img/logo.png" alt="PokéKart — Corrida. Coleção. Vitória.">
+        <h1 id="raceLoadingTitle">PREPARANDO SUA CORRIDA</h1>
+        <p id="raceLoadingStatus">Carregando o jogo...</p>
+        <div class="race-loading-bar" aria-hidden="true"></div>
+        <div id="raceLoadingActions" hidden>
+            <button id="raceLoadingRetry" type="button">Tentar novamente</button>
+            <a href="index.html">Voltar ao lobby</a>
+        </div>
+    </div>
     <!-- Classificação -->
     <!-- <div id="standingsContainer" class="hud-panel">
         <div class="hud-title">Classificação</div>
@@ -140,9 +179,15 @@
     <div id="countdownOverlay">3</div>
 
     <!-- MENU ESC -->
-    <div id="pauseMenu">
-        <h1 style="color: #facc15; margin-bottom: 20px;">JOGO PAUSADO</h1>
-        <button id="btnReturnLobby" class="lobbyBtn">Sair para o Lobby</button>
+    <div id="pauseMenu" class="pk-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+        <section class="pk-modal pk-modal-compact">
+            <img class="pk-modal-symbol" src="icones/tematicos/controle.png" alt="">
+            <span class="pk-modal-eyebrow">UMA PAUSA NOS BOXES</span>
+            <h1 id="pauseTitle" class="pk-modal-title">JOGO PAUSADO</h1>
+            <p>Respire, ajuste a estratégia e volte para a pista.</p>
+            <button id="btnResumeRace" class="lobbyBtn pk-modal-primary" type="button">CONTINUAR CORRIDA</button>
+            <button id="btnReturnLobby" class="lobbyBtn pk-modal-secondary" type="button">Sair para o Lobby</button>
+        </section>
     </div>
 
 
@@ -219,7 +264,7 @@
 
     <!-- DEPENDÊNCIAS E CARREGADORES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="auth.js?v=username-login-20261006-1"></script>
+    <script src="auth.js?v=starter-choice-20261006-1"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
@@ -230,9 +275,9 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="music.js"></script>
-    <script src="assets.js"></script>
-    <script src="game.js"></script>
+    <script src="music.js?v=compact-20261007-1"></script>
+    <script src="assets.js?v=starter-choice-1"></script>
+    <script src="race-loading.js?v=20261007-1" data-game-src="game.js?v=modal-theme-20261007-1"></script>
 </body>
 
 </html>

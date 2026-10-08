@@ -1,0 +1,22 @@
+.music-player { margin: 10px 0; flex-shrink: 0; border: 1px solid #74612b; border-radius: 14px; background: #071222; color: #f4f8ff; overflow: hidden; }
+.music-player-row { display: flex; align-items: center; gap: 8px; padding: 8px; }
+.music-player-row > img { width: 30px; height: 30px; object-fit: contain; flex: none; }
+.music-player-copy { flex: 1; min-width: 0; }
+.music-player-copy strong { display: block; font-size: 10px; letter-spacing: 1.3px; color: #ffe798; }
+.music-player-copy small { display: block; font-size: 10px; color: #a9bfd7; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-player button { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; height: 44px; min-width: 44px; min-height: 44px; padding: 8px; margin: 0; border: 1px solid #3e5268; border-radius: 10px; background: #0c1c30; color: #dcecff; font: inherit; font-size: 15px; line-height: 1; font-weight: 800; cursor: pointer; touch-action: manipulation; }
+.music-player #btnMusicPlayPause { border-color: #ffe798; color: #221c0c; background: linear-gradient(135deg, #ffe990, #e8ae25); }
+.music-player button:hover { border-color: #ffd43b; }
+.music-player button:focus-visible, .music-player input:focus-visible { outline: 3px solid #ffe798; outline-offset: 2px; }
+.music-player #btnMusicOptions { font-size: 23px; }
+.music-player #btnMusicOptions[aria-expanded="true"] { border-color: #ffd43b; color: #ffe798; background: #ffd43b14; }
+.music-player .music-options { padding: 12px; border-top: 1px solid #30445b; }
+.music-player [hidden] { display: none !important; }
+.music-options-heading, .music-track-controls, .music-volume-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.music-options-heading { margin-bottom: 10px; font-size: 11px; color: #a9bfd7; }
+.music-player #menuBtnMusicToggle { font-size: 10px; min-height: 32px; }
+.music-track-controls button { flex: 1; font-size: 12px; }
+.music-volume-label { margin-top: 14px; font-size: 11px; font-weight: 800; color: #dcecff; }
+.music-volume-label output { color: #ffe798; font-variant-numeric: tabular-nums; }
+.music-player #musicVolumeSlider { display: block; box-sizing: border-box; width: 100%; height: 24px; margin: 6px 0 0; padding: 0; accent-color: #ffd43b; cursor: pointer; touch-action: pan-y; }
+.music-player .music-feedback { color: #a9bfd7; font-size: 10px; line-height: 1.5; margin: 8px 0 0; }

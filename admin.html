@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 
 <head>
+    <link rel="stylesheet" href="poke-icons.css?v=20261007-1">
+    <script defer src="poke-icons.js?v=20261007-1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PokeKart</title>
@@ -132,6 +134,7 @@
     </style>
   <link rel="stylesheet" href="mobile.css">
   <script src="mobile.js" defer></script>
+  <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
 </head>
 
 <body data-page="admin">
@@ -166,7 +169,10 @@
 
             <div class="config-block">
                 <h3>🎡 Roleta Diária (Itens, Valores e Pesos de Probabilidade)</h3>
+                <p style="color:#a9bfd7;font-size:12px;line-height:1.6;">Moedas: type "coins" + amount. Itens: type "consumable" + item_id + quantity.
+                    IDs: rare_candy, amulet_coin, lucky_egg e revive. O campo weight define a chance relativa; entradas iguais são agrupadas.</p>
                 <textarea id="jsonRoulette"></textarea>
+                <button class="btn-back" type="button" onclick="document.getElementById('jsonRoulette').value = JSON.stringify(PokeRoulette.toConfig(), null, 2)">Usar prêmios variados</button>
                 <button class="btn-save" onclick="salvarConfig('roulette', 'jsonRoulette')">Salvar Roleta</button>
             </div>
 
@@ -186,8 +192,9 @@
     </div>
 
     <!-- Scripts de Conexão e Lógica -->
-    <script src="auth.js?v=username-login-20261006-1"></script>
-    <script src="admin.js"></script>
+    <script src="auth.js?v=starter-choice-20261006-1"></script>
+    <script src="roulette.js?v=20261007-1"></script>
+    <script src="admin.js?v=roulette-20261007-1"></script>
 </body>
 
 </html>

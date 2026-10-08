@@ -4,38 +4,60 @@
 
 // 1. LER PARÂMETROS E ESTADO (Via Storage, sem URL)
 const nick = sessionStorage.getItem('pkart_nickname') || 'Player';
-const kartId = sessionStorage.getItem('pkart_selected_kart') || 'jolteon';
+const kartId = sessionStorage.getItem('pkart_selected_kart');
+if (!kartId) window.location.replace('index.html');
 
 // Lê o estado completo da torre guardado ao sair do Lobby
-const towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{"floor": 1, "biome": "grass", "maxFloors": 5, "leader": "Desconhecido"}');
+let towerState;
+try { towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}') || {}; }
+catch (_) { towerState = {}; }
 
 let biome = towerState.biome || 'grass';
-const maxFloors = towerState.maxFloors || 5;
+const maxFloors = Math.min(20, Math.max(1, parseInt(towerState.maxFloors, 10) || 5));
 const leaderName = towerState.leader || 'Desconhecido';
-const andarAtual = towerState.floor || 1;
+const andarAtual = Math.min(maxFloors, Math.max(1, parseInt(towerState.floor, 10) || 1));
+const isEliteHub = towerState.mode === 'elite_nuzlocke';
+const isTouchHub = window.matchMedia('(pointer: coarse)').matches;
+let hubReady = false;
 
 // FORÇA O BIOMA "CITY" VISUALMENTE APENAS NO HUB DA ELITE FOUR
 if (towerState.mode === 'elite_nuzlocke') {
     biome = 'city';
 }
 
-const gymName = leaderName !== 'Desconhecido' ? `Ginásio de ${leaderName}` : 'Torre Pokémon';
+const gymName = isEliteHub ? `Liga ${towerState.eliteFlag === 'champ_johto' ? 'Johto' : 'Kanto'}` : (leaderName !== 'Desconhecido' ? `Ginásio de ${leaderName}` : 'Torre Pokémon');
 
 // --- INJETAR DADOS NA HUD ---
 document.getElementById('hudGymName').innerText = gymName;
 document.getElementById('hudLeaderName').innerText = leaderName;
-document.getElementById('hudFloorCount').innerText = `Andar ${andarAtual} / ${maxFloors}`;
+document.getElementById('hudLeaderRole').textContent = isEliteHub ? 'Rival' : 'Líder';
+document.getElementById('hudPilotName').textContent = nick;
+document.getElementById('hudModeLabel').textContent = isEliteHub ? 'ELITE FOUR · NUZLOCKE' : 'MODO TORRE';
+document.getElementById('hudFloorNumber').textContent = String(andarAtual).padStart(2, '0');
+document.getElementById('hudTotalFloors').textContent = maxFloors;
+document.getElementById('hudFloorUnit').textContent = isEliteHub ? 'etapas' : 'andares';
+document.getElementById('hudFloorCount').textContent = `${andarAtual - 1} de ${maxFloors}`;
+document.getElementById('hudStageLabel').textContent = andarAtual === maxFloors ? (isEliteHub ? 'Campeão' : 'Líder do ginásio') : (isEliteHub ? 'Elite Four' : 'Desafio ativo');
+document.getElementById('hudObjective').textContent = isEliteHub ? `Enfrente ${leaderName}` : (andarAtual === maxFloors ? `Enfrente ${leaderName}` : `Entre no andar ${andarAtual}`);
+const progress = document.getElementById('hudProgress');
+progress.setAttribute('aria-valuemax', maxFloors);
+progress.setAttribute('aria-valuenow', andarAtual - 1);
+for (let floor = 1; floor <= maxFloors; floor++) {
+    const step = document.createElement('li');
+    const state = floor < andarAtual ? 'completed' : floor === andarAtual ? 'current' : 'locked';
+    step.className = state;
+    step.textContent = floor;
+    step.setAttribute('aria-label', `${isEliteHub ? 'Etapa' : 'Andar'} ${floor}: ${state === 'completed' ? 'concluído' : state === 'current' ? 'atual' : 'bloqueado'}`);
+    step.title = step.getAttribute('aria-label');
+    if (state === 'current') step.setAttribute('aria-current', 'step');
+    document.getElementById('hudFloorSteps').appendChild(step);
+}
 
 // Calcula a percentagem da barra de progresso
-const percentagemProgresso = (andarAtual / maxFloors) * 100;
+const percentagemProgresso = ((andarAtual - 1) / maxFloors) * 100;
 document.getElementById('hudProgressBar').style.width = `${percentagemProgresso}%`;
 
-// Se for o Boss, a barra fica vermelha/laranja para indicar perigo
-if (andarAtual === maxFloors) {
-    document.getElementById('hudProgressBar').style.background = 'linear-gradient(90deg, #ef4444, #f59e0b)';
-    document.getElementById('hudFloorCount').innerText = '🔥 LÍDER DO GINÁSIO 🔥';
-    document.getElementById('hudFloorCount').style.color = '#ef4444';
-}
+document.querySelectorAll('[data-drive]').forEach(button => { button.disabled = true; });
 
 // 2. CONFIGURAÇÃO THREE.JS
 const scene = new THREE.Scene();
@@ -94,7 +116,8 @@ scene.add(dirLight);
 
 // Quando for criar o chão (floorMat), use a cor do bioma:
 const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: !isTouchHub, powerPreference: 'high-performance' });
+renderer.setPixelRatio(isTouchHub ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -232,12 +255,34 @@ const gltfLoader = new THREE.GLTFLoader();
 if (typeof THREE.DRACOLoader !== 'undefined') {
     const dracoLoader = new THREE.DRACOLoader();
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    dracoLoader.setWorkerLimit(isTouchHub ? 1 : 2);
     gltfLoader.setDRACOLoader(dracoLoader);
 }
 
 let playerKart = null;
 let casasNoMapa = [];
 let transicaoEmAndamento = false;
+const hubModelCache = new Map();
+const hubModelJobs = [];
+let completedHubModels = 0;
+
+function loadHubModel(url, onLoad, onProgress, onError) {
+    if (!hubModelCache.has(url)) {
+        hubModelCache.set(url, new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error(`Tempo esgotado: ${url}`)), 45000);
+            gltfLoader.load(url, model => { clearTimeout(timeout); resolve(model); }, onProgress,
+                error => { clearTimeout(timeout); reject(error); });
+        }));
+    }
+    const job = hubModelCache.get(url).then(model => onLoad({ ...model, scene: model.scene.clone(true) }))
+        .catch(error => { if (onError) onError(error); else console.warn(error); })
+        .finally(() => {
+            completedHubModels++;
+            document.getElementById('hubLoadingProgress').style.width = `${Math.min(95, completedHubModels / hubModelJobs.length * 95)}%`;
+        });
+    hubModelJobs.push(job);
+    return job;
+}
 
 // Controlos
 const keys = { w: false, a: false, s: false, d: false, ArrowUp: false, ArrowLeft: false, ArrowDown: false, ArrowRight: false };
@@ -246,8 +291,15 @@ const maxSpeed = 0.4;       // Reduzido de 0.8 para 0.4
 const acceleration = 0.02;  // Reduzido de 0.02 para 0.01
 const turnSpeed = 0.05;     // Mantém a curva igual ou ajuste se preferir
 
-window.addEventListener('keydown', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = true; });
-window.addEventListener('keyup', (e) => { if (keys.hasOwnProperty(e.key)) keys[e.key] = false; });
+function handleHubKey(event, pressed) {
+    const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+    if (!Object.prototype.hasOwnProperty.call(keys, key)) return;
+    if (pressed && event.target.closest?.('button,a,input,textarea')) return;
+    event.preventDefault();
+    keys[key] = hubReady && !transicaoEmAndamento && pressed;
+}
+window.addEventListener('keydown', event => handleHubKey(event, true));
+window.addEventListener('keyup', event => handleHubKey(event, false));
 
 // Pointer capture keeps acceleration/steering active until the finger is released.
 const hubPointerSets = [];
@@ -256,13 +308,16 @@ document.querySelectorAll('[data-drive]').forEach(button => {
     hubPointerSets.push(activePointers);
     button.addEventListener('pointerdown', event => {
         event.preventDefault();
+        if (!hubReady || transicaoEmAndamento) return;
         activePointers.add(event.pointerId);
         button.setPointerCapture(event.pointerId);
         keys[button.dataset.drive] = true;
+        button.classList.add('is-pressed');
     });
     const release = event => {
         activePointers.delete(event.pointerId);
         keys[button.dataset.drive] = activePointers.size > 0;
+        button.classList.toggle('is-pressed', activePointers.size > 0);
     };
     button.addEventListener('pointerup', release);
     button.addEventListener('pointercancel', release);
@@ -272,6 +327,7 @@ function releaseHubControls() {
     hubPointerSets.forEach(pointers => pointers.clear());
     Object.keys(keys).forEach(key => { keys[key] = false; });
     kartSpeed = 0;
+    document.querySelectorAll('[data-drive]').forEach(button => button.classList.remove('is-pressed'));
 }
 window.addEventListener('blur', releaseHubControls);
 document.addEventListener('visibilitychange', releaseHubControls);
@@ -281,7 +337,7 @@ window.addEventListener('resize', releaseHubControls);
 function carregarMundo() {
     // A. Carregar o Kart do Jogador
     // A. Carregar o Kart do Jogador (Dinâmico)
-    gltfLoader.load(
+    loadHubModel(
         `models/${kartId}.glb`,
         (gltf) => {
             // 1. Cria um grupo invisível que vai ser o "verdadeiro" playerKart
@@ -298,9 +354,8 @@ function carregarMundo() {
             // Antes estava 1.5. Mude para 2.5 (ou 3.0) para aumentar o tamanho
             playerKart.scale.set(2.5, 2.5, 2.5);
 
-            playerKart.position.set(0, 0, -(espacamento) + 25);
+            playerKart.position.set(0, 0, -(andarAtual * espacamento) + 25);
             scene.add(playerKart);
-            setTimeout(() => esconderLoading(), 6000);
 
         },
         undefined,
@@ -308,9 +363,8 @@ function carregarMundo() {
             console.warn("Ficheiro do kart não encontrado, a carregar bloco genérico.");
             const kartGeo = new THREE.BoxGeometry(2, 2, 4);
             playerKart = new THREE.Mesh(kartGeo, new THREE.MeshStandardMaterial({ color: 0x21c7ff }));
-            playerKart.position.set(0, 1, -(andarAtual * 60) + 70);
+            playerKart.position.set(0, 1, -(andarAtual * espacamento) + 25);
             scene.add(playerKart);
-            esconderLoading();
         }
     );
     // B. Gerar as Casas (Reta Compacta)
@@ -335,13 +389,13 @@ function carregarMundo() {
         let pilarDeLuz = null;
         if (status === 'ativo') {
             const luzGeo = new THREE.CylinderGeometry(2, 2, 40, 16);
-            const luzMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
+            const luzMat = new THREE.MeshBasicMaterial({ color: 0xffd43b, transparent: true, opacity: 0.27, blending: THREE.AdditiveBlending, side: THREE.DoubleSide });
             pilarDeLuz = new THREE.Mesh(luzGeo, luzMat);
             pilarDeLuz.position.set(xPos, 20, zPos);
             scene.add(pilarDeLuz);
         }
 
-        gltfLoader.load(
+        loadHubModel(
             `casas_models/${nomeFicheiro}`,
             (gltf) => {
                 const modeloCasa = gltf.scene;
@@ -386,7 +440,7 @@ let arvoreModeloGlobal = null;
 
 function carregarCenarioDecorativo() {
     // 1. Carrega a árvore 3D uma única vez
-    gltfLoader.load('casas_models/arvore.glb', (gltf) => {
+    loadHubModel('casas_models/arvore.glb', (gltf) => {
         arvoreModeloGlobal = gltf.scene;
 
         // 2. Espalha árvores pelas laterais da rua com base no número de andares
@@ -425,13 +479,15 @@ function criarArvoreInstanciada(x, z) {
 function esconderLoading() {
     const loading = document.getElementById('loadingScreen');
     loading.style.opacity = '0';
-    setTimeout(() => loading.style.display = 'none', 500);
+    loading.setAttribute('aria-busy', 'false');
+    document.getElementById('hubLoadingProgress').style.width = '100%';
+    setTimeout(() => { loading.style.display = 'none'; document.getElementById('loadingVideo').pause(); }, 500);
 
     // --- INICIA A MÚSICA ASSIM QUE O HUB CARREGA ---
     if (typeof window.globalMusic !== 'undefined') {
         const isMusicEnabled = localStorage.getItem('pkart_music') !== 'false';
-        const vol = parseFloat(localStorage.getItem('pkart_music_vol')) || 0.4;
-        window.globalMusic.volume = vol;
+        const vol = parseFloat(localStorage.getItem('pkart_music_vol'));
+        window.globalMusic.volume = Number.isFinite(vol) ? Math.max(0, Math.min(1, vol)) : 0.4;
         if (isMusicEnabled) {
             window.globalMusic.play().catch(() => { });
         }
@@ -439,8 +495,9 @@ function esconderLoading() {
 }
 
 // 5. MOTOR FÍSICO DO HUB (Movimento, Limites e Câmara)
-function atualizarKart() {
-    if (!playerKart) return;
+function atualizarKart(dt) {
+    if (!hubReady || transicaoEmAndamento || !playerKart) return;
+    const frameScale = dt * 60;
 
     const acelera = keys.w || keys.ArrowUp;
     const trava = keys.s || keys.ArrowDown;
@@ -448,9 +505,9 @@ function atualizarKart() {
     const dir = keys.d || keys.ArrowRight;
 
     // Aceleração Básica
-    if (acelera) kartSpeed += acceleration;
-    else if (trava) kartSpeed -= acceleration;
-    else kartSpeed *= 0.95; // Fricção natural
+    if (acelera) kartSpeed += acceleration * frameScale;
+    else if (trava) kartSpeed -= acceleration * frameScale;
+    else kartSpeed *= Math.pow(0.95, frameScale);
 
     // Zera a velocidade se ela for insignificante (resolve o problema de virar parado)
     if (Math.abs(kartSpeed) < 0.01) kartSpeed = 0;
@@ -460,14 +517,14 @@ function atualizarKart() {
     // Rotação (só vira se o kart estiver realmente a andar)
     if (kartSpeed !== 0) {
         // Se estiver de ré, inverte o lado da curva para ficar natural
-        const turn = (kartSpeed > 0 ? 1 : -1) * turnSpeed;
+        const turn = (kartSpeed > 0 ? 1 : -1) * turnSpeed * frameScale;
         if (esq) playerKart.rotation.y += turn;
         if (dir) playerKart.rotation.y -= turn;
     }
 
     // Movimento
-    playerKart.position.x -= Math.sin(playerKart.rotation.y) * kartSpeed;
-    playerKart.position.z -= Math.cos(playerKart.rotation.y) * kartSpeed;
+    playerKart.position.x -= Math.sin(playerKart.rotation.y) * kartSpeed * frameScale;
+    playerKart.position.z -= Math.cos(playerKart.rotation.y) * kartSpeed * frameScale;
 
     // --- LIMITES DO MAPA (PAREDES INVISÍVEIS) ---
     const limiteX = 35; // Mais estreito, impede que vá muito longe na relva
@@ -485,7 +542,7 @@ function atualizarKart() {
     idealCameraPos.applyQuaternion(playerKart.quaternion);
     idealCameraPos.add(playerKart.position);
 
-    camera.position.lerp(idealCameraPos, 0.1);
+    camera.position.lerp(idealCameraPos, 1 - Math.pow(0.9, frameScale));
 
     const lookAtTarget = new THREE.Vector3().copy(playerKart.position);
     // Reduzimos também a altura para onde a câmara olha, para ficar focada no piloto
@@ -495,7 +552,7 @@ function atualizarKart() {
 
 // 6. VERIFICAR COLISÃO E ENTRAR NA CORRIDA
 function verificarColisoes() {
-    if (transicaoEmAndamento || !playerKart) return;
+    if (!hubReady || transicaoEmAndamento || !playerKart) return;
 
     casasNoMapa.forEach(casa => {
         if (casa.status === 'ativo') {
@@ -504,6 +561,8 @@ function verificarColisoes() {
 
             if (distancia < raioDeColisao) {
                 transicaoEmAndamento = true;
+                releaseHubControls();
+                document.getElementById('hudObjectiveHint').textContent = 'Entrando na corrida...';
                 entrarNaCorrida(casa.floor);
             }
         }
@@ -548,9 +607,11 @@ function entrarNaCorrida(floorNumber) {
 
     setTimeout(() => {
         // Atualiza o andar exato em que o jogador clicou no Hub
-        let towerState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}');
-        towerState.floor = floorNumber;
-        localStorage.setItem('pkart_tower_state', JSON.stringify(towerState));
+        let nextState;
+        try { nextState = JSON.parse(localStorage.getItem('pkart_tower_state') || '{}') || {}; }
+        catch (_) { nextState = towerState; }
+        nextState.floor = floorNumber;
+        localStorage.setItem('pkart_tower_state', JSON.stringify(nextState));
 
         // Redireciona 100% LIMPO! Nenhuma informação na URL.
         window.location.href = 'game.html';
@@ -696,10 +757,31 @@ function criarNuvens() {
 
 
 // 7. LOOP PRINCIPAL
-function animate() {
+let previousHubFrame = performance.now();
+let nextObjectiveUpdate = 0;
+function animate(now = performance.now()) {
     requestAnimationFrame(animate);
-    atualizarKart();
+    const dt = Math.min(0.1, Math.max(0, (now - previousHubFrame) / 1000));
+    previousHubFrame = now;
+    if (!hubReady) return;
+    atualizarKart(dt);
     verificarColisoes();
+    if (now >= nextObjectiveUpdate && !transicaoEmAndamento) {
+        nextObjectiveUpdate = now + 250;
+        const activeHouse = casasNoMapa.find(casa => casa.status === 'ativo');
+        if (activeHouse && playerKart) {
+            const distance = Math.hypot(playerKart.position.x - activeHouse.mesh.position.x, playerKart.position.z - activeHouse.mesh.position.z);
+            const label = `${Math.ceil(distance)} m`;
+            const distanceElement = document.getElementById('hudDistance');
+            if (distanceElement.textContent !== label) distanceElement.textContent = label;
+            const targetAngle = Math.atan2(activeHouse.mesh.position.x - playerKart.position.x, -(activeHouse.mesh.position.z - playerKart.position.z)) + playerKart.rotation.y;
+            const relativeAngle = Math.atan2(Math.sin(targetAngle), Math.cos(targetAngle));
+            const direction = Math.abs(relativeAngle) > Math.PI * .75 ? 'Atrás de você' : Math.abs(relativeAngle) < .25 ? 'Em frente' : relativeAngle > 0 ? 'À direita' : 'À esquerda';
+            const hint = `${direction} · Siga o feixe dourado.`;
+            const hintElement = document.getElementById('hudObjectiveHint');
+            if (hintElement.textContent !== hint) hintElement.textContent = hint;
+        }
+    }
     // Faz o pilar de luz do andar ativo pulsar (aumentar e diminuir)
     casasNoMapa.forEach(casa => {
         if (casa.status === 'ativo' && casa.mesh.pilar) {
@@ -715,6 +797,25 @@ carregarMundo();
 carregarCenarioDecorativo();
 carregarCenarioProcedural();
 criarNuvens();
+Promise.all(hubModelJobs).then(async () => {
+    document.getElementById('loadingTip').textContent = 'Seu próximo desafio está pronto.';
+    // Set the camera at the resumed floor and warm the first frames behind the loading screen.
+    camera.position.copy(playerKart.position).add(new THREE.Vector3(0, 3, 7));
+    camera.lookAt(playerKart.position.clone().add(new THREE.Vector3(0, 1, 0)));
+    renderer.compile(scene, camera);
+    for (let frame = 0; frame < 2; frame++) {
+        renderer.render(scene, camera);
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    }
+    releaseHubControls();
+    hubReady = true;
+    previousHubFrame = performance.now();
+    document.querySelectorAll('[data-drive]').forEach(button => { button.disabled = false; });
+    esconderLoading();
+}).catch(error => {
+    console.error('Falha ao preparar hub:', error);
+    document.getElementById('loadingTip').textContent = 'Não foi possível preparar a torre. Atualize a página para tentar novamente.';
+});
 animate();
 
 window.addEventListener('resize', () => {

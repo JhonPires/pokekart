@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 
 <head>
+    <link rel="stylesheet" href="poke-icons.css?v=20261007-1">
+    <script defer src="poke-icons.js?v=20261007-1"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="img/favicon.png">
@@ -54,126 +56,6 @@
             background: rgba(5, 11, 22, 0.7);
             z-index: -1;
         }
-
-        /* CONTAINER DA HUD */
-        #ui-container {
-            position: absolute;
-            inset: 0;
-            pointer-events: none;
-            z-index: 10;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-        }
-
-        .hud-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-        }
-
-        /* BOTÃO DE SAÍDA (Esquerda) */
-        .btn-back {
-            pointer-events: auto;
-            background: rgba(15, 23, 42, 0.85);
-            border: 1px solid #ef4444;
-            color: #f87171;
-            padding: 10px 16px;
-            border-radius: 12px;
-            font-weight: 900;
-            font-size: 12px;
-            cursor: pointer;
-            text-transform: uppercase;
-            backdrop-filter: blur(8px);
-            transition: 0.2s;
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2);
-        }
-
-        .btn-back:hover {
-            background: #ef4444;
-            color: #fff;
-            transform: scale(1.05);
-        }
-
-        /* PAINEL DA TORRE (Direita) */
-        .hud-panel {
-            background: linear-gradient(135deg, rgba(12, 28, 48, 0.9), rgba(5, 15, 30, 0.95));
-            border: 1px solid #1e3a57;
-            border-radius: 16px;
-            padding: 15px 20px;
-            color: #fff;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(56, 189, 248, 0.1);
-            backdrop-filter: blur(12px);
-            min-width: 220px;
-            text-align: right;
-        }
-
-        .hud-title {
-            color: #facc15;
-            font-size: 18px;
-            font-weight: 900;
-            margin: 0 0 2px 0;
-            text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(250, 204, 21, 0.4);
-        }
-
-        .hud-leader {
-            color: #91a7be;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-        }
-
-        .hud-leader b {
-            color: #fff;
-        }
-
-        /* BARRA DE PROGRESSO */
-        .hud-floor-text {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            font-weight: 900;
-            color: #38bdf8;
-            margin-bottom: 4px;
-        }
-
-        .hud-progress-bg {
-            width: 100%;
-            height: 8px;
-            background: #0f172a;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 1px solid #1e3a57;
-        }
-
-        .hud-progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #22c55e, #10b981);
-            width: 0%;
-            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* DICA DE CONTROLO (Em baixo, centro) */
-        .controls-hint {
-            align-self: center;
-            background: rgba(9, 23, 42, 0.7);
-            border: 1px solid #38bdf8;
-            padding: 8px 18px;
-            border-radius: 20px;
-            color: #dcecff;
-            font-size: 11px;
-            font-weight: 900;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            backdrop-filter: blur(5px);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-            animation: pulseGlow 2s infinite;
-        }
-
-
 
         /* NOVO CONTÊINER INFERIOR PARA O LOADING */
         #loading-wrapper {
@@ -382,14 +264,17 @@
         }
     </style>
   <link rel="stylesheet" href="mobile.css">
-  <script src="mobile.js" defer></script>
+  <link rel="stylesheet" href="brand.css?v=20261007-1">
+  <link rel="stylesheet" href="hub-hud.css?v=20261007-2">
+  <script src="mobile.js?v=modal-theme-20261007-1" defer></script>
+  <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
 </head>
 
 <body data-page="hub">
 
-    <div id="loadingScreen">
+    <div id="loadingScreen" role="status" aria-live="polite" aria-busy="true">
         <!-- VÍDEO DE FUNDO SUBSTITUINDO A IMAGEM -->
-        <video autoplay muted loop id="loadingVideo">
+        <video autoplay muted loop playsinline preload="metadata" id="loadingVideo">
             <source src="img/loading.mp4" type="video/mp4">
             O seu navegador não suporta a tag de vídeo.
         </video>
@@ -401,10 +286,10 @@
 
         <!-- O GRUPO DA BARRA E DICAS (Fica na base) -->
         <div id="loading-wrapper">
-            <div class="loading-title">🏁 CARREGANDO... 🏁</div>
+            <div class="loading-title">PREPARANDO SUA TORRE</div>
 
             <div class="loading-bar-container">
-                <div class="loading-bar-fill"></div>
+                <div class="loading-bar-fill" id="hubLoadingProgress"></div>
                 <div class="pokeball-icon"></div>
             </div>
 
@@ -412,27 +297,33 @@
         </div>
     </div>
 
-    <div id="ui-container">
+    <div id="ui-container" class="hub-hud">
         <div class="hud-top">
-            <button class="btn-back" id="btnAbandonar" onclick="window.location.href='index.html'">↩ Voltar ao Lobby
-            </button>
-
-            <div class="hud-panel">
-                <h1 class="hud-title" id="hudGymName">Ginásio</h1>
-                <div class="hud-leader">Líder: <b id="hudLeaderName">???</b></div>
-
+            <div class="hub-navigation">
+                <div class="pk-brand hub-wordmark"><img src="icones/tematicos/escudo.png" alt=""><div><strong>POKÉKART</strong><small>JORNADA DA TORRE</small></div></div>
+                <button class="btn-back" id="btnAbandonar"><img src="icones/tematicos/lobby.png" alt="">Voltar ao lobby</button>
+                <div class="hub-pilot"><img src="icones/tematicos/perfil.png" alt=""><span id="hudPilotName" data-poke-icons="off">Piloto</span></div>
+            </div>
+            <section class="hud-panel" aria-label="Progresso da torre">
+                <div class="tower-heading"><img src="icones/liga.png" alt=""><div>
+                    <div class="tower-eyebrow" id="hudModeLabel">MODO TORRE</div>
+                    <h1 class="hud-title" id="hudGymName">Torre Pokémon</h1>
+                    <div class="hud-leader"><span id="hudLeaderRole">Líder</span>: <b id="hudLeaderName">—</b></div>
+                </div></div>
+                <div class="tower-current"><div><strong id="hudFloorNumber">01</strong><span class="tower-total">/ <span id="hudTotalFloors">5</span> <span id="hudFloorUnit">andares</span></span></div><span id="hudStageLabel">Desafio ativo</span></div>
                 <div class="hud-floor-text">
-                    <span>PROGRESSO</span>
-                    <span id="hudFloorCount">Andar 1/5</span>
+                    <span>DESAFIOS CONCLUÍDOS</span>
+                    <span id="hudFloorCount">0 de 5</span>
                 </div>
-                <div class="hud-progress-bg">
+                <div class="hud-progress-bg" id="hudProgress" role="progressbar" aria-label="Desafios concluídos" aria-valuemin="0" aria-valuemax="5" aria-valuenow="0">
                     <div class="hud-progress-fill" id="hudProgressBar"></div>
                 </div>
-            </div>
+                <ol class="tower-steps" id="hudFloorSteps" aria-label="Etapas da torre"></ol>
+            </section>
         </div>
-
-        <div class="controls-hint">
-            WASD / Setas para Dirigir 🏎️
+        <div class="hub-bottom">
+            <div class="hub-objective"><img src="icones/tematicos/ponto.png" alt=""><div class="hub-objective-copy"><small>PRÓXIMO DESAFIO</small><strong id="hudObjective">Encontre o prédio iluminado</strong><span id="hudObjectiveHint">Siga o feixe dourado para entrar na corrida.</span></div><span id="hudDistance" aria-label="Distância até o desafio">—</span></div>
+            <div class="controls-hint"><img src="icones/tematicos/controle.png" alt=""><span><kbd>W A S D</kbd> ou <kbd>setas</kbd><br>Dirija até a entrada iluminada</span></div>
         </div>
     </div>
 
@@ -443,54 +334,15 @@
         </div>
         <div>
             <button type="button" data-drive="s" aria-label="Ré">▼</button>
-            <button type="button" data-drive="w" aria-label="Acelerar">▲</button>
+            <button type="button" data-drive="w" aria-label="Acelerar">GO!</button>
         </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <!-- Injeta a música do jogo -->
-    <script src="music.js"></script>
-    <script src="hub.js"></script>
-    <!-- Script das Dicas de Loading -->
-    <!-- Script das Dicas de Loading em Carrossel -->
-    <!-- Script das Dicas de Loading em Carrossel (Corrigido) -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dicas = [
-                "DICA: Ficou preso? Pressione a tecla 'R' rapidamente para escapar de armadilhas!",
-                "DICA: O Vórtice da Sabrina te puxa para o centro. Tente manter a distância!",
-                "DICA: Giovanni é o chefe da Máfia e é imune às Caixas Rocket. Cuidado!",
-                "A corrida não é apenas sobre velocidade, mas sobre quem domina as curvas.",
-                "Mantenha o foco. A vitória está logo após a próxima ultrapassagem.",
-                "Um verdadeiro mestre das pistas não desiste na primeira derrapada.",
-                "DICA: Líderes de Ginásio usam habilidades únicas que podem mudar o rumo da corrida."
-            ];
-
-            const tipElement = document.getElementById('loadingTip');
-
-            if (tipElement) {
-                let currentIndex = Math.floor(Math.random() * dicas.length);
-                tipElement.innerText = dicas[currentIndex];
-
-                setInterval(() => {
-                    // 1. Adiciona a classe que joga a opacidade para 0 (inicia o fade-out)
-                    tipElement.classList.add('fade-oculto');
-
-                    // 2. Aguarda 0.5s para o texto sumir totalmente, troca a frase e remove a classe
-                    setTimeout(() => {
-                        currentIndex = (currentIndex + 1) % dicas.length;
-                        tipElement.innerText = dicas[currentIndex];
-
-                        // 3. Remove a classe, voltando a opacidade para 1 (inicia o fade-in)
-                        tipElement.classList.remove('fade-oculto');
-                    }, 500);
-
-                }, 2500);
-            }
-        });
-    </script>
-    </script>
+    <script src="music.js?v=compact-20261007-1"></script>
+    <script src="hub.js?v=hud-20261007-1"></script>
 </body>
 
 </html>

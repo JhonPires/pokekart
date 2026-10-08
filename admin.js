@@ -126,7 +126,7 @@ async function carregarConfiguracoesAdmin() {
     data.forEach(config => {
         const formattedJson = JSON.stringify(config.config_data, null, 2);
         if (config.config_name === 'battle_pass') document.getElementById('jsonBattlePass').value = formattedJson;
-        if (config.config_name === 'roulette') document.getElementById('jsonRoulette').value = formattedJson;
+        if (config.config_name === 'roulette') document.getElementById('jsonRoulette').value = JSON.stringify(PokeRoulette.toConfig(config.config_data), null, 2);
         if (config.config_name === 'daily_missions') document.getElementById('jsonMissions').value = formattedJson;
         if (config.config_name === 'achievements') document.getElementById('jsonAchievements').value = formattedJson;
     });

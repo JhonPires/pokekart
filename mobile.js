@@ -35,10 +35,10 @@
   }
   if (['builder', 'hub'].includes(document.body.dataset.page)) {
     const notice = document.createElement('div');
-    notice.className = 'orientation-notice';
+    notice.className = 'pk-modal-overlay orientation-notice';
     notice.setAttribute('role', 'dialog');
     notice.setAttribute('aria-label', 'Vire o celular');
-    notice.innerHTML = '<span class="rotate-icon" aria-hidden="true">↻ ▭</span><h2>Vire o celular</h2><p>Use esta tela com o celular de lado para ter espaço para jogar e usar os controles.</p><a href="index.html">Voltar ao lobby</a>';
+    notice.innerHTML = '<section class="pk-modal pk-modal-compact"><span class="rotate-icon" aria-hidden="true">↻ <img src="icones/tematicos/celular.png" alt="" style="width:64px;height:64px;object-fit:contain;vertical-align:middle;"></span><h2 class="pk-modal-title">Vire o celular</h2><p>Use esta tela com o celular de lado para ter espaço para jogar e usar os controles.</p><a href="index.html">Voltar ao lobby</a></section>';
     document.body.append(notice);
   }
 })();

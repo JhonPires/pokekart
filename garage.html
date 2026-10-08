@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 
 <head>
+    <link rel="stylesheet" href="poke-icons.css?v=20261007-1">
+    <script defer src="poke-icons.js?v=20261007-1"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PokeKart — Garagem</title>
@@ -92,13 +94,6 @@
       /* <-- ADICIONADO */
     }
 
-    .brand-mini {
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      margin: 0 4px 25px;
-    }
-
     .menu-toggle {
       width: 44px;
       height: 44px;
@@ -108,15 +103,6 @@
       color: #fff;
       font-size: 24px;
       cursor: pointer;
-    }
-
-    .brand-mini strong {
-      font-size: 25px;
-      letter-spacing: .5px;
-    }
-
-    .brand-mini span {
-      color: var(--cyan);
     }
 
     .nav {
@@ -159,27 +145,6 @@
       font-size: 20px;
       width: 22px;
       text-align: center;
-    }
-
-    .music {
-      margin-top: 9px;
-      padding: 15px;
-      border: 1px solid #1e3a57;
-      border-radius: 13px;
-      background: rgba(12, 28, 48, .72);
-    }
-
-    .music-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-weight: 750;
-      cursor: pointer;
-    }
-
-    .music-row b {
-      font-size: 12px;
-      color: var(--danger);
     }
 
     .range {
@@ -640,7 +605,10 @@
     }
   </style>
   <link rel="stylesheet" href="mobile.css">
-  <script src="mobile.js" defer></script>
+  <link rel="stylesheet" href="brand.css?v=20261007-1">
+  <script src="mobile.js?v=modal-theme-20261007-1" defer></script>
+  <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
+  <link rel="stylesheet" href="music-player.css?v=20261007-1">
 </head>
 
 <body data-page="garage">
@@ -649,44 +617,33 @@
   <div class="shell">
     <!-- MENU LATERAL -->
     <aside class="sidebar" id="sidebar">
-      <div class="brand-mini">
-
-        <strong>POKE<span>KART</span></strong>
-      </div>
+      <div class="pk-brand pk-brand--sidebar"><img src="icones/tematicos/escudo.png" alt=""><div><strong>POKÉKART</strong><small>GARAGEM</small></div></div>
 
       <nav class="nav">
-        <button class="active"><span class="icon">🛍️</span>Garagem</button>
+        <button class="active"><span class="icon"><img src="icones/garagem.png" alt="" style="width:28px;height:28px;object-fit:contain;"></span>Garagem</button>
         <button onclick="window.location.href='index.html'"><span class="icon">🏠</span>Voltar ao Lobby</button>
-        <button onclick="window.location.href='track_builder.html'"><span class="icon">🗺️</span>Criador de
+        <button onclick="window.location.href='track_builder.html'"><span class="icon"><img src="icones/pista.png" alt="" style="width:28px;height:28px;object-fit:contain;"></span>Criador de
           Pistas</button>
       </nav>
 
-      <div class="music" style="display: flex; flex-direction: column; gap: 12px;">
-        <div class="music-row" id="menuBtnMusicToggle"><span>🎵 Música</span><b id="musicStatusText">LIGADA</b></div>
-        <input class="range" type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4"
-          style="margin-top: 0;">
-
-        <!-- Bloco padronizado com o estilo exato e idêntico ao do print da index -->
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-top: 2px;">
-          <button id="btnMusicPrev"
-            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
-            title="Música Anterior">⏮</button>
-
-          <button id="btnMusicPlayPause"
-            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
-            title="Pausar / Reproduzir">⏸</button>
-
-          <button id="btnMusicNext"
-            style="width: 48px; height: 42px; min-height: unset; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; border-radius: 13px; border: 1px solid #128dcc; background: rgba(7, 28, 49, .68); color: #5bd5ff; backdrop-filter: blur(8px); cursor: pointer; transition: .18s;"
-            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(0, 170, 255, .15)';"
-            onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='none';"
-            title="Próxima Música">⏭</button>
+      <section class="music-player" aria-label="Player de música" data-poke-icons="off">
+        <div class="music-player-row">
+          <img src="icones/music.png" alt="">
+          <div class="music-player-copy"><strong>MÚSICA</strong><small id="musicTrackText">Faixa 01 / 09</small></div>
+          <button id="btnMusicPlayPause" type="button" aria-label="Reproduzir música" title="Reproduzir música">▶</button>
+          <button id="btnMusicOptions" type="button" aria-label="Opções de música" title="Opções de música" aria-expanded="false" aria-controls="musicOptions">⋯</button>
         </div>
-      </div>
+        <div id="musicOptions" class="music-options" hidden>
+          <div class="music-options-heading"><span>TRILHA POKÉKART</span><button id="menuBtnMusicToggle" type="button"><span id="musicStatusText">PAUSADA</span></button></div>
+          <div class="music-track-controls">
+            <button id="btnMusicPrev" type="button" aria-label="Música anterior">⏮ Anterior</button>
+            <button id="btnMusicNext" type="button" aria-label="Próxima música">Próxima ⏭</button>
+          </div>
+          <label class="music-volume-label" for="musicVolumeSlider">Volume <output id="musicVolumeValue" for="musicVolumeSlider">40%</output></label>
+          <input type="range" id="musicVolumeSlider" min="0" max="1" step="0.01" value="0.4">
+          <p id="musicFeedback" class="music-feedback" role="status" aria-live="polite">Reproduza quando quiser.</p>
+        </div>
+      </section>
       <!-- NOVO BLOCO DE MOEDAS NO RODAPÉ -->
       <div style="margin-top: auto; margin-right: 8px;">
         <div
@@ -814,7 +771,7 @@
           <div class="card" style="padding: 10px;">
             <div class="concept-preview" style="cursor: pointer;" title="Clique para ampliar"
               onclick="document.getElementById('zoomedKartImg').src = document.getElementById('kartConceptImg').src; document.getElementById('imageZoomModal').style.display = 'flex';">
-              <img id="kartConceptImg" src="img/jolteon.png" alt="Ficha Técnica do Kart" />
+              <img id="kartConceptImg" src="emojis/pokeball.png" alt="Ficha Técnica do Kart" />
             </div>
           </div>
 
@@ -826,12 +783,12 @@
   </div>
 
   <!-- Modal de Zoom da Imagem do Kart -->
-  <div id="imageZoomModal"
+  <div class="pk-modal-overlay" id="imageZoomModal" role="dialog" aria-modal="true" aria-label="Imagem ampliada do kart"
     style="display:none; position:fixed; inset:0; z-index:99999; background:rgba(3,9,20,0.85); backdrop-filter:blur(10px); justify-content:center; align-items:center; cursor:pointer;"
     onclick="this.style.display='none'">
-    <div style="position:relative; max-width:90vw; max-height:90vh; text-align:center;"
+    <div class="pk-modal" style="position:relative; max-width:90vw; max-height:90vh; text-align:center;"
       onclick="event.stopPropagation()">
-      <button onclick="document.getElementById('imageZoomModal').style.display='none'"
+      <button class="pk-modal-close" aria-label="Fechar imagem" onclick="document.getElementById('imageZoomModal').style.display='none'"
         style="position:absolute; top:-40px; right:0; background:#ff4b55; border:none; color:#fff; font-size:18px; width:36px; height:36px; border-radius:50%; cursor:pointer; font-weight:bold;">&times;</button>
       <img id="zoomedKartImg" src="" alt="Zoom do Kart"
         style="max-width:90vw; max-height:85vh; object-fit:contain; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.8); border:1px solid #23557c;" />
@@ -839,125 +796,13 @@
   </div>
 
   <!-- DEPENDÊNCIAS ORIGINAIS -->
-  <script src="music.js"></script>
-  <script src="assets.js"></script>
-  <script src="auth.js?v=username-login-20261006-1"></script>
-  <script src="garage.js"></script>
+  <script src="music.js?v=compact-20261007-1"></script>
+  <script src="assets.js?v=starter-choice-1"></script>
+  <script src="auth.js?v=starter-choice-20261006-1"></script>
+  <script src="garage.js?v=starter-choice-1"></script>
 
   <!-- Lógica de Sincronização, Nome do Kart e Áudio -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      // --- 1. CONTROLE DE MÚSICA & PLAY/PAUSE ---
-      const btnPrev = document.getElementById('btnMusicPrev');
-      const btnPlayPause = document.getElementById('btnMusicPlayPause');
-      const btnNext = document.getElementById('btnMusicNext');
-      const btnMusic = document.getElementById('menuBtnMusicToggle');
-      const slider = document.getElementById('musicVolumeSlider');
-      const statusText = document.getElementById('musicStatusText');
 
-      function updatePlayPauseUI() {
-        if (!btnPlayPause) return;
-        if (window.globalMusic && window.globalMusic.paused) {
-          btnPlayPause.innerText = '▶';
-        } else {
-          btnPlayPause.innerText = '⏸';
-        }
-      }
-
-      if (btnPrev) {
-        btnPrev.onclick = () => {
-          if (typeof window.prevGlobalMusic === 'function') window.prevGlobalMusic();
-        };
-      }
-
-      if (btnPlayPause) {
-        btnPlayPause.onclick = () => {
-          if (window.globalMusic) {
-            if (window.globalMusic.paused) {
-              window.globalMusic.play().catch(() => { });
-              isEnabled = true;
-            } else {
-              window.globalMusic.pause();
-              isEnabled = false;
-            }
-            localStorage.setItem('pkart_music', isEnabled);
-            localStorage.setItem('pkart_music_playing', isEnabled ? 'true' : 'false');
-            updateAudioUI();
-          }
-        };
-      }
-
-      if (btnNext) {
-        btnNext.onclick = () => {
-          if (typeof window.nextGlobalMusic === 'function') window.nextGlobalMusic();
-        };
-      }
-
-      // Sincroniza o play/pause caso mude em outra tela
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'pkart_music_playing') {
-          const shouldPlay = e.newValue === 'true';
-          if (window.globalMusic) {
-            if (shouldPlay) window.globalMusic.play().catch(() => { });
-            else window.globalMusic.pause();
-          }
-          updatePlayPauseUI();
-        }
-      });
-
-      // --- 2. CONFIGURAÇÃO DE VOLUME E BOTÃO LIGAR/DESLIGAR ---
-      let isEnabled = localStorage.getItem('pkart_music') !== 'false';
-      let vol = parseFloat(localStorage.getItem('pkart_music_vol'));
-      if (isNaN(vol)) vol = 0.4;
-
-      if (slider) slider.value = vol;
-      if (window.globalMusic) window.globalMusic.volume = vol;
-
-      function updateAudioUI() {
-        if (statusText) {
-          statusText.innerText = isEnabled ? 'LIGADA' : 'DESLIGADA';
-          statusText.style.color = isEnabled ? '#21c7ff' : '#ff4b55';
-        }
-        if (slider) {
-          const percent = (slider.value / 1) * 100;
-          slider.style.background = `linear-gradient(to right, #21c7ff ${percent}%, #213a54 ${percent}%)`;
-        }
-        if (window.globalMusic) {
-          if (isEnabled) window.globalMusic.play().catch(() => console.warn('Aguardando clique para tocar.'));
-          else window.globalMusic.pause();
-        }
-        updatePlayPauseUI();
-      }
-
-      if (btnMusic) {
-        btnMusic.onclick = () => {
-          isEnabled = !isEnabled;
-          localStorage.setItem('pkart_music', isEnabled);
-          localStorage.setItem('pkart_music_playing', isEnabled ? 'true' : 'false');
-          updateAudioUI();
-        };
-      }
-
-      if (slider) {
-        slider.addEventListener('input', (e) => {
-          const v = parseFloat(e.target.value);
-          if (window.globalMusic) window.globalMusic.volume = v;
-          localStorage.setItem('pkart_music_vol', v);
-
-          if (v === 0 && isEnabled) {
-            isEnabled = false;
-            localStorage.setItem('pkart_music', false);
-          } else if (v > 0 && !isEnabled) {
-            isEnabled = true;
-            localStorage.setItem('pkart_music', true);
-          }
-          updateAudioUI();
-        });
-      }
-
-      updateAudioUI();
-    });
-  </script>
 </body>
 
 </html>

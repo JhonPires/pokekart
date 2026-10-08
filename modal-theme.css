@@ -1,0 +1,135 @@
+/* Shared dialog surfaces; layout and game state remain owned by each screen. */
+:root {
+  --dialog-gold: #ffd43b;
+  --dialog-light: #ffe798;
+  --dialog-border: #80662e;
+  --dialog-panel: #081629;
+  --dialog-muted: #a9bfd7;
+}
+.pk-modal-overlay {
+  box-sizing: border-box;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgba(3, 9, 20, .88) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  overscroll-behavior: contain;
+}
+.pk-modal {
+  --cyan: var(--dialog-gold);
+  --yellow: var(--dialog-gold);
+  box-sizing: border-box; min-width: 0;
+  max-height: calc(100dvh - 24px); overflow-y: auto; overscroll-behavior: contain;
+  color: #f4f8ff;
+  border: 1px solid var(--dialog-border) !important;
+  border-top: 3px solid var(--dialog-gold) !important;
+  border-radius: 24px !important;
+  background: radial-gradient(ellipse at 20% 45%, #1b4058 0, transparent 65%), var(--dialog-panel) !important;
+  box-shadow: 0 24px 90px #0009 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  scrollbar-width: thin; scrollbar-color: #80662e #081629;
+}
+.pk-modal > * { min-width: 0; }
+.pk-modal-overlay > .pk-modal { max-height: 100% !important; }
+.pk-modal::-webkit-scrollbar, .pk-modal ::-webkit-scrollbar { width: 6px; height: 6px; }
+.pk-modal::-webkit-scrollbar-thumb, .pk-modal ::-webkit-scrollbar-thumb { background: #80662e !important; border-radius: 6px; }
+.pk-modal :is(.modal-title, .pk-modal-title, .modal-header h2, .starter-heading h2) {
+  color: #f4f8ff !important; font-size: clamp(21px, 2.5vw, 27px) !important;
+  font-style: italic; font-weight: 900; text-shadow: none !important;
+  line-height: 1.25; text-align: left !important; overflow-wrap: anywhere;
+}
+.pk-modal .modal-title { padding-right: 48px; }
+.pk-modal .modal-title::before, .pk-modal .modal-header h2::before {
+  content: 'POKÉKART'; display: block; margin-bottom: 7px;
+  font-size: 9px; letter-spacing: 2px; font-style: normal; color: var(--dialog-light);
+}
+.pk-modal :is(.modal-header, .league-ranking-header) { align-items: flex-start; gap: 12px; }
+.pk-modal .league-ranking-header .modal-title { padding: 0 52px 0 0; }
+.pk-modal .result-card-title, .pk-modal .finish-title { text-align: center !important; }
+.pk-modal.result-card .modal-title { padding: 0; text-align: center !important; }
+.pk-modal :is(.starter-heading small, .pk-modal-eyebrow) { color: var(--dialog-light) !important; font-size: 10px; font-weight: 800; letter-spacing: 2px; }
+.pk-modal :is(.game-input, .form-group input, .form-group textarea, .form-group select) {
+  box-sizing: border-box; max-width: 100%; min-height: 44px;
+  color: #f4f8ff; background: #061224; border: 1px solid #3e5268;
+  border-radius: 12px;
+}
+.pk-modal :is(.form-group label, .profile-stat-box h4, .daily-day-text) { color: var(--dialog-muted); }
+.pk-modal :is(button, a):focus-visible, .pk-modal :is(input, textarea, select):focus-visible {
+  outline: 3px solid var(--dialog-light); outline-offset: 3px;
+}
+.pk-modal button:not(.starter-card) {
+  min-height: 44px; min-width: 44px; border-radius: 12px !important; font-family: inherit;
+  touch-action: manipulation;
+}
+.pk-modal button:where(:not(.starter-card)) {
+  border: 1px solid #3e5268 !important; background: #071426 !important;
+  color: #dcecff !important; box-shadow: none !important;
+}
+.pk-modal :is(.modal-close-btn, .modal-close, .pk-modal-close) {
+  width: 44px !important; height: 44px !important; min-width: 44px;
+  flex: none; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #80662e !important; background: #071426 !important;
+  color: var(--dialog-light) !important; font-size: 19px; cursor: pointer;
+}
+.pk-modal :is(.modal-close-btn, .modal-close, .pk-modal-close):hover {
+  background: #ffd43b16 !important; border-color: var(--dialog-gold) !important; transform: none;
+}
+.pk-modal :is(.primary, .btn-primary, .result-action:not(.secondary), .starter-confirm, .btn-claim-mission:not(:disabled), .pk-modal-primary, .mode-btn:not(:disabled)) {
+  min-height: 48px; border: 1px solid #fff1b0 !important;
+  color: #221c0c !important; background: linear-gradient(135deg, #ffe990, #e8ae25) !important;
+  box-shadow: none !important; font-weight: 900; cursor: pointer;
+}
+.pk-modal :is(.primary, .btn-primary, .pk-modal-primary, .starter-confirm):hover:not(:disabled) { filter: brightness(1.06); }
+.pk-modal :is(.btn:not(.primary), .result-action.secondary, .pk-modal-secondary, .league-switcher button) {
+  border: 1px solid #3e5268 !important; background: #071426 !important;
+  color: #dcecff !important; box-shadow: none !important;
+}
+.pk-modal .pk-modal-danger {
+  border: 1px solid #a65366 !important; color: #fecdd3 !important;
+  background: #3c1b2c !important; box-shadow: none !important;
+}
+.pk-modal .tab-btn.active { border-color: #ffd43b !important; color: #ffe798 !important; background: #ffd43b16 !important; }
+.pk-modal button:disabled { cursor: default; opacity: .5; }
+.pk-modal :is(.profile-header-card, .profile-stat-box, .region-container, .mission-card, .daily-card, .league-switcher, .league-player-row, .result-icon, .starter-professor, .pk-modal-panel) {
+  background: #07142699 !important; border: 1px solid #30445b !important;
+  border-radius: 12px; box-shadow: none;
+}
+.pk-modal :is(.daily-card.active, .mission-card.completed, .league-player-row.current-player) {
+  border-color: var(--dialog-gold) !important; background: #ffd43b12 !important;
+}
+.pk-modal .daily-card.claimed { border-color: #396a59 !important; background: #12342888 !important; }
+.pk-modal :is(.daily-prize-text, .mission-reward > span, .result-icon) { color: var(--dialog-light); }
+.pk-modal .mission-progress-fill { background: linear-gradient(90deg, #dca61c, #ffe990); }
+.pk-modal .bp-tier { background: #07142699 !important; border-color: #30445b; border-radius: 12px; }
+.pk-modal .bp-tier.claimable { border-color: var(--dialog-gold); background: #ffd43b12 !important; }
+.pk-modal .bp-tier.claimed { border-color: #396a59; }
+.pk-modal .bp-level-badge { color: var(--dialog-light); }
+.pk-modal .league-player-row:hover { border-color: var(--dialog-border) !important; }
+.pk-modal .pk-modal-hero { background: linear-gradient(180deg, #ffd43b14, transparent) !important; border-bottom-color: #80662e !important; }
+.pk-modal :is(.moderation-table-wrap, .customDropdownTrigger) { border-color: #3e5268; }
+.pk-modal .customDropdownMenu { background: #081629; border-color: #80662e; }
+.pk-modal .customDropdownOption.selected { color: var(--dialog-light); background: #ffd43b12; }
+.pk-modal .pk-modal-actions { flex-shrink: 0; }
+.pk-modal.pk-modal-compact { width: min(440px, 100%); padding: 26px; display: flex; flex-direction: column; gap: 18px; text-align: center; }
+.pk-modal.pk-modal-compact .pk-modal-title { margin: 0; text-align: center !important; }
+.pk-modal.pk-modal-compact p { margin: 0; color: var(--dialog-muted); line-height: 1.6; font-size: 13px; }
+.pk-modal-compact .pk-modal-symbol { width: 64px; height: 64px; object-fit: contain; margin: 0 auto; }
+#imageZoomModal .pk-modal { position: relative; width: min(1000px, 100%); padding: 64px 20px 20px; text-align: center; }
+#imageZoomModal.pk-modal-overlay { padding: 12px; }
+#imageZoomModal .pk-modal-close { top: 12px !important; right: 12px !important; }
+#imageZoomModal #zoomedKartImg { max-width: 100% !important; max-height: calc(100dvh - 130px) !important; border-color: #3e5268 !important; box-sizing: border-box; }
+#finishOverlay .pk-modal .finish-title { color: #f4f8ff !important; font-style: italic; text-shadow: none !important; }
+#finishOverlay .pk-modal-actions { position: sticky; bottom: -16px; background: #081629; padding: 8px 0; }
+#mobileStartOverlay .pk-modal, #mobileRotateOverlay .pk-modal { font-family: Inter, 'Segoe UI', sans-serif; }
+#mobileStartOverlay .pk-modal > div, #mobileRotateOverlay .mr-sub { color: var(--dialog-muted) !important; }
+@media (max-width: 600px), (max-height: 500px) {
+  .pk-modal { border-radius: 18px !important; }
+  .pk-modal :is(.modal-title, .pk-modal-title, .modal-header h2, .starter-heading h2) { font-size: 21px !important; }
+  .pk-modal.pk-modal-compact { padding: 20px; gap: 12px; }
+  .pk-modal .modal-header h2 { font-size: 19px !important; }
+}
+@media (pointer: coarse) { .pk-modal-overlay { backdrop-filter: none; -webkit-backdrop-filter: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pk-modal { animation: none !important; }
+  .pk-modal button { transition: none !important; }
+}

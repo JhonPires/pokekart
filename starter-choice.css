@@ -1,0 +1,51 @@
+.starter-overlay {
+  position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center;
+  padding: 18px; background: rgba(2, 8, 20, .94); backdrop-filter: blur(12px);
+}
+.starter-dialog {
+  width: min(850px, 100%); max-height: calc(100dvh - 36px); overflow-y: auto;
+  border: 1px solid #275276; border-radius: 24px; padding: 26px;
+  color: #f4f8ff; background: radial-gradient(ellipse at 50% 65%, #153453, transparent 65%), #0a192c;
+  box-shadow: 0 24px 90px #0009, inset 0 1px #ffffff08;
+}
+.starter-heading { text-align: center; }
+.starter-heading small { color: #91a7be; font-size: 10px; font-weight: 800; letter-spacing: 2px; }
+.starter-heading h2 { margin: 8px 0 20px; color: #21c7ff; font-size: clamp(20px, 4vw, 28px); }
+.starter-professor { display: flex; align-items: center; gap: 16px; padding: 16px; border: 1px solid #23557c; border-radius: 16px; background: #07101f99; }
+.starter-professor img { width: 76px; height: 96px; object-fit: contain; image-rendering: pixelated; flex: none; }
+.starter-professor strong { color: #facc15; font-size: 13px; }
+.starter-speech { margin: 8px 0 0; min-height: 54px; line-height: 1.6; font-size: 13px; color: #dcecff; }
+.starter-skip { margin-top: 6px; padding: 4px 0; border: 0; background: transparent; color: #91a7be; font-size: 11px; cursor: pointer; }
+.starter-table { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 24px 0 16px; padding: 14px 10px 20px; }
+.starter-table::before { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 65%; border: 1px solid #326488; border-bottom: 8px solid #112c46; border-radius: 50% 50% 16px 16px / 16% 16% 16px 16px; background: linear-gradient(#173954, #10283e); box-shadow: 0 12px 24px #0006; }
+.starter-card { position: relative; min-width: 0; padding: 8px 8px 14px; border: 1px solid transparent; border-radius: 16px; background: #07101f55; color: #f4f8ff; cursor: pointer; transition: transform .2s, border-color .2s, background .2s; }
+.starter-card:hover, .starter-card:focus-visible { transform: translateY(-5px); border-color: var(--starter-color); outline: none; }
+.starter-card[aria-checked="true"] { border-color: var(--starter-color); background: #07101fcc; box-shadow: 0 0 22px color-mix(in srgb, var(--starter-color) 22%, transparent); }
+.starter-stage { position: relative; height: 150px; width: 100%; }
+.starter-stage::after { content: ''; position: absolute; bottom: 9px; left: 18%; right: 18%; height: 22px; border-radius: 50%; border: 1px solid var(--starter-color); background: #061422; box-shadow: 0 0 16px color-mix(in srgb, var(--starter-color) 25%, transparent); }
+.starter-stage canvas { position: relative; z-index: 1; width: 100%; height: 100%; pointer-events: none; }
+.starter-fallback { position: absolute; inset: 8px 0; width: 100%; height: 125px; object-fit: contain; z-index: 2; pointer-events: none; }
+.starter-card strong { display: block; font-size: 14px; margin: 4px 0; }
+.starter-card small { color: var(--starter-color); font-size: 11px; }
+.starter-help { text-align: center; color: #91a7be; font-size: 12px; line-height: 1.5; margin: 12px 0; }
+.starter-confirm { display: block; width: 100%; padding: 14px; border: 1px solid #52d6ff; border-radius: 12px; background: linear-gradient(135deg, #27c8ff, #078be8); color: #031525; font-size: 14px; font-weight: 900; cursor: pointer; }
+.starter-confirm:disabled { opacity: .45; cursor: default; }
+.starter-status { margin: 10px 0; text-align: center; font-size: 12px; color: #fda4af; }
+.starter-signout { display: block; margin: 12px auto 0; padding: 6px; border: 0; background: transparent; color: #91a7be; font-size: 11px; cursor: pointer; }
+@media (max-width: 560px) {
+  .starter-overlay { padding: 10px; }
+  .starter-dialog { padding: 18px 12px; max-height: calc(100dvh - 20px); border-radius: 18px; }
+  .starter-professor { gap: 10px; padding: 12px; align-items: flex-start; }
+  .starter-professor img { width: 50px; height: 70px; }
+  .starter-speech { font-size: 12px; min-height: 80px; }
+  .starter-table { gap: 6px; padding: 8px 2px 16px; margin-top: 16px; }
+  .starter-card { padding: 4px 2px 12px; }
+  .starter-stage { height: 112px; }
+  .starter-fallback { height: 94px; }
+  .starter-card strong { font-size: 12px; }
+  .starter-card small { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starter-card { transition: none; }
+  .starter-card:hover { transform: none; }
+}

@@ -100,9 +100,19 @@ async function fetchPlayerProfile() {
 
   currentUserProfile = data;
 
+  if (data.starter_choice_completed === false) {
+    sessionStorage.removeItem('pkart_selected_kart');
+    if (typeof window.ensureStarterChoice === 'function') {
+      currentUserProfile = await window.ensureStarterChoice(data);
+    } else {
+      window.location.replace('index.html');
+      return null;
+    }
+  }
+
   if (currentUserProfile.selected_kart) {
     sessionStorage.setItem('pkart_selected_kart', currentUserProfile.selected_kart);
-  }
+  } else { sessionStorage.removeItem('pkart_selected_kart'); }
 
   const sideNickEl = document.getElementById('sideMenuNick');
   if (sideNickEl && data.nickname) {
@@ -112,16 +122,27 @@ async function fetchPlayerProfile() {
   return currentUserProfile;
 }
 
+function getOwnedKartIds(profile = currentUserProfile) {
+  let owned = profile?.unlocked_karts || [];
+  if (typeof owned === 'string') {
+    try { owned = JSON.parse(owned); } catch (_) { owned = [owned]; }
+  }
+  return Array.isArray(owned) ? owned.filter(id => typeof id === 'string') : [];
+}
+
+function getDefaultPlayerKart(profile = currentUserProfile) {
+  return profile?.starter_kart_id || getOwnedKartIds(profile)[0] || null;
+}
+
 // Salvar / Atualizar Kart Selecionado
 async function updateSelectedKart(kartId) {
-  if (!currentUserProfile) return;
+  if (!currentUserProfile || currentUserProfile.starter_choice_completed === false) return;
 
-  const isBase = kartId === 'jolteon' || kartId === 'charizard';
-  const isPermanent = currentUserProfile.unlocked_karts && currentUserProfile.unlocked_karts.includes(kartId);
-  const dailyFree = JSON.parse(localStorage.getItem('pkart_free_karts') || '[]');
+  const isPermanent = getOwnedKartIds().includes(kartId);
+  const dailyFree = JSON.parse(sessionStorage.getItem('pkart_daily_free') || '[]');
   const isTemporary = dailyFree.includes(kartId);
 
-  if (!isBase && !isPermanent && !isTemporary) return;
+  if (!isPermanent && !isTemporary) return;
 
   const { error } = await supabaseClient
     .from('profiles')
@@ -205,7 +226,8 @@ async function updateLobbyUI() {
     btnStartRace.addEventListener('click', (e) => {
       if (typeof roomCode === 'undefined' || !roomCode) {
         e.preventDefault();
-        const selectedKart = profile ? (profile.selected_kart || 'jolteon') : 'jolteon';
+        const selectedKart = profile?.selected_kart || getDefaultPlayerKart(profile);
+        if (!selectedKart || profile?.starter_choice_completed === false) return;
         const nickname = profile ? profile.nickname : 'JOGADOR';
         window.location.href = `game.html?nick=${encodeURIComponent(nickname)}&kart=${selectedKart}&slot=0&players=1`;
       }

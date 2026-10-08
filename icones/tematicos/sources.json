@@ -1,0 +1,312 @@
+[
+  {
+    "name": "configuracoes",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      0,
+      50,
+      265,
+      334
+    ]
+  },
+  {
+    "name": "alvo",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      265,
+      50,
+      506,
+      334
+    ]
+  },
+  {
+    "name": "medalha",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      506,
+      50,
+      714,
+      334
+    ]
+  },
+  {
+    "name": "mochila",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      714,
+      50,
+      940,
+      334
+    ]
+  },
+  {
+    "name": "moeda",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      940,
+      50,
+      1178,
+      334
+    ]
+  },
+  {
+    "name": "estrela",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1178,
+      50,
+      1410,
+      334
+    ]
+  },
+  {
+    "name": "controle",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1410,
+      50,
+      1678,
+      334
+    ]
+  },
+  {
+    "name": "lobby",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      0,
+      340,
+      260,
+      616
+    ]
+  },
+  {
+    "name": "bolsa-moedas",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      260,
+      340,
+      504,
+      616
+    ]
+  },
+  {
+    "name": "mundo",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      504,
+      340,
+      735,
+      616
+    ]
+  },
+  {
+    "name": "vento",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      735,
+      340,
+      984,
+      616
+    ]
+  },
+  {
+    "name": "fogo",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      984,
+      340,
+      1181,
+      616
+    ]
+  },
+  {
+    "name": "agua",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1181,
+      340,
+      1418,
+      616
+    ]
+  },
+  {
+    "name": "rota",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1418,
+      340,
+      1678,
+      616
+    ]
+  },
+  {
+    "name": "atualizar",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      0,
+      628,
+      252,
+      937
+    ]
+  },
+  {
+    "name": "buscar",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      252,
+      628,
+      482,
+      937
+    ]
+  },
+  {
+    "name": "bandeira",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      482,
+      628,
+      740,
+      937
+    ]
+  },
+  {
+    "name": "limpar",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      740,
+      628,
+      948,
+      937
+    ]
+  },
+  {
+    "name": "salvar",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      948,
+      628,
+      1180,
+      937
+    ]
+  },
+  {
+    "name": "escudo",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1180,
+      628,
+      1436,
+      937
+    ]
+  },
+  {
+    "name": "pintura",
+    "source": "Coleção de Ícones Pokémon Coloridos.png",
+    "crop": [
+      1436,
+      628,
+      1678,
+      937
+    ]
+  },
+  {
+    "name": "ponto",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      0,
+      0,
+      205,
+      253
+    ]
+  },
+  {
+    "name": "circuito",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      205,
+      0,
+      410,
+      253
+    ]
+  },
+  {
+    "name": "turbo",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      410,
+      0,
+      614,
+      253
+    ]
+  },
+  {
+    "name": "passe",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      614,
+      0,
+      819,
+      253
+    ]
+  },
+  {
+    "name": "alerta",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      819,
+      0,
+      1024,
+      253
+    ]
+  },
+  {
+    "name": "kart",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      0,
+      253,
+      205,
+      506
+    ]
+  },
+  {
+    "name": "porta",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      205,
+      253,
+      410,
+      506
+    ]
+  },
+  {
+    "name": "ferramentas",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      410,
+      253,
+      614,
+      506
+    ]
+  },
+  {
+    "name": "tempo",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      614,
+      253,
+      819,
+      506
+    ]
+  },
+  {
+    "name": "bot",
+    "source": "bc605b46-b024-4585-bd4f-b4758b20c06e.png",
+    "crop": [
+      819,
+      253,
+      1024,
+      506
+    ]
+  }
+]
