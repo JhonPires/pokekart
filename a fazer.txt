@@ -3,7 +3,6 @@ AJUSTES
 - Criar os 3D para colocar no novo hub da elite Four
 
 FUTURO
-- Buzinas Customizadas: Mapear uma nova tecla (ex: H ou Shift) no game.js, carregar os arquivos de áudio e enviar um sinal via PeerJS para que todos na pista ouçam o som com a atenuação 3D correta baseada na distância.
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Ver a possibilidade de escolher para onde jogar a habilidade
 

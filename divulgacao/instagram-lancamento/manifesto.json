@@ -1,0 +1,149 @@
+[
+  {
+    "file": "feed/01-apresentacao.png",
+    "title": "Chegamos à pista",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/02-modos-01.png",
+    "title": "Escolha seu desafio",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/02-modos-02.png",
+    "title": "Modo solo",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/02-modos-03.png",
+    "title": "Multiplayer",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/02-modos-04.png",
+    "title": "Modo torre",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/02-modos-05.png",
+    "title": "Modo desafio",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/03-pistas-01.png",
+    "title": "Criador de pistas",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "feed/03-pistas-02.png",
+    "title": "Sua ideia na pista",
+    "kind": "feed",
+    "width": 1080,
+    "height": 1350
+  },
+  {
+    "file": "destaques/comece.png",
+    "title": "Comece aqui",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/comece.png",
+    "title": "Comece aqui",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "destaques/karts.png",
+    "title": "Karts",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/karts.png",
+    "title": "Karts",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "destaques/pistas.png",
+    "title": "Pistas",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/pistas.png",
+    "title": "Pistas",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "destaques/torre.png",
+    "title": "Torre",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/torre.png",
+    "title": "Torre",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "destaques/gameplay.png",
+    "title": "Gameplay",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/gameplay.png",
+    "title": "Gameplay",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "destaques/novidades.png",
+    "title": "Novidades",
+    "kind": "cover",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "stories/novidades.png",
+    "title": "Novidades",
+    "kind": "story",
+    "width": 1080,
+    "height": 1920
+  },
+  {
+    "file": "perfil/avatar.png",
+    "title": "Avatar",
+    "kind": "avatar",
+    "width": 1080,
+    "height": 1080
+  }
+]

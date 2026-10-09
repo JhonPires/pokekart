@@ -1,0 +1,55 @@
+{
+  "source": "kanto.glb",
+  "imageIndex": 2,
+  "imageName": "T_G_001_Grass_01_C",
+  "originalSize": [
+    512,
+    512
+  ],
+  "output": "grass.webp",
+  "purpose": "Terreno de grama no HUB e nas laterais das pistas",
+  "additionalTextures": {
+    "dirt": {
+      "imageIndex": 3,
+      "imageName": "T_B_006_Ground_04_C_1"
+    },
+    "sand": {
+      "imageIndex": 69,
+      "imageName": "T_G_001_Sand_01_C"
+    },
+    "paving": {
+      "imageIndex": 158,
+      "imageName": "T_G_001_GroundTile_02_02_C"
+    },
+    "stone": {
+      "imageIndex": 178,
+      "imageName": "T_G_001_GroundTile_02_01_C"
+    },
+    "rock": {
+      "imageIndex": 50,
+      "imageName": "T_D_039_Rock_01_C"
+    },
+    "cliff-top": {
+      "imageIndex": 30,
+      "imageName": "T_C_001C_RockTop_01_C"
+    },
+    "cliff-side": {
+      "imageIndex": 31,
+      "imageName": "T_C_001C_Cliff_01_01_C 1"
+    }
+  },
+  "borderMeshes": {
+    "rock": [
+      220
+    ],
+    "cliff": {
+      "geometry": "Closed low-poly mound generated for standalone placement",
+      "texturesFromMeshes": [
+        118,
+        120,
+        121
+      ],
+      "reason": "Original cliff tiles are open terrain sections and cannot be placed independently."
+    }
+  }
+}

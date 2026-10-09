@@ -332,23 +332,29 @@ function setupCTRHud() {
       <div class="ctr-main-timer" id="hud-race-timer">00:00.000</div>
       <div class="ctr-lap-times" id="hud-lap-times"></div>
     </div>
-    <div class="ctr-lap-counter">LAP <span id="hud-current-lap">1</span>/3</div>
+    <div class="ctr-lap-counter"><span class="ctr-lap-label">VOLTA</span><span id="hud-current-lap">1</span>/3</div>
     
     <!-- NOVO: MASTER BALLS NO TOPO -->
     <div class="ctr-mb-box">
-      <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/master-ball.png" class="ctr-mb-icon" alt="MB">
+      <img src="icones/tematicos/master-ball.svg" class="ctr-mb-icon" alt="Master Balls coletadas">
       <div class="ctr-mb-count"><span class="ctr-mb-x">x</span><span id="masterBallCount">0</span></div>
     </div>
 
     <div class="ctr-item-slot" id="itemIcon">${defaultIconSvg}</div>
     <div class="ctr-standings" id="standingsList"></div>
-    <div class="ctr-giant-pos" id="hud-giant-pos">1<span class="ctr-giant-pos-suffix">st</span></div>
+    <div class="ctr-giant-pos" id="hud-giant-pos">1<span class="ctr-giant-pos-suffix">º</span></div>
     <div class="ctr-minimap-box">
       <div id="minimapContainerBox"></div> 
-      <div class="ctr-drift-bar" id="ctrDriftBar"><div class="ctr-drift-fill" id="ctrDriftFill"></div></div>
+      <div class="ctr-drift-bar" id="ctrDriftBar"><div class="ctr-drift-fill" id="ctrDriftFill"></div><span id="ctrDriftLabel">DRIFT</span></div>
     </div>
   `;
   document.body.appendChild(hudHTML);
+  const feedback = document.createElement('div');
+  feedback.id = 'raceFeedback';
+  feedback.hidden = true;
+  feedback.setAttribute('role', 'status');
+  feedback.setAttribute('aria-live', 'polite');
+  hudHTML.appendChild(feedback);
 
   setTimeout(() => {
     const oldCanvas = document.getElementById('minimapCanvas');
@@ -363,6 +369,51 @@ function setupCTRHud() {
 }
 
 setupCTRHud();
+
+let raceFeedbackTime = 0;
+let raceFeedbackPriority = 0;
+let feedbackLap = 1;
+let feedbackShield = 0;
+let feedbackHit = false;
+function showRaceFeedback(text, color = '#ffd43b', duration = 1.5, priority = 1) {
+  if (raceFeedbackTime > 0 && priority < raceFeedbackPriority) return;
+  const el = document.getElementById('raceFeedback');
+  if (!el) return;
+  el.textContent = text;
+  el.style.setProperty('--feedback-color', color);
+  el.hidden = false;
+  raceFeedbackTime = duration;
+  raceFeedbackPriority = priority;
+}
+function playRaceCue(kind, level = 1) {
+  try { _ka()?.playRaceCue(kind, level); } catch (_) { }
+}
+function updateRaceFeedback(dt) {
+  if (isPaused) return;
+  const el = document.getElementById('raceFeedback');
+  if (!raceStarted || raceTrackers.get('local')?.finished) {
+    if (el) el.hidden = true;
+    raceFeedbackTime = 0;
+    return;
+  }
+  raceFeedbackTime = Math.max(0, raceFeedbackTime - dt);
+  if (!raceFeedbackTime) { if (el) el.hidden = true; raceFeedbackPriority = 0; }
+  const lap = raceTrackers.get('local')?.lapCount || 1;
+  if (lap > feedbackLap) {
+    feedbackLap = lap;
+    showRaceFeedback(lap === TOTAL_LAPS ? 'ULTIMA VOLTA!' : 'VOLTA ' + lap, '#ffd43b', 2.8, 3);
+    playRaceCue('lap');
+  }
+  const shield = physics.shieldRemaining;
+  if (feedbackShield > 1.5 && shield > 0 && shield <= 1.5) {
+    showRaceFeedback('ESCUDO ACABANDO', '#38bdf8', 1.5, 2);
+    playRaceCue('warning');
+  } else if (feedbackShield > 0 && !shield) showRaceFeedback('ESCUDO ENCERRADO', '#a9bfd7', 1.2, 2);
+  feedbackShield = shield;
+  const hit = physics.stunTimer > 0 || physics.spinTimer > 0;
+  if (hit && !feedbackHit) showRaceFeedback('ATINGIDO!', '#ff817e', 1.3, 2);
+  feedbackHit = hit;
+}
 
 function updateMasterBallHUD() {
   const countEl = document.getElementById('masterBallCount');
@@ -388,17 +439,11 @@ function loseMasterBalls(amount) {
 const modeParam = matchConfig.mode || null;
 
 if (modeParam === 'tower') {
-  const isBossFloor = secureTowerState.floor === secureTowerState.maxFloors;
-
-  if (isBossFloor) {
-    // REGRAS DO CHEFÃO: 1v1 e IA no Difícil
-    totalPlayersParam = 1; // 1 Jogador humano
-    aiDifficultyParam = 'hard';
-  } else {
-    // REGRAS DOS ANDARES NORMAIS: Corrida com 4 karts no Normal
-    totalPlayersParam = 1; // 1 Jogador humano (o sistema fará 4 vagas - 1 = 3 bots)
-    aiDifficultyParam = 'normal';
-  }
+  secureTowerState.maxFloors = Math.min(20, Math.max(1, parseInt(secureTowerState.maxFloors, 10) || 5));
+  secureTowerState.floor = Math.min(secureTowerState.maxFloors, Math.max(1, parseInt(secureTowerState.floor, 10) || 1));
+  // Três bots nos andares comuns; o líder permanece em 1v1 no difícil.
+  totalPlayersParam = 1;
+  aiDifficultyParam = PokeTowerDifficulty.get(secureTowerState.floor, secureTowerState.maxFloors);
 } else if (modeParam === 'desafio') { // <--- ADICIONE ESTE BLOCO INTEIRO
   totalPlayersParam = 1; // 1 Jogador humano (1v1)
   aiDifficultyParam = 'hard';
@@ -656,6 +701,15 @@ function updateTrackSamples() {
     // Inclinação (pitch) do traçado neste ponto: positivo = subida
     const pitch = Math.atan2(tangent.y, Math.hypot(tangent.x, tangent.z));
     trackSamples.push({ t, point, normal, tangent, pitch });
+  }
+  // Curvatura em metros, preparada uma vez por pista para antecipar cotovelos.
+  const spacing = trackCurve.getLength() / TRACK_SAMPLE_COUNT;
+  const span = Math.max(1, Math.round(.75 / spacing));
+  for (let i = 0; i < TRACK_SAMPLE_COUNT; i++) {
+    const before = trackSamples[(i - span + TRACK_SAMPLE_COUNT) % TRACK_SAMPLE_COUNT].tangent;
+    const after = trackSamples[(i + span) % TRACK_SAMPLE_COUNT].tangent;
+    const angle = Math.atan2(before.x * after.z - before.z * after.x, before.x * after.x + before.z * after.z);
+    trackSamples[i].curvature = angle / (2 * span * spacing);
   }
   currentTrackPoints = trackCurve.getSpacedPoints(150);
   buildTrackGrid();
@@ -1162,6 +1216,7 @@ const groundMat = new THREE.MeshStandardMaterial({
 
 const TERRAIN_SIZE = 1200;
 const TERRAIN_SEGMENTS = 150; // células de 8 m
+const groundTextureReady = PokeGroundTextures.applyBiome(groundMat, currentBiome, TERRAIN_SIZE, TERRAIN_SIZE, renderer);
 
 function buildTerrainGeometry() {
   const geo = new THREE.PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
@@ -1183,6 +1238,34 @@ const ground = new THREE.Mesh(_terrainInit.geo, groundMat);
 ground.position.y = _terrainInit.elevated ? -0.1 : -0.02; // folga p/ o asfalto não "brigar" com o chão
 ground.receiveShadow = true;
 scene.add(ground);
+
+let kantoBorders = null;
+async function prepareKantoBorders() {
+  if (!['grass', 'dirt', 'water', 'rock'].includes(currentBiome)) return null;
+  const count = isMobile ? 18 : 36;
+  const placements = [];
+  for (let i = 0; i < count; i++) {
+    const t = (i + 0.35) / count;
+    const point = trackCurve.getPointAt(t);
+    const tangent = trackCurve.getTangentAt(t).normalize();
+    const normal = new THREE.Vector3(-tangent.z, 0, tangent.x).normalize();
+    const kind = i % 3 === 0 ? 'cliff' : 'rock';
+    const variation = (i * 0.61803398875) % 1;
+    const scaleX = kind === 'cliff' ? 2.6 + variation * 1.2 : 2 + variation;
+    const scaleY = kind === 'cliff' ? 1.3 + variation * 0.7 : 1.4 + variation;
+    const scaleZ = kind === 'cliff' ? 1.6 : scaleX;
+    const radius = kind === 'cliff' ? Math.hypot(scaleX, scaleZ) : scaleX * 0.7;
+    const distance = trackWidth / 2 + radius + 5;
+    const side = i % 2 === 0 ? 1 : -1;
+    const pos = point.clone().addScaledVector(normal, side * distance);
+    // Evita colocar uma peça junto de outra seção do circuito, principalmente em curvas fechadas.
+    if (nearestTrackSample(pos).distXZ < distance - 0.5) continue;
+    placements.push({ kind, x: pos.x, y: getGroundHeightAt(pos.x, pos.z) - 0.03, z: pos.z,
+      rotation: Math.atan2(tangent.x, tangent.z), scaleX, scaleY, scaleZ });
+  }
+  kantoBorders = await PokeKantoScenery.addBorders(scene, renderer, placements);
+  return kantoBorders;
+}
 
 // Recria o terreno quando o traçado do banco substitui o preset
 function rebuildTerrain() {
@@ -1323,6 +1406,8 @@ function addTires() {
 
     for (const side of [1, -1]) {
       const pos = point.clone().addScaledVector(normal, side * (trackWidth / 2 + 3.5));
+      // Em cotovelos, a borda interna pode se dobrar sobre outra parte da pista.
+      if (nearestTrackSample(pos).distXZ < trackWidth / 2 + 2.5) continue;
       const tireStack = new THREE.Group();
 
       const tireBottom = new THREE.Mesh(tireGeo, currentMat);
@@ -3170,6 +3255,8 @@ const physics = {
   driftDirection: 0,
   driftCharge: 0,
   turboTimer: 0,
+  driftTier: 0,
+  shieldRemaining: 0,
   stunTimer: 0,
   spinTimer: 0,
   hopTimer: 0,
@@ -3299,7 +3386,7 @@ let pausedByRotation = false;
 let mobileUI = null;
 let wakeLockSentinel = null;
 
-// Reaproveita os handlers de teclado existentes (E = item, R = desarmar/soltar, Esc = pausa)
+// Reaproveita os handlers de teclado existentes (E = habilidade/buzina, R = desarmar/soltar, Esc = pausa)
 function pressKey(code, key) {
   window.dispatchEvent(new KeyboardEvent('keydown', { code, key }));
   window.dispatchEvent(new KeyboardEvent('keyup', { code, key }));
@@ -3500,6 +3587,8 @@ function setupMobileControls() {
       const host = root.querySelector('.mc-ability-icon');
       if (slot && host && host.innerHTML !== slot.innerHTML) host.innerHTML = slot.innerHTML;
       mobileUI.abilityBtn.classList.toggle('has-item', !!currentItem);
+      mobileUI.abilityBtn.setAttribute('aria-label', currentItem ? 'Usar habilidade' : 'Nenhuma habilidade equipada');
+      mobileUI.abilityBtn.title = currentItem ? 'Usar habilidade' : 'Nenhuma habilidade equipada';
       mobileUI.rocketBtn.style.display = (rocketBoxAtiva || isRooted) ? 'flex' : 'none';
       mobileUI.pauseBtn.textContent = (isPaused && !pausedByRotation) ? '▶' : '⏸';
     } catch (e) { }
@@ -3749,6 +3838,15 @@ function startCountdown() {
 function updatePhysics(dt) {
   if (!kart || isPaused || !raceStarted) return;
 
+  if (physics.shieldRemaining > 0) {
+    physics.shieldRemaining = Math.max(0, physics.shieldRemaining - dt);
+    if (!physics.shieldRemaining) isShieldActive = false;
+  }
+  if (physics.spinTimer > 0 || physics.stunTimer > 0 || raceTrackers.get('local')?.finished) {
+    physics.isDrifting = false;
+    physics.driftCharge = 0;
+    physics.driftTier = 0;
+  }
   if (physics.spinTimer > 0) {
     physics.spinTimer -= dt;
     physics.speed = 0;
@@ -3865,7 +3963,7 @@ function updatePhysics(dt) {
 
   const refSpeed = physics.speed >= 0 ? physics.maxSpeed : Math.abs(physics.maxReverse);
   const movingFactor = THREE.MathUtils.clamp(Math.abs(physics.speed) / refSpeed, 0.2, 1);
-  const canDrift = driftKey && (left || right) && Math.abs(physics.speed) > physics.maxSpeed * 0.35;
+  const canDrift = driftKey && (physics.isDrifting || Math.abs(turnInput) > .1) && physics.speed > physics.maxSpeed * 0.35;
 
   if (turnInput !== 0 && !canDrift && physics.speed > 8) {
     const gripPenalty = 18 * (1.1 - (physics.grip || 0.7));
@@ -3879,7 +3977,13 @@ function updatePhysics(dt) {
       physics.driftCharge = 0;
       physics.driftFactor = 0; // Zera a inércia do drift anterior
     }
-    physics.driftCharge += dt * (physics.driftRate || 1.0);
+    physics.driftCharge = Math.min(2.5, physics.driftCharge + dt * (physics.driftRate || 1.0));
+    const tier = PokeRaceRules.driftTier(physics.driftCharge);
+    if (tier && tier.level > physics.driftTier) {
+      physics.driftTier = tier.level;
+      showRaceFeedback(tier.label + ' PRONTO', tier.color, 1.1, 1);
+      playRaceCue('drift', tier.level);
+    }
 
     const driftSteer = physics.turnSpeed * (physics.driftControl || 1.0);
     let currentTurnStrength = 0.38;
@@ -3893,9 +3997,13 @@ function updatePhysics(dt) {
     physics.heading += physics.driftDirection * driftSteer * currentTurnStrength * movingFactor * dt;
     physics.driftFactor = Math.min(1, physics.driftFactor + dt * 2.5);
   } else {
-    if (physics.isDrifting && physics.driftCharge > 0.8) {
-      physics.turboTimer = 0.8;
+    const tier = PokeRaceRules.driftTier(physics.driftCharge);
+    if (physics.isDrifting && tier && !backward && !raceOver && !isRooted && !rocketBoxAtiva) {
+      physics.turboTimer = Math.max(physics.turboTimer, tier.duration);
+      showRaceFeedback(tier.label + ' ATIVADO', tier.color, 1.1, 1);
+      playRaceCue('boost', tier.level);
     }
+    physics.driftTier = 0;
     physics.isDrifting = false;
     physics.driftCharge = 0;
     physics.driftFactor = Math.max(0, physics.driftFactor - dt * 3);
@@ -4152,6 +4260,7 @@ let localFinishNotified = false;
 let finishLeaderboardEl = null;
 
 async function showFinishOverlay(place) {
+  updateKartAudio(); // Silencia os motores antes de montar o placar.
   corridaAtivaParaPunicao = false; // Desativa punição ao terminar corretamente
 
   // --- SALVAMENTO BLINDADO DO MODO TORRE ---
@@ -4783,7 +4892,7 @@ const SKILLS = {
   },
   CHOQUE: {
     id: 'CHOQUE', name: 'Trovoada Elétrica',
-    icon: '<img class="pk-skill-icon" src="img/insig_vermilion.png" alt="Trovoada Elétrica">'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/raio.svg" alt="Trovoada Elétrica">'
   },
   FUMACA: {
     id: 'FUMACA', name: 'Cortina de Fumaça',
@@ -4807,7 +4916,7 @@ const SKILLS = {
   },
   ROCKET_BOX: {
     id: 'ROCKET_BOX', name: 'Armadilha Rocket',
-    icon: '<img class="pk-skill-icon" src="icones/tematicos/alerta.png" alt="Armadilha Rocket">'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/caixa-rocket.svg" alt="Armadilha Rocket">'
   },
   // NOVA HABILIDADE DO BROCK
   BROCK_ROCK: {
@@ -4822,7 +4931,7 @@ const SKILLS = {
   // NOVA HABILIDADE DO LT. SURGE
   SURGE_SHOCK: {
     id: 'SURGE_SHOCK', name: 'Armadilha Elétrica',
-    icon: '<img class="pk-skill-icon" src="img/insig_vermilion.png" alt="Armadilha Elétrica">'
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/raio.svg" alt="Armadilha Elétrica">'
   },
   // NOVA HABILIDADE DA ERIKA
   ERIKA_ROOTS: {
@@ -5169,8 +5278,8 @@ function updateItemBoxes(dt) {
         }
 
         // 3. ATRIBUI O ITEM AO BOT
-        bot.currentItem = selectedSkill;
-        bot.itemUseTimer = 1.0 + Math.random() * 2.0; // Usa o item entre 1 e 3 segundos
+        if (!bot.currentItem) { bot.currentItem = selectedSkill; bot.itemHoldAge = 0; }
+        bot.itemUseTimer = 1.0 + Math.random() * 2.0; // Reacao minima antes de decidir quando usar
         break;
       }
     }
@@ -6155,13 +6264,20 @@ function updateDigProjectiles(dt) {
 }
 
 window.addEventListener('keydown', (e) => {
-  // Lógica de usar o item (tecla E)
-  if (e.code === 'KeyE' && currentItem && raceStarted) {
-    useEquippedSkill(currentItem);
-    currentItem = null;
-
-    const iconEl = document.getElementById('itemIcon');
-    if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
+  // E e o botão mobile usam a habilidade; sem item, tocam a buzina do Pokémon.
+  if (e.code === 'KeyE' && !e.repeat && raceStarted && !isPaused &&
+      !raceTrackers.get('local')?.finished && !document.hidden) {
+    if (currentItem) {
+      useEquippedSkill(currentItem);
+      currentItem = null;
+      const iconEl = document.getElementById('itemIcon');
+      if (iconEl) iconEl.innerHTML = ITEM_ICON_DEFAULT;
+    } else {
+      const pokemon = KART_DATABASE.find(k => k.id === selectedKartId);
+      if (window.PokeHorns && PokeHorns.play(pokemon)) {
+        if (racePeer) sendNetworkEvent({ t: 'horn', casterId: racePeer.id });
+      }
+    }
   }
 
   // --- LÓGICA DE DESARME DA CAIXA ROCKET (tecla R) ---
@@ -6200,7 +6316,8 @@ function useEquippedSkill(skill) {
     case 'SHIELD':
       playSkillSfx('SHIELD');
       isShieldActive = true;
-      setTimeout(() => { isShieldActive = false; }, 5000);
+      physics.shieldRemaining = 5;
+      showRaceFeedback('ESCUDO ATIVO', '#38bdf8', 1.3, 2);
       break;
 
     case 'ICE':
@@ -6246,6 +6363,7 @@ function useEquippedSkill(skill) {
           const iconEl = document.getElementById('itemIcon');
           if (iconEl) iconEl.innerHTML = SKILLS.DIG.icon;
         }, 10);
+        showRaceFeedback('CAVAR BLOQUEADO EM 1' + String.fromCharCode(186), '#ff817e', 2, 3);
         console.warn("Ataque Cavar não pode ser usado pelo 1º colocado!");
         try { const ka = _ka(); if (ka) ka.playDenied(); } catch (e) { }
         break; // Interrompe a execução sem ativar a habilidade
@@ -6325,7 +6443,19 @@ function broadcastEvent(payload) {
 }
 
 function handleNetworkMessage(data) {
-  if (data.t === 'take_box') {
+  if (data.t === 'horn') {
+    if (!raceStarted || isPaused || document.hidden || !window.PokeHorns) return;
+    if (racePeer && data.casterId === racePeer.id) return;
+    const entry = remoteKarts.get(data.casterId);
+    if (!entry || entry.isBot) return;
+    const now = performance.now();
+    if (now - (entry.lastHornAt ?? -Infinity) < 1500) return;
+    entry.lastHornAt = now;
+    const pokemon = KART_DATABASE.find(k => k.id === entry.kartId);
+    const position = sfxPosOfKart(data.casterId);
+    if (position) PokeHorns.play(pokemon, { channel: data.casterId, ...sfxSpatial(position) });
+    if (isHost) broadcastEvent({ t: 'horn', casterId: data.casterId });
+  } else if (data.t === 'take_box') {
     disableItemBox(data.boxId);
     if (isHost) broadcastEvent(data);
   } else if (data.t === 'spawn_trap') {
@@ -6410,6 +6540,7 @@ function handleRemoteKartState(peerId, data) {
 
   if (!entry) {
     const remoteKartData = KART_DATABASE.find(k => k.id === data.kartId) || KART_DATABASE[0];
+    if (window.PokeHorns) PokeHorns.prepare(remoteKartData);
     const obj = createKart(0x1E88E5);
 
     loadKartTemplate(remoteKartData, (template) => {
@@ -6431,6 +6562,7 @@ function handleRemoteKartState(peerId, data) {
   if (data.kartId && entry.kartId !== data.kartId) {
     entry.kartId = data.kartId;
     const remoteKartData = KART_DATABASE.find(k => k.id === data.kartId);
+    if (window.PokeHorns) PokeHorns.prepare(remoteKartData);
     if (remoteKartData) {
       loadKartTemplate(remoteKartData, (template) => {
         applyModelToGroup(entry.obj.group, template, 0x1E88E5);
@@ -6511,6 +6643,7 @@ function initRaceMultiplayer() {
           raceReadyGuests.add(conn.peer);
           maybeStartMultiplayerCountdown();
         } else {
+          if (data.t === 'horn') data = { t: 'horn', casterId: conn.peer };
           handleNetworkMessage(data);
         }
       });
@@ -6685,7 +6818,7 @@ function networkTick(dt) {
       finished: Boolean(entry.finished),
       poisoned: entry.isBot ? (entry.stunTimer > 0) : Boolean(entry.isPoisoned),
       shield: entry.isBot ? (entry.shieldTimer > 0) : Boolean(entry.isShieldActive),
-      turbo: entry.isBot ? (entry.turboTimer > 0) : Boolean(entry.isTurboActive),
+      turbo: !entry.finished && (entry.isBot ? entry.turboTimer > 0 : Boolean(entry.isTurboActive)),
       finishTime: rFinish
     };
   }
@@ -6798,7 +6931,7 @@ function updateStandings() {
       : `<img src="${spriteUrl}" alt="${r.name}" onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
 
     return `
-      <div class="ctr-standing-item" style="margin-bottom: 14px;">
+      <div class="ctr-standing-item${isMe ? ' is-local' : ''}" style="margin-bottom: 14px;">
         <div class="ctr-portrait" style="border-color: ${borderColor};">
           <div class="ctr-standing-icon">${content}</div>
         </div>
@@ -6855,15 +6988,12 @@ function updateHUD() {
 
     // 3. Número Gigante da Posição (Estilo CTR)
     if (giantPosEl) {
-      let suffix = 'th';
-      if (myRank === 1) suffix = 'st';
-      else if (myRank === 2) suffix = 'nd';
-      else if (myRank === 3) suffix = 'rd';
+      const suffix = 'º';
 
-      let color = '#ff2222'; // Vermelho para 4º lugar em diante
-      if (myRank === 1) color = '#ffaa00'; // Ouro
+      let color = '#ff817e'; // Vermelho para 4º lugar em diante
+      if (myRank === 1) color = '#ffd43b'; // Ouro
       else if (myRank === 2) color = '#e2e8f0'; // Prata
-      else if (myRank === 3) color = '#cd7f32'; // Bronze
+      else if (myRank === 3) color = '#ffc08b'; // Bronze
 
       if (giantPosEl.__rank !== myRank) {
         giantPosEl.__rank = myRank;
@@ -6893,22 +7023,19 @@ function updateHUD() {
         ctrDriftBar.style.opacity = '1';
         ctrDriftBar.style.visibility = 'visible';
       }
-      const maxCharge = 0.8;
-      let percent = Math.min(100, (physics.driftCharge / maxCharge) * 100);
-
+      const tier = PokeRaceRules.driftTier(physics.driftCharge);
+      const next = PokeRaceRules.driftLevels.find(t => t.charge > physics.driftCharge);
+      const previousCharge = tier?.charge || 0;
+      const percent = next ? Math.min(100, (physics.driftCharge - previousCharge) / (next.charge - previousCharge) * 100) : 100;
+      const color = tier?.color || '#94a3b8';
       if (ctrDriftFill) {
         ctrDriftFill.style.width = percent + '%';
-        if (percent >= 100) {
-          ctrDriftFill.style.background = '#22c55e';
-          ctrDriftFill.style.boxShadow = '0 0 12px #22c55e';
-        } else if (percent > 50) {
-          ctrDriftFill.style.background = '#f97316';
-          ctrDriftFill.style.boxShadow = '0 0 10px #f97316';
-        } else {
-          ctrDriftFill.style.background = '#facc15';
-          ctrDriftFill.style.boxShadow = '0 0 8px #facc15';
-        }
+        ctrDriftFill.style.background = color;
+        ctrDriftFill.style.boxShadow = '0 0 8px ' + color;
       }
+      const label = document.getElementById('ctrDriftLabel');
+      if (label) label.textContent = tier ? tier.label + (next ? ' > ' + next.label : ' MAX') : 'CARREGANDO TURBO I';
+      if (ctrDriftBar) ctrDriftBar.style.borderColor = color;
     } else if (!driftHudHidden) {
       driftHudHidden = true;
       if (ctrDriftBar) {
@@ -7056,7 +7183,28 @@ function buildMinimapStatic(width, height) {
   c.closePath();
   c.stroke();
 
-  return { canvas: off, points: currentTrackPoints, width, height, toMap };
+  // A mesma origem usada pela linha de largada/chegada no mundo 3D.
+  const start = trackCurve.getPointAt(0);
+  const tangent = trackCurve.getTangentAt(0).normalize();
+  const startMap = toMap(start.x, start.z);
+  const heading = Math.atan2(tangent.z, tangent.x);
+  c.save();
+  c.translate(startMap.x, startMap.y);
+  c.rotate(heading);
+  c.fillStyle = '#071424';
+  c.fillRect(-5, -9, 10, 18);
+  c.strokeStyle = '#ffd43b';
+  c.lineWidth = 1.5;
+  c.strokeRect(-5, -9, 10, 18);
+  for (let row = 0; row < 4; row++) {
+    for (let col = 0; col < 2; col++) {
+      c.fillStyle = (row + col) % 2 ? '#071424' : '#fff';
+      c.fillRect(-4 + col * 4, -8 + row * 4, 4, 4);
+    }
+  }
+  c.restore();
+
+  return { canvas: off, points: currentTrackPoints, width, height, toMap, startMap };
 }
 
 function drawMinimap() {
@@ -7310,8 +7458,54 @@ function spawnBots() {
 }
 
 
+// Decisoes espaciais em intervalos: evita procurar obstaculos a cada frame.
+function planBotRace(id, bot, sample, curve, profile, trackLength) {
+  const position = bot.obj.group.position;
+  const obstacles = [];
+  let nearestAhead = Infinity, nearestBehind = Infinity;
+  const relative = (pos, radius, hazard) => {
+    const dx = pos.x - position.x, dz = pos.z - position.z;
+    const ahead = dx * sample.tangent.x + dz * sample.tangent.z;
+    const lateral = (pos.x - sample.point.x) * sample.normal.x + (pos.z - sample.point.z) * sample.normal.z;
+    if (Math.abs(dx) > 35 || Math.abs(dz) > 35) return;
+    if (ahead > -2 && ahead < profile.lookAhead && Math.abs(lateral) < trackWidth / 2 + radius) {
+      obstacles.push({ ahead, lateral, radius, hazard });
+    }
+  };
+  const localTr = raceTrackers.get('local');
+  const considerRacer = (pos, progress, finished) => {
+    if (finished) return;
+    const gap = ((progress || 0) - (bot.progress || 0)) * trackLength;
+    if (gap > 0) nearestAhead = Math.min(nearestAhead, gap);
+    else nearestBehind = Math.min(nearestBehind, -gap);
+    relative(pos, 1, false);
+  };
+  if (kart) considerRacer(kart.position, localTr?.progress, localTr?.finished);
+  let rank = 1;
+  if ((localTr?.progress || 0) > (bot.progress || 0)) rank++;
+  for (const [otherId, other] of remoteKarts) {
+    if (otherId === id) continue;
+    if ((other.progress || 0) > (bot.progress || 0)) rank++;
+    const pos = other.isBot ? other.obj?.group.position : other.target?.pos;
+    if (pos) considerRacer(pos, other.progress, other.finished);
+  }
+  for (const trap of placedTraps) {
+    if (!trap.active || trap.owner === id || !trap.mesh) continue;
+    relative(trap.mesh.position, ['VORTEX', 'PURPLE_SMOKE', 'FUMACA'].includes(trap.type) ? 3 : 1.3, true);
+  }
+  for (const box of armadilhasRocketNaPista) {
+    if (box.owner !== id) relative(box.position, 1, true);
+  }
+  const safeHalf = Math.max(.5, trackWidth / 2 - 1.8) * (bot.tightCorner ? .55 : 1);
+  bot.targetLane = PokeRaceRules.chooseLane({ halfWidth: safeHalf,
+    currentLane: bot.laneOffset, preferredLane: bot.tightCorner ? 0 : Math.sign(curve) * safeHalf * .35,
+    obstacles, profile });
+  bot.itemContext = { rank, ahead: nearestAhead, behind: nearestBehind,
+    threat: obstacles.some(o => o.hazard && o.ahead < 12) || activeDigs.some(d => d.targetId === id) };
+}
+
 function updateBots(dt) {
-  if (!raceStarted) return;
+  if (!raceStarted || isPaused) return;
 
   const trackLength = trackCurve.getLength();
 
@@ -7326,16 +7520,8 @@ function updateBots(dt) {
     if (bot.turboTimer > 0) bot.turboTimer -= dt;
     if (bot.poisonTimer > 0) bot.poisonTimer -= dt;
 
-    if (bot.itemUseTimer > 0) {
-      bot.itemUseTimer -= dt;
-      // Adicione esta condição para respeitar o cooldown (ex: mínimo de 3 segundos entre habilidades)
-      if (bot.itemUseTimer <= 0 && bot.currentItem && (!bot.skillCooldown || bot.skillCooldown <= 0)) {
-        useBotSkill(id, bot, bot.currentItem);
-        bot.currentItem = null;
-        bot.skillCooldown = 3.0; // Impede usar outra habilidade pelos próximos 3 segundos
-      }
-    }
-
+    if (bot.currentItem) bot.itemHoldAge = (bot.itemHoldAge || 0) + dt;
+    if (bot.spinTimer > 0 || bot.stunTimer > 0) { bot.driftCharge = 0; bot.driftDirection = 0; bot.driftExitTime = 0; }
     if (bot.spinTimer > 0) {
       bot.spinTimer -= dt;
       bot.speed = 0;
@@ -7383,7 +7569,14 @@ function updateBots(dt) {
     const offsetVec = new THREE.Vector3().subVectors(bot.obj.group.position, sample.point);
     const lateral = offsetVec.dot(sample.normal);
 
-    const lookAheadDistance = 6.0 + (bot.speed * 0.35);
+    const profile = PokeRaceRules.profiles[bot.diffMult > .95 ? 'hard' : bot.diffMult > .8 ? 'normal' : 'easy'];
+    const cornerPlan = PokeRaceRules.planBotCorner(trackSamples, Math.round(sample.t * TRACK_SAMPLE_COUNT) % TRACK_SAMPLE_COUNT,
+      trackLength / TRACK_SAMPLE_COUNT, { speed: bot.speed, maxSpeed: maxSpd,
+        turnSpeed: bot.stats.turnSpeed, trackWidth, profile });
+    const enteringTightCorner = cornerPlan.tight && !bot.tightCorner;
+    bot.tightCorner = cornerPlan.tight;
+    maxSpd = Math.min(maxSpd, cornerPlan.safeSpeed);
+    const lookAheadDistance = cornerPlan.lookAhead;
     let lookAheadT = sample.t + (lookAheadDistance / trackLength);
     if (lookAheadT > 1) lookAheadT -= 1.0;
 
@@ -7391,6 +7584,31 @@ function updateBots(dt) {
     const targetTangent = trackCurve.getTangentAt(lookAheadT).normalize();
     const targetNormal = new THREE.Vector3(-targetTangent.z, 0, targetTangent.x).normalize();
 
+    const cross = sample.tangent.x * targetTangent.z - sample.tangent.z * targetTangent.x;
+    const curve = Math.atan2(cross, sample.tangent.dot(targetTangent));
+    bot.thinkTimer = (bot.thinkTimer || 0) - dt;
+    if (bot.thinkTimer <= 0 || enteringTightCorner) {
+      planBotRace(id, bot, sample, curve, profile, trackLength);
+      bot.thinkTimer = profile.think;
+    }
+    bot.laneOffset = THREE.MathUtils.lerp(bot.laneOffset, bot.targetLane ?? 0, Math.min(1, dt * 2.5));
+    // Freia antes da curva; a dificuldade melhora a trajetoria em vez de alterar os atributos.
+    const cornerFactor = PokeRaceRules.botCornerFactor(curve, profile);
+    maxSpd *= cornerFactor;
+    if (bot.currentItem && PokeRaceRules.shouldUseItem(bot.currentItem.id, {
+      ...bot.itemContext, curve: Math.abs(curve), age: bot.itemHoldAge || 0,
+      reaction: bot.itemUseTimer || 1, disabled: bot.rocketBoxAtiva || bot.skillCooldown > 0,
+      shielded: bot.shieldTimer > 0, boosting: bot.turboTimer > 0
+    })) {
+      useBotSkill(id, bot, bot.currentItem);
+      bot.currentItem = null; bot.itemHoldAge = 0; bot.skillCooldown = 3;
+    }
+    const driftBoost = PokeRaceRules.stepBotDrift(bot, dt, {
+      curve, profile, rate: bot.stats.driftRate || 1,
+      eligible: bot.speed > bot.stats.maxSpeed * .35 && !bot.rocketBoxAtiva && Math.abs(lateral) < trackWidth / 2 - .5,
+      boosting: bot.turboTimer > 0
+    });
+    if (driftBoost) bot.turboTimer = Math.max(bot.turboTimer, driftBoost.duration);
     const halfWidth = trackWidth / 2;
     const safeZone = halfWidth - 1.5;
     const grassStart = halfWidth + 0.8;
@@ -7447,6 +7665,9 @@ function updateBots(dt) {
     bot.progress = tr.progress;
     bot.lapCount = tr.lapCount;
     bot.finished = tr.finished;
+    if (bot.finished) {
+      bot.turboTimer = 0; bot.driftCharge = 0; bot.driftDirection = 0; bot.driftExitTime = 0;
+    }
   }
 }
 
@@ -8022,7 +8243,7 @@ function updateKartEffects(dt) {
     if (!bot.obj) continue;
 
     const hasShield = bot.shieldTimer > 0 || bot.isShieldActive;
-    const hasTurbo = bot.turboTimer > 0 || bot.isTurboActive;
+    const hasTurbo = !bot.finished && (bot.isBot ? bot.turboTimer > 0 : bot.isTurboActive);
 
     // CORREÇÃO: O veneno agora usa exclusivamente o poisonTimer para bots e isPoisoned para remotos
     const hasPoison = (bot.isBot && bot.poisonTimer > 0) || Boolean(bot.isPoisoned);
@@ -8291,6 +8512,8 @@ async function initGameEngine() {
 
   // 1. Espera os karts carregarem do banco de dados
   await loadKartsFromDatabase();
+  // Pré-carrega o som sem atrasar o carregamento dos modelos ou a largada.
+  if (window.PokeHorns) PokeHorns.prepare(KART_DATABASE.find(k => k.id === selectedKartId));
   if (!KART_DATABASE.length) { window.location.replace('index.html'); return; }
 
   if (customTrackParam) {
@@ -8298,6 +8521,8 @@ async function initGameEngine() {
     await window.RaceLoading.nextPaint();
     await loadCustomTrack(customTrackParam);
   }
+
+  const borderSceneryReady = prepareKantoBorders();
 
   // 2. Só agora define o índice do kart escolhido
   let selectedKartIndex = KART_DATABASE.findIndex(k => k.id === selectedKartId);
@@ -8321,6 +8546,7 @@ async function initGameEngine() {
   }
 
   window.RaceLoading.setStatus('Preparando a largada...');
+  await Promise.all([groundTextureReady, borderSceneryReady]);
   await window.RaceLoading.nextPaint();
   updateCamera(1); // Posiciona a câmera no grid antes do primeiro quadro visível.
   updateRemoteKarts(1); // Também prepara os adversários na posição recebida, antes de aquecer a GPU.
@@ -8814,9 +9040,20 @@ const kartAudio = (() => {
   ['pointerdown', 'keydown', 'touchstart', 'click'].forEach(ev =>
     window.addEventListener(ev, unlock, { capture: true, passive: true }));
 
-  return { ctx, createEngine, playItemBox, playMasterBall, playSkill, playHit, playDenied };
+  function playRaceCue(kind, level = 1) {
+    if (ctx.state !== 'running') return;
+    const savedOut = sfxOut;
+    sfxOut = bus;
+    const t = ctx.currentTime + .005;
+    const notes = kind === 'lap' ? [523, 659, 784, 1047] : kind === 'warning' ? [660, 440] :
+      kind === 'boost' ? [220 * level, 440 * level] : [440 + level * 110, 660 + level * 110];
+    notes.forEach((f, i) => sfxTone(f, t + i * .09, .16, { gain: .075 }));
+    sfxOut = savedOut;
+  }
+  return { ctx, createEngine, playItemBox, playMasterBall, playSkill, playHit, playDenied, playRaceCue };
 })();
 
+if (window.PokeHorns && kartAudio) PokeHorns.init(kartAudio.ctx);
 const localEngine = kartAudio ? kartAudio.createEngine({ volume: 0.5, drift: true }) : null;
 const otherEngines = new Map(); // peerId/botId -> engine
 let audioPausedByUs = false;
@@ -8908,7 +9145,7 @@ function updateKartAudio() {
       throttle: gas ? 1 : 0,
       drifting: physics.isDrifting && spd > 5,
       boosting: physics.turboTimer > 0,
-      mute: !kart || !racing || (raceOver && spd < 1)
+      mute: !kart || !racing || raceOver
     });
 
     // --- Outros karts (jogadores e bots), com volume e pan pela posição ---
@@ -8941,8 +9178,8 @@ function updateKartAudio() {
         speed: eSpeed,
         maxSpeed: eMax,
         throttle: eSpeed > 1 ? 0.7 : 0,
-        boosting: (e.turboTimer > 0) || !!e.isTurboActive,
-        mute: !raceStarted || gain <= 0.001,
+        boosting: !e.finished && (e.isBot ? e.turboTimer > 0 : !!e.isTurboActive),
+        mute: !raceStarted || raceOver || e.finished || !!raceTrackers.get(pid)?.finished || gain <= 0.001,
         gain,
         pan
       });
@@ -9274,6 +9511,7 @@ function animate() {
   updateKartEffects(dt);
   updateVictoryEffectsAnim(dt);
   updateHUD();
+  updateRaceFeedback(dt);
   drawMinimap();
 
   // --- ATUALIZAÇÃO E CRIAÇÃO DAS PARTÍCULAS DE POEIRA ---

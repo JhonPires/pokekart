@@ -17,6 +17,8 @@ const maxFloors = Math.min(20, Math.max(1, parseInt(towerState.maxFloors, 10) ||
 const leaderName = towerState.leader || 'Desconhecido';
 const andarAtual = Math.min(maxFloors, Math.max(1, parseInt(towerState.floor, 10) || 1));
 const isEliteHub = towerState.mode === 'elite_nuzlocke';
+const difficultyLabels = { easy: 'Fácil', normal: 'Normal', hard: 'Difícil' };
+const currentDifficulty = isEliteHub ? 'hard' : PokeTowerDifficulty.get(andarAtual, maxFloors);
 const isTouchHub = window.matchMedia('(pointer: coarse)').matches;
 let hubReady = false;
 
@@ -37,7 +39,7 @@ document.getElementById('hudFloorNumber').textContent = String(andarAtual).padSt
 document.getElementById('hudTotalFloors').textContent = maxFloors;
 document.getElementById('hudFloorUnit').textContent = isEliteHub ? 'etapas' : 'andares';
 document.getElementById('hudFloorCount').textContent = `${andarAtual - 1} de ${maxFloors}`;
-document.getElementById('hudStageLabel').textContent = andarAtual === maxFloors ? (isEliteHub ? 'Campeão' : 'Líder do ginásio') : (isEliteHub ? 'Elite Four' : 'Desafio ativo');
+document.getElementById('hudStageLabel').textContent = `${andarAtual === maxFloors ? (isEliteHub ? 'Campeão' : 'Líder do ginásio') : (isEliteHub ? 'Elite Four' : 'Desafio')} · ${difficultyLabels[currentDifficulty]}`;
 document.getElementById('hudObjective').textContent = isEliteHub ? `Enfrente ${leaderName}` : (andarAtual === maxFloors ? `Enfrente ${leaderName}` : `Entre no andar ${andarAtual}`);
 const progress = document.getElementById('hudProgress');
 progress.setAttribute('aria-valuemax', maxFloors);
@@ -48,6 +50,8 @@ for (let floor = 1; floor <= maxFloors; floor++) {
     step.className = state;
     step.textContent = floor;
     step.setAttribute('aria-label', `${isEliteHub ? 'Etapa' : 'Andar'} ${floor}: ${state === 'completed' ? 'concluído' : state === 'current' ? 'atual' : 'bloqueado'}`);
+    const floorDifficulty = isEliteHub ? 'hard' : PokeTowerDifficulty.get(floor, maxFloors);
+    step.setAttribute('aria-label', `${step.getAttribute('aria-label')} · ${difficultyLabels[floorDifficulty]}`);
     step.title = step.getAttribute('aria-label');
     if (state === 'current') step.setAttribute('aria-current', 'step');
     document.getElementById('hudFloorSteps').appendChild(step);
@@ -162,6 +166,7 @@ const floorMat = new THREE.MeshStandardMaterial({
     roughness: 0.9
 });
 
+const groundTextureReady = PokeGroundTextures.applyBiome(floorMat, biome, 100, compEstrada + 40, renderer);
 const floorMesh = new THREE.Mesh(floorGeo, floorMat);
 floorMesh.rotation.x = -Math.PI / 2;
 floorMesh.position.z = -(compEstrada / 2) + 20;
@@ -196,6 +201,21 @@ texturaCalcada.wrapT = THREE.RepeatWrapping;
 texturaCalcada.repeat.set(1, compEstrada / 2);
 
 const calcadaMat = new THREE.MeshStandardMaterial({ map: texturaCalcada, roughness: 1 });
+const pavementTextureReady = PokeGroundTextures.apply(calcadaMat, 'paving', 4, compEstrada, renderer, 4);
+const borderPlacements = [];
+if (['grass', 'dirt', 'water', 'rock'].includes(biome)) {
+    const count = isTouchHub ? 6 : 12;
+    for (let i = 0; i < count; i++) {
+        const kind = i % 3 === 0 ? 'cliff' : 'rock';
+        borderPlacements.push({ kind, x: (i % 2 ? 1 : -1) * 36, y: -0.03,
+            z: 12 - ((i + 0.5) / count) * compEstrada, rotation: i * 1.7,
+            scaleX: kind === 'cliff' ? 3 : 2.5, scaleY: kind === 'cliff' ? 1.7 : 2,
+            scaleZ: kind === 'cliff' ? 1.6 : 2.5 });
+    }
+}
+let kantoBorders = null;
+const borderSceneryReady = PokeKantoScenery.addBorders(scene, renderer, borderPlacements)
+    .then(group => { kantoBorders = group; });
 
 // Calçada Esquerda (A rua tem 12 de largura, logo a berma fica nos 8)
 const calcadaEsq = new THREE.Mesh(new THREE.PlaneGeometry(4, compEstrada), calcadaMat);
@@ -797,7 +817,7 @@ carregarMundo();
 carregarCenarioDecorativo();
 carregarCenarioProcedural();
 criarNuvens();
-Promise.all(hubModelJobs).then(async () => {
+Promise.all([...hubModelJobs, groundTextureReady, pavementTextureReady, borderSceneryReady]).then(async () => {
     document.getElementById('loadingTip').textContent = 'Seu próximo desafio está pronto.';
     // Set the camera at the resumed floor and warm the first frames behind the loading screen.
     camera.position.copy(playerKart.position).add(new THREE.Vector3(0, 3, 7));

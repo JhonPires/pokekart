@@ -114,9 +114,12 @@ async function fetchPlayerProfile() {
     sessionStorage.setItem('pkart_selected_kart', currentUserProfile.selected_kart);
   } else { sessionStorage.removeItem('pkart_selected_kart'); }
 
-  const sideNickEl = document.getElementById('sideMenuNick');
-  if (sideNickEl && data.nickname) {
-    sideNickEl.innerText = data.nickname;
+  // Profile refreshes must also restore the equipped identity in the lobby.
+  if (typeof updateLeagueUI === 'function') {
+    updateLeagueUI(currentUserProfile.trophies || 0);
+  } else {
+    const sideNickEl = document.getElementById('sideMenuNick');
+    if (sideNickEl) sideNickEl.textContent = currentUserProfile.nickname || 'Piloto';
   }
 
   return currentUserProfile;

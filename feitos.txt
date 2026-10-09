@@ -1,3 +1,29 @@
+Versão 1.9.8
+Organizados os seis destaques do Instagram com os stories de abertura e confirmado o link oficial na bio.;
+Atualizados nome, bio e avatar do Instagram do PokéKart e publicada a apresentação de pré-lançamento.;
+Preparado o kit de pré-lançamento do Instagram, com artes, bio, legendas, capas de destaques e calendário de divulgação.;
+Adicionados três níveis de turbo no drift, com duração, cores e sinais sonoros progressivos.;
+Corrigido o drift com giroscópio e mantida a carga ao neutralizar a direção durante a manobra.;
+Adicionados avisos de turbo pronto, última volta, escudo acabando, impactos e habilidade bloqueada.;
+Melhorada a inteligência dos bots para escolher trajetórias, evitar armadilhas, ultrapassar e usar habilidades no momento adequado.;
+Bots agora utilizam o drift conforme a dificuldade; escudos e decisões dos bots respeitam a pausa da corrida.;
+Corrigido o ritmo dos bots difíceis nas curvas e o acionamento excessivo de turbos, com intervalo entre manobras e encerramento do efeito após a chegada.;
+Corrigido o som dos motores após a chegada: todos os karts ficam silenciosos no placar, preservando o áudio de vitória.;
+Corrigidas as trajetórias dos bots em curvas fechadas, com antecipação da frenagem e pneus das bordas posicionados sem invadir outros trechos da pista.;
+Reformulado o visual do HUB e das HUDs da corrida, mantendo seus posicionamentos.;
+Padronizado o logotipo PokéKart e o estilo dos modais nas telas do jogo.;
+Corrigido o tamanho do placar de fim de corrida no mobile.;
+Adicionado carregamento antes da largada para preparar os modelos 3D.;
+Reformulado o visual da roleta e revisadas as recompensas repetidas.;
+Compactado o player de música para ocupar menos espaço em tela.;
+Corrigida a exibição dos cosméticos equipados no lobby.;
+Ajustadas as cores do modo Torre e a dificuldade por andar: fácil, normal e líder no difícil.;
+Adicionadas buzinas Pokémon na tecla de habilidade quando não houver item, com suporte a áudios personalizados.;
+Substituídos ícones por versões temáticas, incluindo Raio e Caixa Rocket.;
+Adicionadas texturas de grama, terra, areia e pedra, além de rochas e barrancos leves no HUB e nas pistas.;
+Corrigida a geometria dos barrancos e adicionada uma marca discreta de largada/chegada no minimapa.;
+
+
 Versão 1.9.7
 Adicionado a possibilidade de criar subidas nas pistas.;
 

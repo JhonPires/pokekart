@@ -5196,7 +5196,7 @@
         const { data, error } = await supabaseClient.from('store_items').select('*');
         if (error) throw error;
 
-        if (data && data.length > 0) {
+        if (Array.isArray(data)) {
           storeItemsCache.titles = data.filter(i => i.type === 'title');
           storeItemsCache.borders = data.filter(i => i.type === 'border');
           storeItemsCache.avatars = data.filter(i => i.type === 'avatar');
@@ -5204,6 +5204,11 @@
           storeItemsCache.victory = data.filter(i => i.type === 'victory');
           storeItemsCache.consumables = data.filter(i => i.type === 'consumable');
           storeItemsCache.emojis = data.filter(i => i.type === 'emoji'); // Filtra os emojis
+          // Authentication and catalog requests can complete in either order.
+          // Reapply the identity once title and border metadata are available.
+          if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
+            updateLeagueUI(currentUserProfile.trophies || 0);
+          }
         }
       } catch (err) {
         console.warn("Erro ao buscar itens da loja.", err);
@@ -6751,7 +6756,7 @@
   </script>
 
   <script src="starter-choice.js?v=modal-theme-20261007-1"></script>
-  <script src="auth.js?v=starter-choice-20261006-1"></script>
+  <script src="auth.js?v=lobby-cosmetics-20261008-1"></script>
 </body>
 
 </html>

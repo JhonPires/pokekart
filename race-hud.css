@@ -1,0 +1,117 @@
+/* Appearance only: the race engine retains all desktop and touch anchors. */
+html body .ctr-hud {
+  --race-ink: #08182bec;
+  --race-gold: #ffd43b;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  text-shadow: none;
+  color: #f4f8ff;
+}
+html body .ctr-hud .ctr-timer-box,
+html body .ctr-hud .ctr-lap-counter,
+html body .ctr-hud .ctr-mb-box { isolation: isolate; }
+html body .ctr-hud .ctr-timer-box::before,
+html body .ctr-hud .ctr-lap-counter::before,
+html body .ctr-hud .ctr-mb-box::before {
+  content: ''; position: absolute; inset: -8px -12px; z-index: -1;
+  background: linear-gradient(135deg, #18314aec, #061322ef);
+  border: 1px solid #48627a; border-top: 2px solid var(--race-gold);
+  border-radius: 12px; box-shadow: 0 5px 16px #0003;
+}
+html body .ctr-hud .ctr-main-timer {
+  font-size: 36px; letter-spacing: .5px; line-height: 1.2;
+  color: #ffe694; font-weight: 900;
+}
+html body .ctr-hud .ctr-lap-times { font-size: 13px; color: #b7cde1; line-height: 1.6; }
+html body .ctr-hud .ctr-lap-times:empty { display: none; }
+html body .ctr-hud .ctr-lap-counter { font-size: 36px; line-height: 1.2; color: #d0deec; }
+html body .ctr-hud .ctr-lap-label {
+  display: inline-block; font-size: 11px; letter-spacing: 1.5px;
+  color: #ffe694; vertical-align: middle; margin-right: 7px;
+}
+html body .ctr-hud #hud-current-lap { color: #fff; font-weight: 950; }
+html body .ctr-hud .ctr-mb-box::before { border-top-color: #bd8df5; border-color: #78639a; }
+html body .ctr-hud .ctr-mb-count { color: #ecd7ff; font-size: 32px; text-shadow: none; font-weight: 900; }
+html body .ctr-hud .ctr-mb-x { color: #bba4d0; font-size: 18px; }
+html body .ctr-hud .ctr-portrait {
+  background: linear-gradient(145deg, #1c3850, #071424);
+  border-radius: 14px; box-shadow: 0 4px 12px #0004, inset 0 1px 0 #ffffff15;
+}
+html body .ctr-hud .ctr-standing-item.is-local .ctr-portrait {
+  box-shadow: 0 0 0 2px #ffd43b24, 0 4px 12px #0004;
+}
+html body .ctr-hud .ctr-portrait-pos {
+  color: #f4f8ff; font-size: 25px; font-weight: 950;
+  text-shadow: 0 2px 4px #000; background: #071424;
+  border: 1px solid #58718a; border-radius: 7px; padding: 0 4px;
+}
+html body .ctr-hud .is-local .ctr-portrait-pos { color: #ffd43b; border-color: #a58c38; }
+html body .ctr-hud .ctr-giant-pos {
+  font-size: 104px; font-weight: 950; font-style: italic;
+  line-height: .9; letter-spacing: -5px; text-shadow: 0 3px 0 #071424, 0 6px 14px #0007;
+}
+html body .ctr-hud .ctr-giant-pos-suffix {
+  font-size: 44px; color: #f4f8ff; letter-spacing: 0;
+}
+html body .ctr-hud .ctr-item-slot {
+  border-color: #8b783c; border-radius: 20px;
+  background: linear-gradient(145deg, #1a344d, #061321);
+  box-shadow: 0 6px 18px #0005, inset 0 1px 0 #ffffff20;
+}
+html body .ctr-hud .ctr-minimap-box { opacity: 1; }
+html body .ctr-hud .ctr-minimap-canvas {
+  border-radius: 24px;
+  background: radial-gradient(ellipse, #08182b88, #08182b22) !important;
+  box-shadow: inset 0 0 0 1px #afcdea30;
+}
+html body .ctr-hud .ctr-drift-bar { border-color: #547796; background: #071424; box-shadow: 0 3px 9px #0004; }
+html body #countdownOverlay { font-family: 'Segoe UI', Arial, sans-serif; font-weight: 950; font-style: italic; }
+html body #mobileControls .mc-btn {
+  font-family: 'Segoe UI', Arial, sans-serif; font-weight: 900;
+  letter-spacing: 0; text-shadow: none; border-color: #72859c;
+  background: #081a2fe8; box-shadow: 0 4px 12px #0004, inset 0 1px 0 #ffffff18;
+}
+html body #mobileControls .mc-gas { background: linear-gradient(145deg, #ffe990, #e8ae25) !important; color: #261f0b; border-color: #ffe694; }
+html body #mobileControls .mc-gas.pressed { background: #e8ae25 !important; }
+html body #mobileControls .mc-brake { background: #431d2bea !important; color: #ffc9cc; border-color: #c47680; }
+html body #mobileControls .mc-brake.pressed { background: #753040 !important; }
+html body #mobileControls .mc-drift { background: #123f59ed !important; color: #aeeaff; border-color: #5ea0be; }
+html body #mobileControls .mc-ability { background: #10253ced !important; border-color: #547796 !important; }
+html body #mobileControls .mc-ability.has-item { border-color: #ffd43b !important; box-shadow: 0 0 0 2px #ffd43b24, 0 4px 12px #0005 !important; }
+html body #mobileControls .mc-btn.pressed { border-color: #ffd43b; }
+/* Use the engine's scale, without changing control sizes or safe-area offsets. */
+#raceFeedback {
+  position: absolute; top: 92px; left: 50%; transform: translateX(-50%);
+  max-width: 260px; padding: 9px 15px; box-sizing: border-box;
+  background: #08182bed; color: var(--feedback-color, #ffd43b);
+  border: 1px solid var(--feedback-color, #ffd43b); border-radius: 10px;
+  font: 900 12px/1.3 'Segoe UI', Arial, sans-serif; text-align: center;
+  letter-spacing: .5px; box-shadow: 0 4px 12px #0003;
+}
+#raceFeedback[hidden] { display: none; }
+html body .ctr-hud .ctr-drift-bar { position: relative; height: 22px; }
+#ctrDriftLabel {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font: 900 9px/1 'Segoe UI', Arial, sans-serif; color: #fff;
+  text-shadow: 0 1px 3px #000, 0 0 3px #000;
+}
+@media (pointer: coarse), (max-width: 900px) and (max-height: 500px) {
+  #raceFeedback { top: calc(var(--u, 1px) * 44); max-width: 180px; padding: 5px 9px; font-size: calc(var(--u, 1px) * 11); border-radius: 7px; }
+  html body .ctr-hud .ctr-drift-bar { height: calc(var(--u, 1px) * 14); }
+  #ctrDriftLabel { font-size: calc(var(--u, 1px) * 7); }
+  html body .ctr-hud .ctr-main-timer,
+  html body .ctr-hud .ctr-lap-counter { font-size: calc(var(--u, 1px) * 26); }
+  html body .ctr-hud .ctr-lap-label { font-size: calc(var(--u, 1px) * 9); letter-spacing: .5px; margin-right: 3px; }
+  html body .ctr-hud .ctr-lap-times { font-size: calc(var(--u, 1px) * 12); }
+  html body .ctr-hud .ctr-mb-count { font-size: calc(var(--u, 1px) * 24); }
+  html body .ctr-hud .ctr-mb-x { font-size: calc(var(--u, 1px) * 14); }
+  html body .ctr-hud .ctr-timer-box::before,
+  html body .ctr-hud .ctr-lap-counter::before,
+  html body .ctr-hud .ctr-mb-box::before { inset: -3px -5px; border-radius: 8px; }
+  html body .ctr-hud .ctr-portrait { border-radius: 7px; }
+  html body .ctr-hud .ctr-portrait-pos { font-size: calc(var(--u, 1px) * 14); border-radius: 4px; padding: 0 2px; }
+  html body .ctr-hud .ctr-giant-pos { font-size: calc(var(--u, 1px) * 58); letter-spacing: -2px; }
+  html body .ctr-hud .ctr-giant-pos-suffix { font-size: calc(var(--u, 1px) * 25); }
+  html body .ctr-hud .ctr-minimap-canvas { border-radius: 14px; }
+}
