@@ -2,9 +2,11 @@ AJUSTES
 - Criar as pistas para elite Four
 - Criar os 3D para colocar no novo hub da elite Four
 
+
 FUTURO
 - Dar ao jogador a oportunidade de assistir um anuncio quando perder em uma batalha de torre e caso ele assista o anuncio por inteiro ele ganha uma nova tentativa.
 - Ver a possibilidade de escolher para onde jogar a habilidade
+- Criar uma habilidade igual ao casco vermelho do mario kart, onde ao utilizar a habilidade jogamos algo (relacionado a pokemon) em linha reta ou para frente ou para trás (nossa escolha). E ao colidir com o kart dar o debuff/dano (podendo ser o stun que usamos no dig ou raio ou ate mesmo criar um novo)
 
 
 

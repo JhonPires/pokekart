@@ -82,3 +82,31 @@ assert(atCorner.safeSpeed <= driving.turnSpeed * 1.6 / .25, 'Respect the kart st
 const wrapped = rules.planBotCorner(samples, 190, 1, driving);
 assert(wrapped.safeSpeed < 40, 'Preview corners across the start/finish boundary');
 console.log('Hairpin checks: early braking, short steering target, steering limit and closed-track preview passed.');
+
+assert.deepEqual(Array.from(rules.itemPoolForPosition(2, 2)), Array.from(rules.itemPoolForPosition(8, 8)),
+  'Second of two gets the same comeback odds as last of eight');
+assert.deepEqual(Array.from(rules.itemPoolForPosition(1, 2)), Array.from(rules.itemPoolForPosition(1, 8)),
+  'First place keeps its defense pool in a duel');
+assert(!rules.itemPoolForPosition(1, 2).includes('DIG'));
+assert.equal(rules.itemPoolForPosition(2, 2).filter(x => x === 'TURBO').length, 2);
+assert.equal(rules.itemPoolForPosition(2, 2).filter(x => x === 'DIG').length, 2);
+assert(rules.itemPoolForPosition(2, 3).includes('SHIELD'), 'Middle place retains its balanced pool');
+for (const id of ['TURBO', 'BLAINE_BOOST', 'SURF']) {
+  assert(!rules.shouldUseItem(id, {...situation, age: 12, boosting: true}), 'Old item cannot overwrite active boost: '+id);
+  assert(!rules.shouldUseItem(id, {...situation, age: 12, boostCooldown: 2}), 'Rest interval applies even after max hold age: '+id);
+  assert(rules.shouldUseItem(id, {...situation, age: 12, boostCooldown: 0}), 'Saved item becomes usable after recovery: '+id);
+}
+const boss = {turboTimer: 0};
+assert(rules.startBotBoost(boss, 4.5));
+assert(!rules.startBotBoost(boss, 5.5), 'Never extend a running turbo');
+assert.equal(boss.turboTimer, 4.5);
+boss.turboTimer = 0;
+assert(!rules.startBotBoost(boss, 1.9), 'Drift and skill boosts share recovery');
+for (let i = 0; i < 180; i++) rules.stepBotDrift(boss, 1/60,
+  {curve: .3, profile: hard, eligible: true, boosting: false});
+assert(!boss.driftCharge, 'Cannot stockpile drift during boost recovery');
+boss.boostCooldown = 0;
+assert(rules.startBotBoost(boss, 1.9));
+boss.turboTimer = 0; boss.boostCooldown = 0; boss.finished = true;
+assert(!rules.startBotBoost(boss, 2), 'Finished bosses cannot boost');
+console.log('Duel item odds and shared boost recovery checks passed.');

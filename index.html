@@ -1492,6 +1492,7 @@
   <script src="mobile.js?v=modal-theme-20261007-1" defer></script>
   <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
   <link rel="stylesheet" href="music-player.css?v=20261007-1">
+  <link rel="stylesheet" href="mechanic-ui.css?v=20261009-1">
 </head>
 
 <body data-page="lobby">
@@ -1707,7 +1708,7 @@
     </div>
   </div>
 
-  <!-- MODAL DA LOJA DE COSMÉTICOS -->
+  <!-- MODAL DA LOJA POKÉKART -->
   <div id="storeModalOverlay" class="pk-modal-overlay overlay-general" style="z-index: 3100; display: none;">
     <!-- Tamanho fixo adicionado: width: 900px; height: 650px; com limites de segurança (max-width/height) para telas menores -->
     <div class="pk-modal lobbyCardModal"
@@ -1720,7 +1721,7 @@
       <!-- TOPO COM TÍTULO E MOEDAS ALINHADOS -->
       <div class="store-heading"
         style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-right: 40px; flex-shrink: 0;">
-        <h2 class="modal-title" style="text-align: left; margin: 0;">🛒 LOJA DE COSMÉTICOS</h2>
+        <h2 class="modal-title" style="text-align: left; margin: 0;">🛒 LOJA POKÉKART</h2>
 
         <div
           style="background: rgba(12, 28, 48, .8); border: 1px solid #facc15; padding: 6px 16px; border-radius: 12px; font-weight: 900; color: #facc15; font-size: 16px; box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);">
@@ -2045,7 +2046,7 @@
         </button>
 
         <button id="menuBtnStore">
-          <span class="icon"><img src="icones/loja.png" alt="Loja"></span>&nbsp;Loja de Cosméticos
+          <span class="icon"><img src="icones/loja.png" alt="Loja"></span>&nbsp;Loja PokéKart
         </button>
 
         <button id="menuBtnTrackBuilder">
@@ -2688,7 +2689,10 @@
       gltfLoader.setDRACOLoader(dracoLoader);
     }
 
-    function getKartUrl(filename) { return `./models/${filename}`; }
+    function getKartUrl(filename) {
+      const modelFilename = filename === 'bannete.glb' ? 'banette.glb' : filename;
+      return `./models/${modelFilename}`;
+    }
 
     let KART_DATABASE = [];
     let selectedIndex = 0;
@@ -2841,41 +2845,13 @@
 
     let dailyFreeKarts = [];
     function updateDailyFreeKarts() {
-      // 1. Usa a data Universal (UTC) para o dia virar no mesmo exato segundo para todos os jogadores
-      const now = new Date();
-      const dateSeed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-
-      // 2. Gerador LCG (Linear Congruential Generator): 100% determinístico, imune a diferenças de navegador/processador
-      let s = dateSeed;
-      function seededRandom() {
-        s = (s * 9301 + 49297) % 233280;
-        return s / 233280;
-      }
-
-      const availableKarts = KART_DATABASE
-        .filter(k => k.activated)
-        .map(k => k.id);
-
-      // 3. Ordem alfabética estrita antes de embaralhar, garantindo a mesma base inicial sempre
-      availableKarts.sort();
-
-      // 4. Embaralha a lista com a semente fixa
-      for (let i = availableKarts.length - 1; i > 0; i--) {
-        const j = Math.floor(seededRandom() * (i + 1));
-        [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
-      }
-
-      // Seleciona os 4 primeiros
-      dailyFreeKarts = availableKarts.slice(0, 4);
+      dailyFreeKarts = getDailyFreeKartIds(KART_DATABASE);
       sessionStorage.setItem('pkart_daily_free', JSON.stringify(dailyFreeKarts));
-      // LOG DENTRO DA FUNÇÃO
-      if (dailyFreeKarts.length > 0) {
-        console.log("Karts Sorteados Hoje:", dailyFreeKarts);
-      }
     }
 
 
     function sortKartsByAvailability() {
+      updateDailyFreeKarts();
       const profile = typeof currentUserProfile !== 'undefined' ? currentUserProfile : null;
       let unlockedKarts = [...(typeof dailyFreeKarts !== 'undefined' ? dailyFreeKarts : [])];
 
@@ -2896,14 +2872,7 @@
       // Soma os karts do dia com os karts que o jogador já comprou
       unlockedKarts = Array.from(new Set([...unlockedKarts, ...userKarts]));
 
-      // 🛡️ TRAVA DE EXPIRAÇÃO AUTOMÁTICA CORRIGIDA
-      const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
-      // AGUARDA o perfil carregar antes de tirar conclusões precipitadas!
-      if (profile && currentEquipped && !unlockedKarts.includes(currentEquipped)) {
-        const fallbackKart = getDefaultPlayerKart(profile) || unlockedKarts[0];
-        if (fallbackKart) sessionStorage.setItem('pkart_selected_kart', fallbackKart);
-        else sessionStorage.removeItem('pkart_selected_kart');
-      }
+      if (profile) validateEquippedKart(profile, KART_DATABASE);
 
       const availableGroup = [];
       const lockedGroup = [];
@@ -5136,9 +5105,9 @@
       joinRoom(roomCode);
     }
 
-    // --- SISTEMA DA LOJA DE COSMÉTICOS ---
+    // --- SISTEMA DA LOJA POKÉKART ---
 
-    // --- SISTEMA DA LOJA DE COSMÉTICOS INTEGRADO AO SUPABASE ---
+    // --- SISTEMA DA LOJA POKÉKART INTEGRADO AO SUPABASE ---
 
     let storeItemsCache = {
       titles: [],
@@ -5147,6 +5116,7 @@
       trail: [],
       victory: [],
       consumables: [],
+      parts: [{ id: 'mechanic' }],
       emojis: [] // Nova array para Emojis
     };
 
@@ -5235,6 +5205,7 @@
     function renderStoreItems(category) {
       const grid = document.getElementById('storeItemsGrid');
       grid.innerHTML = '';
+      if (category === 'parts') { PokeMechanicUI.renderShop(grid); return; }
 
       const items = storeItemsCache[category] || [];
 
@@ -5550,6 +5521,7 @@
       'trail': '💨 Rastros',
       'victory': '🏆 Efeitos',
       'consumables': '🎒 Consumíveis',
+      'parts': '🔧 Mecânica Pokémon',
       'emojis': '💬 Emojis'
     };
 
@@ -5732,6 +5704,11 @@
       currentStoreCategory = Object.keys(storeItemsCache)[0]; // Opcional: Define a 1ª aba detectada como padrão
       renderStoreTabs();
       renderStoreItems(currentStoreCategory);
+      if (new URLSearchParams(location.search).get('shop') === 'parts') {
+        await fetchPlayerProfile();
+        currentStoreCategory = 'parts';
+        document.getElementById('menuBtnStore')?.click();
+      }
       // 1. Espera os karts virem do banco
       await loadKartsFromDatabase();
 
@@ -6398,37 +6375,12 @@
       // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA
       // Fica monitorando até o auth.js terminar de baixar o perfil do jogador
       // 🛡️ SCANNER DE EXPIRAÇÃO AUTOMÁTICA / SINCRONIZADOR DE GARAGEM
-      const expirationInterval = setInterval(() => {
+      const expirationInterval = setInterval(async () => {
         if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.starter_choice_completed !== false && previewRenderer && KART_DATABASE.length) {
           clearInterval(expirationInterval); // Achou o perfil, para o loop
 
-          let userKarts = [];
-          if (currentUserProfile.unlocked_karts) {
-            try {
-              userKarts = Array.isArray(currentUserProfile.unlocked_karts)
-                ? currentUserProfile.unlocked_karts
-                : JSON.parse(currentUserProfile.unlocked_karts);
-            } catch (e) { }
-          }
-
-          // Pega o kart selecionado direto do banco de dados (A garagem atualizou isso lá)
-          const currentDBKart = currentUserProfile.selected_kart || getDefaultPlayerKart();
-
-          if (currentDBKart && !userKarts.includes(currentDBKart) && typeof dailyFreeKarts !== 'undefined' && !dailyFreeKarts.includes(currentDBKart)) {
-            const fallbackKart = getDefaultPlayerKart();
-
-            if (fallbackKart) sessionStorage.setItem('pkart_selected_kart', fallbackKart);
-            else sessionStorage.removeItem('pkart_selected_kart');
-            currentUserProfile.selected_kart = fallbackKart;
-
-            if (typeof supabaseClient !== 'undefined') {
-              supabaseClient.from('profiles').update({ selected_kart: fallbackKart }).eq('id', currentUserProfile.id);
-            }
-          } else {
-            // SE FOR VÁLIDO: Força a memória local a ficar igual ao banco de dados! 
-            // (Isso resolve o bug de voltar da garagem e a Home ignorar sua escolha)
-            if (currentDBKart) sessionStorage.setItem('pkart_selected_kart', currentDBKart);
-          }
+          updateDailyFreeKarts();
+          await validateEquippedKart(currentUserProfile, KART_DATABASE);
 
           // Agora que temos o perfil 100% carregado, reorganizamos a lista e aplicamos na tela
           sortKartsByAvailability();
@@ -6756,7 +6708,10 @@
   </script>
 
   <script src="starter-choice.js?v=modal-theme-20261007-1"></script>
-  <script src="auth.js?v=lobby-cosmetics-20261008-1"></script>
+  <script src="auth.js?v=daily-kart-20261009-1"></script>
+  <script src="kart-balance.js?v=20261009-1"></script>
+  <script src="kart-mechanics.js?v=20261009-1"></script>
+  <script src="mechanic-ui.js?v=20261009-1"></script>
 </body>
 
 </html>

@@ -1,6 +1,51 @@
 # Changelog - PokéKart
 
-## [1.9.7] - 03/10/2026
+## [1.9.8] - 10/10/2026
+- Melhorada a sinalização de chegada na classificação da corrida com bandeira temática centralizada e tamanho proporcional ao card, preservando os números das posições no desktop e mobile.
+- Adicionada a habilidade Bola de Energia às caixas de itens, com projétil Pokémon em linha reta para frente ou para trás (E ou Q + E; no mobile, habilidade com olhar para trás), rastro visual, stun de um segundo, perda de três Master Balls e bloqueio por escudo.
+- Integrados bots e eventos multiplayer à Bola de Energia, com colisão contínua no primeiro alvo, decisão de impacto pelo host, proteção contra dano duplicado e descarte automático do projétil após três segundos.
+- Implementada a Mecânica Pokémon com compra de motor, transmissão, freios, nitro e pneus na loja, equipamento por kart na garagem, comparação dos atributos e durabilidade de dez corridas.
+- Integrados o inventário de peças, compras atômicas e consumo único por largada, preservando o bônus da última carga e a durabilidade ao remover ou transferir equipamentos.
+- Adicionados filtro por estilo de pilotagem e ordenação por estilo na garagem, combináveis com região e preço, incluindo os cinco perfis dos karts.
+- Corrigidos os tempos individuais e a ordem de chegada da classificação e do pódio, mantendo o tempo do jogador congelado e registrando separadamente as chegadas dos bots, inclusive em empates e atualizações de rede.
+- Balanceados os 164 karts em cinco estilos competitivos (velocidade, arrancada, curvas, drift e equilibrado), com pontos fortes e compensações independentes do preço.
+- Revisados 98 preços de karts, preservando exclusividades, desbloqueios e ajustes recentes.
+- Corrigida a aplicação da aderência e do controle de drift ao kart do jogador, incluindo a troca completa dos atributos ao selecionar outro kart.
+- Atualizadas as barras da garagem para refletir a física real e adicionada a identificação do estilo de pilotagem de cada kart.
+- Cadastrados e ativados 15 novos karts, com preços e atributos baseados no catálogo atual.
+- Renovado o resultado da corrida com pódio de Pokémon animados, posições preenchidas conforme as chegadas, classificação completa e botões acessíveis no desktop e mobile, incluindo duelos.
+- Corrigida a perda de três Master Balls ao receber o impacto do raio, para jogadores e bots, mantendo a proteção do escudo e a contagem regressiva antes do dano.
+- Adicionado aviso de três segundos antes do raio atingir, com contagem regressiva e efeito elétrico na tela, permitindo usar escudo para bloquear o impacto contra bots e jogadores online.
+- Corrigida a expiração dos karts da rotação diária, sincronizando o kart equipado entre garagem, lobby, perfil e corrida sem remover karts comprados.
+- Corrigidos os turbos repetidos dos bots e líderes, com intervalo de três segundos após o efeito e drift calculado pela curva real da pista.
+- Adicionados efeitos visíveis de drift aos bots, com derrapagem do kart, marcas de pneus e faíscas coloridas conforme a carga, inclusive pela rede.
+- Corrigida a distribuição de itens nos duelos contra líderes: o segundo colocado recebe as chances de recuperação do último lugar.
+
+## [1.9.7] - 09/10/2026
+- Adicionado a possibilidade de criar subidas nas pistas.
+- Adicionados três níveis de turbo no drift, com duração, cores e sinais sonoros progressivos.
+- Corrigido o drift com giroscópio e mantida a carga ao neutralizar a direção durante a manobra.
+- Adicionados avisos de turbo pronto, última volta, escudo acabando, impactos e habilidade bloqueada.
+- Melhorada a inteligência dos bots para escolher trajetórias, evitar armadilhas, ultrapassar e usar habilidades no momento adequado.
+- Bots agora utilizam o drift conforme a dificuldade
+- escudos e decisões dos bots respeitam a pausa da corrida.
+- Corrigido o ritmo dos bots difíceis nas curvas e o acionamento excessivo de turbos, com intervalo entre manobras e encerramento do efeito após a chegada.
+- Corrigido o som dos motores após a chegada: todos os karts ficam silenciosos no placar, preservando o áudio de vitória.
+- Corrigidas as trajetórias dos bots em curvas fechadas, com antecipação da frenagem e pneus das bordas posicionados sem invadir outros trechos da pista.
+- Reformulado o visual do HUB e das HUDs da corrida, mantendo seus posicionamentos.
+- Padronizado o logotipo PokéKart e o estilo dos modais nas telas do jogo.
+- Corrigido o tamanho do placar de fim de corrida no mobile.
+- Adicionado carregamento antes da largada para preparar os modelos 3D.
+- Reformulado o visual da roleta e revisadas as recompensas repetidas.
+- Compactado o player de música para ocupar menos espaço em tela.
+- Corrigida a exibição dos cosméticos equipados no lobby.
+- Ajustadas as cores do modo Torre e a dificuldade por andar: fácil, normal e líder no difícil.
+- Adicionadas buzinas Pokémon na tecla de habilidade quando não houver item, com suporte a áudios personalizados.
+- Substituídos ícones por versões temáticas, incluindo Raio e Caixa Rocket.
+- Adicionadas texturas de grama, terra, areia e pedra, além de rochas e barrancos leves no HUB e nas pistas.
+- Corrigida a geometria dos barrancos e adicionada uma marca discreta de largada/chegada no minimapa.
+
+## [1.9.6] - 03/10/2026
 - Corrigido a classificação da corrida multiplayer.
 - Adicionado a quantidade de moedas atuais do jogador na garagem.
 - Corrigido cards de modos de jogo e menu lateral para ter scroll quando necessario.

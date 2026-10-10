@@ -588,7 +588,8 @@ function spawnClouds(targetScene) {
 // DATABASE E URLS
 // ------------------------------------------------------------
 function getKartUrl(filename) {
-  return `./models/${filename}`;
+  const modelFilename = filename === 'bannete.glb' ? 'banette.glb' : filename;
+  return `./models/${modelFilename}`;
 }
 
 let KART_DATABASE = [];
@@ -607,7 +608,7 @@ async function loadKartsFromDatabase() {
         id: dbKart.id,
         name: dbKart.name,
         modelUrl: getKartUrl(`${dbKart.id}.glb`),
-        stats: { ...dbKart.stats, ...dbKart.physics },
+        stats: { ...dbKart.stats, ...PokeKartBalance.normalize(dbKart.physics) },
         dexId: dbKart.pokemon_dex_id || null,
         activated: dbKart.activated !== false
       };
@@ -618,7 +619,7 @@ async function loadKartsFromDatabase() {
     const fallbackId = selectedKartId || getDefaultPlayerKart();
     KART_DATABASE = fallbackId ? [{
       id: fallbackId, name: `${fallbackId[0].toUpperCase()}${fallbackId.slice(1)} Kart`, modelUrl: getKartUrl(`${fallbackId}.glb`),
-      stats: { accel: 32, maxSpeed: 29, turnSpeed: 3.2, turboBonus: 1.0, driftRate: 1.5, driftControl: 1.1, grip: 0.85 },
+      stats: PokeKartBalance.normalize(),
       dexId: { charizard: 6, venusaur: 3, blastoise: 9 }[fallbackId] || null,
       activated: true
     }] : [];
@@ -1187,7 +1188,7 @@ function createBiomeGroundTexture() {
       const blades = [];
       for (let k = 0; k < 5; k++) {
         blades.push([(Math.random() - 0.5) * 16, (Math.random() - 0.5) * 16, 2 + Math.random() * 4, 5 + Math.random() * 9,
-          colors[Math.floor(Math.random() * colors.length)], Math.random() * Math.PI]);
+        colors[Math.floor(Math.random() * colors.length)], Math.random() * Math.PI]);
       }
       for (const dx of [-512, 0, 512]) for (const dy of [-512, 0, 512]) {
         if (bx + dx < -30 || bx + dx > 542 || by + dy < -30 || by + dy > 542) continue;
@@ -1260,8 +1261,10 @@ async function prepareKantoBorders() {
     const pos = point.clone().addScaledVector(normal, side * distance);
     // Evita colocar uma peça junto de outra seção do circuito, principalmente em curvas fechadas.
     if (nearestTrackSample(pos).distXZ < distance - 0.5) continue;
-    placements.push({ kind, x: pos.x, y: getGroundHeightAt(pos.x, pos.z) - 0.03, z: pos.z,
-      rotation: Math.atan2(tangent.x, tangent.z), scaleX, scaleY, scaleZ });
+    placements.push({
+      kind, x: pos.x, y: getGroundHeightAt(pos.x, pos.z) - 0.03, z: pos.z,
+      rotation: Math.atan2(tangent.x, tangent.z), scaleX, scaleY, scaleZ
+    });
   }
   kantoBorders = await PokeKantoScenery.addBorders(scene, renderer, placements);
   return kantoBorders;
@@ -3057,7 +3060,7 @@ async function readKartTemplate(kartEntry) {
     try {
       const response = await fetch(kartEntry.modelUrl, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      if (cache) cache.put(kartEntry.modelUrl, response.clone()).catch(() => {});
+      if (cache) cache.put(kartEntry.modelUrl, response.clone()).catch(() => { });
       arrayBuffer = await response.arrayBuffer();
     } finally { clearTimeout(timeout); }
   }
@@ -3218,6 +3221,21 @@ function createDigEffect() {
 }
 
 // --- ATUALIZE SUA FUNÇÃO CREATEKART ---
+function createBotDriftEffect() {
+  // Um unico Points reutilizado: sem criar particulas/geometrias a cada frame.
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(24);
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({
+    color: 0xcbd5e1, size: .2,
+    transparent: true, opacity: .9, depthWrite: false, blending: THREE.AdditiveBlending
+  });
+  const sparks = new THREE.Points(geometry, material);
+  sparks.visible = false;
+  sparks.userData.isEffect = true;
+  return sparks;
+}
+
 function createKart(chassisColor) {
   const group = new THREE.Group();
   scene.add(group);
@@ -3226,6 +3244,7 @@ function createKart(chassisColor) {
   const poisonMesh = createPoisonEffect();
   const boostMesh = createBoostEffect();
   const surfMesh = createSurfEffect(); // NOVO EFEITO AQUÁTICO
+  const driftMesh = createBotDriftEffect();
 
   // Etiqueta os efeitos para o sistema saber que não deve deletá-los
   shieldMesh.userData.isEffect = true;
@@ -3233,9 +3252,9 @@ function createKart(chassisColor) {
   boostMesh.userData.isEffect = true;
   surfMesh.userData.isEffect = true;
 
-  group.add(shieldMesh, poisonMesh, boostMesh, surfMesh);
+  group.add(shieldMesh, poisonMesh, boostMesh, surfMesh, driftMesh);
 
-  return { group, wheels: [], shieldMesh, poisonMesh, boostMesh, surfMesh };
+  return { group, wheels: [], shieldMesh, poisonMesh, boostMesh, surfMesh, driftMesh };
 }
 
 let localKartObj, kart, wheels;
@@ -3284,13 +3303,7 @@ function setLocalKartModel(kartEntry) {
     }
     applyModelToGroup(kart, template, 0xE53935, true);
 
-    if (kartEntry.stats) {
-      physics.accel = kartEntry.stats.accel;
-      physics.maxSpeed = kartEntry.stats.maxSpeed;
-      physics.turnSpeed = kartEntry.stats.turnSpeed;
-      physics.turboBonus = kartEntry.stats.turboBonus || 1.0;
-      physics.driftRate = kartEntry.stats.driftRate || 1.0;
-    }
+    Object.assign(physics, PokeKartBalance.normalize(kartEntry.stats));
 
     const grid = getGridPosition(playerSlotParam);
     kart.position.copy(grid.pos);
@@ -3588,7 +3601,7 @@ function setupMobileControls() {
       if (slot && host && host.innerHTML !== slot.innerHTML) host.innerHTML = slot.innerHTML;
       mobileUI.abilityBtn.classList.toggle('has-item', !!currentItem);
       mobileUI.abilityBtn.setAttribute('aria-label', currentItem ? 'Usar habilidade' : 'Nenhuma habilidade equipada');
-      mobileUI.abilityBtn.title = currentItem ? 'Usar habilidade' : 'Nenhuma habilidade equipada';
+      mobileUI.abilityBtn.title = currentItem?.id === 'ENERGY_BALL' ? 'Bola de Energia: segure olhar para trás para lançar para trás' : (currentItem ? 'Usar habilidade' : 'Nenhuma habilidade equipada');
       mobileUI.rocketBtn.style.display = (rocketBoxAtiva || isRooted) ? 'flex' : 'none';
       mobileUI.pauseBtn.textContent = (isPaused && !pausedByRotation) ? '▶' : '⏸';
     } catch (e) { }
@@ -3799,38 +3812,53 @@ function startCountdown() {
   overlay.style.color = '#FFD54F';
   overlay.innerText = count;
 
-  const timer = setInterval(() => {
+  const timer = setInterval(async () => {
     count--;
     if (count > 0) {
       overlay.innerText = count;
     } else if (count === 0) {
+      clearInterval(timer);
+      const launchGasPressedTime = gasPressedTime;
+      overlay.innerText = 'PREPARANDO...';
+      const request = PokeKartMechanic.raceRequest(selectedKartId, sessionStorage, () => PokeKartMechanic.newId());
+      try {
+        const equipment = await PokeKartMechanic.getService().startRace(selectedKartId, request.id);
+        Object.assign(physics, PokeKartBalance.normalize(equipment.physics), { brakeDecel: equipment.physics.brakeDecel || 30 });
+        request.complete();
+      } catch (error) {
+        countdownInProgress = false;
+        window.RaceLoading.fail('Não foi possível confirmar as peças da corrida. ' + error.message);
+        return;
+      }
       overlay.innerText = 'GO!';
       overlay.style.color = '#4CAF50';
       raceStarted = true;
       raceStartTime = performance.now();
-      lapStartTime = performance.now(); // Inicia o cronómetro da 1ª volta
+      raceFinishSequence = 0;
+      totalRaceTimeMs = 0;
+      lapStartTime = raceStartTime; // Inicia o cronómetro da 1ª volta
       localLapTimes = []; // Limpa registos anteriores
 
       // --- LÓGICA DO ROCKET START (TURBO DE ARRANQUE) ---
       // A contagem total demora 3000ms. O "2" aparece aos 1000ms e o "1" aos 2000ms.
-      if (gasPressedTime > 0) {
-        if (gasPressedTime < 2200) {
+      if (launchGasPressedTime > 0) {
+        if (launchGasPressedTime < 2200) {
           // 1. Apertou muito cedo (antes ou no início do "1") -> Queima a largada
           physics.spinTimer = 0.6;
-        } else if (gasPressedTime >= 2200 && gasPressedTime < 2700) {
+        } else if (launchGasPressedTime >= 2200 && launchGasPressedTime < 2700) {
           // 2. Timing Bom (durante o "1", mas ainda longe do fim) -> Mini Turbo
           physics.turboTimer = 0.3 * (physics.turboBonus || 1.0);
-        } else if (gasPressedTime >= 2700) {
+        } else if (launchGasPressedTime >= 2700) {
           // 3. Timing Perfeito! (Quase colado no "GO!") -> Super Turbo
           physics.turboTimer = 0.8 * (physics.turboBonus || 1.0);
         }
       }
       // --------------------------------------------------
 
-    } else {
-      clearInterval(timer);
-      overlay.style.display = 'none';
-      countdownInProgress = false;
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        countdownInProgress = false;
+      }, 1000);
     }
   }, 1000);
 }
@@ -4107,22 +4135,22 @@ let skidSpawnTimer = 0;
 const SKID_MARK_MAX = isMobile ? 60 : 240;
 const SKID_MARK_GEO = new THREE.PlaneGeometry(0.22, 0.85); // compartilhada (nunca descartar)
 
-function spawnSkidMarkPair() {
-  if (!kart) return;
-  const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), physics.heading);
+function spawnSkidMarkPair(source = kart, heading = physics.heading) {
+  if (!source) return;
+  const headingQuat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), heading);
   const rearOffset = new THREE.Vector3(0, 0, -1.05);
   const laterals = [-0.55, 0.55];
 
   laterals.forEach((lateralX) => {
     const localPos = rearOffset.clone().add(new THREE.Vector3(lateralX, 0, 0));
     localPos.applyQuaternion(headingQuat);
-    const worldPos = kart.position.clone().add(localPos);
+    const worldPos = source.position.clone().add(localPos);
     worldPos.y = getTrackHeightAt(worldPos.x, worldPos.z) + 0.05;
 
     const mat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false });
     const mesh = new THREE.Mesh(SKID_MARK_GEO, mat);
     mesh.rotation.x = -Math.PI / 2;
-    mesh.rotation.z = -physics.heading;
+    mesh.rotation.z = -heading;
     mesh.position.copy(worldPos);
     mesh.renderOrder = 1;
     scene.add(mesh);
@@ -4212,6 +4240,12 @@ function updateDriftEffects(dt) {
 // ------------------------------------------------------------
 const TOTAL_LAPS = 3;
 const raceTrackers = new Map();
+let raceFinishSequence = 0;
+
+// O relógio da corrida continua para os demais pilotos após a chegada local.
+function getRaceElapsedMs() {
+  return raceStarted ? Math.max(0, performance.now() - raceStartTime) : 0;
+}
 
 function updateRaceTracker(key, position) {
   let tr = raceTrackers.get(key);
@@ -4249,7 +4283,9 @@ function updateRaceTracker(key, position) {
 
   if (tr.lapCount > TOTAL_LAPS) {
     tr.finished = true;
-    tr.finishTime = totalRaceTimeMs;
+    tr.finishTime = Math.round(getRaceElapsedMs());
+    tr.finishOrder = ++raceFinishSequence;
+    if (key === 'local') totalRaceTimeMs = tr.finishTime;
     tr.lapCount = TOTAL_LAPS;
   }
 
@@ -4349,74 +4385,32 @@ async function showFinishOverlay(place) {
     align-items: center; justify-content: center; z-index: 9999; font-family: 'Segoe UI', Tahoma, sans-serif;
   `;
 
-  const style = document.createElement('style');
-  style.innerHTML = `
-    @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    #finishOverlay ::-webkit-scrollbar { width: 6px; }
-    #finishOverlay ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 4px; }
-    #finishOverlay .finish-card {
-      box-sizing: border-box; width: min(430px, 100%); max-height: 100%; min-height: 0;
-      padding: 32px 24px; gap: 16px; flex-shrink: 0; border-radius: 20px;
-      overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain;
-      touch-action: pan-y; -webkit-overflow-scrolling: touch;
-    }
-    #finishOverlay .finish-card > * { flex-shrink: 0; min-width: 0; }
-    #finishOverlay .finish-title { font-size: 26px; flex-direction: column; gap: 8px; }
-    #finishOverlay .finish-leaderboard {
-      flex: 1 1 auto; min-height: 72px; max-height: 220px;
-      overscroll-behavior: contain; touch-action: pan-y; -webkit-overflow-scrolling: touch;
-    }
-    #finishOverlay .finish-leaderboard > * { flex-shrink: 0; }
-    #finishOverlay button { min-height: 44px; touch-action: manipulation; }
-    @media (max-width: 600px), (max-height: 500px) {
-      #finishOverlay .finish-card { padding: 16px; gap: 10px; border-radius: 16px; }
-      #finishOverlay .finish-title { font-size: 20px; flex-direction: row; justify-content: center; }
-      #finishOverlay .finish-leaderboard { max-height: clamp(72px, 26dvh, 140px); }
-    }
-  `;
-  overlay.appendChild(style);
-
   const card = document.createElement('div');
   card.className = 'pk-modal finish-card';
-  card.style.cssText = `
-    background: rgba(15, 23, 42, 0.85); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(56, 189, 248, 0.4); 
-    box-shadow: 0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(56, 189, 248, 0.1);
-    display: flex; flex-direction: column; align-items: center;
-    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-  `;
-
   card.innerHTML = `
-    <h2 class="finish-title" style="margin:0; width:100%; display:flex; align-items:center; text-align:center; color:#FFD54F; text-shadow: 1px 1px 2px rgba(0,0,0,0.8);">
-      <span aria-hidden="true">🏁</span>
-      <span>CORRIDA FINALIZADA</span>
-    </h2>
-    <div class="pk-modal-panel" style="width: 100%; text-align: center; background: rgba(15, 23, 42, 0.8); border: 1px solid #334155; border-radius: 8px; padding: 12px; box-sizing: border-box;">
-       <div style="color:#94a3b8; font-size: 13px; margin-bottom: 4px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
+    <header class="finish-title">
+      <div><span class="finish-eyebrow">POKÉKART / LINHA DE CHEGADA</span><h2>PÓDIO DA CORRIDA</h2></div>
+      <div class="finish-placement">VOCÊ<b>${place}º</b></div>
+    </header>
+    <div class="pk-modal-panel finish-rewards">
+       <div style="color:#94a3b8; font-size: 13px;">Seu Tempo: <span id="finalTimeDisplay" style="color:#fff; font-weight:bold;">Processando...</span></div>
        <div id="rewardDisplay" style="font-size:15px; color:#facc15; font-weight:bold;">Sincronizando Recompensas...</div>
     </div>
   `;
 
   finishLeaderboardEl = document.createElement('div');
   finishLeaderboardEl.className = 'finish-leaderboard';
-  finishLeaderboardEl.style.cssText = `
-    width: 100%; display: flex; flex-direction: column; gap: 6px; 
-    overflow-y: auto; padding-right: 4px; box-sizing: border-box;
-  `;
   card.appendChild(finishLeaderboardEl);
 
   const buttonsContainer = document.createElement('div');
-  buttonsContainer.className = 'pk-modal-actions';
-  buttonsContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 5px;';
+  buttonsContainer.className = 'pk-modal-actions finish-actions';
 
   const baseBtnStyle = `border: none; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: transform 0.1s;`;
 
   // Se for corrida Multiplayer
   if (typeof roomCodeParam !== 'undefined' && roomCodeParam) {
     const btnKeep = document.createElement('button');
-      btnKeep.className = 'pk-modal-primary';
+    btnKeep.className = 'pk-modal-primary';
     btnKeep.style.cssText = baseBtnStyle + 'background: #22c55e; color: #0f172a; box-shadow: 0 4px 0 #16a34a;';
     btnKeep.innerText = isHost ? 'Manter Sala e Voltar' : 'Voltar para a Sala';
     btnKeep.onmousedown = () => btnKeep.style.transform = 'translateY(4px)';
@@ -4430,7 +4424,7 @@ async function showFinishOverlay(place) {
     };
 
     const btnLeave = document.createElement('button');
-      btnLeave.className = 'pk-modal-danger';
+    btnLeave.className = 'pk-modal-danger';
     btnLeave.style.cssText = baseBtnStyle + 'background: #ef4444; color: #fff; box-shadow: 0 4px 0 #b91c1c;';
     btnLeave.innerText = isHost ? 'Fechar Sala' : 'Sair da Sala';
     btnLeave.onmousedown = () => btnLeave.style.transform = 'translateY(4px)';
@@ -4456,7 +4450,7 @@ async function showFinishOverlay(place) {
         // Na Elite, sempre manda de volta para o Hub processar a próxima batalha
         if (currentFloor < maxFloorsVal || isElite) {
           const btnVoltarHub = document.createElement('button');
-      btnVoltarHub.className = 'pk-modal-primary';
+          btnVoltarHub.className = 'pk-modal-primary';
           btnVoltarHub.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 4px 15px rgba(34, 197, 94, 0.4);';
 
           // Ícone ajustado para fazer mais sentido com a Elite
@@ -4476,7 +4470,7 @@ async function showFinishOverlay(place) {
         } else {
           // Venceu o Boss (Líder do Ginásio)
           const btnFinishTower = document.createElement('button');
-      btnFinishTower.className = 'pk-modal-primary';
+          btnFinishTower.className = 'pk-modal-primary';
           btnFinishTower.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4); border: 2px solid #fbbf24;';
           btnFinishTower.innerHTML = '🏆 Finalizar e Receber Insígnia';
           btnFinishTower.onclick = () => window.location.href = 'index.html';
@@ -4490,8 +4484,8 @@ async function showFinishOverlay(place) {
 
         if (canUseRevive) {
           const btnRevive = document.createElement('button');
-      btnRevive.className = 'pk-modal-primary';
-          btnRevive.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ec4899, #be185d); color: #fff; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4); margin-bottom: 4px;';
+          btnRevive.className = 'pk-modal-primary';
+          btnRevive.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #ec4899, #be185d); color: #fff; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);';
           btnRevive.innerHTML = `💊 Usar Revive (${reviveCount} restantes)`;
           btnRevive.onmousedown = () => btnRevive.style.transform = 'translateY(4px)';
           btnRevive.onmouseup = () => btnRevive.style.transform = 'translateY(0)';
@@ -4508,8 +4502,8 @@ async function showFinishOverlay(place) {
           buttonsContainer.appendChild(btnRevive);
 
           const btnGiveUp = document.createElement('button');
-      btnGiveUp.className = 'pk-modal-danger';
-          btnGiveUp.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
+          btnGiveUp.className = 'pk-modal-danger';
+          btnGiveUp.style.cssText = baseBtnStyle + 'background: #334155; color: #fff;';
           btnGiveUp.innerText = 'Aceitar Derrota e Sair';
           btnGiveUp.onclick = async () => {
             await finalizarDerrotaTorre();
@@ -4520,7 +4514,7 @@ async function showFinishOverlay(place) {
         } else {
           // NÃO TEM REVIVE OU É MODO ELITE (REVIVE PROIBIDO)
           const btnBackLobby = document.createElement('button');
-      btnBackLobby.className = 'pk-modal-secondary';
+          btnBackLobby.className = 'pk-modal-secondary';
 
           // Estilo vermelho escuro se for derrota na Elite para dar impacto
           if (isElite) {
@@ -4602,7 +4596,7 @@ async function showFinishOverlay(place) {
 
       const btnReturn = document.createElement('button');
       btnReturn.className = 'pk-modal-primary';
-      btnReturn.style.cssText = baseBtnStyle + 'background: #334155; color: #fff; margin-bottom: 4px;';
+      btnReturn.style.cssText = baseBtnStyle + 'background: #334155; color: #fff;';
       btnReturn.innerText = place === 1 ? '🏆 Vitória! Voltar ao Lobby' : '❌ Derrota! Voltar ao Lobby';
       btnReturn.onclick = () => window.location.href = 'index.html';
       buttonsContainer.appendChild(btnReturn);
@@ -4612,7 +4606,7 @@ async function showFinishOverlay(place) {
     if (!isTower && !isDesafio && !isElite) {
       const btnPlayAgain = document.createElement('button');
       btnPlayAgain.className = 'pk-modal-primary';
-      btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4); margin-bottom: 4px;';
+      btnPlayAgain.style.cssText = baseBtnStyle + 'background: linear-gradient(90deg, #facc15, #eab308); color: #451a03; box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);';
       btnPlayAgain.innerHTML = '🔄 Jogar Novamente';
       btnPlayAgain.onmousedown = () => btnPlayAgain.style.transform = 'translateY(4px)';
       btnPlayAgain.onmouseup = () => btnPlayAgain.style.transform = 'translateY(0)';
@@ -4633,8 +4627,9 @@ async function showFinishOverlay(place) {
   card.appendChild(buttonsContainer);
   overlay.appendChild(card);
   document.body.appendChild(overlay);
+  PokeRacePodium.update(finishLeaderboardEl, updateStandings(), formatTime);
 
-  const finalTimeMs = Math.round(totalRaceTimeMs);
+  const finalTimeMs = Math.round(raceTrackers.get('local')?.finishTime ?? totalRaceTimeMs);
   // Calcula a volta mais rápida (se não houver, usa o tempo final como fallback de segurança)
   const bestLapMs = localLapTimes.length > 0 ? Math.round(Math.min(...localLapTimes)) : finalTimeMs;
   const formattedTime = formatTime(finalTimeMs);
@@ -4826,7 +4821,7 @@ async function showFinishOverlay(place) {
     <div style="color:#facc15; font-size:16px;">
       💰 +${totalCoinsEarned} Moedas 
       <span style="font-size:11px; color:#94a3b8;">(${currentTrackDifficulty.toUpperCase()} ${trackMultiplier}x)</span>
-      ${collectedMasterBalls > 0 ? `<span style="color:#a855f7; font-size:12px; margin-left:6px;">(+${Math.round(mbBonusPercent * 100)}\% por${collectedMasterBalls} MBs)</span>` : ''}
+      ${collectedMasterBalls > 0 ? `<span style="color:#a855f7; font-size:12px; margin-left:6px;">(+${Math.round(mbBonusPercent * 100)}\% por ${collectedMasterBalls} MBs)</span>` : ''}
       ${usouMoedaAmuleto ? '<span style="color:#22c55e; font-size:12px; font-weight:900; margin-left:6px;">(🪙 x2)</span>' : ''}
     </div>
     <div style="color:#21c7ff; font-size:14px; margin-top: 4px;">
@@ -4874,6 +4869,10 @@ async function showFinishOverlay(place) {
 const ITEM_ICON_DEFAULT = '<img class="pk-skill-icon" src="emojis/pokeball.png" alt="Nenhuma habilidade equipada">';
 
 const SKILLS = {
+  ENERGY_BALL: {
+    id: 'ENERGY_BALL', name: 'Bola de Energia',
+    icon: '<img class="pk-skill-icon" src="icones/tematicos/bola-energia.svg" alt="Bola de Energia">'
+  },
   TURBO: {
     id: 'TURBO', name: 'Aceleração de Fogo',
     icon: '<img class="pk-skill-icon" src="icones/tematicos/fogo.png" alt="Aceleração de Fogo">'
@@ -5259,18 +5258,7 @@ function updateItemBoxes(dt) {
           const botRank = botsStandings.findIndex(r => r.key === id) + 1;
           const totalRacers = botsStandings.length;
 
-          let botPool = [];
-
-          if (botRank === 1) {
-            // Bot em 1º lugar: Foco em defesa
-            botPool = ['SHIELD', 'SHIELD', 'ICE', 'LODO', 'FUMACA', 'LAMA', 'ROCKET_BOX'];
-          } else if (botRank === totalRacers && totalRacers > 2) {
-            // Bot em último lugar: Foco em velocidade/ataque
-            botPool = ['TURBO', 'TURBO', 'SURF', 'SURF', 'DIG', 'DIG', 'CHOQUE', 'SOM'];
-          } else {
-            // Bots no meio do pelotão: Balanceado
-            botPool = ['TURBO', 'SHIELD', 'CHOQUE', 'SURF', 'DIG', 'SOM', 'ROCKET_BOX', 'ICE'];
-          }
+          const botPool = PokeRaceRules.itemPoolForPosition(botRank, totalRacers);
 
           // Sorteia da pool baseada na posição
           const randomKey = botPool[Math.floor(Math.random() * botPool.length)];
@@ -5291,32 +5279,8 @@ function getItemFromBox() {
   const myRank = racers.findIndex(r => r.key === 'local') + 1;
   const totalRacers = racers.length;
 
-  // Pools de itens baseadas na posição. 
-  // Habilidades de líderes NÃO estão listadas aqui, garantindo a exclusividade deles.
-  let pool = [];
-
-  if (myRank === 1) {
-    // 1º LUGAR: Foco exclusivo em defesa e armadilhas.
-    // O 'DIG' não está nesta lista, respeitando sua regra original.
-    pool = [
-      'SHIELD', 'SHIELD', 'ICE', 'LODO',
-      'FUMACA', 'LAMA', 'ROCKET_BOX'
-    ];
-  }
-  else if (myRank === totalRacers && totalRacers > 2) {
-    // ÚLTIMO LUGAR (Lanterna): Foco extremo em alcance e velocidade.
-    pool = [
-      'TURBO', 'TURBO', 'SURF', 'SURF',
-      'DIG', 'DIG', 'CHOQUE', 'SOM'
-    ];
-  }
-  else {
-    // POSIÇÕES INTERMEDIÁRIAS: Mistura balanceada.
-    pool = [
-      'TURBO', 'SHIELD', 'CHOQUE', 'SURF',
-      'DIG', 'SOM', 'ROCKET_BOX', 'ICE'
-    ];
-  }
+  // A lanterna recebe a mesma pool de recuperacao inclusive nos duelos 1x1.
+  const pool = PokeRaceRules.itemPoolForPosition(myRank, totalRacers);
 
   // Sorteia da pool selecionada
   const randomKey = pool[Math.floor(Math.random() * pool.length)];
@@ -5325,6 +5289,7 @@ function getItemFromBox() {
   // Atualiza a interface
   const iconEl = document.getElementById('itemIcon');
   if (iconEl) iconEl.innerHTML = currentItem.icon;
+  if (currentItem.id === 'ENERGY_BALL') showRaceFeedback(isMobile ? 'ENERGIA: OLHE PARA TRÁS PARA LANÇAR ATRÁS' : 'ENERGIA: E FRENTE • Q + E ATRÁS', '#a3e635', 3, 1);
 }
 
 const placedTraps = [];
@@ -5874,6 +5839,50 @@ function triggerSparkEffect(targetPos) {
   }, 50);
 }
 
+const shockWarningUI = PokeShockWarning.createWarningUI();
+const shockAttacks = PokeShockWarning.createQueue({
+  isActive(targetId) {
+    if (!raceStarted) return false;
+    if (targetId === 'local') return !raceTrackers.get('local')?.finished;
+    const bot = remoteKarts.get(targetId);
+    return !!bot?.isBot && !bot.finished;
+  },
+  onImpact(targetId) {
+    if (targetId === 'local') {
+      playHitSfx(isShieldActive ? 'SHIELD' : 'SHOCK');
+      if (isShieldActive) showRaceFeedback('RAIO BLOQUEADO!', '#38bdf8', 1.5, 3);
+      else {
+        physics.stunTimer = 1.0;
+        loseMasterBalls(3);
+        if (kart) triggerSparkEffect(kart.position);
+      }
+    } else {
+      const bot = remoteKarts.get(targetId);
+      if (bot && bot.shieldTimer <= 0) {
+        bot.stunTimer = 1.0;
+        bot.collectedMasterBalls = Math.max(0, (bot.collectedMasterBalls || 0) - 3);
+        triggerSparkEffect(bot.obj.group.position);
+      }
+    }
+  }
+});
+let shockAttackSerial = 0;
+function queueShockAttack(targetId, attackId) {
+  const localTarget = targetId === 'local' || (racePeer && targetId === racePeer.id);
+  const key = localTarget ? 'local' : targetId;
+  if (shockAttacks.add(attackId, key) && localTarget) playRaceCue('warning');
+}
+function launchShockAttack(targetId) {
+  if (!targetId) return;
+  const attackId = `${racePeer?.id || 'solo'}-${Date.now()}-${++shockAttackSerial}`;
+  if (targetId === 'local' || remoteKarts.get(targetId)?.isBot) queueShockAttack(targetId, attackId);
+  else sendNetworkEvent({ t: 'shock_warning', targetId, attackId });
+}
+function updateShockAttacks(dt) {
+  shockAttacks.update(dt, isPaused);
+  shockWarningUI.update(shockAttacks.remaining('local'), isShieldActive, currentItem?.id === 'SHIELD');
+}
+
 function castShockAbility() {
   if (!kart) return;
   const myProgress = raceTrackers.get('local')?.progress || 0;
@@ -5898,15 +5907,7 @@ function castShockAbility() {
   }
 
   if (targetPeerId) {
-    const tBot = remoteKarts.get(targetPeerId);
-    if (tBot && tBot.isBot) {
-      if (tBot.shieldTimer <= 0) {
-        tBot.stunTimer = 1.0;
-        triggerSparkEffect(tBot.obj.group.position);
-      }
-    } else {
-      sendNetworkEvent({ t: 'apply_stun', targetId: targetPeerId });
-    }
+    launchShockAttack(targetPeerId);
   }
 }
 
@@ -6141,6 +6142,89 @@ function castSonicBoom(casterId) {
 
 const activeDigs = []; // Guarda as animações que estão viajando
 
+// Bola de Energia: trajetória reta; o host decide a primeira colisão na sala.
+const energyMeshes = new Map(), energyImpacts = new Map(), energyLaunchTimes = new Map();
+let energySerial = 0;
+function energyTargets() {
+  const targets=[];
+  if(kart) targets.push({id:racePeer?.id || 'local',x:kart.position.x,y:kart.position.y+1,z:kart.position.z,finished:!!raceTrackers.get('local')?.finished});
+  for(const [id,entry] of remoteKarts){
+    const p=entry.isBot?entry.obj?.group?.position:entry.target?.pos;
+    if(p)targets.push({id,x:p.x,y:p.y+1,z:p.z,finished:!!(entry.finished||raceTrackers.get(id)?.finished)});
+  }
+  return targets;
+}
+const energySimulation=PokeEnergyBall.createSimulation({
+  heightAt:(x,z)=>getTrackHeightAt(x,z),getTargets:energyTargets,
+  onStep(shot){
+    const mesh=energyMeshes.get(shot.id);if(!mesh)return;
+    mesh.position.set(shot.x,shot.y,shot.z);mesh.children[1].rotation.z=shot.age*8;mesh.children[2].rotation.y=shot.age*6;
+    mesh.userData.tail.forEach((part,index)=>part.position.set(-shot.dx*(index+1)*1.1,0,-shot.dz*(index+1)*1.1));
+  },
+  onRemove(id){
+    const mesh=energyMeshes.get(id);if(!mesh)return;
+    scene.remove(mesh);mesh.traverse(child=>{if(child.isMesh){child.geometry.dispose();child.material.dispose();}});energyMeshes.delete(id);
+  },
+  onHit(shot,target){
+    applyEnergyImpact(target.id,shot.id);
+    if(isHost)broadcastEvent({t:'energy_hit',shotId:shot.id,targetId:target.id});
+  }
+});
+function spawnEnergyBall(shot){
+  if(!raceStarted||!energySimulation.add(shot))return;
+  const group=new THREE.Group();
+  const core=new THREE.Mesh(new THREE.SphereGeometry(.7,12,8),new THREE.MeshBasicMaterial({color:0xc8ff65}));
+  const halo=new THREE.Mesh(new THREE.SphereGeometry(1,12,8),new THREE.MeshBasicMaterial({color:0x4ade80,wireframe:true,transparent:true,opacity:.65}));
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(1.1,.08,4,16),new THREE.MeshBasicMaterial({color:0xefffb5}));
+  ring.rotation.x=Math.PI/3;group.add(core,halo,ring);
+  group.userData.tail=[];
+  for(let i=0;i<3;i++){
+    const part=new THREE.Mesh(new THREE.SphereGeometry(.5-i*.12,8,6),new THREE.MeshBasicMaterial({color:0x86efac,transparent:true,opacity:.5-i*.12,depthWrite:false}));
+    part.position.set(-shot.dx*(i+1)*1.1,0,-shot.dz*(i+1)*1.1);group.add(part);group.userData.tail.push(part);
+  }
+  const state=energySimulation.shots.get(shot.id);group.position.set(state.x,state.y,state.z);
+  energyMeshes.set(shot.id,group);scene.add(group);playSkillSfx('SOM',group.position);
+}
+function launchEnergyBall(casterId,backwards=false){
+  if(!raceStarted||isPaused)return;
+  if(casterId==='local'&&roomCodeParam&&!isHost){sendNetworkEvent({t:'energy_request',backwards});return;}
+  const local=casterId==='local',entry=remoteKarts.get(casterId);
+  if(local?raceTrackers.get('local')?.finished:(!entry||entry.finished))return;
+  const owner=local?(racePeer?.id||'local'):casterId;
+  const now=performance.now();if(now-(energyLaunchTimes.get(owner)??-Infinity)<250)return;
+  const position=local?kart?.position:(entry.isBot?entry.obj?.group?.position:entry.target?.pos);
+  const heading=local?physics.heading:(entry.isBot?entry.heading:entry.target?.ry);
+  if(!position||!Number.isFinite(heading))return;
+  energyLaunchTimes.set(owner,now);
+  const sign=backwards?-1:1,dx=Math.sin(heading)*sign,dz=Math.cos(heading)*sign;
+  const shot={id:`${owner}-energy-${++energySerial}`,owner,x:position.x+dx*3.5,z:position.z+dz*3.5,dx,dz};
+  spawnEnergyBall(shot);if(isHost)broadcastEvent({t:'energy_spawn',shot});
+}
+function applyEnergyImpact(targetId,shotId){
+  if(energyImpacts.has(shotId))return;
+  const now=performance.now();for(const [id,time]of energyImpacts)if(now-time>10000)energyImpacts.delete(id);
+  energyImpacts.set(shotId,now);
+  const local=targetId==='local'||targetId===racePeer?.id,entry=remoteKarts.get(targetId);
+  if(local){
+    if(raceTrackers.get('local')?.finished)return;
+    playHitSfx(isShieldActive?'SHIELD':'SONIC');
+    if(isShieldActive){showRaceFeedback('ENERGIA BLOQUEADA!', '#38bdf8',1.2,3);return;}
+    physics.speed=0;physics.stunTimer=Math.max(physics.stunTimer,1);
+    physics.turboTimer=0;physics.isDrifting=false;physics.driftCharge=0;
+    loseMasterBalls(3);if(kart)triggerSparkEffect(kart.position);
+    showRaceFeedback('BOLA DE ENERGIA!', '#a3e635',1.2,3);
+  }else if(entry&&!entry.finished){
+    const position=entry.isBot?entry.obj?.group?.position:entry.target?.pos;
+    if(entry.isBot&&(isHost||!roomCodeParam)){
+      if(entry.shieldTimer>0){playHitSfx('SHIELD',position);return;}
+      entry.speed=0;entry.stunTimer=Math.max(entry.stunTimer||0,1);entry.turboTimer=0;
+      entry.driftCharge=0;entry.driftDirection=0;
+      entry.collectedMasterBalls=Math.max(0,(entry.collectedMasterBalls||0)-3);
+    }
+    if(position){triggerSparkEffect(position);playHitSfx('SONIC',position);}
+  }
+}
+
 function spawnDigProjectile(casterId, targetId) {
   const group = new THREE.Group();
 
@@ -6266,7 +6350,7 @@ function updateDigProjectiles(dt) {
 window.addEventListener('keydown', (e) => {
   // E e o botão mobile usam a habilidade; sem item, tocam a buzina do Pokémon.
   if (e.code === 'KeyE' && !e.repeat && raceStarted && !isPaused &&
-      !raceTrackers.get('local')?.finished && !document.hidden) {
+    !raceTrackers.get('local')?.finished && !document.hidden) {
     if (currentItem) {
       useEquippedSkill(currentItem);
       currentItem = null;
@@ -6308,6 +6392,9 @@ window.addEventListener('keydown', (e) => {
 
 function useEquippedSkill(skill) {
   switch (skill.id) {
+    case 'ENERGY_BALL':
+      launchEnergyBall('local', !!(keys['KeyQ'] || mobileLookBackActive));
+      break;
     case 'TURBO':
       physics.turboTimer = 2.0 * (physics.turboBonus || 1.0);
       playSkillSfx('TURBO');
@@ -6443,7 +6530,13 @@ function broadcastEvent(payload) {
 }
 
 function handleNetworkMessage(data) {
-  if (data.t === 'horn') {
+  if (data.t === 'energy_request') {
+    if (isHost) launchEnergyBall(data.casterId, data.backwards === true);
+  } else if (data.t === 'energy_spawn') {
+    if (!isHost) spawnEnergyBall(data.shot);
+  } else if (data.t === 'energy_hit') {
+    if (!isHost) { energySimulation.remove(data.shotId); applyEnergyImpact(data.targetId,data.shotId); }
+  } else if (data.t === 'horn') {
     if (!raceStarted || isPaused || document.hidden || !window.PokeHorns) return;
     if (racePeer && data.casterId === racePeer.id) return;
     const entry = remoteKarts.get(data.casterId);
@@ -6466,16 +6559,10 @@ function handleNetworkMessage(data) {
   } else if (data.t === 'destroy_trap') {
     removeTrapMesh(data.trapId);
     if (isHost) broadcastEvent(data);
-  } else if (data.t === 'apply_stun') {
-    if (racePeer && data.targetId === racePeer.id) {
-      playHitSfx(isShieldActive ? 'SHIELD' : 'SHOCK');
-      if (!isShieldActive) {
-        physics.stunTimer = 1.0;
-        if (kart) triggerSparkEffect(kart.position);
-      }
-    } else if (isHost) {
-      broadcastEvent(data);
-    }
+  } else if (data.t === 'shock_warning' || data.t === 'apply_stun') {
+    // O destinatário conta o prazo localmente; não depende de um segundo pacote para receber o impacto.
+    queueShockAttack(data.targetId, data.attackId || `legacy-${Date.now()}-${++shockAttackSerial}`);
+    if (isHost) broadcastEvent(data);
   } else if (data.t === 'apply_mud') {
     if (racePeer && data.targetId === racePeer.id) {
       playHitSfx(isShieldActive ? 'SHIELD' : 'MUD');
@@ -6536,6 +6623,7 @@ function handleNetworkMessage(data) {
 }
 
 function handleRemoteKartState(peerId, data) {
+  const previousTracker = raceTrackers.get(peerId);
   let entry = remoteKarts.get(peerId);
 
   if (!entry) {
@@ -6576,17 +6664,25 @@ function handleRemoteKartState(peerId, data) {
 
   entry.progress = typeof data.progress === 'number' ? data.progress : 0;
   entry.lapCount = data.lapCount || 1;
-  entry.finished = Boolean(data.finished);
+  entry.finished = Boolean(data.finished) || Boolean(previousTracker?.finished);
   entry.isPoisoned = Boolean(data.poisoned);
   entry.isShieldActive = Boolean(data.shield);
   entry.isTurboActive = Boolean(data.turbo);
+  entry.isDrifting = Boolean(data.drifting) && !entry.finished;
+  entry.botDrift = Boolean(data.botDrift);
+  entry.driftCharge = Number(data.driftCharge) || 0;
+  entry.driftDirection = Math.sign(Number(data.driftDirection) || 0);
 
   raceTrackers.set(peerId, {
     progress: entry.progress,
     lapCount: entry.lapCount,
     finished: entry.finished,
-    // AQUI: Usa o tempo enviado pela rede ou o tempo de corrida atual como base
-    finishTime: data.finishTime || (entry.finished ? totalRaceTimeMs : Infinity)
+    // Preserva a chegada em pacotes repetidos/atrasados; nunca copia o HUD local.
+    finishTime: entry.finished
+      ? (Number.isFinite(data.finishTime) && data.finishTime > 0 ? data.finishTime
+        : previousTracker?.finished ? previousTracker.finishTime : Math.round(getRaceElapsedMs()))
+      : Infinity,
+    finishOrder: entry.finished ? previousTracker?.finishOrder ?? ++raceFinishSequence : undefined
   });
 }
 
@@ -6644,6 +6740,7 @@ function initRaceMultiplayer() {
           maybeStartMultiplayerCountdown();
         } else {
           if (data.t === 'horn') data = { t: 'horn', casterId: conn.peer };
+          if (data.t === 'energy_request') data = { t: 'energy_request', casterId: conn.peer, backwards: data.backwards === true };
           handleNetworkMessage(data);
         }
       });
@@ -6692,6 +6789,9 @@ function initRaceMultiplayer() {
                 finishTime: (myTracker && myTracker.finished && myTracker.finishTime !== Infinity) ? myTracker.finishTime : 0, // AQUI: Adicionado para informar ao Host o tempo exato do fim
                 poisoned: isControlInverted,
                 shield: isShieldActive,
+                drifting: physics.isDrifting,
+                driftCharge: physics.driftCharge,
+                driftDirection: physics.driftDirection,
                 turbo: physics.turboTimer > 0
               });
             }
@@ -6796,6 +6896,9 @@ function networkTick(dt) {
       finishTime: safeFinishTime,
       poisoned: isControlInverted,
       shield: isShieldActive,
+      drifting: physics.isDrifting,
+      driftCharge: physics.driftCharge,
+      driftDirection: physics.driftDirection,
       turbo: physics.turboTimer > 0
     }
   };
@@ -6819,6 +6922,10 @@ function networkTick(dt) {
       poisoned: entry.isBot ? (entry.stunTimer > 0) : Boolean(entry.isPoisoned),
       shield: entry.isBot ? (entry.shieldTimer > 0) : Boolean(entry.isShieldActive),
       turbo: !entry.finished && (entry.isBot ? entry.turboTimer > 0 : Boolean(entry.isTurboActive)),
+      drifting: !entry.finished && (entry.isBot ? !!entry.driftDirection : !!entry.isDrifting),
+      botDrift: !!entry.isBot || !!entry.botDrift,
+      driftCharge: entry.driftCharge || 0,
+      driftDirection: entry.driftDirection || 0,
       finishTime: rFinish
     };
   }
@@ -6854,7 +6961,9 @@ function updateRemoteKarts(dt) {
     const lerpFactor = Math.min(1, dt * 18);
     g.position.lerp(entry.target.pos, lerpFactor);
 
-    let diffY = entry.target.ry - g.rotation.y;
+    // O jogador humano ja envia a rotacao do drift; so o bot precisa do angulo visual adicional.
+    const driftYaw = entry.botDrift && entry.isDrifting && Math.abs(entry.target.speed) > 5 ? -entry.driftDirection * .28 : 0;
+    let diffY = entry.target.ry + driftYaw - g.rotation.y;
     while (diffY < -Math.PI) diffY += Math.PI * 2;
     while (diffY > Math.PI) diffY -= Math.PI * 2;
 
@@ -6901,7 +7010,10 @@ function updateStandings() {
 
   racers.sort((a, b) => {
     if (a.tr.finished && b.tr.finished) {
-      return (a.tr.finishTime || 0) - (b.tr.finishTime || 0);
+      const timeDifference = a.tr.finishTime - b.tr.finishTime;
+      if (Number.isFinite(timeDifference) && timeDifference !== 0) return timeDifference;
+      // Empates no mesmo milissegundo preservam a chegada, não a ordem do catálogo.
+      return (a.tr.finishOrder ?? Infinity) - (b.tr.finishOrder ?? Infinity) || 0;
     }
     if (a.tr.finished) return -1;
     if (b.tr.finished) return 1;
@@ -6914,23 +7026,23 @@ function updateStandings() {
   // Só reescreve o HTML (e recria os GIFs) quando a classificação realmente muda
   const standingsSig = racers.map(r => r.key + '|' + r.dexId + '|' + (r.tr.finished ? 1 : 0) + '|' + r.name).join(';');
   if (standingsEl.__sig !== standingsSig) {
-  standingsEl.__sig = standingsSig;
-  standingsEl.innerHTML = racers.map((r, index) => {
-    const isMe = r.key === 'local';
-    const borderColor = isMe ? '#ffaa00' : '#cbd5e1';
+    standingsEl.__sig = standingsSig;
+    standingsEl.innerHTML = racers.map((r, index) => {
+      const isMe = r.key === 'local';
+      const borderColor = isMe ? '#ffaa00' : '#cbd5e1';
 
-    // Usa diretamente o número oficial do dexId vindo do banco de dados (ex: 135, 25, 4)
-    const dexNumber = r.dexId || 25;
+      // Usa diretamente o número oficial do dexId vindo do banco de dados (ex: 135, 25, 4)
+      const dexNumber = r.dexId || 25;
 
-    // Caminho formatado com 'poke_[número].gif' apontando para a sua pasta local
-    const spriteUrl = `pokemons/poke_${dexNumber}.gif`;
-    const fallbackUrl = `pokemons/poke_25.gif`;
+      // Caminho formatado com 'poke_[número].gif' apontando para a sua pasta local
+      const spriteUrl = `pokemons/poke_${dexNumber}.gif`;
+      const fallbackUrl = `pokemons/poke_25.gif`;
 
-    const content = r.tr.finished
-      ? '<span style="font-size: 20px;">🏁</span>'
-      : `<img src="${spriteUrl}" alt="${r.name}" onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
+      const content = r.tr.finished
+        ? '<img class="ctr-finish-flag" src="icones/tematicos/bandeira.png" alt="Corrida finalizada">'
+        : `<img src="${spriteUrl}" alt="${r.name}" onerror="this.onerror=null;this.src='${fallbackUrl}';">`;
 
-    return `
+      return `
       <div class="ctr-standing-item${isMe ? ' is-local' : ''}" style="margin-bottom: 14px;">
         <div class="ctr-portrait" style="border-color: ${borderColor};">
           <div class="ctr-standing-icon">${content}</div>
@@ -6938,7 +7050,7 @@ function updateStandings() {
         <div class="ctr-portrait-pos">${index + 1}</div>
       </div>
     `;
-  }).join('');
+    }).join('');
   }
 
   return racers;
@@ -7070,7 +7182,7 @@ function updateHUD() {
 
     // 7. Relógio Principal
     if (raceStarted && !tr.finished) {
-      totalRaceTimeMs = performance.now() - raceStartTime;
+      totalRaceTimeMs = getRaceElapsedMs();
       if (timerEl) {
         const timerStep = Math.floor(totalRaceTimeMs / TIMER_UI_STEP_MS);
         if (timerEl.__step !== timerStep) { timerEl.__step = timerStep; timerEl.innerText = formatTime(totalRaceTimeMs); }
@@ -7084,29 +7196,7 @@ function updateHUD() {
     }
 
     if (typeof finishLeaderboardEl !== 'undefined' && finishLeaderboardEl) {
-      const lbSig = racers.map(r => r.key + '|' + r.name + '|' + (r.tr.finished ? 1 : 0)).join(';');
-      if (finishLeaderboardEl.__sig !== lbSig) {
-      finishLeaderboardEl.__sig = lbSig;
-      finishLeaderboardEl.innerHTML = racers.map((r, index) => {
-        const isMe = r.key === 'local';
-        const bgColor = isMe ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.7)';
-        const borderColor = isMe ? '#38bdf8' : '#334155';
-        const nameColor = isMe ? '#FFD54F' : '#f8fafc';
-
-        const status = r.tr.finished
-          ? '<span style="color:#22c55e;">🏁 Finalizou</span>'
-          : '<span style="color:#94a3b8;">Correndo...</span>';
-
-        return `
-          <div style="background: ${bgColor}; border: 1px solid ${borderColor}; border-radius: 8px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: bold; color: ${nameColor}; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%;">
-              <span style="color:#cbd5e1; margin-right: 10px; display: inline-block;">${index + 1}º</span>${r.name}
-            </div>
-            <div style="font-size: 13px; font-weight: bold;">${status}</div>
-          </div>
-        `;
-      }).join('');
-      }
+      PokeRacePodium.update(finishLeaderboardEl, racers, formatTime);
     }
   }
 }
@@ -7497,11 +7587,15 @@ function planBotRace(id, bot, sample, curve, profile, trackLength) {
     if (box.owner !== id) relative(box.position, 1, true);
   }
   const safeHalf = Math.max(.5, trackWidth / 2 - 1.8) * (bot.tightCorner ? .55 : 1);
-  bot.targetLane = PokeRaceRules.chooseLane({ halfWidth: safeHalf,
+  bot.targetLane = PokeRaceRules.chooseLane({
+    halfWidth: safeHalf,
     currentLane: bot.laneOffset, preferredLane: bot.tightCorner ? 0 : Math.sign(curve) * safeHalf * .35,
-    obstacles, profile });
-  bot.itemContext = { rank, ahead: nearestAhead, behind: nearestBehind,
-    threat: obstacles.some(o => o.hazard && o.ahead < 12) || activeDigs.some(d => d.targetId === id) };
+    obstacles, profile
+  });
+  bot.itemContext = {
+    rank, ahead: nearestAhead, behind: nearestBehind,
+    threat: obstacles.some(o => o.hazard && o.ahead < 12) || activeDigs.some(d => d.targetId === id)
+  };
 }
 
 function updateBots(dt) {
@@ -7517,7 +7611,8 @@ function updateBots(dt) {
     }
 
     if (bot.shieldTimer > 0) bot.shieldTimer -= dt;
-    if (bot.turboTimer > 0) bot.turboTimer -= dt;
+    if (bot.turboTimer > 0) bot.turboTimer = Math.max(0, bot.turboTimer - dt);
+    else bot.boostCooldown = Math.max(0, (bot.boostCooldown || 0) - dt);
     if (bot.poisonTimer > 0) bot.poisonTimer -= dt;
 
     if (bot.currentItem) bot.itemHoldAge = (bot.itemHoldAge || 0) + dt;
@@ -7571,8 +7666,10 @@ function updateBots(dt) {
 
     const profile = PokeRaceRules.profiles[bot.diffMult > .95 ? 'hard' : bot.diffMult > .8 ? 'normal' : 'easy'];
     const cornerPlan = PokeRaceRules.planBotCorner(trackSamples, Math.round(sample.t * TRACK_SAMPLE_COUNT) % TRACK_SAMPLE_COUNT,
-      trackLength / TRACK_SAMPLE_COUNT, { speed: bot.speed, maxSpeed: maxSpd,
-        turnSpeed: bot.stats.turnSpeed, trackWidth, profile });
+      trackLength / TRACK_SAMPLE_COUNT, {
+        speed: bot.speed, maxSpeed: maxSpd,
+      turnSpeed: bot.stats.turnSpeed, trackWidth, profile
+    });
     const enteringTightCorner = cornerPlan.tight && !bot.tightCorner;
     bot.tightCorner = cornerPlan.tight;
     maxSpd = Math.min(maxSpd, cornerPlan.safeSpeed);
@@ -7597,18 +7694,21 @@ function updateBots(dt) {
     maxSpd *= cornerFactor;
     if (bot.currentItem && PokeRaceRules.shouldUseItem(bot.currentItem.id, {
       ...bot.itemContext, curve: Math.abs(curve), age: bot.itemHoldAge || 0,
+      threat: bot.itemContext?.threat || Number.isFinite(shockAttacks.remaining(id)),
       reaction: bot.itemUseTimer || 1, disabled: bot.rocketBoxAtiva || bot.skillCooldown > 0,
-      shielded: bot.shieldTimer > 0, boosting: bot.turboTimer > 0
+      shielded: bot.shieldTimer > 0, boosting: bot.turboTimer > 0, boostCooldown: bot.boostCooldown || 0
     })) {
       useBotSkill(id, bot, bot.currentItem);
       bot.currentItem = null; bot.itemHoldAge = 0; bot.skillCooldown = 3;
     }
     const driftBoost = PokeRaceRules.stepBotDrift(bot, dt, {
-      curve, profile, rate: bot.stats.driftRate || 1,
+      // Medida local e estavel de curva: a previsao varia com a velocidade e
+      // podia carregar drift enquanto o kart ainda estava numa reta.
+      curve: (sample.curvature || 0) * 6, profile, rate: bot.stats.driftRate || 1,
       eligible: bot.speed > bot.stats.maxSpeed * .35 && !bot.rocketBoxAtiva && Math.abs(lateral) < trackWidth / 2 - .5,
       boosting: bot.turboTimer > 0
     });
-    if (driftBoost) bot.turboTimer = Math.max(bot.turboTimer, driftBoost.duration);
+    if (driftBoost) PokeRaceRules.startBotBoost(bot, driftBoost.duration);
     const halfWidth = trackWidth / 2;
     const safeZone = halfWidth - 1.5;
     const grassStart = halfWidth + 0.8;
@@ -7677,8 +7777,17 @@ function useBotSkill(botId, bot, skill) {
     playSkillSfx(skill.id, bot.obj.group.position);
   }
   switch (skill.id) {
+    case 'ENERGY_BALL': {
+      const origin=bot.obj.group.position, forward=new THREE.Vector3(Math.sin(bot.heading),0,Math.cos(bot.heading));
+      const candidates=energyTargets().filter(t=>t.id!==botId&&!t.finished).map(t=>{
+        const delta=new THREE.Vector3(t.x-origin.x,0,t.z-origin.z);
+        return {distance:delta.length(),dot:delta.normalize().dot(forward)};
+      }).filter(t=>Math.abs(t.dot)>.93&&t.distance<90).sort((a,b)=>a.distance-b.distance);
+      launchEnergyBall(botId, (candidates[0]?.dot || 1)<0);
+      break;
+    }
     case 'TURBO':
-      bot.turboTimer = 2.0 * (bot.stats.turboBonus || 1.0);
+      PokeRaceRules.startBotBoost(bot, 2.0 * (bot.stats.turboBonus || 1.0));
       break;
     case 'SHIELD':
       bot.shieldTimer = 5.0;
@@ -7717,17 +7826,7 @@ function useBotSkill(botId, bot, skill) {
         }
       }
 
-      if (targetId === 'local') playHitSfx(isShieldActive ? 'SHIELD' : 'SHOCK');
-      if (targetId === 'local' && !isShieldActive) {
-        physics.stunTimer = 1.0;
-        if (kart) triggerSparkEffect(kart.position);
-      } else if (targetId) {
-        const tBot = remoteKarts.get(targetId);
-        if (tBot && tBot.isBot && tBot.shieldTimer <= 0) {
-          tBot.stunTimer = 1.0;
-          triggerSparkEffect(tBot.obj.group.position);
-        }
-      }
+      launchShockAttack(targetId);
       break;
     case 'LAMA':
       // O Bot tenta sujar a tela de quem estiver na frente dele
@@ -7830,7 +7929,7 @@ function useBotSkill(botId, bot, skill) {
       createTrapMesh({ id: botId + '-vortex-' + Math.random(), x: trapPosVortex.x, z: trapPosVortex.z, type: 'VORTEX', owner: botId });
       break;
     case 'BLAINE_BOOST':
-      bot.turboTimer = 1.5 * (bot.stats.turboBonus || 1.0);
+      PokeRaceRules.startBotBoost(bot, 1.5 * (bot.stats.turboBonus || 1.0));
       break;
   }
 }
@@ -8191,6 +8290,7 @@ function aplicarPunicaoAbandonoSincrona() {
 
 function updateKartEffects(dt) {
   const time = performance.now();
+  const raceOver = !!raceTrackers.get('local')?.finished;
 
   // 1. Atualiza o jogador local
   if (localKartObj) {
@@ -8244,6 +8344,38 @@ function updateKartEffects(dt) {
 
     const hasShield = bot.shieldTimer > 0 || bot.isShieldActive;
     const hasTurbo = !bot.finished && (bot.isBot ? bot.turboTimer > 0 : bot.isTurboActive);
+    const speed = Math.abs(bot.isBot ? bot.speed : bot.target?.speed || 0);
+    const drifting = !bot.finished && !raceOver && !hasTurbo && speed > 5 &&
+      !(bot.spinTimer > 0 || bot.stunTimer > 0) &&
+      (bot.isBot ? !!bot.driftDirection : !!bot.isDrifting);
+    if (bot.isBot && !(bot.spinTimer > 0 || bot.stunTimer > 0)) {
+      bot.driftVisualYaw = THREE.MathUtils.lerp(bot.driftVisualYaw || 0,
+        drifting ? -bot.driftDirection * .28 : 0, Math.min(1, dt * 10));
+      bot.obj.group.rotation.y = bot.heading + bot.driftVisualYaw;
+    }
+    const nearby = kart && bot.obj.group.position.distanceToSquared(kart.position) < 45 * 45;
+    const sparks = bot.obj.driftMesh;
+    if (sparks) {
+      sparks.visible = drifting && nearby;
+      if (sparks.visible) {
+        const tier = PokeRaceRules.driftTier(bot.driftCharge || 0);
+        sparks.material.color.set(tier ? tier.color : '#cbd5e1');
+        const vertices = sparks.geometry.attributes.position;
+        for (let i = 0; i < vertices.count; i++) {
+          const phase = (time * .003 + i * .19) % 1;
+          vertices.setXYZ(i, (i % 2 ? .58 : -.58) + Math.sin(i * 3 + time * .02) * .12,
+            .12 + phase * .25, -1.05 - phase * .75);
+        }
+        vertices.needsUpdate = true;
+      }
+    }
+    if (drifting && nearby) {
+      bot.skidSpawnTimer = (bot.skidSpawnTimer || 0) + dt;
+      if (bot.skidSpawnTimer >= (isMobile ? .18 : .12)) {
+        spawnSkidMarkPair(bot.obj.group, bot.obj.group.rotation.y);
+        bot.skidSpawnTimer = 0;
+      }
+    } else bot.skidSpawnTimer = 0;
 
     // CORREÇÃO: O veneno agora usa exclusivamente o poisonTimer para bots e isPoisoned para remotos
     const hasPoison = (bot.isBot && bot.poisonTimer > 0) || Boolean(bot.isPoisoned);
@@ -8512,6 +8644,9 @@ async function initGameEngine() {
 
   // 1. Espera os karts carregarem do banco de dados
   await loadKartsFromDatabase();
+  // Revalida também se o dia virou enquanto a corrida estava carregando.
+  selectedKartId = await validateEquippedKart(profile, KART_DATABASE);
+  if (!selectedKartId) { window.location.replace('index.html'); return; }
   // Pré-carrega o som sem atrasar o carregamento dos modelos ou a largada.
   if (window.PokeHorns) PokeHorns.prepare(KART_DATABASE.find(k => k.id === selectedKartId));
   if (!KART_DATABASE.length) { window.location.replace('index.html'); return; }
@@ -9499,6 +9634,7 @@ function animate() {
   updateKartAudio();
   updateDriftEffects(dt);
   updateBots(dt);
+  updateShockAttacks(dt);
   updateCamera(dt);
   updateItemBoxes(dt);
   updateMasterBalls(dt);
@@ -9524,6 +9660,7 @@ function animate() {
   }
   // -----------------------------------------------------
   updateDigProjectiles(dt);
+  energySimulation.update(dt, isPaused || !raceStarted, isHost || !roomCodeParam);
   // --- ANIMAÇÃO, CAMINHADA 2D ORGÂNICA E 8 DIREÇÕES ---
   const now2 = Date.now();
   const timeSec = now2 * 0.001;

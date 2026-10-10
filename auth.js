@@ -110,9 +110,12 @@ async function fetchPlayerProfile() {
     }
   }
 
-  if (currentUserProfile.selected_kart) {
-    sessionStorage.setItem('pkart_selected_kart', currentUserProfile.selected_kart);
-  } else { sessionStorage.removeItem('pkart_selected_kart'); }
+  try {
+    await validateEquippedKart(currentUserProfile);
+  } catch (error) {
+    console.warn('Não foi possível validar a rotação diária:', error);
+    return null;
+  }
 
   // Profile refreshes must also restore the equipped identity in the lobby.
   if (typeof updateLeagueUI === 'function') {
@@ -137,15 +140,53 @@ function getDefaultPlayerKart(profile = currentUserProfile) {
   return profile?.starter_kart_id || getOwnedKartIds(profile)[0] || null;
 }
 
+// Mesma rotação UTC para garagem, lobby e corrida; nunca confia no cache da sessão.
+function getDailyFreeKartIds(catalog, now = new Date()) {
+  let seed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+  const ids = catalog.filter(k => k.activated !== false).map(k => k.id).sort();
+  for (let i = ids.length - 1; i > 0; i--) {
+    seed = (seed * 9301 + 49297) % 233280;
+    const j = Math.floor((seed / 233280) * (i + 1));
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  return ids.slice(0, 4);
+}
+
+async function loadCurrentDailyKartIds() {
+  const { data, error } = await supabaseClient.from('karts').select('id, activated');
+  if (error || !data) throw error || new Error('Catálogo indisponível');
+  const daily = getDailyFreeKartIds(data);
+  sessionStorage.setItem('pkart_daily_free', JSON.stringify(daily));
+  return daily;
+}
+
+async function validateEquippedKart(profile = currentUserProfile, catalog = null) {
+  if (!profile || profile.starter_choice_completed === false) return null;
+  const owned = getOwnedKartIds(profile);
+  const previous = profile.selected_kart;
+  const daily = catalog ? getDailyFreeKartIds(catalog)
+    : previous && !owned.includes(previous) ? await loadCurrentDailyKartIds() : [];
+  const selected = previous && (owned.includes(previous) || daily.includes(previous))
+    ? previous : getDefaultPlayerKart(profile) || daily[0] || null;
+  profile.selected_kart = selected;
+  if (selected) sessionStorage.setItem('pkart_selected_kart', selected);
+  else sessionStorage.removeItem('pkart_selected_kart');
+  if (previous !== selected) {
+    const { error } = await supabaseClient.from('profiles')
+      .update({ selected_kart: selected, updated_at: new Date() }).eq('id', profile.id);
+    if (error) console.warn('Erro ao salvar substituição do kart expirado:', error.message);
+  }
+  return selected;
+}
+
 // Salvar / Atualizar Kart Selecionado
 async function updateSelectedKart(kartId) {
-  if (!currentUserProfile || currentUserProfile.starter_choice_completed === false) return;
+  if (!currentUserProfile || currentUserProfile.starter_choice_completed === false) return false;
 
   const isPermanent = getOwnedKartIds().includes(kartId);
-  const dailyFree = JSON.parse(sessionStorage.getItem('pkart_daily_free') || '[]');
-  const isTemporary = dailyFree.includes(kartId);
+  const isTemporary = !isPermanent && (await loadCurrentDailyKartIds()).includes(kartId);
 
-  if (!isPermanent && !isTemporary) return;
+  if (!isPermanent && !isTemporary) return false;
 
   const { error } = await supabaseClient
     .from('profiles')
@@ -154,7 +195,9 @@ async function updateSelectedKart(kartId) {
 
   if (!error) {
     currentUserProfile.selected_kart = kartId;
-  }
+    sessionStorage.setItem('pkart_selected_kart', kartId);
+  } else console.warn('Erro ao salvar kart selecionado:', error.message);
+  return !error;
 }
 
 // Adicionar Moedas, Troféus e Estatísticas após a corrida

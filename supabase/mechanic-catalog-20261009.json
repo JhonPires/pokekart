@@ -1,0 +1,68 @@
+[
+  {
+    "id": "motor_rotom",
+    "name": "Motor Rotom",
+    "slot": "motor",
+    "price": 350,
+    "durability": 10,
+    "description": "+8% de aceleração. Recupere velocidade mais rápido.",
+    "icon": "icones/tematicos/raio.svg",
+    "modifiers": {
+      "accel": 0.08
+    },
+    "active": true
+  },
+  {
+    "id": "transmissao_klink",
+    "name": "Transmissão Klink",
+    "slot": "transmissao",
+    "price": 400,
+    "durability": 10,
+    "description": "+4% de velocidade máxima para as retas.",
+    "icon": "icones/tematicos/configuracoes.png",
+    "modifiers": {
+      "maxSpeed": 0.04
+    },
+    "active": true
+  },
+  {
+    "id": "freios_bronzor",
+    "name": "Freios Bronzor",
+    "slot": "freios",
+    "price": 200,
+    "durability": 10,
+    "description": "+12% de força de frenagem.",
+    "icon": "icones/tematicos/escudo.png",
+    "modifiers": {
+      "brakeDecel": 0.12
+    },
+    "active": true
+  },
+  {
+    "id": "nitro_cyndaquil",
+    "name": "Nitro Cyndaquil",
+    "slot": "nitro",
+    "price": 300,
+    "durability": 10,
+    "description": "+10% na duração de turbos de item, pista e largada. Não altera o mini-turbo de drift.",
+    "icon": "icones/tematicos/turbo.png",
+    "modifiers": {
+      "turboBonus": 0.1
+    },
+    "active": true
+  },
+  {
+    "id": "pneus_donphan",
+    "name": "Pneus Donphan",
+    "slot": "pneus",
+    "price": 150,
+    "durability": 10,
+    "description": "+0,04 de aderência e +4% no controle do drift.",
+    "icon": "icones/tematicos/kart.png",
+    "modifiers": {
+      "grip_add": 0.04,
+      "driftControl": 0.04
+    },
+    "active": true
+  }
+]

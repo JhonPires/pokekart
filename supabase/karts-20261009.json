@@ -1,0 +1,332 @@
+[
+  {
+    "id": "dusknoir",
+    "name": "Dusknoir",
+    "price": 3200,
+    "concept_img": "img/dusknoir.png",
+    "stats": {
+      "speed": 80,
+      "accel": 76,
+      "handling": 82
+    },
+    "physics": {
+      "accel": 29,
+      "maxSpeed": 33,
+      "turnSpeed": 3.4,
+      "grip": 0.9,
+      "driftRate": 1.5,
+      "turboBonus": 1.6,
+      "driftControl": 1.4
+    },
+    "pokemon_dex_id": 477,
+    "activated": true
+  },
+  {
+    "id": "gallade",
+    "name": "Gallade",
+    "price": 3400,
+    "concept_img": "img/gallade.png",
+    "stats": {
+      "speed": 88,
+      "accel": 84,
+      "handling": 88
+    },
+    "physics": {
+      "accel": 32,
+      "maxSpeed": 35,
+      "turnSpeed": 3.7,
+      "grip": 0.82,
+      "driftRate": 1.6,
+      "turboBonus": 1.5,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 475,
+    "activated": true
+  },
+  {
+    "id": "toxicroak",
+    "name": "Toxicroak",
+    "price": 3200,
+    "concept_img": "img/toxicroak.png",
+    "stats": {
+      "speed": 85,
+      "accel": 87,
+      "handling": 86
+    },
+    "physics": {
+      "accel": 33,
+      "maxSpeed": 34,
+      "turnSpeed": 3.8,
+      "grip": 0.78,
+      "driftRate": 1.7,
+      "turboBonus": 1.5,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 454,
+    "activated": true
+  },
+  {
+    "id": "probopass",
+    "name": "Probopass",
+    "price": 2800,
+    "concept_img": "img/probopass.png",
+    "stats": {
+      "speed": 76,
+      "accel": 70,
+      "handling": 78
+    },
+    "physics": {
+      "accel": 27,
+      "maxSpeed": 32,
+      "turnSpeed": 3.2,
+      "grip": 0.95,
+      "driftRate": 1.3,
+      "turboBonus": 1.6,
+      "driftControl": 1.4
+    },
+    "pokemon_dex_id": 476,
+    "activated": true
+  },
+  {
+    "id": "glaceon",
+    "name": "Glaceon",
+    "price": 3200,
+    "concept_img": "img/glaceon.png",
+    "stats": {
+      "speed": 85,
+      "accel": 82,
+      "handling": 88
+    },
+    "physics": {
+      "accel": 31,
+      "maxSpeed": 34,
+      "turnSpeed": 3.7,
+      "grip": 0.84,
+      "driftRate": 1.6,
+      "turboBonus": 1.5,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 471,
+    "activated": true
+  },
+  {
+    "id": "leafeon",
+    "name": "Leafeon",
+    "price": 3200,
+    "concept_img": "img/leafeon.png",
+    "stats": {
+      "speed": 82,
+      "accel": 90,
+      "handling": 94
+    },
+    "physics": {
+      "accel": 34,
+      "maxSpeed": 33,
+      "turnSpeed": 4.0,
+      "grip": 0.82,
+      "driftRate": 1.8,
+      "turboBonus": 1.5,
+      "driftControl": 1.6
+    },
+    "pokemon_dex_id": 470,
+    "activated": true
+  },
+  {
+    "id": "garchomp",
+    "name": "Garchomp",
+    "price": 3800,
+    "concept_img": "img/garchomp.png",
+    "stats": {
+      "speed": 95,
+      "accel": 78,
+      "handling": 80
+    },
+    "physics": {
+      "accel": 29,
+      "maxSpeed": 38,
+      "turnSpeed": 3.2,
+      "grip": 0.85,
+      "driftRate": 1.2,
+      "turboBonus": 1.8,
+      "driftControl": 1.1
+    },
+    "pokemon_dex_id": 445,
+    "activated": true
+  },
+  {
+    "id": "deoxys",
+    "name": "Deoxys",
+    "price": 9999999,
+    "concept_img": "img/deoxys.png",
+    "stats": {
+      "speed": 94,
+      "accel": 92,
+      "handling": 82
+    },
+    "physics": {
+      "accel": 35,
+      "maxSpeed": 37,
+      "turnSpeed": 3.5,
+      "grip": 0.7,
+      "driftRate": 1.7,
+      "turboBonus": 1.7,
+      "driftControl": 1.4
+    },
+    "pokemon_dex_id": 386,
+    "activated": true
+  },
+  {
+    "id": "latios",
+    "name": "Latios",
+    "price": 9999999,
+    "concept_img": "img/latios.png",
+    "stats": {
+      "speed": 95,
+      "accel": 84,
+      "handling": 84
+    },
+    "physics": {
+      "accel": 31,
+      "maxSpeed": 38,
+      "turnSpeed": 3.5,
+      "grip": 0.78,
+      "driftRate": 1.5,
+      "turboBonus": 1.7,
+      "driftControl": 1.3
+    },
+    "pokemon_dex_id": 381,
+    "activated": true
+  },
+  {
+    "id": "latias",
+    "name": "Latias",
+    "price": 9999999,
+    "concept_img": "img/latias.png",
+    "stats": {
+      "speed": 90,
+      "accel": 90,
+      "handling": 90
+    },
+    "physics": {
+      "accel": 34,
+      "maxSpeed": 36,
+      "turnSpeed": 3.8,
+      "grip": 0.82,
+      "driftRate": 1.7,
+      "turboBonus": 1.6,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 380,
+    "activated": true
+  },
+  {
+    "id": "torkoal",
+    "name": "Torkoal",
+    "price": 2400,
+    "concept_img": "img/torkoal.png",
+    "stats": {
+      "speed": 72,
+      "accel": 74,
+      "handling": 80
+    },
+    "physics": {
+      "accel": 28,
+      "maxSpeed": 31,
+      "turnSpeed": 3.3,
+      "grip": 0.94,
+      "driftRate": 1.3,
+      "turboBonus": 1.6,
+      "driftControl": 1.4
+    },
+    "pokemon_dex_id": 324,
+    "activated": true
+  },
+  {
+    "id": "roselia",
+    "name": "Roselia",
+    "price": 1800,
+    "concept_img": "img/roselia.png",
+    "stats": {
+      "speed": 76,
+      "accel": 86,
+      "handling": 92
+    },
+    "physics": {
+      "accel": 33,
+      "maxSpeed": 32,
+      "turnSpeed": 3.9,
+      "grip": 0.83,
+      "driftRate": 1.8,
+      "turboBonus": 1.4,
+      "driftControl": 1.6
+    },
+    "pokemon_dex_id": 315,
+    "activated": true
+  },
+  {
+    "id": "cacnea",
+    "name": "Cacnea",
+    "price": 1200,
+    "concept_img": "img/cacnea.png",
+    "stats": {
+      "speed": 72,
+      "accel": 80,
+      "handling": 84
+    },
+    "physics": {
+      "accel": 31,
+      "maxSpeed": 31,
+      "turnSpeed": 3.6,
+      "grip": 0.86,
+      "driftRate": 1.6,
+      "turboBonus": 1.4,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 331,
+    "activated": true
+  },
+  {
+    "id": "bannete",
+    "name": "Banette",
+    "price": 2800,
+    "concept_img": "img/banette.png",
+    "stats": {
+      "speed": 84,
+      "accel": 85,
+      "handling": 93
+    },
+    "physics": {
+      "accel": 32,
+      "maxSpeed": 34,
+      "turnSpeed": 3.9,
+      "grip": 0.62,
+      "driftRate": 2.0,
+      "turboBonus": 1.7,
+      "driftControl": 1.5
+    },
+    "pokemon_dex_id": 354,
+    "activated": true
+  },
+  {
+    "id": "altaria",
+    "name": "Altaria",
+    "price": 3200,
+    "concept_img": "img/altaria.png",
+    "stats": {
+      "speed": 84,
+      "accel": 82,
+      "handling": 90
+    },
+    "physics": {
+      "accel": 31,
+      "maxSpeed": 34,
+      "turnSpeed": 3.8,
+      "grip": 0.86,
+      "driftRate": 1.7,
+      "turboBonus": 1.5,
+      "driftControl": 1.6
+    },
+    "pokemon_dex_id": 334,
+    "activated": true
+  }
+]

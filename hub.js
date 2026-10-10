@@ -358,7 +358,7 @@ function carregarMundo() {
     // A. Carregar o Kart do Jogador
     // A. Carregar o Kart do Jogador (Dinâmico)
     loadHubModel(
-        `models/${kartId}.glb`,
+        `models/${kartId === 'bannete' ? 'banette' : kartId}.glb`,
         (gltf) => {
             // 1. Cria um grupo invisível que vai ser o "verdadeiro" playerKart
             playerKart = new THREE.Group();

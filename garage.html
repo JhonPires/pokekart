@@ -609,6 +609,7 @@
   <script src="mobile.js?v=modal-theme-20261007-1" defer></script>
   <link rel="stylesheet" href="modal-theme.css?v=20261007-1">
   <link rel="stylesheet" href="music-player.css?v=20261007-1">
+  <link rel="stylesheet" href="mechanic-ui.css?v=20261009-4">
 </head>
 
 <body data-page="garage">
@@ -685,7 +686,14 @@
               Jolteon</h2>
 
 
-            <!-- BARRAS DE STATUS NA HORIZONTAL COM COMPARAÇÃO (BARRAS PREENCHIDAS) -->
+            <button id="btnOpenMechanic" type="button" class="garage-mechanic-button" aria-haspopup="dialog">
+              <img src="icones/tematicos/ferramentas.png" alt="" width="38" height="38">
+              <span class="garage-mechanic-label"><strong>Mecânica Pokémon</strong><small>Equipar peças</small></span>
+              <span class="garage-mechanic-arrow" aria-hidden="true">›</span>
+            </button>
+            <p id="kartDrivingStyle" style="flex-basis:100%; margin:0; color:#38bdf8; font-weight:700;">Atributos base</p>
+
+              <!-- BARRAS DE STATUS NA HORIZONTAL COM COMPARAÇÃO (BARRAS PREENCHIDAS) -->
             <div class="garage-stats" style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; min-width: 250px;">
 
               <div class="stat-group" style="flex: 1; margin: 0; min-width: 100px;">
@@ -753,8 +761,20 @@
                   <select class="garage-select-native" id="garageSortSelect" onchange="renderKartGrid()" aria-hidden="true" tabindex="-1">
                   <option value="default">Ordem Padrão</option>
                   <option value="owned">Ativos Primeiro</option>
+                  <option value="style">Estilo de Pilotagem</option>
                   <option value="price_asc">Menor Preço</option>
                   <option value="price_desc">Maior Preço</option>
+                  </select>
+                </div>
+                <div class="garage-select-wrap" id="garageStyleDropdown" style="grid-column: 1 / -1;">
+                  <span class="sr-only">Filtrar por estilo de pilotagem</span>
+                  <select class="garage-select-native" id="garageStyleSelect" onchange="renderKartGrid()" aria-hidden="true" tabindex="-1">
+                    <option value="all">Todos os Estilos</option>
+                    <option value="arrancada">Arrancada</option>
+                    <option value="curvas">Curvas</option>
+                    <option value="drift">Drift</option>
+                    <option value="equilibrado">Equilibrado</option>
+                    <option value="velocidade">Velocidade</option>
                   </select>
                 </div>
               </div>
@@ -798,8 +818,11 @@
   <!-- DEPENDÊNCIAS ORIGINAIS -->
   <script src="music.js?v=compact-20261007-1"></script>
   <script src="assets.js?v=starter-choice-1"></script>
-  <script src="auth.js?v=lobby-cosmetics-20261008-1"></script>
-  <script src="garage.js?v=starter-choice-1"></script>
+  <script src="auth.js?v=daily-kart-20261009-1"></script>
+    <script src="kart-balance.js?v=20261009-1"></script>
+  <script src="kart-mechanics.js?v=20261009-1"></script>
+  <script src="mechanic-ui.js?v=20261009-2"></script>
+  <script src="garage.js?v=mechanic-20261009-2"></script>
 
   <!-- Lógica de Sincronização, Nome do Kart e Áudio -->
 

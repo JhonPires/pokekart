@@ -16,6 +16,21 @@
     }
     return null;
   }
+  const itemPools = {
+    first: ['ENERGY_BALL', 'SHIELD', 'SHIELD', 'ICE', 'LODO', 'FUMACA', 'LAMA', 'ROCKET_BOX'],
+    last: ['ENERGY_BALL', 'TURBO', 'TURBO', 'SURF', 'SURF', 'DIG', 'DIG', 'CHOQUE', 'SOM'],
+    middle: ['ENERGY_BALL', 'TURBO', 'SHIELD', 'CHOQUE', 'SURF', 'DIG', 'SOM', 'ROCKET_BOX', 'ICE']
+  };
+  function itemPoolForPosition(rank, total) {
+    if (rank === 1) return itemPools.first;
+    return total > 1 && rank === total ? itemPools.last : itemPools.middle;
+  }
+  function startBotBoost(bot, duration) {
+    if (bot.finished || bot.turboTimer > 0 || bot.boostCooldown > 0) return false;
+    bot.turboTimer = duration;
+    bot.boostCooldown = 3; // Conta somente depois de terminar o turbo, de qualquer origem.
+    return true;
+  }
   function chooseLane({ halfWidth, currentLane, preferredLane, obstacles, profile }) {
     const lanes = [-halfWidth * .7, preferredLane, 0, halfWidth * .7];
     const score = lane => {
@@ -55,7 +70,7 @@
   function stepBotDrift(bot, dt, { curve, profile, eligible, boosting, rate = 1 }) {
     bot.driftCooldown = Math.max(0, (bot.driftCooldown || 0) - dt);
     const magnitude = Math.abs(curve);
-    if (!eligible || boosting || magnitude >= .85) {
+    if (!eligible || boosting || bot.boostCooldown > 0 || magnitude >= .85) {
       bot.driftCharge = 0; bot.driftDirection = 0; bot.driftExitTime = 0;
       return null;
     }
@@ -80,13 +95,15 @@
   }
   function shouldUseItem(id, s) {
     if (s.disabled || s.age < s.reaction) return false;
+    const speedItem = ['TURBO', 'BLAINE_BOOST', 'SURF'].includes(id);
+    if (speedItem && (s.boosting || s.boostCooldown > 0)) return false;
     if (id === 'SHIELD') return !s.shielded && (s.threat || s.age >= 8);
     if (id === 'DIG') return s.rank > 1 || s.age >= 8;
     if (s.age >= 8) return true;
-    if (['TURBO', 'BLAINE_BOOST', 'SURF'].includes(id)) return s.curve < .32 && !s.boosting;
+    if (speedItem) return s.curve < .32;
     if (['ICE', 'LODO', 'FUMACA', 'ROCKET_BOX', 'BROCK_ROCK', 'MISTY_WATER', 'KOGA_SMOKE', 'SABRINA_VORTEX'].includes(id)) return s.behind < 25;
     if (id === 'SOM') return Math.min(s.ahead, s.behind) < 12;
     return s.ahead < 45 || s.behind < 20;
   }
-  window.PokeRaceRules = { driftLevels, driftTier, profiles, chooseLane, shouldUseItem, botCornerFactor, stepBotDrift, planBotCorner };
+  window.PokeRaceRules = { driftLevels, driftTier, profiles, chooseLane, shouldUseItem, botCornerFactor, stepBotDrift, planBotCorner, itemPoolForPosition, startBotBoost };
 })();

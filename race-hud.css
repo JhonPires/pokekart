@@ -41,6 +41,10 @@ html body .ctr-hud .ctr-portrait {
 html body .ctr-hud .ctr-standing-item.is-local .ctr-portrait {
   box-shadow: 0 0 0 2px #ffd43b24, 0 4px 12px #0004;
 }
+html body .ctr-hud .ctr-standing-icon .ctr-finish-flag {
+  width: 90% !important; height: 90% !important;
+  object-fit: contain; filter: drop-shadow(0 2px 3px #0005);
+}
 html body .ctr-hud .ctr-portrait-pos {
   color: #f4f8ff; font-size: 25px; font-weight: 950;
   text-shadow: 0 2px 4px #000; background: #071424;

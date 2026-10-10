@@ -20,7 +20,8 @@ function getRegionByDex(dexId) {
 }
 
 function getKartUrl(filename) {
-  return `./models/${filename}`;
+  const modelFilename = filename === 'bannete.glb' ? 'banette.glb' : filename;
+  return `./models/${modelFilename}`;
 }
 
 // Catálogo Completo
@@ -34,7 +35,7 @@ const KARTS_LIDERES = [
 async function carregarKartsDaGaragem() {
   try {
     // Adicionado 'pokemon_dex_id' na query do Supabase
-    const { data, error } = await supabaseClient.from('karts').select('id, name, price, concept_img, stats, pokemon_dex_id, activated');
+    const { data, error } = await supabaseClient.from('karts').select('id, name, price, concept_img, stats, physics, pokemon_dex_id, activated');
     if (error) throw error;
 
     if (data && data.length > 0) {
@@ -44,7 +45,8 @@ async function carregarKartsDaGaragem() {
         price: dbKart.price || 0,
         conceptImg: dbKart.concept_img || `img/${dbKart.id}.png`,
         modelUrl: getKartUrl(`${dbKart.id}.glb`),
-        stats: dbKart.stats || { speed: 80, accel: 80, handling: 80 },
+        stats: PokeKartBalance.displayStats(dbKart.physics, dbKart.stats?.style),
+        physics: PokeKartBalance.normalize(dbKart.physics),
         dexId: dbKart.pokemon_dex_id || null,
         activated: dbKart.activated !== false
       }));
@@ -58,7 +60,8 @@ async function carregarKartsDaGaragem() {
       price: null,
       conceptImg: `img/${fallbackId}.png`,
       modelUrl: getKartUrl(`${fallbackId}.glb`),
-      stats: { speed: 75, accel: 90, handling: 85 },
+      stats: PokeKartBalance.displayStats(),
+      physics: PokeKartBalance.normalize(),
       dexId: { charizard: 6, venusaur: 3, blastoise: 9 }[fallbackId] || null,
       activated: true
     }] : [];
@@ -68,27 +71,7 @@ async function carregarKartsDaGaragem() {
 let dailyFreeKarts = [];
 
 function updateDailyFreeKarts() {
-  const now = new Date();
-  const dateSeed = now.getUTCFullYear() * 10000 + (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-
-  let s = dateSeed;
-  function seededRandom() {
-    s = (s * 9301 + 49297) % 233280;
-    return s / 233280;
-  }
-
-  // A rotação diária não concede propriedade permanente.
-  const availableKarts = KART_CATALOG
-    .filter(k => k.activated !== false)
-    .map(k => k.id);
-  availableKarts.sort();
-
-  for (let i = availableKarts.length - 1; i > 0; i--) {
-    const j = Math.floor(seededRandom() * (i + 1));
-    [availableKarts[i], availableKarts[j]] = [availableKarts[j], availableKarts[i]];
-  }
-
-  dailyFreeKarts = availableKarts.slice(0, 4);
+  dailyFreeKarts = getDailyFreeKartIds(KART_CATALOG);
   sessionStorage.setItem('pkart_daily_free', JSON.stringify(dailyFreeKarts));
 }
 
@@ -105,6 +88,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Só agora define a rotação grátis (pois precisa do KART_CATALOG preenchido)
   updateDailyFreeKarts();
+  await validateEquippedKart(currentUserProfile, KART_CATALOG);
 
   updateHeaderData();
 
@@ -116,6 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderKartGrid();
   selectKart(selectedKartId);
+  if (new URLSearchParams(location.search).get('mechanic') === '1') document.getElementById('btnOpenMechanic')?.click();
 
   const btnBack = document.getElementById('btnBack');
   if (btnBack) btnBack.onclick = () => window.location.href = 'index.html';
@@ -124,118 +109,127 @@ document.addEventListener('DOMContentLoaded', async () => {
 function initGarageFilterDropdowns() {
   const configs = [
     { wrapperId: 'garageRegionDropdown', selectId: 'garageRegionSelect', label: 'Filtrar por região' },
-    { wrapperId: 'garageSortDropdown', selectId: 'garageSortSelect', label: 'Ordenar karts' }
+    { wrapperId: 'garageSortDropdown', selectId: 'garageSortSelect', label: 'Ordenar karts' },
+    { wrapperId: 'garageStyleDropdown', selectId: 'garageStyleSelect', label: 'Filtrar por estilo de pilotagem' }
   ];
-  const closeAll = (exceptMenu = null) => {
-    document.querySelectorAll('.garage-filter-menu.show').forEach(menu => {
-      if (menu !== exceptMenu) {
-        menu.classList.remove('show');
-        const trigger = menu.closest('.garage-select-wrap')?.querySelector('.garage-select-trigger');
-        trigger?.classList.remove('open');
-        trigger?.setAttribute('aria-expanded', 'false');
-      }
+  configs.forEach(({ wrapperId, selectId, label }) => {
+    const wrapper = document.getElementById(wrapperId), select = document.getElementById(selectId);
+    if (wrapper && select) createGarageDropdown(wrapper, select, label);
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('.garage-select-wrap')) closeGarageDropdowns();
+  });
+}
+
+function closeGarageDropdowns(exceptMenu = null) {
+  document.querySelectorAll('.garage-filter-menu.show').forEach(menu => {
+    if (menu === exceptMenu) return;
+    menu.classList.remove('show');
+    menu.querySelectorAll('[role="option"]').forEach(item => item.tabIndex = -1);
+    const trigger = menu.closest('.garage-select-wrap')?.querySelector('.garage-select-trigger');
+    trigger?.classList.remove('open');
+    trigger?.setAttribute('aria-expanded', 'false');
+  });
+}
+
+// Shared by the garage filters and the kart-parts workshop.
+function createGarageDropdown(wrapper, select, label) {
+  select.classList.add('garage-select-native');
+  select.setAttribute('aria-hidden', 'true'); select.tabIndex = -1;
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'dropdown-selected garage-select-trigger';
+  trigger.setAttribute('aria-label', label);
+  trigger.setAttribute('aria-haspopup', 'listbox');
+  trigger.setAttribute('aria-expanded', 'false');
+  trigger.innerHTML = '<span class="garage-select-value"></span><span class="garage-select-chevron" aria-hidden="true">▼</span>';
+
+  const menu = document.createElement('div');
+  menu.className = 'dropdown-options garage-filter-menu';
+  menu.id = `${select.id}Menu`;
+  menu.setAttribute('role', 'listbox');
+  menu.setAttribute('aria-label', label);
+  trigger.setAttribute('aria-controls', menu.id);
+
+  [...select.options].forEach(option => {
+    const item = document.createElement('div');
+    item.setAttribute('role', 'option');
+    item.dataset.value = option.value;
+    item.textContent = option.textContent.trim();
+    item.tabIndex = -1;
+    item.addEventListener('click', () => choose(option.value));
+    menu.appendChild(item);
+  });
+
+  wrapper.append(trigger, menu);
+  const valueLabel = trigger.querySelector('.garage-select-value');
+
+  const syncValue = () => {
+    trigger.disabled = select.disabled;
+    const selected = select.options[select.selectedIndex];
+    valueLabel.textContent = selected ? selected.textContent.trim() : '';
+    menu.querySelectorAll('[role="option"]').forEach(item => {
+      const isSelected = item.dataset.value === select.value;
+      item.setAttribute('aria-selected', String(isSelected));
+      if (isSelected) item.classList.add('selected');
+      else item.classList.remove('selected');
     });
   };
-
-  configs.forEach(({ wrapperId, selectId, label }) => {
-    const wrapper = document.getElementById(wrapperId);
-    const select = document.getElementById(selectId);
-    if (!wrapper || !select) return;
-
-    const trigger = document.createElement('button');
-    trigger.type = 'button';
-    trigger.className = 'dropdown-selected garage-select-trigger';
-    trigger.setAttribute('aria-label', label);
-    trigger.setAttribute('aria-haspopup', 'listbox');
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.innerHTML = '<span class="garage-select-value"></span><span class="garage-select-chevron" aria-hidden="true">▼</span>';
-
-    const menu = document.createElement('div');
-    menu.className = 'dropdown-options garage-filter-menu';
-    menu.id = `${selectId}Menu`;
-    menu.setAttribute('role', 'listbox');
-    trigger.setAttribute('aria-controls', menu.id);
-
-    [...select.options].forEach(option => {
-      const item = document.createElement('div');
-      item.setAttribute('role', 'option');
-      item.dataset.value = option.value;
-      item.textContent = option.textContent.trim();
-      item.tabIndex = -1;
-      item.addEventListener('click', () => choose(option.value));
-      menu.appendChild(item);
-    });
-
-    wrapper.append(trigger, menu);
-    const valueLabel = trigger.querySelector('.garage-select-value');
-
-    const syncValue = () => {
-      const selected = select.options[select.selectedIndex];
-      valueLabel.textContent = selected ? selected.textContent.trim() : '';
-      menu.querySelectorAll('[role="option"]').forEach(item => {
-        const isSelected = item.dataset.value === select.value;
-        item.setAttribute('aria-selected', String(isSelected));
-        if (isSelected) item.classList.add('selected');
-        else item.classList.remove('selected');
-      });
-    };
-    const setOpen = open => {
-      closeAll(menu);
-      menu.classList.toggle('show', open);
-      trigger.classList.toggle('open', open);
-      trigger.setAttribute('aria-expanded', String(open));
-    };
-    const choose = value => {
-      select.value = value;
-      syncValue();
-      setOpen(false);
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      trigger.focus();
-    };
-    const focusOption = option => {
-      const options = [...menu.querySelectorAll('[role="option"]')];
-      const target = options[option];
-      if (!target) return;
-      options.forEach(item => { item.tabIndex = item === target ? 0 : -1; });
-      target.focus();
-    };
-
-    trigger.addEventListener('click', () => {
-      const open = !menu.classList.contains('show');
-      setOpen(open);
-      if (open) menu.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
-    });
-    trigger.addEventListener('keydown', event => {
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        setOpen(true);
-        const index = [...menu.children].findIndex(item => item.dataset.value === select.value);
-        focusOption(index < 0 ? 0 : index);
-      }
-    });
-    menu.addEventListener('keydown', event => {
-      const options = [...menu.querySelectorAll('[role="option"]')];
-      const index = options.indexOf(document.activeElement);
-      if (event.key === 'Escape') {
-        event.preventDefault(); setOpen(false); trigger.focus();
-      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-        event.preventDefault();
-        const direction = event.key === 'ArrowDown' ? 1 : -1;
-        focusOption((index + direction + options.length) % options.length);
-      } else if (event.key === 'Home' || event.key === 'End') {
-        event.preventDefault(); focusOption(event.key === 'Home' ? 0 : options.length - 1);
-      } else if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        if (index >= 0) choose(options[index].dataset.value);
-      }
-    });
-    select.addEventListener('change', syncValue);
+  const setOpen = open => {
+    closeGarageDropdowns(menu);
+    menu.classList.toggle('show', open);
+    trigger.classList.toggle('open', open);
+    trigger.setAttribute('aria-expanded', String(open));
+    if (!open) menu.querySelectorAll('[role="option"]').forEach(item => item.tabIndex = -1);
+  };
+  const choose = value => {
+    select.value = value;
     syncValue();
-  });
+    setOpen(false);
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+    trigger.focus();
+  };
+  const focusOption = option => {
+    const options = [...menu.querySelectorAll('[role="option"]')];
+    const target = options[option];
+    if (!target) return;
+    options.forEach(item => { item.tabIndex = item === target ? 0 : -1; });
+    target.focus();
+  };
 
-  document.addEventListener('click', event => {
-    if (!event.target.closest('.garage-select-wrap')) closeAll();
+  trigger.addEventListener('click', () => {
+    const open = !menu.classList.contains('show');
+    setOpen(open);
+    if (open) menu.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest' });
   });
+  trigger.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && menu.classList.contains('show')) {
+      event.preventDefault(); event.stopPropagation(); setOpen(false);
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setOpen(true);
+      const index = [...menu.children].findIndex(item => item.dataset.value === select.value);
+      focusOption(index < 0 ? 0 : index);
+    }
+  });
+  menu.addEventListener('keydown', event => {
+    const options = [...menu.querySelectorAll('[role="option"]')];
+    const index = options.indexOf(document.activeElement);
+    if (event.key === 'Escape') {
+      event.preventDefault(); event.stopPropagation(); setOpen(false); trigger.focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      focusOption((index + direction + options.length) % options.length);
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault(); focusOption(event.key === 'Home' ? 0 : options.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (index >= 0) choose(options[index].dataset.value);
+    }
+  });
+  select.addEventListener('change', syncValue);
+  syncValue();
 }
 
 function updateHeaderData() {
@@ -332,7 +326,7 @@ async function loadKartModel(kartId) {
     return;
   }
 
-  const modelUrl = `./models/${kartId}.glb`;
+  const modelUrl = getKartUrl(`${kartId}.glb`);
   const loader = new THREE.GLTFLoader();
   if (typeof THREE.DRACOLoader !== 'undefined') {
     const dracoLoader = new THREE.DRACOLoader();
@@ -388,6 +382,7 @@ async function loadKartModel(kartId) {
 }
 
 function renderKartGrid() {
+  updateDailyFreeKarts();
   const gridEl = document.getElementById('kartList');
   if (!gridEl) return;
   gridEl.innerHTML = '';
@@ -410,13 +405,8 @@ function renderKartGrid() {
   // 2. Mistura os Karts do Jogador com a Rotação Diária
   let unlockedList = Array.from(new Set([...userKarts, ...dailyFreeKarts]));
 
-  // 🛡️ 3. TRAVA DE EXPIRAÇÃO AUTOMÁTICA
-  const currentEquipped = sessionStorage.getItem('pkart_selected_kart');
-  if (currentEquipped && !unlockedList.includes(currentEquipped)) {
-    selectedKartId = getDefaultPlayerKart() || unlockedList[0] || null;
-    if (selectedKartId) sessionStorage.setItem('pkart_selected_kart', selectedKartId);
-    else sessionStorage.removeItem('pkart_selected_kart');
-  }
+  // A validação atualiza perfil e sessão juntos antes de desenhar os cartões.
+  validateEquippedKart(currentUserProfile, KART_CATALOG);
 
   // 🔄 4. SISTEMA DE ORDENAÇÃO (FILTRO)
   let catalogToRender = [...KART_CATALOG]; // Cria uma cópia para não estragar a lista original
@@ -428,6 +418,11 @@ function renderKartGrid() {
     catalogToRender = catalogToRender.filter(k => getRegionByDex(k.dexId) === regionMode);
   }
 
+  const styleMode = document.getElementById('garageStyleSelect')?.value || 'all';
+  if (styleMode !== 'all') {
+    catalogToRender = catalogToRender.filter(k => k.stats?.style === styleMode);
+  }
+
   const sortSelect = document.getElementById('garageSortSelect');
   const sortMode = sortSelect ? sortSelect.value : 'default';
 
@@ -435,6 +430,15 @@ function renderKartGrid() {
     catalogToRender.sort((a, b) => a.price - b.price);
   } else if (sortMode === 'price_desc') {
     catalogToRender.sort((a, b) => b.price - a.price);
+  } else if (sortMode === 'style') {
+    catalogToRender.sort((a, b) => {
+      const aStyle = PokeKartBalance.labels[a.stats?.style];
+      const bStyle = PokeKartBalance.labels[b.stats?.style];
+      if (!aStyle && bStyle) return 1;
+      if (aStyle && !bStyle) return -1;
+      return (aStyle || '').localeCompare(bStyle || '', 'pt-BR')
+        || (a.dexId || 9999) - (b.dexId || 9999);
+    });
   } else if (sortMode === 'owned') {
     catalogToRender.sort((a, b) => {
       const aIsActive = unlockedList.includes(a.id) ? 1 : 0;
@@ -453,7 +457,7 @@ function renderKartGrid() {
 
   // Mostra mensagem se nenhum kart na região
   if (catalogToRender.length === 0) {
-    gridEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-size: 13px; padding: 30px 0;">Nenhum kart encontrado nesta região.</div>';
+    gridEl.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; color: #64748b; font-size: 13px; padding: 30px 0;">Nenhum kart encontrado com estes filtros.</div>';
     return;
   }
 
@@ -566,6 +570,16 @@ function selectKart(kartId) {
       nameEl.innerHTML = isFreeRotation ? `${kartData.name} <span style="color:#22c55e; font-size:12px;">(GRÁTIS)</span>` : kartData.name;
     }
 
+    const mechanicButton = document.getElementById('btnOpenMechanic');
+    if (mechanicButton) mechanicButton.onclick = () => PokeMechanicUI.openGarage(kartData,
+      getOwnedKartIds(currentUserProfile).includes(kartData.id) || dailyFreeKarts.includes(kartData.id));
+    const styleEl = document.getElementById('kartDrivingStyle');
+    if (styleEl) {
+      const p = kartData.physics;
+      const label = PokeKartBalance.labels[kartData.stats?.style];
+      styleEl.textContent = label ? `Estilo: ${label}` : 'Atributos base';
+      styleEl.title = p ? `Aderência: ${p.grip} | Carga de drift: ${p.driftRate} | Controle de drift: ${p.driftControl} | Duração do nitro: ${p.turboBonus}x` : '';
+    }
     if (kartData.stats) {
       const speedBar = document.getElementById('barSpeed');
       const accelBar = document.getElementById('barAccel');
@@ -619,6 +633,7 @@ function selectKart(kartId) {
 }
 
 async function equipKart(kartId) {
+  updateDailyFreeKarts();
   let userKarts = [];
   if (typeof currentUserProfile !== 'undefined' && currentUserProfile && currentUserProfile.unlocked_karts) {
     if (Array.isArray(currentUserProfile.unlocked_karts)) {
@@ -637,30 +652,24 @@ async function equipKart(kartId) {
   const isPermanentlyUnlocked = userKarts.includes(kartId);
 
   if (!isPermanentlyUnlocked && !isFreeRotation) {
+    await validateEquippedKart(currentUserProfile, KART_CATALOG);
+    renderKartGrid();
     alert('Este kart está bloqueado!');
     return;
   }
 
-  // 1. Salva na sessão imediatamente para uso rápido
-  sessionStorage.setItem('pkart_selected_kart', kartId);
-  if (typeof currentUserProfile !== 'undefined' && currentUserProfile) {
-    currentUserProfile.selected_kart = kartId;
-
+  let equipped = false;
+  try {
+    equipped = await updateSelectedKart(kartId);
+  } catch (error) {
+    console.warn('Não foi possível equipar o kart:', error);
   }
-  // 🛡️ 2. CORREÇÃO: Salva no Supabase SEMPRE. 
-  // Isso impede que o auth.js do Lobby puxe um dado velho e resete seu kart.
-  if (typeof currentUserProfile !== 'undefined' && currentUserProfile && typeof supabaseClient !== 'undefined') {
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({
-        selected_kart: kartId,
-        updated_at: new Date()
-      })
-      .eq('id', currentUserProfile.id);
-
-    if (error) {
-      console.warn('Erro ao salvar kart selecionado no banco:', error.message);
-    }
+  if (!equipped) {
+    updateDailyFreeKarts();
+    await validateEquippedKart(currentUserProfile, KART_CATALOG);
+    renderKartGrid();
+    selectKart(currentUserProfile.selected_kart);
+    return;
   }
 
   selectKart(kartId);
